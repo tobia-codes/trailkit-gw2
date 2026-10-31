@@ -1,0 +1,67 @@
+# CI (ROADMAP R10, R14, R19, R34). Required on PRs to `main` (R9).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  windows:
+    name: Windows build, lint & test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      # rustup is preinstalled; rust-toolchain.toml selects the pinned toolchain.
+      - name: Install pinned toolchain
+        run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - name: Format
+        run: cargo fmt --all -- --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Test
+        run: cargo test --workspace
+      - name: Version sync check (R16/R17)
+        run: cargo xtask sync-versions --check
+      - name: Build addons (release)
+        run: cargo build --workspace --release --exclude xtask
+      - uses: actions/upload-artifact@v4
+        with:
+          name: addons-dll
+          path: target/release/*.dll
+          if-no-files-found: error
+
+  deny:
+    name: cargo-deny
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: EmbarkStudios/cargo-deny-action@v2
+
+  branch-name:
+    name: Branch name (R14)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check branch prefix
+        env:
+          HEAD: ${{ github.head_ref }}
+          BASE: ${{ github.base_ref }}
+        run: |
+          case "$HEAD" in
+            feature/*|chore/*|bugfix/*|hotfix/*) exit 0 ;;
+            develop) [ "$BASE" = "main" ] && exit 0 ;;
+          esac
+          echo "::error::Branch '$HEAD' → '$BASE' is not allowed. Use feature/, chore/, bugfix/ or hotfix/ (or develop → main for releases)."
+          exit 1
