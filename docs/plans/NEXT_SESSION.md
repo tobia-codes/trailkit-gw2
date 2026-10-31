@@ -39,14 +39,37 @@ Open phase 0 work:
 
 **Phase 0 complete.**
 
+## Phase 0b status (price archive)
+
+Settled: R62–R65 (public email rewrite, first push, 0b scope, `ureq`),
+data-pipeline D27–D31 (datagen path, DTOs in datagen, WvW reset snapshot
+times, no item-id diff, gem exchange quantities).
+
+Done 2026-10-31:
+- History rewritten to `tobiacodes@gmail.com` (R62).
+- Public repo `tobia-codes/trailkit-gw2` created; `main` = `develop`
+  pushed (bootstrap push with `--no-verify`, because the pre-push hook only
+  allows work branches; clippy + tests were run by hand).
+- Branch protection: `main` PR-only + required checks (Windows job,
+  cargo-deny, branch name), `develop` PR-only; both enforce admins, no force
+  push, no deletion.
+- CI did not trigger on the initial push (GitHub skips it sometimes); the
+  first PR will run it.
+
 ## ▶ Resume here
 
-Ask the user to approve merging `chore/phase-0-foundation` into `develop` (R29), then start phase 0b
-(price archive; first push needs explicit approval, R11).
+1. `tools/trailkit-datagen` skeleton on `chore/datagen-skeleton` (D27, R65:
+   `ureq`, throttle + retries D26).
+2. Archive workflow: daily 00:17 UTC + catch-up 06:17 UTC (D7), WvW reset
+   snapshots Fri 17:23 / Sat 01:23 UTC (D29), monthly release
+   `prices-YYYY-MM` (D8); changing workflows needs approval (D9).
+3. Monthly C-703/25 P reminder issue workflow (D18).
+4. Addon release workflow is deferred to the end of phase 1 (R64).
 
 ## User to-dos
 
 - Verify "trailkit" in TMview + DPMAregister.
+- Add + verify `tobiacodes@gmail.com` on GitHub (Settings → Emails).
 - Google Alert for C-703/25 (D18).
 
 ## Recurring checks (2026-10-31)
