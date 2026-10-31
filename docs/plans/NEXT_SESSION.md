@@ -58,13 +58,18 @@ Done 2026-10-31:
 
 ## ▶ Resume here
 
-1. `tools/trailkit-datagen` skeleton on `chore/datagen-skeleton` (D27, R65:
-   `ureq`, throttle + retries D26).
-2. Archive workflow: daily 00:17 UTC + catch-up 06:17 UTC (D7), WvW reset
-   snapshots Fri 17:23 / Sat 01:23 UTC (D29), monthly release
-   `prices-YYYY-MM` (D8); changing workflows needs approval (D9).
-3. Monthly C-703/25 P reminder issue workflow (D18).
-4. Addon release workflow is deferred to the end of phase 1 (R64).
+Done on `chore/datagen-skeleton` (not pushed yet):
+- `tools/trailkit-datagen` (`archive`, `wvw-snapshot`), live-tested locally
+  2026-10-31: all 4 data sets complete (prices 0.38 MB, order book 1.9 MB),
+  catch-up re-runs only incomplete data sets. Decisions R66, D32–D39.
+- Workflows `price-archive.yml` (daily 00:17, catch-up 06:17, WvW Fri 17:23 /
+  Sat 01:23 UTC, keep-alive) and `dpf-reminder.yml` (monthly issue, D18) —
+  **need the user's approval (D9) before the PR**.
+
+Next: user approves the workflows → push branch, PR to `develop` (first CI
+run), merge after approval; then release PR `develop` → `main` so the
+schedules become active (they only run on the default branch). Afterwards
+phase 0b is complete → phase 1 (trailkit-memo standalone).
 
 ## User to-dos
 

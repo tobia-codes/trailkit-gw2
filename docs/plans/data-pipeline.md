@@ -81,7 +81,7 @@ scheduled CI job (daily, UTC)
 
 | Option | Cost | Fit | Limits / concerns |
 |--------|------|-----|-------------------|
-| **GitHub Actions** (cron) | free for public repos | runs the daily job | schedule may be delayed under load (start of hour worst); scheduled workflows **auto-disabled after 60 days without repo activity** (daily data commit prevents this); US provider, but the job handles no personal data |
+| **GitHub Actions** (cron) | free for public repos | runs the daily job | schedule may be delayed under load (start of hour worst); scheduled workflows **auto-disabled after 60 days without repo activity** (the archive makes no commits → self re-enable, D38); US provider, but the job handles no personal data |
 | **GitHub Pages** (serve current files) | free | static files, CDN, ETag, gzip | soft limits 1 GB site, 100 GB/month bandwidth; US provider → every addon user's IP reaches GitHub (conflicts with B20) |
 | **GitHub Releases** (archive) | free | large assets (≤ 2 GB per file), not in git history | US provider (irrelevant for the archive: no personal data) |
 | Codeberg Pages / Actions | free, EU (Berlin) | would fit B20 | **excluded:** Codeberg ToS 2.7 (July 2026) bans projects mostly written by generative AI; also storage quota 750 MiB repo + 1.5 GiB extra |
@@ -195,3 +195,6 @@ See `NEXT_SESSION.md`.
 | D34 | Roles: datagen only writes to a local directory and never talks to GitHub; the workflow creates the monthly release, uploads assets and decides what to (re)run, using the `gh` CLI. datagen needs no token and is side-effect free locally | 2026-10-31 |
 | D35 | Failure handling: per request up to 5 attempts with exponential backoff (D26); per data set a status `complete` / `partial` (`failed_ids`) / `failed` (`error`) in the manifest, other data sets continue; the catch-up run (D7, amended) re-runs every data set of the day that is missing, `failed` or `partial` and replaces its asset + manifest; if anything is still incomplete after the catch-up the workflow fails → GitHub notification email. Missed days cannot be backfilled (the API has no history) and stay documented as gaps | 2026-10-31 |
 | D36 | Tests use small committed API response fixtures; CI never calls the live GW2 API; a manual local run validates against the live API before the workflow is enabled | 2026-10-31 |
+| D37 | `webpki-roots` (Mozilla CA list, pulled in by `ureq`/`rustls`) is licensed CDLA-Permissive-2.0: allowed via a `cargo-deny` exception for that crate only, not as a general license allowance | 2026-10-31 |
+| D38 | Keep-alive: GitHub disables scheduled workflows after 60 days without repository activity and the archive produces no commits, so every archive run re-enables its own workflow via the API (`gh workflow enable`, `actions: write`) | 2026-10-31 |
+| D39 | Monthly release `prices-YYYY-MM`: tag on the current `main` commit (schedules run on the default branch), created with `--latest=false` so "Latest release" stays an addon release, body explains the content and links the datagen README | 2026-10-31 |

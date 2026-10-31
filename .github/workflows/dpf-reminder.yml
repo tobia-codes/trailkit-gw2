@@ -1,0 +1,33 @@
+# Monthly reminder to check CJEU appeal C-703/25 P (Latombe v Commission),
+# which decides the future of the EU-US Data Privacy Framework that our
+# GitHub hosting relies on (docs/plans/data-pipeline.md D18, AGENTS.md
+# "Recurring checks"). GitHub emails new issues to the repository owner.
+# Changes to this file need explicit user approval (AGENTS.md rule 1).
+name: DPF reminder
+
+on:
+  schedule:
+    - cron: "0 8 1 * *" # 1st of every month, 08:00 UTC
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  remind:
+    name: Open reminder issue
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          month="$(date -u +%Y-%m)"
+          gh issue create --repo "$REPOSITORY" \
+            --title "Check CJEU C-703/25 P (Data Privacy Framework) — $month" \
+            --body "Monthly check (data-pipeline D18).
+
+          1. Look up the status of **C-703/25 P, Latombe v Commission** on https://curia.europa.eu (search the case number): hearing date, Advocate General opinion, judgment.
+          2. If the EU-US Data Privacy Framework was **annulled or suspended**: plan the move of the served data to an EU host via the base-URL switch (data-pipeline D11) and update \`PRIVACY.md\` and the help pages.
+          3. Otherwise: note the status in \`docs/plans/NEXT_SESSION.md\` (Recurring checks) and close this issue."
