@@ -1,6 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-3 -6 76 76" width="64" height="64">
   <!-- trailkit-memo quick access icon (ROADMAP R59): note sheet + pencil.
-       #E9DCB8 is the parchment token; the hover PNG replaces it (R58). -->
+       #E9DCB8 is the parchment token; the hover PNG replaces it (R58).
+       The viewBox adds padding so the icon matches the visual size of other
+       Nexus quick access icons. -->
   <path d="M14 7 H40 L50 17 V55 Q50 57 48 57 H14 Q12 57 12 55 V9 Q12 7 14 7 Z"
         fill="#E9DCB8" stroke="#2B2116" stroke-width="3" stroke-linejoin="round"/>
   <path d="M40 7 V17 H50" fill="none" stroke="#2B2116" stroke-width="3" stroke-linejoin="round"/>
