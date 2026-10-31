@@ -27,12 +27,12 @@ Blocked on the user:
   or export `TRAILKIT_GW2_ADDONS_DIR`.
 
 Settled since: R47 trailkit-ui crate (theme + StyleScope, done), R48 git
-hooks (done), R49 update provider `Direct`; naming conventions (R40–R46, AGENTS.md "Naming conventions", `cargo xtask check-names`).
+hooks (done), R49 update provider `Direct`, R50 kebab-case DLL names,
+R51 gold palette, R52 domain `gw2.trailkit.de`; naming conventions (R40–R46, AGENTS.md "Naming conventions", `cargo xtask check-names`).
 
 Open phase 0 work:
 1. `cargo xwin clippy/build` of trailkit-memo once LLVM is installed; deploy;
    in-game test incl. hot reload (does Nexus allow overwriting the loaded DLL?).
-2. Decide the `Direct` update URL/domain (compiled into every DLL).
 3. Quick-access icon for memo (needs icon textures).
 4. Research: GW2 UI + popular Nexus/arcdps addon conventions →
    `.agents/skills/trailkit-ui/references/ux-rules.md` §8.

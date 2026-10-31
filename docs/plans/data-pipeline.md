@@ -169,7 +169,7 @@ See `NEXT_SESSION.md`.
 | D8 | One repo: current files on orphan branch `gh-pages` (force-pushed, no history); archive as monthly GitHub Releases `prices-YYYY-MM`, one asset per day | 2026-10-31 |
 | D9 | The CI bot may push `gh-pages` and create archive releases without per-push approval; changes to the workflow itself still need approval (AGENTS.md rule 1) | 2026-10-31 |
 | D10 | Formats: archive = raw NDJSON.gz + manifest; served files = JSON per data set and language under `/v1/…` + `meta.json` with hashes | 2026-10-31 |
-| D11 | Core uses the GitHub Pages URL until the first public release, then our own domain (B13); `meta.json` can announce a new base URL that old core versions follow | 2026-10-31 |
+| D11 | Core uses the GitHub Pages URL until the first public release, then our own domain (B13; settled as `gw2.trailkit.de`, ROADMAP R52); `meta.json` can announce a new base URL that old core versions follow | 2026-10-31 |
 | D12 | Prices for core: one file with all current prices (~1 MB gz), refreshed daily | 2026-10-31 |
 | D13 | Order: the price archive starts right after the phase 0 toolchain, before trailkit-memo | 2026-10-31 |
 | D14 | Core shows a one-time first-start notice ("game data is loaded from GitHub, USA; your IP address is transmitted") and downloads nothing until the user confirms; same notice in core's help page and the privacy policy | 2026-10-31 |
