@@ -67,6 +67,10 @@
 | R59 | trailkit-memo quick access motif: note sheet with folded corner and lines, pencil across it | 2026-10-31 |
 | R60 | Phase 0 settings: a typed `Settings` struct with defaults (icon shown, hidden outside gameplay) drives behavior; persistence and the settings window come in phase 1, together with the Nexus options tab (R53); rarity tokens (R54) are added when the first addon needs them | 2026-10-31 |
 | R61 | Auto-hide (R56) only suppresses drawing: an open window reappears after the loading screen, the keybind toggles normally outside gameplay, and the Nexus quick access bar is left to Nexus | 2026-10-31 |
+| R62 | Before the repo goes public, every commit's author/committer email is rewritten to the dedicated public address `tobiacodes@gmail.com` and the repo's `user.email` is set to it (the private address must never appear in public history) | 2026-10-31 |
+| R63 | First push: `main` is fast-forwarded to `develop`, both are pushed, then branch protection (R9) is enabled; from then on changes reach `develop`/`main` only via PR | 2026-10-31 |
+| R64 | Phase 0b scope and order: (1) repo public + first push + branch protection, (2) `tools/trailkit-datagen` + archive workflow (daily, catch-up, WvW reset snapshots), (3) monthly C-703/25 P reminder issue. The addon release workflow (R37/R49) moves to the end of phase 1 (first memo release; needs `gw2.trailkit.de`, R52) | 2026-10-31 |
+| R65 | One HTTP client everywhere: **`ureq`** (blocking, `rustls`, no Tokio) for datagen and all addons, so GW2 API code (throttle, retries) can be shared. `reqwest` (most popular, but async/Tokio, also in its blocking mode) is not used in addons; it may be reconsidered for the deferred backend server | 2026-10-31 |
 
 ## Proposed repository layout
 
@@ -95,7 +99,8 @@ trailkit-gw2/
    `trailkit-ui` theme skeleton (dark/light tokens, style guard); research GW2
    UI + popular Nexus/arcdps addon conventions → `trailkit-ui/references/ux-rules.md` §8.
 0b. **Price archive** — minimal `trailkit-datagen` + scheduled workflow:
-   prices, condensed order book, WvW, gem exchange, build id, item-id diff
+   prices, condensed order book, WvW, gem exchange, build id (no item-id
+   diff, D30)
    → monthly GitHub Releases (data-pipeline D4–D17); monthly C-703/25 P
    reminder issue (D18); branch protection (R9).
 1. **trailkit-memo standalone** (no core) — fastest user value; forces the
