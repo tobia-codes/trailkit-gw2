@@ -40,6 +40,12 @@ crate = "nexus_codegen"
 expression = "MIT"
 license-files = []
 
+# Mozilla's CA root list bundled by ureq/rustls: permissive data license
+# (no copyleft). Allowed for this crate only (data-pipeline D37).
+[[licenses.exceptions]]
+crate = "webpki-roots"
+allow = ["CDLA-Permissive-2.0"]
+
 [licenses.private]
 # Our own unpublished crates (publish = false) need no license check.
 ignore = true
