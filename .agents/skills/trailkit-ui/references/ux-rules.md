@@ -1,6 +1,6 @@
-# trailpack UX rules (ImGui overlays inside Guild Wars 2)
+# trailkit UX rules (ImGui overlays inside Guild Wars 2)
 
-Full rule set for building and reviewing trailpack addon UIs. `SKILL.md` holds
+Full rule set for building and reviewing trailkit addon UIs. `SKILL.md` holds
 the principles, tokens and components; this file holds the detailed rules.
 Read it when designing a new window/component or doing a UI review.
 
@@ -13,11 +13,11 @@ context were deliberately left out (see "Not applicable" at the end).
 > Adapted from the rule set of
 > [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)
 > (MIT License, © its authors), filtered and rewritten for in-game ImGui
-> overlays. Sections 1 and 8 are trailpack-specific.
+> overlays. Sections 1 and 8 are trailkit-specific.
 
 Each rule has an id (`area-name`) so reviews can cite it.
 
-## 1. Game overlay (CRITICAL — trailpack-specific)
+## 1. Game overlay (CRITICAL — trailkit-specific)
 
 - `overlay-occlusion` — Cover as little of the game as possible. Default
   window sizes are compact; content-heavy windows (settings, help, editors)
@@ -46,7 +46,7 @@ Each rule has an id (`area-name`) so reviews can cite it.
   windows (no layout, no text formatting).
 - `overlay-click-through` — Purely informational overlays may offer a
   click-through mode so they never block game clicks.
-- `overlay-escape` — Escape closes the focused trailpack window
+- `overlay-escape` — Escape closes the focused trailkit window
   (`GUI_RegisterCloseOnEscape`); it never closes something with unsaved
   changes without asking.
 
@@ -114,7 +114,7 @@ Each rule has an id (`area-name`) so reviews can cite it.
 - `form-grouping` — Related settings are grouped under a section heading;
   advanced options are collapsed by default (progressive disclosure).
 - `form-disabled-why` — Disabled controls say *why* and *how to enable* them
-  (tooltip or `DependencyHint`), e.g. "Requires trailpack-core".
+  (tooltip or `DependencyHint`), e.g. "Requires trailkit-core".
 - `form-read-only` — Read-only values look different from disabled ones.
 - `form-secret` — Secret inputs (API key) are masked with a show/hide toggle
   and never logged.
@@ -172,7 +172,7 @@ Each rule has an id (`area-name`) so reviews can cite it.
 - `state-error-recovery` — Errors state what happened and offer a recovery
   (retry, open settings, help link).
 - `state-stale-data` — Data older than its validity shows its age
-  ("Data from 2026-10-29") — see trailpack-core C8.
+  ("Data from 2026-10-29") — see trailkit-core C8.
 - `data-tables` — Tables have sortable columns with a visible sort
   indicator, aligned numbers, and keep the header visible while scrolling.
 - `data-large-lists` — Lists with many rows (items, achievements) use
@@ -201,5 +201,5 @@ Web and mobile-only guidance from the upstream rule set: touch targets
 44 pt / 48 dp, gestures and haptics, safe areas, mobile-first layout and
 breakpoints, viewport/CSS/HTML/ARIA specifics, web performance (images,
 fonts, bundles, CLS), framework stacks (React, Angular, Vue, …), landing
-pages, font pairing and product palettes (our palette is the trailpack theme),
+pages, font pairing and product palettes (our palette is the trailkit theme),
 GSAP and decorative animation, deep links and browser navigation.

@@ -1,13 +1,13 @@
-# trailpack-memo
+# trailkit-memo
 
 - **Status:** draft — requirements settled (M1–M15)
-- **Crate path:** `addons/trailpack-memo`
+- **Crate path:** `addons/trailkit-memo`
 - **Nexus signature / ID:** TBD
 
 ## Goal
 
 An in-game notes app: a tree of groups/subgroups with markdown notes, reset-
-aware checklists (daily/weekly), and — with trailpack-core — live event
+aware checklists (daily/weekly), and — with trailkit-core — live event
 references with autocompletion and status.
 
 ## Requirements (from user)
@@ -22,12 +22,12 @@ references with autocompletion and status.
 - Cancelling an edit with unsaved changes asks for confirmation.
 - Keybind opens/closes the notes window.
 
-### Events (requires trailpack-core)
+### Events (requires trailkit-core)
 - Typing `/e` in a note opens **autocompletion** of events.
 - Event references show start time and whether the event is running now.
-- Selected/referenced events are visible to trailpack-event (highlighting).
+- Selected/referenced events are visible to trailkit-event (highlighting).
 - Without core: event settings greyed out + hint "more features with
-  trailpack-core"; memo works as a plain markdown notes list.
+  trailkit-core"; memo works as a plain markdown notes list.
 
 ### Import / export / backup
 - Export and import **lists** (notes/groups).
@@ -49,7 +49,7 @@ references with autocompletion and status.
   markdown in a multiline input (with `/e` autocomplete via input callback);
   **view mode** = rendered markdown (headings, lists, bold/italic, links,
   checkboxes clickable, event chips). Renderer uses `pulldown-cmark` → custom
-  ImGui drawing (candidate for `trailpack-ui` markdown component).
+  ImGui drawing (candidate for `trailkit-ui` markdown component).
 - Event reference syntax: see M7.
 - Reset times: daily 00:00 UTC, weekly Monday 07:30 UTC (GW2 standard
   resets). Reset applied on next open / on timer while running, based on

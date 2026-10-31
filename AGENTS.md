@@ -5,7 +5,7 @@ Shared instructions for every coding agent working in this repository
 
 ## Project
 
-`trailpack-gw2` is a monorepo for Guild Wars 2 tooling:
+`trailkit-gw2` is a monorepo for Guild Wars 2 tooling:
 
 - **Raidcore Nexus addons** (the main focus) — DLLs loaded by the
   [Raidcore Nexus](https://raidcore.gg/Nexus) addon loader and published to the
@@ -54,7 +54,7 @@ Planning documents live in [`docs/plans/`](docs/plans/README.md).
    addons) for an existing one. Code moves into a shared crate as soon as a
    **second** place needs it, not speculatively. When you extract, replace
    all copies in the same change. UI components (popover, dialogs, buttons…)
-   always come from `crates/trailpack-ui` once shared, so every addon looks
+   always come from `crates/trailkit-ui` once shared, so every addon looks
    identical.
 8. **Type everything.** Prefer newtypes (`struct NoteId(Uuid)`), enums over
    strings/booleans, `serde`-derived structs over untyped JSON
@@ -96,7 +96,7 @@ Fundamental design decisions are recorded so any agent can pick them up:
 - Addon runtime, threading, inter-addon protocol, i18n, help pages, API key
   handling → `.agents/skills/nexus-addon-dev/SKILL.md`
 - Theme, design tokens, shared components, UX rules →
-  `.agents/skills/trailpack-ui/SKILL.md`
+  `.agents/skills/trailkit-ui/SKILL.md`
 - Per-component decisions → the "Decisions" table in `docs/plans/**`
 
 When a new fundamental decision is made, add it to the matching place above
@@ -114,7 +114,7 @@ Add new skills only under `.agents/skills/`.
 | `rust-best-practices` | Writing/reviewing Rust (Apollo handbook, compact) |
 | `rust-skills` | Detailed Rust rule lookup (265 rules incl. unsafe/FFI, async, API design) |
 | `nexus-addon-dev` | **Project skill:** Nexus API facts, threading/performance, inter-addon protocol, i18n, help pages, API keys |
-| `trailpack-ui` | **Project skill:** design system, themes, shared components, full UX rule set for in-game ImGui overlays (`references/ux-rules.md`) — the only UI/UX authority |
+| `trailkit-ui` | **Project skill:** design system, themes, shared components, full UX rule set for in-game ImGui overlays (`references/ux-rules.md`) — the only UI/UX authority |
 
 Third-party skills keep their upstream `LICENSE` file; see
 [`.agents/skills/README.md`](.agents/skills/README.md) for sources.

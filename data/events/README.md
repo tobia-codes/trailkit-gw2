@@ -3,7 +3,7 @@
 The official Guild Wars 2 API has **no event schedule endpoint**
 (`/v2/events` and `/v1/event_names` return 503). Schedules for world bosses and
 meta events are therefore maintained here by hand and published by the
-backend to trailpack-core.
+backend to trailkit-core.
 
 ## Source
 
@@ -34,8 +34,8 @@ the event data, derivatives under the same license. The generated
 
 One **TOML** file per category (e.g. `world_bosses.toml`, `meta_events.toml`),
 hand-maintained; comments are used for sources and change notes.
-`trailpack-datagen` validates the files (required fields, valid times, unique
-ids) and generates `/v1/events.json` for trailpack-core.
+`trailkit-datagen` validates the files (required fields, valid times, unique
+ids) and generates `/v1/events.json` for trailkit-core.
 
 Per event (`[[event]]` table):
 

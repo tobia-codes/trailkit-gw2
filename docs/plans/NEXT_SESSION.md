@@ -10,12 +10,12 @@ answered.
   - [`ROADMAP.md`](ROADMAP.md) (R1–R8)
   - [`data-pipeline.md`](data-pipeline.md) (D1–D5) — **current**, replaces the server for now
   - [`backend.md`](backend.md) (B1–B21) — deferred target design
-  - [`addons/trailpack-core.md`](addons/trailpack-core.md) (C1–C5)
-  - [`addons/trailpack-memo.md`](addons/trailpack-memo.md) (M1–M6)
-  - [`addons/trailpack-event.md`](addons/trailpack-event.md) (E1–E7)
+  - [`addons/trailkit-core.md`](addons/trailkit-core.md) (C1–C5)
+  - [`addons/trailkit-memo.md`](addons/trailkit-memo.md) (M1–M6)
+  - [`addons/trailkit-event.md`](addons/trailkit-event.md) (E1–E7)
   - [`BACKLOG.md`](BACKLOG.md) (BL1–BL4)
 - Fundamental rules live in `AGENTS.md` (rules 1–10) and the project skills
-  `nexus-addon-dev` and `trailpack-ui`.
+  `nexus-addon-dev` and `trailkit-ui`.
 - Nothing is committed yet (`git init` done, all files untracked). Never push
   without approval.
 - The user converses in German; all repo text stays English.
@@ -39,13 +39,16 @@ Delivery settled: GitHub-only, large files as release assets (D19).
 ## Round 16 (UI skill) settled 2026-10-31
 
 `ui-ux-pro-max` removed; adapted rules in
-`.agents/skills/trailpack-ui/references/ux-rules.md`. Phase 0 to-do: research
+`.agents/skills/trailkit-ui/references/ux-rules.md`. Phase 0 to-do: research
 GW2 UI + popular Nexus/arcdps addon conventions → fill section 8 of that file.
 
 ## Round 17 (roadmap) settled → R8–R13 in `ROADMAP.md`
 
-Open follow-ups (asked): knope for changesets/versioning, branch-name
-enforcement + `hotfix/`; then phase 0.
+R14 (branch-name check) + R15 (hotfix branches) settled. R16: Changesets chosen. R17 xtask version sync, R18 oxlint later. R19 cargo-deny in CI. Round 18 → R20–R26, D25–D26.
+Project renamed trailpack → **trailkit** (R20), domain trailkit.de (R27).
+User to-do: verify "trailkit" in TMview + DPMAregister, (trailkit.de is registered since
+2026-10-31). **Planning complete → next: phase 0.** Local folder renamed by the user to
+`/home/dev/projects/trailkit-gw2` (was `trailpack-gw2`).
 
 ## Environment notes
 

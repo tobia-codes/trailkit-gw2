@@ -1,4 +1,4 @@
-# trailpack-gw2
+# trailkit-gw2
 
 Monorepo for Guild Wars 2 tooling: [Raidcore Nexus](https://raidcore.gg/Nexus)
 addons and a Rust data pipeline (static data files + daily price archive;

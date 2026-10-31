@@ -1,19 +1,19 @@
-# trailpack-event
+# trailkit-event
 
 - **Status:** draft — requirements settled (E1–E15)
-- **Crate path:** `addons/trailpack-event`
+- **Crate path:** `addons/trailkit-event`
 - **Nexus signature / ID:** TBD
 
 ## Goal
 
 An event timeline/table showing when and where events happen (like the GW2
 wiki event timer), with custom events organized in groups, multiple
-configurable tables, and highlighting of events referenced in trailpack-memo.
+configurable tables, and highlighting of events referenced in trailkit-memo.
 
 ## Requirements (from user)
 
 - Event table/timeline: **when, where, which** event.
-- Highlights events that the user referenced/selected in **trailpack-memo**
+- Highlights events that the user referenced/selected in **trailkit-memo**
   (toggleable).
 - **Custom events**: recurring daily or weekly, one or multiple times per
   day/week. Handling of time conflicts in the timeline is an open question.
@@ -27,7 +27,7 @@ configurable tables, and highlighting of events referenced in trailpack-memo.
 
 ## Technical design (proposal)
 
-- Official schedules come from trailpack-core (curated dataset, see data-pipeline / backend
+- Official schedules come from trailkit-core (curated dataset, see data-pipeline / backend
   plan). Without core: only custom events (to confirm).
 - Table = filter config `{ sources, groups, categories, time window, layout }`
   rendered as horizontal timeline rows per category (wiki style) with a "now"
@@ -50,8 +50,8 @@ configurable tables, and highlighting of events referenced in trailpack-memo.
 |---|----------|------|
 | E1 | Each table is its own freely placeable window, managed in settings | 2026-10-31 |
 | E2 | Overlapping events in one category are stacked as extra sub-rows | 2026-10-31 |
-| E3 | trailpack-event **requires** trailpack-core; without core it shows a guided install hint instead of the timeline | 2026-10-31 |
-| E4 | Custom event **data owned by trailpack-core** (single source of truth, also visible in memo); created/edited in trailpack-event via the core protocol | 2026-10-31 |
+| E3 | trailkit-event **requires** trailkit-core; without core it shows a guided install hint instead of the timeline | 2026-10-31 |
+| E4 | Custom event **data owned by trailkit-core** (single source of truth, also visible in memo); created/edited in trailkit-event via the core protocol | 2026-10-31 |
 | E5 | Custom events store the creator's IANA time zone + weekday + time; displayed in each viewer's local time (DST-correct) | 2026-10-31 |
 | E6 | Sharing custom events in v1 via export/import (file + copyable text code); backend sync in backlog | 2026-10-31 |
 | E7 | Time zone is auto-detected from Windows (`iana-time-zone`), shown as a hint in the form ("Times in Europe/Berlin") with a small "change" link for exceptions | 2026-10-31 |
