@@ -10,8 +10,11 @@ use nexus::imgui::{ColorStackToken, StyleColor, StyleStackToken, StyleVar, Ui};
 
 use crate::{color::Color, theme::Theme};
 
+/// Reads one color token from a theme.
+type ColorToken = fn(&Theme) -> Color;
+
 /// Maps every themed ImGui color slot to the theme token it uses.
-const COLOR_SLOTS: [(StyleColor, fn(&Theme) -> Color); 44] = [
+const COLOR_SLOTS: [(StyleColor, ColorToken); 44] = [
     (StyleColor::Text, |theme| theme.text.primary),
     (StyleColor::TextDisabled, |theme| theme.text.disabled),
     (StyleColor::WindowBg, |theme| theme.surface.window),
