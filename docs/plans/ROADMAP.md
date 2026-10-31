@@ -1,6 +1,6 @@
 # Roadmap (master plan)
 
-- **Status:** draft — phase order settled (R8), details per plan still being grilled.
+- **Status:** phase 0 (foundation) in progress since 2026-10-31.
 
 ## Settled decisions
 
@@ -33,6 +33,18 @@
 | R26 | Contributions: issues welcome; external PRs only after the base structure exists and after agreement in an issue; short `CONTRIBUTING.md` derived from `AGENTS.md` | 2026-10-31 |
 | R27 | Domain: **trailkit.de** at INWX, **registered 2026-10-31** (DENIC status `connect`, INWX nameservers) to secure the name; DNS records are only added when core needs them; supersedes the timing in B13 | 2026-10-31 |
 | R15 | `hotfix/<name>` branches for urgent fixes of released versions: cut from `main`, PR into `main` (all CI checks), then merged back into `develop` | 2026-10-31 |
+| R28 | Rust via **rustup** (user-local), toolchain pinned **exactly** in `rust-toolchain.toml` (1.99.1, components rustfmt + clippy, target `x86_64-pc-windows-msvc`); edition 2024; bumps only via dedicated `chore/` branches | 2026-10-31 |
+| R29 | Until the GitHub remote exists (0b): `develop` exists locally, work happens on `chore/`/`feature/` branches cut from it and is merged locally **after user approval**; the agent may commit on local work branches on its own (see AGENTS.md rule 1) | 2026-10-31 |
+| R30 | Cross-compile with **cargo-xwin**; the user accepted the Microsoft CRT/SDK license (`XWIN_ACCEPT_LICENSE=1`, cache `~/.cache/cargo-xwin`). Needs LLVM in WSL (`clang`, `lld`, `llvm` from apt) because `arcdps-imgui-sys` compiles Dear ImGui (C++) with `clang-cl` | 2026-10-31 |
+| R31 | `nexus-rs` is a git dependency pinned to a fixed commit (`rev`), declared once in `[workspace.dependencies]`; bumping re-verifies `nexus-addon-dev` §1 | 2026-10-31 |
+| R32 | Deploy via `cargo xtask deploy <addon> [--release]` (Rust, consistent with R17): builds with cargo-xwin, copies the DLL (tmp + rename) into the GW2 addons folder taken from `TRAILKIT_GW2_ADDONS_DIR`, else `gw2_addons_dir` in git-ignored `xtask.local.toml`; never hard-coded | 2026-10-31 |
+| R33 | Workspace lints: `missing_docs`, `clippy::missing_docs_in_private_items`, `clippy::undocumented_unsafe_blocks` + `unsafe_op_in_unsafe_fn = deny`, `clippy::{unwrap_used, expect_used, dbg_macro, todo} = warn` (unwrap/expect allowed in tests); **no** blanket `clippy::pedantic` — single pedantic lints may be enabled later deliberately | 2026-10-31 |
+| R34 | CI workflow written in phase 0, active from the first push (0b): Windows job (fmt, clippy `-D warnings`, test, release DLL build, version-sync check) + Ubuntu job (cargo-deny, branch-name check R14) | 2026-10-31 |
+| R35 | JS side of the repo uses **pnpm**, pinned via `packageManager` in the root `package.json`; `pnpm-workspace.yaml` covers `addons/*` (Changesets placeholders) and later `apps/*` | 2026-10-31 |
+| R36 | Node via **fnm**, version pinned in `.node-version` (24, LTS line); CI reads the same file | 2026-10-31 |
+| R37 | Changesets structure (root `package.json`, `.changeset/`, addon placeholder `package.json`) exists from phase 0; the release workflow (version PR, tags, GitHub releases) comes with the remote in 0b | 2026-10-31 |
+| R38 | The phase 0 "hello" addon is the skeleton of `addons/trailkit-memo` (no throwaway addon) | 2026-10-31 |
+| R39 | Addon crates are `cdylib` + `rlib`; Nexus/ImGui dependencies are `cfg(windows)`-only so platform-independent modules (R23) are unit-tested on the Linux host with plain `cargo test`; Windows-only code is linted with `cargo xwin clippy` locally and natively in CI | 2026-10-31 |
 
 ## Proposed repository layout
 

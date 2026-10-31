@@ -137,8 +137,19 @@ Project contract (to be finalized in `docs/plans/addons/trailkit-core.md`):
 
 ## 7. Build & deploy (dev)
 
-- See `docs/plans/ROADMAP.md` for the chosen toolchain (WSL cross-compile vs.
-  native Windows is an open decision there).
+- WSL cross-compile with `cargo-xwin` (ROADMAP R7, R28–R32); needs LLVM
+  (`clang`, `lld`, `llvm`) because `arcdps-imgui-sys` builds Dear ImGui with
+  `clang-cl`.
+- Build + copy into the game: `cargo xtask deploy <addon> [--release]`
+  (folder from `TRAILKIT_GW2_ADDONS_DIR` or `xtask.local.toml`).
+- Crate layout: `crate-type = ["cdylib", "rlib"]`, `nexus` as a
+  `[target.'cfg(windows)'.dependencies]` entry, Nexus glue in a
+  `#[cfg(windows)] mod addon;` → logic modules are tested on Linux with
+  `cargo test`, Windows code linted with `cargo xwin clippy --target
+  x86_64-pc-windows-msvc` (R39).
+- Keybinds that must be unbound by default are registered with the string
+  `"(null)"`. Keybind display names are set via `set_translation(<keybind id>,
+  <lang>, <text>)`.
 
 ## Persisted user data (ROADMAP R22)
 

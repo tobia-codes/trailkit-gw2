@@ -1,61 +1,54 @@
 # Next session — handoff
 
-Last updated: 2026-10-31. Delete or rewrite this file once the open round is
-answered.
+Last updated: 2026-10-31.
 
 ## Where we are
 
-- Grilling (`grill-me` skill) is in progress. Rounds 1–11 are settled and
-  recorded in the "Decisions" tables of:
-  - [`ROADMAP.md`](ROADMAP.md) (R1–R8)
-  - [`data-pipeline.md`](data-pipeline.md) (D1–D5) — **current**, replaces the server for now
-  - [`backend.md`](backend.md) (B1–B21) — deferred target design
-  - [`addons/trailkit-core.md`](addons/trailkit-core.md) (C1–C5)
-  - [`addons/trailkit-memo.md`](addons/trailkit-memo.md) (M1–M6)
-  - [`addons/trailkit-event.md`](addons/trailkit-event.md) (E1–E7)
-  - [`BACKLOG.md`](BACKLOG.md) (BL1–BL4)
-- Fundamental rules live in `AGENTS.md` (rules 1–10) and the project skills
-  `nexus-addon-dev` and `trailkit-ui`.
-- Nothing is committed yet (`git init` done, all files untracked). Never push
-  without approval.
-- The user converses in German; all repo text stays English.
+- Planning complete (ROADMAP R1–R39, data-pipeline D1–D26, core C1–C13,
+  memo M1–M15, event E1–E15). **Phase 0 (foundation) in progress** on branch
+  `chore/phase-0-foundation` (cut from `develop`; merge after user approval, R29).
+- Phase 0 grill round settled → R28–R39 in `ROADMAP.md`.
+- Never push without approval. The user converses in German; repo text English.
 
-## Design change 2026-10-31: no backend server for now
+## Phase 0 status
 
-User decided: no Rust server yet; static data files + daily price archive
-instead, free hosting. Recorded as D1–D5 in
-[`data-pipeline.md`](data-pipeline.md); `backend.md` is marked deferred.
+Done:
+- rustup + pinned toolchain 1.99.1, cargo-xwin, cargo-deny installed.
+- Workspace (`Cargo.toml`, lints, `clippy.toml`, `deny.toml`), `xtask`
+  (`deploy`, `sync-versions`), `addons/trailkit-memo` skeleton, Changesets
+  structure (pnpm), CI workflow (`.github/workflows/ci.yml`, inactive until 0b).
+- Host checks green: fmt, clippy, tests, `cargo deny check`.
 
-## Data pipeline: rounds 12a/12b settled (D1–D18 in `data-pipeline.md`)
+Blocked on the user:
+- `sudo apt install clang lld llvm` (needed by `arcdps-imgui-sys` → clang-cl).
+- Add `. "$HOME/.cargo/env"` to `~/.bashrc` (rustup was installed with
+  `--no-modify-path`).
+- Create `xtask.local.toml` (`gw2_addons_dir = "/mnt/c/Guild Wars 2/addons"`)
+  or export `TRAILKIT_GW2_ADDONS_DIR`.
 
-User to-do: create the Google Alert for C-703/25 (D18).
+Open phase 0 work:
+1. `cargo xwin clippy/build` of trailkit-memo once LLVM is installed; deploy;
+   in-game test incl. hot reload (does Nexus allow overwriting the loaded DLL?).
+2. Quick-access icon for memo (needs icon textures).
+3. `trailkit-ui` theme skeleton (dark/light tokens, style scope guard) —
+   becomes a crate only when needed by a second addon? → check AGENTS rule 7
+   vs. ROADMAP phase 0 wording; may need a grill question.
+4. Research: GW2 UI + popular Nexus/arcdps addon conventions →
+   `.agents/skills/trailkit-ui/references/ux-rules.md` §8.
+5. Research: Nexus update provider in a monorepo (ROADMAP "Open").
+6. Local git hook for branch names (R14).
 
-Delivery settled: GitHub-only, large files as release assets (D19).
+## User to-dos
 
-## Round 12 (memo) settled → M7–M15, overlay idea → BL6
+- Verify "trailkit" in TMview + DPMAregister.
+- Google Alert for C-703/25 (D18).
 
-## Round 13 (core) settled → C6–C13 (C8 form of the outdated message to confirm)
+## Recurring checks (2026-10-31)
 
-## Round 16 (UI skill) settled 2026-10-31
-
-`ui-ux-pro-max` removed; adapted rules in
-`.agents/skills/trailkit-ui/references/ux-rules.md`. Phase 0 to-do: research
-GW2 UI + popular Nexus/arcdps addon conventions → fill section 8 of that file.
-
-## Round 17 (roadmap) settled → R8–R13 in `ROADMAP.md`
-
-R14 (branch-name check) + R15 (hotfix branches) settled. R16: Changesets chosen. R17 xtask version sync, R18 oxlint later. R19 cargo-deny in CI. Round 18 → R20–R26, D25–D26.
-Project renamed trailpack → **trailkit** (R20), domain trailkit.de (R27).
-User to-do: verify "trailkit" in TMview + DPMAregister, (trailkit.de is registered since
-2026-10-31). **Planning complete → next: phase 0.** Local folder renamed by the user to
-`/home/dev/projects/trailkit-gw2` (was `trailpack-gw2`).
+- GW2 wiki: still behind Cognito login → Wayback workaround stays.
+- C-703/25 P: pending, no hearing date; DPF in force.
 
 ## Environment notes
 
-- Bash tool works again (verified 2026-10-31).
-- Rust is not installed in WSL yet.
 - GW2 addons folder: `C:\Guild Wars 2\addons` (WSL: `/mnt/c/Guild Wars 2/addons`).
-  The deploy script reads it from a git-ignored local config / env var, never
-  hard-coded.
-- GW2 wiki was behind a login on 2026-10-31 → check again (see
-  `data/events/README.md`).
+- Node 24 via fnm, pnpm 11.17.0 already installed.
