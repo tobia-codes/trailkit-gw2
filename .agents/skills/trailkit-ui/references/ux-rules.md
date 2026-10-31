@@ -193,8 +193,7 @@ Sources: source code + screenshots of popular open-source Nexus addons
 (TaimiHUD, Hoard & Seek, Event Timers, kp_sync), the Nexus source
 (v2026.10.25), the arcdps readme, community rarity color tables
 (discretize-ui, gw2stacks, gw2inventory; the GW2 wiki is login-only).
-Rules marked **(pending Q19–Q22)** await the user's decision — see
-`docs/plans/NEXT_SESSION.md`.
+Rules G2–G5 were settled as ROADMAP R53–R56.
 
 ### 8.1 Observed conventions (facts)
 
@@ -225,14 +224,14 @@ Rules marked **(pending Q19–Q22)** await the user's decision — see
 
 - G1 Every window: name in the title bar, close `X`, Escape closes, position
   and size remembered (already §4).
-- G2 Nexus options tab content **(pending Q19)** — proposal: header (name +
-  version) + "Open settings" + "Open help" buttons only.
+- G2 Nexus options tab: header (name + version) + "Open settings" + "Open
+  help" buttons only, no full settings (R53).
 - G3 Rarity colors as `rarity.*` theme tokens, Legendary `#974EFF` in the dark
-  theme, contrast ≥ 3:1 **(pending Q20)**.
+  theme, contrast ≥ 3:1 (R54).
 - G4 Quick access icon in Nexus style, generated from SVG sources in the
-  repo; "show quick access icon" setting, default on **(pending Q21)**.
+  repo; "show quick access icon" setting, default on (R55).
 - G5 All trailkit windows auto-hide while `IsGameplay == false`; per-addon
-  setting "also show outside gameplay", default off **(pending Q22)**.
+  setting "also show outside gameplay", default off (R56).
 - G6 Default keybinds stay unbound (memo M14) to avoid clashes with the game
   and other addons; help pages explain where to bind them.
 

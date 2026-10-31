@@ -35,11 +35,18 @@ Re-verify when bumping `NEXUS_API_VERSION` or `nexus-rs`.
   Font changes rebuild the atlas — never do it per frame.
 - `NexusLinkData_t.IsGameplay` / `IsMoving` / `IsCameraMoving` tell you if the
   player is in gameplay (hide/skip work during loading screens & cutscenes).
+  **Project rule (R56/R61):** windows are not drawn while `IsGameplay` is
+  false (unless the addon's "also show outside gameplay" setting is on); the
+  open state is kept. Cache the `NexusLink` pointer in `load`, read the flag
+  after the cheap `VISIBLE` check, drop the pointer in `unload`.
 - Options: `RT_OptionsRender` draws into the Nexus addon options tab.
-  **Project rule:** only render a single "Open settings" button there; real
-  settings live in the addon's own settings window.
+  **Project rule (ROADMAP R53):** only a header (addon name + version) and
+  the buttons "Open settings" and "Open help"; real settings live in the
+  addon's own settings window.
 - Quick access: `QuickAccess_Add(identifier, texture, hoverTexture, keybind,
-  tooltip)` adds an icon to the Nexus bar bound to a keybind.
+  tooltip)` adds an icon to the Nexus bar bound to a keybind (a click
+  triggers the keybind). Textures come from committed PNGs embedded with
+  `include_bytes!` and loaded via `Textures_LoadFromMemory` (R57).
 - Keybinds: `InputBinds_RegisterWithString` — the user can rebind in Nexus.
 - Close on Escape: `GUI_RegisterCloseOnEscape(windowName, &visible)`.
 - Paths: `Paths_GetAddonDirectory("trailkit/<addon>")` for settings and
