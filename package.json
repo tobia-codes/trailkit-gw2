@@ -1,0 +1,16 @@
+{
+  "name": "trailkit-gw2",
+  "private": true,
+  "description": "JS tooling root: Changesets for versioning (ROADMAP R16). Rust lives in Cargo.toml.",
+  "packageManager": "pnpm@11.17.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "changeset": "changeset",
+    "version": "changeset version && cargo xtask sync-versions"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^3.0.3"
+  }
+}

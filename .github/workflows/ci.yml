@@ -1,0 +1,66 @@
+# CI (ROADMAP R10, R14, R19, R34). Required on PRs to `main` (R9).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  windows:
+    name: Windows build, lint & test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      # rustup is preinstalled; rust-toolchain.toml selects the pinned toolchain.
+      - name: Install pinned toolchain
+        run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - name: Format
+        run: cargo fmt --all -- --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Test
+        run: cargo test --workspace
+      - name: Naming conventions (R46)
+        run: cargo xtask check-names
+      - name: Version sync check (R16/R17)
+        run: cargo xtask sync-versions --check
+      - name: Icon PNGs up to date (R57)
+        run: cargo xtask build-icons --check
+      - name: Build addons (release)
+        run: cargo build --workspace --release --exclude xtask
+      - uses: actions/upload-artifact@v4
+        with:
+          name: addons-dll
+          path: target/release/*.dll
+          if-no-files-found: error
+
+  deny:
+    name: cargo-deny
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: EmbarkStudios/cargo-deny-action@v2
+
+  branch-name:
+    name: Branch name (R14)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check branch name (shared with the local pre-push hook)
+        env:
+          HEAD_BRANCH: ${{ github.head_ref }}
+          BASE_BRANCH: ${{ github.base_ref }}
+        run: cargo xtask check-branch --head "$HEAD_BRANCH" --base "$BASE_BRANCH"

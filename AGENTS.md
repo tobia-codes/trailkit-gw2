@@ -21,7 +21,11 @@ Planning documents live in [`docs/plans/`](docs/plans/README.md).
 1. **Never push without explicit approval.** Do not run `git push` (or any
    command that publishes commits, tags or releases to a remote) unless the
    user has approved that specific push in the current conversation. Approval
-   for one push does not carry over to the next. Commit only when asked.
+   for one push does not carry over to the next. Commit only when asked —
+   *except* on local work branches (`feature/`, `chore/`, `bugfix/`,
+   `hotfix/`), where agents may commit logical steps on their own
+   (Conventional Commits). Merging into `develop`/`main` needs approval
+   (ROADMAP R29).
    *Exception:* the scheduled data-pipeline CI job may push the `gh-pages`
    branch and create price-archive releases on its own
    (`docs/plans/data-pipeline.md` D9); changing that workflow still needs
@@ -81,6 +85,35 @@ Planning documents live in [`docs/plans/`](docs/plans/README.md).
   the start of every phase — check the status of CJEU appeal **C-703/25 P
   (Latombe v Commission)**. If the framework is annulled or suspended, tell
   the user immediately and plan the move to an EU host (D11 base-URL switch).
+
+## Naming conventions
+
+Binding for every language and every file (ROADMAP R40–R46). Checked by the
+compiler/clippy (Rust) and `cargo xtask check-names` (paths, CI).
+
+**Readable over short.** Names must be understandable by any developer without
+context: prefer a long, descriptive name (`package_json_version`,
+`render_main_window`) over abbreviations (`pkg_ver`, `rmw`). Only widely known
+abbreviations are allowed (`id`, `url`, `api`, `http`, `json`, `ui`, `dll`,
+`gw2`). No single-letter names except trivial index loops. No catch-all names
+(`Manager`, `Helper`, `Utils`, `Misc`, `Data`, `Info`).
+
+| What | Convention | Example |
+|------|-----------|---------|
+| Rust types, traits, enum variants | `UpperCamelCase`, acronyms as words | `NoteTree`, `ApiKey`, `HttpClient` |
+| Rust functions, methods, variables, modules | `snake_case` | `load_notes`, `mod sync_versions` |
+| Rust constants, statics | `SCREAMING_SNAKE_CASE` | `KEYBIND_TOGGLE` |
+| Rust source files | `snake_case.rs`; module dirs as `foo.rs` + `foo/` (no `mod.rs`, lint `clippy::mod_module_files`) | `src/note_tree.rs` |
+| Crates, packages, addon directories | `kebab-case`, prefix `trailkit-` | `trailkit-memo`, `trailkit-ui` |
+| All other directories and files | `kebab-case`, lowercase extensions | `data-pipeline.md`, `plan-template.md` |
+| Fixed upper-case meta files | only these: `README.md`, `AGENTS.md`, `CLAUDE.md`, `LICENSE`, `CHANGELOG.md`, `CONTRIBUTING.md`, `PRIVACY.md`, `ROADMAP.md`, `BACKLOG.md`, `NEXT_SESSION.md`, `SKILL.md` | |
+| Tool-mandated files | as the tool requires | `Cargo.toml`, `package.json` |
+| Data identifiers (ids, slugs, JSON/TOML keys, settings) | `snake_case`; files named after a data id keep it | `world_bosses`, `schema_version`, `world_bosses.toml` |
+| Nexus runtime identifiers (global namespace shared with all addons) | `trailkit.<addon>.<kind>.<name>`, `snake_case` segments, `<kind>` ∈ `keybind`, `texture`, `shortcut`, `event`, `datalink`, `localization`; cross-addon: `trailkit.shared.…`; always typed constants, never inline | `trailkit.memo.keybind.toggle`, `trailkit.core.event.data_updated` |
+| TypeScript/React (later) | files `kebab-case` (also components); components/types `PascalCase`, hooks `useXyz`, else `camelCase` | `note-tree.tsx` → `NoteTree` |
+| Git branches | `feature/`, `chore/`, `bugfix/`, `hotfix/` + `kebab-case` (R9, R14) | `feature/memo-tree` |
+
+Vendored third-party skills keep their upstream names.
 
 ## Development environment
 

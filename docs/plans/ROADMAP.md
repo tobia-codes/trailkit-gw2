@@ -1,6 +1,6 @@
 # Roadmap (master plan)
 
-- **Status:** draft — phase order settled (R8), details per plan still being grilled.
+- **Status:** phase 0 (foundation) in progress since 2026-10-31.
 
 ## Settled decisions
 
@@ -33,6 +33,40 @@
 | R26 | Contributions: issues welcome; external PRs only after the base structure exists and after agreement in an issue; short `CONTRIBUTING.md` derived from `AGENTS.md` | 2026-10-31 |
 | R27 | Domain: **trailkit.de** at INWX, **registered 2026-10-31** (DENIC status `connect`, INWX nameservers) to secure the name; DNS records are only added when core needs them; supersedes the timing in B13 | 2026-10-31 |
 | R15 | `hotfix/<name>` branches for urgent fixes of released versions: cut from `main`, PR into `main` (all CI checks), then merged back into `develop` | 2026-10-31 |
+| R28 | Rust via **rustup** (user-local), toolchain pinned **exactly** in `rust-toolchain.toml` (1.99.1, components rustfmt + clippy, target `x86_64-pc-windows-msvc`); edition 2024; bumps only via dedicated `chore/` branches | 2026-10-31 |
+| R29 | Until the GitHub remote exists (0b): `develop` exists locally, work happens on `chore/`/`feature/` branches cut from it and is merged locally **after user approval**; the agent may commit on local work branches on its own (see AGENTS.md rule 1) | 2026-10-31 |
+| R30 | Cross-compile with **cargo-xwin**; the user accepted the Microsoft CRT/SDK license (`XWIN_ACCEPT_LICENSE=1`, cache `~/.cache/cargo-xwin`). Needs LLVM in WSL (`clang`, `lld`, `llvm` from apt) because `arcdps-imgui-sys` compiles Dear ImGui (C++) with `clang-cl` | 2026-10-31 |
+| R31 | `nexus-rs` is a git dependency pinned to a fixed commit (`rev`), declared once in `[workspace.dependencies]`; bumping re-verifies `nexus-addon-dev` §1 | 2026-10-31 |
+| R32 | Deploy via `cargo xtask deploy <addon> [--release]` (Rust, consistent with R17): builds with cargo-xwin, copies the DLL (tmp + rename) into the GW2 addons folder taken from `TRAILKIT_GW2_ADDONS_DIR`, else `gw2_addons_dir` in git-ignored `xtask.local.toml`; never hard-coded | 2026-10-31 |
+| R33 | Workspace lints: `missing_docs`, `clippy::missing_docs_in_private_items`, `clippy::undocumented_unsafe_blocks` + `unsafe_op_in_unsafe_fn = deny`, `clippy::{unwrap_used, expect_used, dbg_macro, todo} = warn` (unwrap/expect allowed in tests); **no** blanket `clippy::pedantic` — single pedantic lints may be enabled later deliberately | 2026-10-31 |
+| R34 | CI workflow written in phase 0, active from the first push (0b): Windows job (fmt, clippy `-D warnings`, test, release DLL build, version-sync check) + Ubuntu job (cargo-deny, branch-name check R14) | 2026-10-31 |
+| R35 | JS side of the repo uses **pnpm**, pinned via `packageManager` in the root `package.json`; `pnpm-workspace.yaml` covers `addons/*` (Changesets placeholders) and later `apps/*` | 2026-10-31 |
+| R36 | Node via **fnm**, version pinned in `.node-version` (24, LTS line); CI reads the same file | 2026-10-31 |
+| R37 | Changesets structure (root `package.json`, `.changeset/`, addon placeholder `package.json`) exists from phase 0; the release workflow (version PR, tags, GitHub releases) comes with the remote in 0b | 2026-10-31 |
+| R38 | The phase 0 "hello" addon is the skeleton of `addons/trailkit-memo` (no throwaway addon) | 2026-10-31 |
+| R39 | Addon crates are `cdylib` + `rlib`; Nexus/ImGui dependencies are `cfg(windows)`-only so platform-independent modules (R23) are unit-tested on the Linux host with plain `cargo test`; Windows-only code is linted with `cargo xwin clippy` locally and natively in CI | 2026-10-31 |
+| R40 | Naming conventions live in **AGENTS.md** ("Naming conventions", always in context for every agent); the README carries a short summary + link (later also `CONTRIBUTING.md`) | 2026-10-31 |
+| R41 | Rust naming strictly per the Rust API Guidelines (types `UpperCamelCase`, acronyms as words; functions/modules `snake_case`; constants `SCREAMING_SNAKE_CASE`); no catch-all names; modules as `foo.rs` + `foo/` (lint `clippy::mod_module_files`). **Readable over short:** descriptive names instead of abbreviations, only widely known abbreviations (`id`, `url`, `api`, `http`, `json`, `ui`, …) | 2026-10-31 |
+| R42 | Directories and non-Rust files `kebab-case` with lowercase extensions; exceptions: Rust sources (`snake_case`), a fixed list of upper-case meta files, tool-mandated names; crates/addons prefixed `trailkit-`. `docs/plans/_TEMPLATE.md` renamed to `plan-template.md` | 2026-10-31 |
+| R43 | Data identifiers (ids, slugs, JSON/TOML keys, settings) `snake_case`; files named after a data id keep it (`world_bosses.toml`) | 2026-10-31 |
+| R44 | Nexus runtime identifiers: `trailkit.<addon>.<kind>.<name>` (`snake_case` segments; kinds `keybind`, `texture`, `shortcut`, `event`, `datalink`, `localization`; cross-addon `trailkit.shared.…`), always typed constants | 2026-10-31 |
+| R45 | TypeScript/React (later): `kebab-case` file names incl. components (case-insensitive file systems); identifiers per TS convention (`PascalCase` components/types, `useXyz` hooks, `camelCase` otherwise) | 2026-10-31 |
+| R46 | Path names enforced by `cargo xtask check-names` (all tracked + untracked-not-ignored paths, vendored skills exempt) in CI and later in the local git hook | 2026-10-31 |
+| R47 | `crates/trailkit-ui` exists from phase 0 with **only** theme tokens (`Theme::DARK` default, `Theme::LIGHT`, WCAG contrast test) and the `StyleScope` RAII guard; components move in only on real reuse (rule 7) | 2026-10-31 |
+| R48 | Local git hooks versioned in `.githooks/`, enabled via `cargo xtask install-hooks` (`core.hooksPath`): pre-commit = `cargo fmt --check` + `check-names`; pre-push = `check-branch` + clippy + tests. CI uses the same `cargo xtask check-branch` | 2026-10-31 |
+| R49 | Addon updates use Nexus provider **`Direct`**: a fixed URL per addon serving the latest DLL + `<url>.md5`, published by the release workflow (0b) to GitHub Pages. Reason (Nexus source, v2026.10.25): the `GitHub` provider parses release tags as `v?X.Y.Z` (our `<addon>@x.y.z` tags are skipped) and takes the first `.dll` of the highest release across the whole repo → unusable in a monorepo; `Raidcore` provider is unimplemented. No pre-release channel (betas ship as 0.x). Exact URL/domain: see next decision | 2026-10-31 |
+| R50 | Shipped/deployed DLLs are named after the `kebab-case` crate (`trailkit-memo.dll`); `xtask deploy` and the release workflow rename cargo's `trailkit_memo.dll` | 2026-10-31 |
+| R51 | Theme palette: anthracite surfaces + **GW2-like gold accent** (dark `#D9A441` with dark text, light `#8C5E0A` with white text), green/yellow/red/blue status colors; all text pairs ≥ 4.5:1 (unit-tested); fine-tuning after the first in-game test. Values live in `crates/trailkit-ui/src/theme.rs` | 2026-10-31 |
+| R52 | Domain of the `trailkit-gw2` GitHub Pages site: **`gw2.trailkit.de`** (one subdomain per repo/product line, since Pages allows one custom domain per repo; future `trailkit-<name>` repos get `<name>.trailkit.de`; apex `trailkit.de` stays free for a website). Addon update link (R49): `https://gw2.trailkit.de/addons/<addon>/<addon>.dll` + `.md5`; the served data files move there at the first public release (D11). INWX gets the CNAME `gw2` → `tobia-codes.github.io` at the first addon release (supersedes R27 timing). Addons switch from `UpdateProvider::None` to `Direct` with this link in the release that first publishes there. **GDPR:** Nexus update checks transmit the player's IP address to GitHub Pages (USA, DPF) without an in-addon consent step → must be covered in `PRIVACY.md` and the help pages before the first release | 2026-10-31 |
+| R53 | Nexus options tab (ux-rules G2): **no full settings there** — only a header (addon name + version) and the buttons "Open settings" and "Open help". Avoids a duplicate settings UI; search and navigation live in the addon's own settings window | 2026-10-31 |
+| R54 | Item rarity colors as `rarity.junk` … `rarity.legendary` theme tokens in `trailkit-ui` (G3): light theme = standard GW2 values, dark theme = standard values except Legendary `#974EFF`; contrast requirement relaxed to ≥ 3:1 for these game-identity colors | 2026-10-31 |
+| R55 | Quick access icons (G4): Nexus style (64×64 RGBA, parchment fill, dark outline, lighter `_hover` variant), generated by a script from SVG sources in the repo (MIT, reproducible, no third-party art); every addon has a "show quick access icon" setting, default on | 2026-10-31 |
+| R56 | Gameplay auto-hide (G5): all trailkit windows hide while `IsGameplay == false` (loading screens, cutscenes, character select); per-addon setting "also show outside gameplay", default off; further hide rules (combat, PvP, …) are decided per addon when needed | 2026-10-31 |
+| R57 | Icon pipeline (R55): `cargo xtask build-icons` renders every `addons/<addon>/assets/icons/*.svg` with `resvg` to 64×64 PNGs; the PNGs are **committed** and CI verifies them with `build-icons --check`; addons embed them via `include_bytes!` + `load_texture_from_memory` (no extra files in the addons folder) | 2026-10-31 |
+| R58 | Hover variant is derived, not hand-drawn: xtask replaces the parchment fill token in the SVG with a lighter hover fill and renders `<name>-hover.png`; one SVG per icon | 2026-10-31 |
+| R59 | trailkit-memo quick access motif: note sheet with folded corner and lines, pencil across it | 2026-10-31 |
+| R60 | Phase 0 settings: a typed `Settings` struct with defaults (icon shown, hidden outside gameplay) drives behavior; persistence and the settings window come in phase 1, together with the Nexus options tab (R53); rarity tokens (R54) are added when the first addon needs them | 2026-10-31 |
+| R61 | Auto-hide (R56) only suppresses drawing: an open window reappears after the loading screen, the keybind toggles normally outside gameplay, and the Nexus quick access bar is left to Nexus | 2026-10-31 |
 
 ## Proposed repository layout
 
@@ -80,8 +114,7 @@ trailkit-gw2/
 
 ## Open
 
-- Nexus update provider in a monorepo with several addons (GitHub provider
-  may only look at the repo's *latest* release) — research in phase 0.
+- ~~Nexus update provider in a monorepo~~ → settled in R49.
 
 ## Plans
 
