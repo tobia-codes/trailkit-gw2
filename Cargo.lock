@@ -379,6 +379,14 @@ version = "0.0.0"
 dependencies = [
  "log",
  "nexus",
+ "trailkit-ui",
+]
+
+[[package]]
+name = "trailkit-ui"
+version = "0.0.0"
+dependencies = [
+ "nexus",
 ]
 
 [[package]]

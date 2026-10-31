@@ -56,14 +56,9 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - name: Check branch prefix
+      - uses: actions/checkout@v5
+      - name: Check branch name (shared with the local pre-push hook)
         env:
-          HEAD: ${{ github.head_ref }}
-          BASE: ${{ github.base_ref }}
-        run: |
-          case "$HEAD" in
-            feature/*|chore/*|bugfix/*|hotfix/*) exit 0 ;;
-            develop) [ "$BASE" = "main" ] && exit 0 ;;
-          esac
-          echo "::error::Branch '$HEAD' → '$BASE' is not allowed. Use feature/, chore/, bugfix/ or hotfix/ (or develop → main for releases)."
-          exit 1
+          HEAD_BRANCH: ${{ github.head_ref }}
+          BASE_BRANCH: ${{ github.base_ref }}
+        run: cargo xtask check-branch --head "$HEAD_BRANCH" --base "$BASE_BRANCH"

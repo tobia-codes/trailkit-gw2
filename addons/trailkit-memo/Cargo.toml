@@ -14,6 +14,9 @@ publish = false
 # Nexus addons are Windows DLLs; `rlib` lets `cargo test` run the platform-independent logic on the host.
 crate-type = ["cdylib", "rlib"]
 
+[dependencies]
+trailkit-ui.workspace = true
+
 # The Nexus bindings only build for Windows; the platform-independent modules stay testable on Linux.
 [target.'cfg(windows)'.dependencies]
 nexus.workspace = true

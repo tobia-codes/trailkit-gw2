@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["addons/trailkit-memo", "xtask"]
+members = ["addons/trailkit-memo", "crates/trailkit-ui", "xtask"]
 
 [workspace.package]
 edition = "2024"
@@ -11,6 +11,7 @@ authors = ["tobia-codes"]
 
 [workspace.dependencies]
 # Pinned to a fixed commit (ROADMAP R31); re-verify the nexus-addon-dev skill §1 when bumping.
+trailkit-ui = { path = "crates/trailkit-ui" }
 nexus = { git = "https://github.com/zerthox/nexus-rs", rev = "51bff5ab38ad11332316448b452ece1b773018cd", features = ["log"] }
 log = "0.4"
 anyhow = "1"

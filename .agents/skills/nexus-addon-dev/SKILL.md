@@ -18,6 +18,11 @@ Re-verify when bumping `NEXUS_API_VERSION` or `nexus-rs`.
 - Target: `x86_64-pc-windows-msvc`, `crate-type = ["cdylib"]`.
 - `signature`: positive ID assigned by Raidcore when listed; use a random
   negative value until then.
+- Update providers (verified in Nexus source v2026.10.25): `GitHub` lists
+  `/repos/<repo>/releases`, accepts tags matching `v?X.Y(.Z(.W))`, and picks
+  the first `.dll` asset of the highest version — unusable in our monorepo.
+  `Raidcore` is unimplemented. `Direct` compares the MD5 at `<update_link>.md5`
+  (fallback `.md5sum`) with the local DLL. **We use `Direct`** (ROADMAP R49).
 - Hot reload: Nexus can unload/reload an addon at runtime. `unload` **must**
   stop and join every thread, deregister every callback/keybind/event and drop
   every DataLink pointer — otherwise the game crashes after unload.
