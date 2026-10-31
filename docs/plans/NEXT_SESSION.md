@@ -33,16 +33,15 @@ tokens, quick access icons + `cargo xtask build-icons`, gameplay auto-hide).
 Open phase 0 work:
 1. ~~Windows build, deploy, in-game test, hot reload~~ — done 2026-10-31.
 2. Memo quick access icon (R55/R57–R59) and gameplay auto-hide (R56/R61) —
-   implemented and deployed 2026-10-31; **in-game test by the user pending**:
-   icon appears in the quick access bar (hover lighter, tooltip "Notes"/
-   "Notizen"), click toggles the window, window hides in loading screens and
-   character select and reappears afterwards, hot reload leaves no duplicate
-   icon.
+   done 2026-10-31, verified in game by the user (icon size matches other
+   Nexus icons after padding, hover, tooltip, click toggle, auto-hide, hot
+   reload).
+
+**Phase 0 complete.**
 
 ## ▶ Resume here
 
-After the in-game test passes, phase 0 is complete → ask the user to approve
-merging `chore/phase-0-foundation` into `develop` (R29), then start phase 0b
+Ask the user to approve merging `chore/phase-0-foundation` into `develop` (R29), then start phase 0b
 (price archive; first push needs explicit approval, R11).
 
 ## User to-dos
