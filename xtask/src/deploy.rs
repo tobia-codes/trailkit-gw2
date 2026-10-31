@@ -138,18 +138,34 @@ fn build(addon: &Addon, profile: Profile) -> Result<()> {
 /// Copies `source` next to `destination` and renames it over `destination`, so Nexus never sees
 /// a half-written DLL.
 ///
+/// While the game runs, Windows refuses to overwrite the loaded DLL but allows
+/// renaming it. In that case the loaded DLL is first moved aside to
+/// `<name>.dll.old` (the same technique Nexus uses for its own addon updates);
+/// a stale `.dll.old` from an earlier deploy is removed first if possible.
+///
 /// # Errors
-/// Returns an error if the copy or rename fails.
+/// Returns an error if the copy or any rename fails.
 fn replace_file_atomically(source: &Path, destination: &Path) -> Result<()> {
     let temporary = destination.with_extension("dll.tmp");
     fs::copy(source, &temporary)
         .with_context(|| format!("copying {} to {}", source.display(), temporary.display()))?;
-    fs::rename(&temporary, destination).with_context(|| {
+    if fs::rename(&temporary, destination).is_ok() {
+        return Ok(());
+    }
+
+    let moved_aside = destination.with_extension("dll.old");
+    // Best effort: an older `.dll.old` may itself still be loaded by the game.
+    let _ = fs::remove_file(&moved_aside);
+    fs::rename(destination, &moved_aside).with_context(|| {
         format!(
-            "replacing {} (is the DLL locked by the game?)",
-            destination.display()
+            "moving the loaded {} aside to {}",
+            destination.display(),
+            moved_aside.display()
         )
     })?;
+    fs::rename(&temporary, destination)
+        .with_context(|| format!("replacing {}", destination.display()))?;
+    println!("loaded DLL was moved aside to {}", moved_aside.display());
     Ok(())
 }
 
