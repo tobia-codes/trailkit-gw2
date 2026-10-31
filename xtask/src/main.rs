@@ -1,6 +1,8 @@
 //! Repository task runner, invoked as `cargo xtask <command>`.
 //!
 //! Commands:
+//! - `build-icons [--check]` — render the addons' SVG icons to the committed
+//!   PNGs (ROADMAP R57).
 //! - `deploy <addon> [--release]` — cross-compile an addon with cargo-xwin and
 //!   copy the DLL into the Guild Wars 2 `addons` folder (ROADMAP R32).
 //! - `check-branch [--head <branch>] [--base <branch>]` — verify branch names
@@ -11,6 +13,7 @@
 //! - `sync-versions [--check]` — copy each addon's `package.json` version
 //!   (owned by Changesets) into its `Cargo.toml` (ROADMAP R16/R17).
 
+mod build_icons;
 mod check_branch;
 mod check_names;
 mod deploy;
@@ -25,6 +28,7 @@ const USAGE: &str = "\
 usage: cargo xtask <command>
 
 commands:
+  build-icons [--check]        render addon SVG icons to PNG (--check: only verify)
   deploy <addon> [--release]   build an addon for Windows and copy it into the GW2 addons folder
   check-branch [--head B] [--base B]  verify the branch name (default: current branch)
   install-hooks                enable the git hooks in .githooks/
@@ -48,6 +52,8 @@ fn main() -> Result<()> {
             };
             deploy::run(addon, profile)
         }
+        ["build-icons"] => build_icons::run(build_icons::Mode::Write),
+        ["build-icons", "--check"] => build_icons::run(build_icons::Mode::Check),
         ["check-names"] => check_names::run(),
         ["check-branch", options @ ..] => {
             let (head, base) = parse_branch_options(options)?;

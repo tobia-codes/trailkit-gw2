@@ -36,6 +36,8 @@ jobs:
         run: cargo xtask check-names
       - name: Version sync check (R16/R17)
         run: cargo xtask sync-versions --check
+      - name: Icon PNGs up to date (R57)
+        run: cargo xtask build-icons --check
       - name: Build addons (release)
         run: cargo build --workspace --release --exclude xtask
       - uses: actions/upload-artifact@v4

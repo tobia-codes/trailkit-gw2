@@ -4,8 +4,12 @@
 
 ## Opening the window
 
-The window is toggled by the keybind **"Open/close notes"**. It is unbound by
-default: set it under *Nexus → Options → Keybinds → trailkit-memo*.
+Click the **notes icon** (sheet with pencil) in the Nexus quick access bar, or
+use the keybind **"Open/close notes"**. The keybind is unbound by default: set
+it under *Nexus → Options → Keybinds → trailkit-memo*.
+
+The window hides during loading screens, cutscenes and character select and
+reappears afterwards.
 
 ## Problems?
 

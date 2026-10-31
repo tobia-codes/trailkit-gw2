@@ -8,6 +8,8 @@ invoked from the repo root as `cargo xtask <command>` (alias in `.cargo/config.t
 | Command | What it does |
 |---------|--------------|
 | `cargo xtask deploy <addon> [--release]` | Builds `addons/<addon>` with `cargo xwin` for `x86_64-pc-windows-msvc` and copies the DLL as `<addon>.dll` (kebab-case, R50) into the GW2 `addons` folder (copy to `*.dll.tmp`, then rename; while the game runs the loaded DLL is first moved aside to `*.dll.old`) so Nexus hot-reloads it. |
+| `cargo xtask build-icons` | Renders every `addons/<addon>/assets/icons/<name>.svg` with `resvg` to a 64×64 `<name>.png` plus a lighter `<name>-hover.png` (the parchment fill `#E9DCB8` is swapped for `#FAF1DA`, R58). The PNGs are committed and embedded by the addon (R57). |
+| `cargo xtask build-icons --check` | Only verifies the committed PNGs match a fresh render (CI). |
 | `cargo xtask check-branch [--head B] [--base B]` | Verifies a branch name (R14); without options the current branch. Used by CI and the pre-push hook. |
 | `cargo xtask install-hooks` | Enables the versioned git hooks in `.githooks/` (pre-commit: fmt + names; pre-push: branch + clippy + tests). |
 | `cargo xtask check-names` | Verifies every file/directory name against [AGENTS.md → Naming conventions](../AGENTS.md#naming-conventions). |
