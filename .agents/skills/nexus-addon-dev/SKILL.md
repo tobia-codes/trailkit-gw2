@@ -105,9 +105,9 @@ Project contract (to be finalized in `docs/plans/addons/trailkit-core.md`):
   (an enum / generated module per addon, shared keys in `trailkit-i18n`),
   never as inline literals in UI code.
 - Nexus does **not** expose the active language directly. Trick: at load,
-  `Localization_Set("trailkit.lang", "en", "en")`,
-  `Localization_Set("trailkit.lang", "de", "de")` etc.; then
-  `Localization_Translate("trailkit.lang")` returns the active Nexus language
+  `Localization_Set("trailkit.shared.localization.language", "en", "en")`,
+  `Localization_Set("trailkit.shared.localization.language", "de", "de")` etc.; then
+  `Localization_Translate("trailkit.shared.localization.language")` returns the active Nexus language
   code.
 - Resolution order: language chosen in the addon settings → Nexus language →
   English.
