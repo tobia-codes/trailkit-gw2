@@ -1,0 +1,28 @@
+[
+  {
+    "id": 19721,
+    "buys": [
+      { "listings": 6, "unit_price": 1000, "quantity": 100 },
+      { "listings": 1, "unit_price": 995, "quantity": 10 },
+      { "listings": 2, "unit_price": 990, "quantity": 20 },
+      { "listings": 1, "unit_price": 950, "quantity": 40 },
+      { "listings": 3, "unit_price": 900, "quantity": 80 },
+      { "listings": 1, "unit_price": 500, "quantity": 1000 }
+    ],
+    "sells": [
+      { "listings": 4, "unit_price": 1100, "quantity": 50 },
+      { "listings": 1, "unit_price": 1110, "quantity": 5 },
+      { "listings": 1, "unit_price": 1155, "quantity": 7 },
+      { "listings": 2, "unit_price": 1210, "quantity": 9 },
+      { "listings": 1, "unit_price": 1300, "quantity": 11 },
+      { "listings": 1, "unit_price": 9999, "quantity": 1 }
+    ]
+  },
+  {
+    "id": 24,
+    "buys": [],
+    "sells": [
+      { "listings": 1, "unit_price": 224, "quantity": 3 }
+    ]
+  }
+]

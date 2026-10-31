@@ -1,0 +1,25 @@
+[package]
+name = "trailkit-datagen"
+version = "0.1.0"
+description = "Daily GW2 trading post price archive (and later the served data files)"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+anyhow.workspace = true
+clap = { version = "4.6.7", features = ["derive"] }
+env_logger = "0.11.11"
+flate2 = "1.1.10"
+jiff.workspace = true
+log.workspace = true
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = { version = "1.0.154", features = ["raw_value"] }
+sha2 = "0.11.1"
+ureq.workspace = true
+
+[lints]
+workspace = true

@@ -39,7 +39,7 @@ jobs:
       - name: Icon PNGs up to date (R57)
         run: cargo xtask build-icons --check
       - name: Build addons (release)
-        run: cargo build --workspace --release --exclude xtask
+        run: cargo build --workspace --release --exclude xtask --exclude trailkit-datagen
       - uses: actions/upload-artifact@v4
         with:
           name: addons-dll
