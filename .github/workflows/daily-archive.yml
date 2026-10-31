@@ -1,7 +1,8 @@
-# Daily GW2 price archive (docs/plans/data-pipeline.md D4–D39).
+# Daily GW2 archive: prices, order book, WvW, gem exchange
+# (docs/plans/data-pipeline.md D4–D41).
 # The bot may create releases and upload assets on its own (D9);
 # changes to THIS FILE need explicit user approval (AGENTS.md rule 1).
-name: Price archive
+name: Daily archive
 
 on:
   schedule:
@@ -22,7 +23,7 @@ permissions:
   actions: write # keep-alive: re-enable the scheduled workflows (D38)
 
 concurrency:
-  group: price-archive
+  group: daily-archive
   cancel-in-progress: false
 
 env:
@@ -58,7 +59,7 @@ jobs:
             echo "mode=$mode"
             echo "date=$(date -u +%F)"
             echo "month=$(date -u +%Y-%m)"
-            echo "tag=prices-$(date -u +%Y-%m)"
+            echo "tag=archive-$(date -u +%Y-%m)"
           } >> "$GITHUB_OUTPUT"
 
       - name: Install pinned toolchain
@@ -75,8 +76,8 @@ jobs:
         run: |
           if ! gh release view "$TAG" > /dev/null 2>&1; then
             gh release create "$TAG" --target "$SHA" --latest=false \
-              --title "Price archive $MONTH" \
-              --notes "Daily Guild Wars 2 trading post archive for $MONTH: prices, condensed order book, WvW matches and gem exchange quotes, one gzip file per data set and day plus a \`<date>.manifest.json\` with the status of every data set. Format and Postgres import: https://github.com/${{ github.repository }}/tree/main/tools/trailkit-datagen#readme"
+              --title "GW2 archive $MONTH" \
+              --notes "Daily Guild Wars 2 archive for $MONTH: prices, condensed order book, WvW matches and gem exchange quotes, one gzip file per data set and day plus a \`<date>.manifest.json\` with the status of every data set. Format and Postgres import: https://github.com/${{ github.repository }}/tree/develop/tools/trailkit-datagen#readme"
           fi
 
       - name: Fetch today's manifest (skip data sets that are already complete)
@@ -121,6 +122,6 @@ jobs:
           REPOSITORY: ${{ github.repository }}
         # The API call succeeds (204) whether or not the workflow is already enabled.
         run: |
-          for workflow in price-archive.yml dpf-reminder.yml; do
+          for workflow in daily-archive.yml dpf-reminder.yml; do
             gh api --method PUT "repos/$REPOSITORY/actions/workflows/$workflow/enable"
           done

@@ -8,10 +8,10 @@ Last updated: 2026-10-31 (end of session 3).
   skeleton with quick access icon + gameplay auto-hide, CI, git hooks
   (ROADMAP R28–R61).
 - **Phase 0b (price archive) complete except the first scheduled run** —
-  `tools/trailkit-datagen`, workflows `price-archive.yml` and
+  `tools/trailkit-datagen`, workflows `daily-archive.yml` and
   `dpf-reminder.yml`, first manual run on GitHub succeeded (release
-  `prices-2026-10`, all 4 data sets complete). Decisions R62–R68,
-  data-pipeline D27–D40, core C14, BACKLOG BL7.
+  `archive-2026-10`, all 4 data sets complete). Decisions R62–R68,
+  data-pipeline D27–D41, core C14, BACKLOG BL7.
 - Repo is public: <https://github.com/tobia-codes/trailkit-gw2>.
   **`develop` is the default branch** (R67) → scheduled workflows run from
   `develop`. `main` = last release (PR #2). PRs #1–#4 merged.
@@ -28,8 +28,8 @@ Last updated: 2026-10-31 (end of session 3).
 ## ▶ Resume here
 
 1. **Check the first scheduled archive runs** (2026-11-01):
-   `gh run list --workflow price-archive.yml` — the 00:17 UTC run should have
-   created release `prices-2026-11` with `2026-11-01.*` files; the 06:17 UTC
+   `gh run list --workflow daily-archive.yml` — the 00:17 UTC run should have
+   created release `archive-2026-11` with `2026-11-01.*` files; the 06:17 UTC
    catch-up should be green (it fails only if gaps remain). Look at
    `2026-11-01.manifest.json` (all data sets `complete`?). If something
    failed: read the run log, fix on a `bugfix/` branch.
@@ -48,8 +48,9 @@ Last updated: 2026-10-31 (end of session 3).
 ## Notes from session 3
 
 - The first manual archive run started before the history rewrite; its tag
-  `prices-2026-10` was moved to the rewritten commit `98427aa` (same tree).
-- `prices-2026-10` shows as "Latest" on GitHub although created with
+  `prices-2026-10` was moved to the rewritten commit `98427aa` (same tree),
+  then the release was renamed to `archive-2026-10` (D41).
+- `archive-2026-10` shows as "Latest" on GitHub although created with
   `--latest=false` — probably because it is the only release. Re-check once
   the first addon release exists (end of phase 1).
 - Live archive run takes ~4.5 min; sizes per day: prices ~0.38 MB, order

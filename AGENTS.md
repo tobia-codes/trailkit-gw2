@@ -30,7 +30,7 @@ Planning documents live in [`docs/plans/`](docs/plans/README.md).
    `Co-Authored-By` trailer for an AI and no "Generated with …" footer
    (ROADMAP R68).
    *Exception:* the scheduled data-pipeline CI job may push the `gh-pages`
-   branch and create price-archive releases on its own
+   branch and create daily archive releases on its own
    (`docs/plans/data-pipeline.md` D9); changing that workflow still needs
    approval.
 2. **Decisions go through the grill-me skill.** Whenever a decision is needed
