@@ -1,0 +1,8 @@
+#!/bin/sh
+# Checks before every push (ROADMAP R14, R48). Enable with `cargo xtask install-hooks`.
+set -e
+# Shells started by git may not have rustup on PATH.
+command -v cargo >/dev/null 2>&1 || . "$HOME/.cargo/env"
+cargo xtask check-branch
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace

@@ -18,6 +18,8 @@ use nexus::{
     localization::{set_translation, translate},
 };
 
+use trailkit_ui::{style_scope::StyleScope, theme::ThemeKind};
+
 use crate::i18n::{Language, Text};
 
 nexus::export! {
@@ -102,6 +104,8 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
         .get()
         .map_or("###trailkit-memo", String::as_str);
 
+    // Theme selection comes with the settings window (phase 1); until then the default theme.
+    let _theme = StyleScope::push(ui, &ThemeKind::default().theme());
     let mut open = true;
     Window::new(title)
         .size([320.0, 120.0], Condition::FirstUseEver)

@@ -132,7 +132,7 @@ fn is_valid_file_name(file_name: &str, in_data: bool) -> bool {
 }
 
 /// Returns whether `text` is non-empty `kebab-case` (`[a-z0-9]+(-[a-z0-9]+)*`).
-fn is_kebab_case(text: &str) -> bool {
+pub fn is_kebab_case(text: &str) -> bool {
     is_separated_lowercase(text, '-')
 }
 

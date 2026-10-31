@@ -52,6 +52,9 @@
 | R44 | Nexus runtime identifiers: `trailkit.<addon>.<kind>.<name>` (`snake_case` segments; kinds `keybind`, `texture`, `shortcut`, `event`, `datalink`, `localization`; cross-addon `trailkit.shared.…`), always typed constants | 2026-10-31 |
 | R45 | TypeScript/React (later): `kebab-case` file names incl. components (case-insensitive file systems); identifiers per TS convention (`PascalCase` components/types, `useXyz` hooks, `camelCase` otherwise) | 2026-10-31 |
 | R46 | Path names enforced by `cargo xtask check-names` (all tracked + untracked-not-ignored paths, vendored skills exempt) in CI and later in the local git hook | 2026-10-31 |
+| R47 | `crates/trailkit-ui` exists from phase 0 with **only** theme tokens (`Theme::DARK` default, `Theme::LIGHT`, WCAG contrast test) and the `StyleScope` RAII guard; components move in only on real reuse (rule 7) | 2026-10-31 |
+| R48 | Local git hooks versioned in `.githooks/`, enabled via `cargo xtask install-hooks` (`core.hooksPath`): pre-commit = `cargo fmt --check` + `check-names`; pre-push = `check-branch` + clippy + tests. CI uses the same `cargo xtask check-branch` | 2026-10-31 |
+| R49 | Addon updates use Nexus provider **`Direct`**: a fixed URL per addon serving the latest DLL + `<url>.md5`, published by the release workflow (0b) to GitHub Pages. Reason (Nexus source, v2026.10.25): the `GitHub` provider parses release tags as `v?X.Y.Z` (our `<addon>@x.y.z` tags are skipped) and takes the first `.dll` of the highest release across the whole repo → unusable in a monorepo; `Raidcore` provider is unimplemented. No pre-release channel (betas ship as 0.x). Exact URL/domain: see next decision | 2026-10-31 |
 
 ## Proposed repository layout
 
@@ -99,8 +102,7 @@ trailkit-gw2/
 
 ## Open
 
-- Nexus update provider in a monorepo with several addons (GitHub provider
-  may only look at the repo's *latest* release) — research in phase 0.
+- ~~Nexus update provider in a monorepo~~ → settled in R49.
 
 ## Plans
 

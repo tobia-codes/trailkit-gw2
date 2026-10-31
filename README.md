@@ -11,6 +11,8 @@ a Rust backend server is planned for later).
 | Path | Content |
 |------|---------|
 | `addons/` | Nexus addons (`trailkit-memo`: phase 0 skeleton) |
+| `crates/trailkit-ui/` | Shared design system: theme tokens, ImGui style scope |
+| `.githooks/` | Versioned git hooks (`cargo xtask install-hooks`) |
 | `xtask/` | Task runner: `cargo xtask deploy`, `cargo xtask sync-versions` |
 | `data/events/` | Curated event schedules |
 | `.changeset/` | Changesets (versioning, ROADMAP R16) |
@@ -25,6 +27,7 @@ a Rust backend server is planned for later).
 3. LLVM for cross-compiling: `sudo apt install clang lld llvm`
 4. Node via fnm (`.node-version`) and pnpm (`packageManager` in `package.json`), then `pnpm install`.
 5. Configure the GW2 addons folder for deploys (see [`xtask/README.md`](xtask/README.md)).
+6. Enable the git hooks: `cargo xtask install-hooks`.
 
 Checks before a PR: `cargo fmt --all`, `cargo clippy --all-targets -- -D warnings`,
 `cargo xwin clippy --target x86_64-pc-windows-msvc -- -D warnings`, `cargo test`, `cargo deny check`.
