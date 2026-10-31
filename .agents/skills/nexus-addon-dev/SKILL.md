@@ -147,6 +147,12 @@ Project contract (to be finalized in `docs/plans/addons/trailkit-core.md`):
   `clang-cl`.
 - Build + copy into the game: `cargo xtask deploy <addon> [--release]`
   (folder from `TRAILKIT_GW2_ADDONS_DIR` or `xtask.local.toml`).
+- Hot reload verified in game (2026-10-31): Windows refuses to overwrite a
+  loaded DLL, so deploy renames it to `<name>.dll.old` first (Nexus' own
+  update technique) and moves the new DLL in; Nexus detects the change,
+  unloads (~0.3 ms) and loads the new build, and later removes the `.old`
+  file itself. Keybinds and state registered in `load` must therefore be
+  fully reverted in `unload` (`revert_on_unload`).
 - Crate layout: `crate-type = ["cdylib", "rlib"]`, `nexus` as a
   `[target.'cfg(windows)'.dependencies]` entry, Nexus glue in a
   `#[cfg(windows)] mod addon;` → logic modules are tested on Linux with
