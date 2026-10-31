@@ -66,10 +66,13 @@ Done on `chore/datagen-skeleton` (not pushed yet):
   Sat 01:23 UTC, keep-alive) and `dpf-reminder.yml` (monthly issue, D18) —
   **need the user's approval (D9) before the PR**.
 
-Next: user approves the workflows → push branch, PR to `develop` (first CI
-run), merge after approval; then release PR `develop` → `main` so the
-schedules become active (they only run on the default branch). Afterwards
-phase 0b is complete → phase 1 (trailkit-memo standalone).
+PR #1 (datagen + workflows) merged into `develop` 2026-10-31; `develop` is
+the default branch since then (R67), so the schedules are active from
+`develop`. Release PR #2 (`develop` → `main`) is open, CI green, merge
+awaits approval. Verify the first scheduled archive (00:17 UTC) or a manual
+run (`gh workflow run price-archive.yml -f mode=catch-up`): release
+`prices-YYYY-MM` exists with the day's files + manifest. Then phase 0b is
+complete → phase 1 (trailkit-memo standalone).
 
 ## User to-dos
 

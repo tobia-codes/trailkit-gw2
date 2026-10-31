@@ -26,6 +26,9 @@ Planning documents live in [`docs/plans/`](docs/plans/README.md).
    `hotfix/`), where agents may commit logical steps on their own
    (Conventional Commits). Merging into `develop`/`main` needs approval
    (ROADMAP R29).
+   **No AI attribution:** commit messages and PR descriptions carry no
+   `Co-Authored-By` trailer for an AI and no "Generated with …" footer
+   (ROADMAP R68).
    *Exception:* the scheduled data-pipeline CI job may push the `gh-pages`
    branch and create price-archive releases on its own
    (`docs/plans/data-pipeline.md` D9); changing that workflow still needs
