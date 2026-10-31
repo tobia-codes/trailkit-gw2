@@ -1,0 +1,141 @@
+---
+name: nexus-addon-dev
+description: Project knowledge for building Raidcore Nexus addons in Rust for trailpack-gw2 — Nexus API facts, threading and performance rules, inter-addon communication, settings window, localization, help page, API key handling. Use whenever writing, reviewing or planning code under addons/ or crates/ that runs inside Guild Wars 2.
+---
+
+# Nexus addon development (trailpack-gw2)
+
+Facts below were researched on 2026-10-31 against Nexus API v6
+(`RCGG-lib-nexus-api/Nexus.h`, Nexus source, `zerthox/nexus-rs` 0.12).
+Re-verify when bumping `NEXUS_API_VERSION` or `nexus-rs`.
+
+## 1. Platform facts
+
+- An addon is a Windows DLL exporting `GetAddonDef()`. In Rust: the
+  `nexus::export!` macro from [`nexus-rs`](https://github.com/zerthox/nexus-rs)
+  (MIT, git dependency, ImGui via `arcdps-imgui` 0.8 = imgui-rs 0.8 / older
+  Dear ImGui: no docking branch, tables API available).
+- Target: `x86_64-pc-windows-msvc`, `crate-type = ["cdylib"]`.
+- `signature`: positive ID assigned by Raidcore when listed; use a random
+  negative value until then.
+- Hot reload: Nexus can unload/reload an addon at runtime. `unload` **must**
+  stop and join every thread, deregister every callback/keybind/event and drop
+  every DataLink pointer — otherwise the game crashes after unload.
+  `AF_DisableHotloading` exists but do not use it unless unavoidable.
+- One Dear ImGui context is **shared by all addons**. Never change the global
+  style; always push style colors/vars before drawing and pop them after
+  (use the `trailpack-ui` theme scope guard).
+- Fonts: `NexusLinkData_t` exposes `Font`, `FontBig`, `FontUI`;
+  `Fonts_AddFromFile/Memory` + `Fonts_Resize` exist for custom sizes.
+  Font changes rebuild the atlas — never do it per frame.
+- `NexusLinkData_t.IsGameplay` / `IsMoving` / `IsCameraMoving` tell you if the
+  player is in gameplay (hide/skip work during loading screens & cutscenes).
+- Options: `RT_OptionsRender` draws into the Nexus addon options tab.
+  **Project rule:** only render a single "Open settings" button there; real
+  settings live in the addon's own settings window.
+- Quick access: `QuickAccess_Add(identifier, texture, hoverTexture, keybind,
+  tooltip)` adds an icon to the Nexus bar bound to a keybind.
+- Keybinds: `InputBinds_RegisterWithString` — the user can rebind in Nexus.
+- Close on Escape: `GUI_RegisterCloseOnEscape(windowName, &visible)`.
+- Paths: `Paths_GetAddonDirectory("trailpack/<addon>")` for settings and
+  caches; never write next to the game exe.
+
+## 2. Threading & performance (mandatory)
+
+Threads that touch the game:
+
+| Thread | Who calls | Allowed work |
+|--------|-----------|--------------|
+| Render thread | `RT_PreRender` / `RT_Render` / `RT_PostRender` / `RT_OptionsRender` every frame | ImGui only. Read pre-computed state. No I/O, no locks that can block, no allocations in steady state, no parsing. |
+| Event raiser's thread | `Events_Subscribe` callbacks run **synchronously on whatever thread called `Events_Raise`**, while Nexus holds a global recursive mutex | Copy the payload (pointer is only valid during the callback), push it into a channel/atomic, return. Never block, never raise another event that could wait on you. |
+| Keybind callback | Nexus input thread (WndProc) | Flip an atomic / send a message. Nothing else. |
+| Own worker thread(s) | spawned in `load`, joined in `unload` | Network, disk, parsing, cache, heavy computation. |
+
+Rules:
+
+1. **Sleeping when closed.** When no window of the addon is visible the render
+   callback returns after one relaxed atomic load (`if !VISIBLE.load() {
+   return; }`). No other per-frame work. UI-only addons (memo, event) have no
+   worker thread running while closed except to service explicit messages
+   (blocked on `recv()`, i.e. zero CPU).
+2. **Worker threads block, never spin.** Use `std::sync::mpsc` /
+   `crossbeam-channel` `recv()` or `recv_timeout(next_due)`. No `loop {
+   sleep(10ms) }` polling.
+3. **One worker per addon** by default (core: one network/scheduler thread).
+   No Tokio runtime inside addons — use blocking `ureq` HTTP on the worker
+   thread; Tokio is for the data pipeline / future backend only.
+4. **Render reads snapshots, not locks.** Worker builds an immutable snapshot
+   and publishes it via `arc-swap` (`ArcSwap<Snapshot>`); render does
+   `load()` (lock-free). Never hold a `Mutex` across ImGui drawing.
+5. **Precompute strings and layout** on the worker (formatted times, sorted
+   lists, translated labels cached per language change).
+6. **Time-dependent UI** (countdowns) recomputes at most once per second, not
+   per frame.
+7. **Background work is invisible to the player**: throttle network bursts,
+   lower worker thread priority (`THREAD_PRIORITY_BELOW_NORMAL`), skip
+   refreshes during loading screens if not needed, never do I/O on the render
+   thread — even "small" file reads.
+8. **Panics**: a panic must never cross the FFI boundary. nexus-rs installs a
+   panic hook; worker threads catch and log errors, never `unwrap()`.
+
+## 3. Inter-addon communication
+
+Nexus offers two primitives:
+
+- **DataLink** (`DataLink_Share(id, size)` / `DataLink_Get(id)`): a named,
+  fixed-size shared memory block owned by the sharer.
+- **Events** (`Events_Raise(id, ptr)`, targeted variants): synchronous
+  callbacks, payload is a raw pointer.
+
+Project contract (to be finalized in `docs/plans/addons/trailpack-core.md`):
+
+- All cross-addon types live in **one** crate (`crates/trailpack-protocol`),
+  `#[repr(C)]`, with an explicit `version: u32` as first field. No Rust-ABI
+  types (`String`, `Vec`, `Box`, trait objects) cross the DLL boundary.
+- Memory is freed by the DLL that allocated it.
+- All `unsafe` FFI glue lives in that crate; addon code only sees safe, typed
+  wrappers (e.g. `CoreClient::events() -> Option<EventSnapshot>`).
+- Consumers subscribe to `EV_ADDON_LOADED` / `EV_ADDON_UNLOADED` and
+  re-acquire / drop core pointers when core (re)loads. Core being absent is a
+  normal state: features grey out and show a hint (see §5).
+
+## 4. Localization
+
+- Every addon ships **English and German**. Strings live in typed keys
+  (an enum / generated module per addon, shared keys in `trailpack-i18n`),
+  never as inline literals in UI code.
+- Nexus does **not** expose the active language directly. Trick: at load,
+  `Localization_Set("trailpack.lang", "en", "en")`,
+  `Localization_Set("trailpack.lang", "de", "de")` etc.; then
+  `Localization_Translate("trailpack.lang")` returns the active Nexus language
+  code.
+- Resolution order: language chosen in the addon settings → Nexus language →
+  English.
+
+## 5. UX contracts shared by all addons
+
+- **Own settings window** per addon (opened from: the Nexus options button,
+  the addon's main window menu, and optionally a keybind).
+- **Help page** per addon (window/tab "Help"), content in both languages,
+  generated from `addons/<name>/help/{en,de}.md`. Any change to user-visible
+  behavior must update the help page in the same change.
+- **Missing dependency guidance**: if a feature needs data the user disabled
+  in core (or core is not installed), the feature is greyed out and shows an
+  inline hint explaining *what* to enable *where*, with a button that opens
+  the relevant core settings page (or the Nexus addon library for install).
+- Look & feel: follow the `trailpack-ui` skill.
+
+## 6. Player API keys
+
+- The GW2 API key is stored **only** by trailpack-core, encrypted at rest with
+  Windows DPAPI (`CryptProtectData`, current-user scope). Never in plain text,
+  never in logs, never sent anywhere except `https://api.guildwars2.com`.
+- Never sent to trailpack data hosts or any future trailpack backend.
+- Validate with `/v2/tokeninfo`; show granted permissions; mask in UI
+  (show/hide toggle, paste button, clear button).
+- Other addons never receive the key — they request data through core.
+
+## 7. Build & deploy (dev)
+
+- See `docs/plans/ROADMAP.md` for the chosen toolchain (WSL cross-compile vs.
+  native Windows is an open decision there).

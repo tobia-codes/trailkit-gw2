@@ -1,0 +1,19 @@
+Event schedule data in this directory (data/events/) and the derived
+events.json published by trailpack-datagen
+
+Licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 2.5
+Generic license (CC BY-NC-SA 2.5):
+https://creativecommons.org/licenses/by-nc-sa/2.5/
+
+Source / attribution:
+  Guild Wars 2 Wiki — "Event timers"
+  https://wiki.guildwars2.com/wiki/Event_timers
+  Content of the Guild Wars 2 Wiki is available under CC BY-NC-SA 2.5.
+  (Since 2026-10-31 retrieved via the Internet Archive Wayback Machine because
+  the wiki requires a login; see README.md.)
+
+This license applies ONLY to the event data in this directory. All code in
+this repository is licensed under the MIT License (see /LICENSE).
+
+Guild Wars 2 and all related names are trademarks of ArenaNet, LLC. This
+project is not affiliated with ArenaNet or NCSOFT.
