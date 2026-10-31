@@ -170,7 +170,7 @@ See `NEXT_SESSION.md`.
 | D9 | The CI bot may push `gh-pages` and create archive releases without per-push approval; changes to the workflow itself still need approval (AGENTS.md rule 1) | 2026-10-31 |
 | D10 | Formats: archive = raw NDJSON.gz + manifest; served files = JSON per data set and language under `/v1/…` + `meta.json` with hashes | 2026-10-31 |
 | D11 | Core uses the GitHub Pages URL until the first public release, then our own domain (B13; settled as `gw2.trailkit.de`, ROADMAP R52); `meta.json` can announce a new base URL that old core versions follow | 2026-10-31 |
-| D12 | Prices for core: one file with all current prices (~1 MB gz), refreshed daily | 2026-10-31 |
+| D12 | Prices for core: one file with all current prices (~1 MB gz), refreshed **twice daily** (amended by D40) — it is only the starting value; core refreshes live on demand (core C14) | 2026-10-31 |
 | D13 | Order: the price archive starts right after the phase 0 toolchain, before trailkit-memo | 2026-10-31 |
 | D14 | Core shows a one-time first-start notice ("game data is loaded from GitHub, USA; your IP address is transmitted") and downloads nothing until the user confirms; same notice in core's help page and the privacy policy | 2026-10-31 |
 | D15 | Additionally archived: gem exchange rates, `/v2/build`, ~~daily item-id diff~~ (dropped, D30), **WvW matches** (daily + snapshots shortly before the EU/NA weekly resets for final scores; ~10–20 MB/year). Never archived: anything requiring an API key | 2026-10-31 |
@@ -198,3 +198,4 @@ See `NEXT_SESSION.md`.
 | D37 | `webpki-roots` (Mozilla CA list, pulled in by `ureq`/`rustls`) is licensed CDLA-Permissive-2.0: allowed via a `cargo-deny` exception for that crate only, not as a general license allowance | 2026-10-31 |
 | D38 | Keep-alive: GitHub disables scheduled workflows after 60 days without repository activity and the archive produces no commits, so every archive run re-enables its own workflow via the API (`gh workflow enable`, `actions: write`) | 2026-10-31 |
 | D39 | Monthly release `prices-YYYY-MM`: tag on the commit the scheduled run uses — the default branch `develop` since R67 — created with `--latest=false` so "Latest release" stays an addon release, body explains the content and links the datagen README | 2026-10-31 |
+| D40 | The served prices file (D12, phase 2) is generated **twice daily**: 00:17 UTC from the archive run's price fetch (no extra API requests, right after the daily reset, NA prime time) and 16:17 UTC with a prices-only fetch (before EU prime time). Old files are deleted automatically (keep the last 4). The archive itself stays one snapshot per day and one release per month | 2026-10-31 |
