@@ -55,7 +55,7 @@ impl Addon {
                 });
             }
         }
-        addons.sort_by(|a, b| a.name.cmp(&b.name));
+        addons.sort_by(|left, right| left.name.cmp(&right.name));
         Ok(addons)
     }
 
