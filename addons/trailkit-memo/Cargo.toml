@@ -1,0 +1,23 @@
+[package]
+name = "trailkit-memo"
+# Synced from package.json by `cargo xtask sync-versions` (ROADMAP R16/R17) — do not edit by hand.
+version = "0.0.0"
+description = "Notes addon for Guild Wars 2 (Raidcore Nexus)"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[lib]
+# Nexus addons are Windows DLLs; `rlib` lets `cargo test` run the platform-independent logic on the host.
+crate-type = ["cdylib", "rlib"]
+
+# The Nexus bindings only build for Windows; the platform-independent modules stay testable on Linux.
+[target.'cfg(windows)'.dependencies]
+nexus.workspace = true
+log.workspace = true
+
+[lints]
+workspace = true
