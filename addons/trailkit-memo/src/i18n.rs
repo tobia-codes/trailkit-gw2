@@ -31,7 +31,9 @@ impl Language {
     /// Parses a Nexus language code; returns `None` for unsupported languages.
     #[must_use]
     pub fn from_code(code: &str) -> Option<Self> {
-        Self::ALL.into_iter().find(|lang| lang.code() == code)
+        Self::ALL
+            .into_iter()
+            .find(|language| language.code() == code)
     }
 
     /// Converts the `repr(u8)` discriminant back into a language, falling back
@@ -66,10 +68,10 @@ pub enum Text {
 }
 
 impl Text {
-    /// Returns the translation of this string in `lang`.
+    /// Returns the translation of this string in `language`.
     #[must_use]
-    pub const fn get(self, lang: Language) -> &'static str {
-        match (self, lang) {
+    pub const fn get(self, language: Language) -> &'static str {
+        match (self, language) {
             (Self::MainWindowTitle, Language::English) => "Notes",
             (Self::MainWindowTitle, Language::German) => "Notizen",
             (Self::Hello, Language::English) => "Hello from trailkit-memo!",
@@ -105,9 +107,9 @@ mod tests {
 
     #[test]
     fn code_round_trips() {
-        for lang in Language::ALL {
-            assert_eq!(Language::from_code(lang.code()), Some(lang));
-            assert_eq!(Language::from_u8(lang as u8), lang);
+        for language in Language::ALL {
+            assert_eq!(Language::from_code(language.code()), Some(language));
+            assert_eq!(Language::from_u8(language as u8), language);
         }
     }
 }

@@ -32,10 +32,10 @@ nexus::export! {
 }
 
 /// Nexus keybind identifier for opening/closing the main window.
-const KEYBIND_TOGGLE: &str = "KB_TRAILKIT_MEMO_TOGGLE";
+const KEYBIND_TOGGLE: &str = "trailkit.memo.keybind.toggle";
 
 /// Nexus localization key used to read the active Nexus language (skill §4).
-const LANG_PROBE_KEY: &str = "trailkit.lang";
+const LANGUAGE_PROBE_KEY: &str = "trailkit.shared.localization.language";
 
 /// Keybind string Nexus treats as "unbound" (memo plan M14: unbound by default).
 const UNBOUND: &str = "(null)";
@@ -54,12 +54,16 @@ static WINDOW_TITLE: OnceLock<String> = OnceLock::new();
 fn load() {
     log::info!("loading");
 
-    let lang = Language::resolve(None, detect_nexus_language().as_deref());
-    LANGUAGE.store(lang as u8, Ordering::Relaxed);
-    WINDOW_TITLE.get_or_init(|| format!("{}###trailkit-memo", Text::MainWindowTitle.get(lang)));
+    let language = Language::resolve(None, detect_nexus_language().as_deref());
+    LANGUAGE.store(language as u8, Ordering::Relaxed);
+    WINDOW_TITLE.get_or_init(|| format!("{}###trailkit-memo", Text::MainWindowTitle.get(language)));
 
-    for l in Language::ALL {
-        set_translation(KEYBIND_TOGGLE, l.code(), Text::KeybindToggle.get(l));
+    for language in Language::ALL {
+        set_translation(
+            KEYBIND_TOGGLE,
+            language.code(),
+            Text::KeybindToggle.get(language),
+        );
     }
 
     let on_toggle = keybind_handler!(|_id, is_release| {
@@ -82,10 +86,10 @@ fn unload() {
 /// nexus-addon-dev skill §4. Returns `None` if Nexus answers with the bare key
 /// (i.e. a language without a registered translation).
 fn detect_nexus_language() -> Option<String> {
-    for lang in Language::ALL {
-        set_translation(LANG_PROBE_KEY, lang.code(), lang.code());
+    for language in Language::ALL {
+        set_translation(LANGUAGE_PROBE_KEY, language.code(), language.code());
     }
-    translate(LANG_PROBE_KEY).filter(|code| code != LANG_PROBE_KEY)
+    translate(LANGUAGE_PROBE_KEY).filter(|code| code != LANGUAGE_PROBE_KEY)
 }
 
 /// Draws the main window. Returns immediately while the window is hidden.
@@ -93,7 +97,7 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
     if !VISIBLE.load(Ordering::Relaxed) {
         return;
     }
-    let lang = Language::from_u8(LANGUAGE.load(Ordering::Relaxed));
+    let language = Language::from_u8(LANGUAGE.load(Ordering::Relaxed));
     let title = WINDOW_TITLE
         .get()
         .map_or("###trailkit-memo", String::as_str);
@@ -102,7 +106,7 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
     Window::new(title)
         .size([320.0, 120.0], Condition::FirstUseEver)
         .opened(&mut open)
-        .build(ui, || ui.text(Text::Hello.get(lang)));
+        .build(ui, || ui.text(Text::Hello.get(language)));
     if !open {
         VISIBLE.store(false, Ordering::Relaxed);
     }

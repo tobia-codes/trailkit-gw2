@@ -26,38 +26,41 @@ pub enum Mode {
 pub fn run(mode: Mode) -> Result<()> {
     let mut mismatches = Vec::new();
     for addon in Addon::all()? {
-        let pkg_path = addon.dir().join("package.json");
-        let cargo_path = addon.dir().join("Cargo.toml");
-        let pkg_version = package_version(
-            &fs::read_to_string(&pkg_path)
-                .with_context(|| format!("reading {}", pkg_path.display()))?,
+        let package_json_path = addon.dir().join("package.json");
+        let cargo_toml_path = addon.dir().join("Cargo.toml");
+        let package_json_version = parse_package_json_version(
+            &fs::read_to_string(&package_json_path)
+                .with_context(|| format!("reading {}", package_json_path.display()))?,
         )
-        .with_context(|| format!("in {}", pkg_path.display()))?;
-        let cargo_text = fs::read_to_string(&cargo_path)
-            .with_context(|| format!("reading {}", cargo_path.display()))?;
-        let mut doc: DocumentMut = cargo_text
+        .with_context(|| format!("in {}", package_json_path.display()))?;
+        let cargo_toml_text = fs::read_to_string(&cargo_toml_path)
+            .with_context(|| format!("reading {}", cargo_toml_path.display()))?;
+        let mut cargo_toml: DocumentMut = cargo_toml_text
             .parse()
-            .with_context(|| format!("parsing {}", cargo_path.display()))?;
-        let cargo_version = doc
+            .with_context(|| format!("parsing {}", cargo_toml_path.display()))?;
+        let cargo_toml_version = cargo_toml
             .get("package")
-            .and_then(|p| p.get("version"))
-            .and_then(|v| v.as_str())
+            .and_then(|package| package.get("version"))
+            .and_then(|version| version.as_str())
             .unwrap_or_default()
             .to_owned();
 
-        if cargo_version == pkg_version {
+        if cargo_toml_version == package_json_version {
             continue;
         }
         match mode {
             Mode::Check => mismatches.push(format!(
-                "{}: Cargo.toml {cargo_version} ≠ package.json {pkg_version}",
+                "{}: Cargo.toml {cargo_toml_version} ≠ package.json {package_json_version}",
                 addon.name()
             )),
             Mode::Write => {
-                doc["package"]["version"] = value(pkg_version.as_str());
-                fs::write(&cargo_path, doc.to_string())
-                    .with_context(|| format!("writing {}", cargo_path.display()))?;
-                println!("{}: {cargo_version} → {pkg_version}", addon.name());
+                cargo_toml["package"]["version"] = value(package_json_version.as_str());
+                fs::write(&cargo_toml_path, cargo_toml.to_string())
+                    .with_context(|| format!("writing {}", cargo_toml_path.display()))?;
+                println!(
+                    "{}: {cargo_toml_version} → {package_json_version}",
+                    addon.name()
+                );
             }
         }
     }
@@ -74,9 +77,10 @@ pub fn run(mode: Mode) -> Result<()> {
 ///
 /// # Errors
 /// Returns an error if the JSON is invalid or has no string `version`.
-fn package_version(json: &str) -> Result<String> {
-    let pkg: serde_json::Value = serde_json::from_str(json)?;
-    pkg.get("version")
+fn parse_package_json_version(json: &str) -> Result<String> {
+    let package_json: serde_json::Value = serde_json::from_str(json)?;
+    package_json
+        .get("version")
         .and_then(serde_json::Value::as_str)
         .map(str::to_owned)
         .context("missing string field `version`")
@@ -89,13 +93,13 @@ mod tests {
     #[test]
     fn reads_package_version() {
         assert_eq!(
-            package_version(r#"{"name":"x","version":"1.2.3"}"#).unwrap(),
+            parse_package_json_version(r#"{"name":"x","version":"1.2.3"}"#).unwrap(),
             "1.2.3"
         );
     }
 
     #[test]
     fn rejects_missing_version() {
-        assert!(package_version(r#"{"name":"x"}"#).is_err());
+        assert!(parse_package_json_version(r#"{"name":"x"}"#).is_err());
     }
 }

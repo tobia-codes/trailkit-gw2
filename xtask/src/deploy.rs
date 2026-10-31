@@ -51,17 +51,17 @@ impl Profile {
 /// locked by the game).
 pub fn run(addon_name: &str, profile: Profile) -> Result<()> {
     let addon = Addon::find(addon_name)?;
-    let dest_dir = addons_dir()?;
+    let addons_dir_path = addons_dir()?;
     build(&addon, profile)?;
 
-    let dll = workspace::root()
+    let built_dll = workspace::root()
         .join("target")
         .join(TARGET)
         .join(profile.dir_name())
         .join(addon.dll_name());
-    let dest = dest_dir.join(addon.dll_name());
-    copy_replace(&dll, &dest)?;
-    println!("deployed {} → {}", addon.name(), dest.display());
+    let deployed_dll = addons_dir_path.join(addon.dll_name());
+    replace_file_atomically(&built_dll, &deployed_dll)?;
+    println!("deployed {} → {}", addon.name(), deployed_dll.display());
     Ok(())
 }
 
@@ -70,14 +70,14 @@ pub fn run(addon_name: &str, profile: Profile) -> Result<()> {
 /// # Errors
 /// Returns an error if neither source is set or the folder does not exist.
 fn addons_dir() -> Result<PathBuf> {
-    let dir = match std::env::var_os(ENV_ADDONS_DIR) {
-        Some(dir) => PathBuf::from(dir),
+    let addons_dir = match std::env::var_os(ENV_ADDONS_DIR) {
+        Some(value) => PathBuf::from(value),
         None => read_local_config()?,
     };
-    if !dir.is_dir() {
-        bail!("GW2 addons folder {} does not exist", dir.display());
+    if !addons_dir.is_dir() {
+        bail!("GW2 addons folder {} does not exist", addons_dir.display());
     }
-    Ok(dir)
+    Ok(addons_dir)
 }
 
 /// Reads `gw2_addons_dir` from `xtask.local.toml`.
@@ -100,8 +100,9 @@ fn read_local_config() -> Result<PathBuf> {
 /// # Errors
 /// Returns an error if the TOML is invalid or the key is missing / not a string.
 fn parse_addons_dir(text: &str) -> Result<PathBuf> {
-    let doc: toml_edit::DocumentMut = text.parse()?;
-    doc.get("gw2_addons_dir")
+    let config: toml_edit::DocumentMut = text.parse()?;
+    config
+        .get("gw2_addons_dir")
         .and_then(|item| item.as_str())
         .map(PathBuf::from)
         .context("missing string key `gw2_addons_dir`")
@@ -113,8 +114,8 @@ fn parse_addons_dir(text: &str) -> Result<PathBuf> {
 /// Returns an error if cargo cannot be started or the build fails.
 fn build(addon: &Addon, profile: Profile) -> Result<()> {
     let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
-    let mut cmd = Command::new(cargo);
-    cmd.current_dir(workspace::root()).args([
+    let mut command = Command::new(cargo);
+    command.current_dir(workspace::root()).args([
         "xwin",
         "build",
         "--package",
@@ -123,9 +124,9 @@ fn build(addon: &Addon, profile: Profile) -> Result<()> {
         TARGET,
     ]);
     if profile == Profile::Release {
-        cmd.arg("--release");
+        command.arg("--release");
     }
-    let status = cmd
+    let status = command
         .status()
         .context("failed to run `cargo xwin` (install with `cargo install --locked cargo-xwin`)")?;
     if !status.success() {
@@ -134,19 +135,19 @@ fn build(addon: &Addon, profile: Profile) -> Result<()> {
     Ok(())
 }
 
-/// Copies `src` next to `dest` and renames it over `dest`, so Nexus never sees
+/// Copies `source` next to `destination` and renames it over `destination`, so Nexus never sees
 /// a half-written DLL.
 ///
 /// # Errors
 /// Returns an error if the copy or rename fails.
-fn copy_replace(src: &Path, dest: &Path) -> Result<()> {
-    let tmp = dest.with_extension("dll.tmp");
-    fs::copy(src, &tmp)
-        .with_context(|| format!("copying {} to {}", src.display(), tmp.display()))?;
-    fs::rename(&tmp, dest).with_context(|| {
+fn replace_file_atomically(source: &Path, destination: &Path) -> Result<()> {
+    let temporary = destination.with_extension("dll.tmp");
+    fs::copy(source, &temporary)
+        .with_context(|| format!("copying {} to {}", source.display(), temporary.display()))?;
+    fs::rename(&temporary, destination).with_context(|| {
         format!(
             "replacing {} (is the DLL locked by the game?)",
-            dest.display()
+            destination.display()
         )
     })?;
     Ok(())
@@ -158,8 +159,9 @@ mod tests {
 
     #[test]
     fn parses_addons_dir() {
-        let dir = parse_addons_dir(r#"gw2_addons_dir = "/mnt/c/Guild Wars 2/addons""#).unwrap();
-        assert_eq!(dir, PathBuf::from("/mnt/c/Guild Wars 2/addons"));
+        let addons_dir =
+            parse_addons_dir(r#"gw2_addons_dir = "/mnt/c/Guild Wars 2/addons""#).unwrap();
+        assert_eq!(addons_dir, PathBuf::from("/mnt/c/Guild Wars 2/addons"));
     }
 
     #[test]
