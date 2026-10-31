@@ -1,0 +1,36 @@
+[workspace]
+resolver = "3"
+members = ["addons/trailkit-memo", "crates/trailkit-ui", "xtask"]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.99.1"
+license = "MIT"
+repository = "https://github.com/tobia-codes/trailkit-gw2"
+authors = ["tobia-codes"]
+
+[workspace.dependencies]
+# Pinned to a fixed commit (ROADMAP R31); re-verify the nexus-addon-dev skill §1 when bumping.
+trailkit-ui = { path = "crates/trailkit-ui" }
+nexus = { git = "https://github.com/zerthox/nexus-rs", rev = "51bff5ab38ad11332316448b452ece1b773018cd", features = ["log"] }
+log = "0.4"
+anyhow = "1"
+toml_edit = "0.25"
+
+# Lint set (AGENTS.md "Rust conventions", ROADMAP R33). Every crate opts in with `[lints] workspace = true`.
+[workspace.lints.rust]
+missing_docs = "warn"
+unsafe_op_in_unsafe_fn = "deny"
+
+[workspace.lints.clippy]
+missing_docs_in_private_items = "warn"
+undocumented_unsafe_blocks = "warn"
+unwrap_used = "warn"
+expect_used = "warn"
+dbg_macro = "warn"
+todo = "warn"
+mod_module_files = "warn"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

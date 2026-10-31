@@ -18,6 +18,11 @@ Re-verify when bumping `NEXUS_API_VERSION` or `nexus-rs`.
 - Target: `x86_64-pc-windows-msvc`, `crate-type = ["cdylib"]`.
 - `signature`: positive ID assigned by Raidcore when listed; use a random
   negative value until then.
+- Update providers (verified in Nexus source v2026.10.25): `GitHub` lists
+  `/repos/<repo>/releases`, accepts tags matching `v?X.Y(.Z(.W))`, and picks
+  the first `.dll` asset of the highest version — unusable in our monorepo.
+  `Raidcore` is unimplemented. `Direct` compares the MD5 at `<update_link>.md5`
+  (fallback `.md5sum`) with the local DLL. **We use `Direct`** (ROADMAP R49).
 - Hot reload: Nexus can unload/reload an addon at runtime. `unload` **must**
   stop and join every thread, deregister every callback/keybind/event and drop
   every DataLink pointer — otherwise the game crashes after unload.
@@ -30,11 +35,18 @@ Re-verify when bumping `NEXUS_API_VERSION` or `nexus-rs`.
   Font changes rebuild the atlas — never do it per frame.
 - `NexusLinkData_t.IsGameplay` / `IsMoving` / `IsCameraMoving` tell you if the
   player is in gameplay (hide/skip work during loading screens & cutscenes).
+  **Project rule (R56/R61):** windows are not drawn while `IsGameplay` is
+  false (unless the addon's "also show outside gameplay" setting is on); the
+  open state is kept. Cache the `NexusLink` pointer in `load`, read the flag
+  after the cheap `VISIBLE` check, drop the pointer in `unload`.
 - Options: `RT_OptionsRender` draws into the Nexus addon options tab.
-  **Project rule:** only render a single "Open settings" button there; real
-  settings live in the addon's own settings window.
+  **Project rule (ROADMAP R53):** only a header (addon name + version) and
+  the buttons "Open settings" and "Open help"; real settings live in the
+  addon's own settings window.
 - Quick access: `QuickAccess_Add(identifier, texture, hoverTexture, keybind,
-  tooltip)` adds an icon to the Nexus bar bound to a keybind.
+  tooltip)` adds an icon to the Nexus bar bound to a keybind (a click
+  triggers the keybind). Textures come from committed PNGs embedded with
+  `include_bytes!` and loaded via `Textures_LoadFromMemory` (R57).
 - Keybinds: `InputBinds_RegisterWithString` — the user can rebind in Nexus.
 - Close on Escape: `GUI_RegisterCloseOnEscape(windowName, &visible)`.
 - Paths: `Paths_GetAddonDirectory("trailkit/<addon>")` for settings and
@@ -105,9 +117,9 @@ Project contract (to be finalized in `docs/plans/addons/trailkit-core.md`):
   (an enum / generated module per addon, shared keys in `trailkit-i18n`),
   never as inline literals in UI code.
 - Nexus does **not** expose the active language directly. Trick: at load,
-  `Localization_Set("trailkit.lang", "en", "en")`,
-  `Localization_Set("trailkit.lang", "de", "de")` etc.; then
-  `Localization_Translate("trailkit.lang")` returns the active Nexus language
+  `Localization_Set("trailkit.shared.localization.language", "en", "en")`,
+  `Localization_Set("trailkit.shared.localization.language", "de", "de")` etc.; then
+  `Localization_Translate("trailkit.shared.localization.language")` returns the active Nexus language
   code.
 - Resolution order: language chosen in the addon settings → Nexus language →
   English.
@@ -137,8 +149,25 @@ Project contract (to be finalized in `docs/plans/addons/trailkit-core.md`):
 
 ## 7. Build & deploy (dev)
 
-- See `docs/plans/ROADMAP.md` for the chosen toolchain (WSL cross-compile vs.
-  native Windows is an open decision there).
+- WSL cross-compile with `cargo-xwin` (ROADMAP R7, R28–R32); needs LLVM
+  (`clang`, `lld`, `llvm`) because `arcdps-imgui-sys` builds Dear ImGui with
+  `clang-cl`.
+- Build + copy into the game: `cargo xtask deploy <addon> [--release]`
+  (folder from `TRAILKIT_GW2_ADDONS_DIR` or `xtask.local.toml`).
+- Hot reload verified in game (2026-10-31): Windows refuses to overwrite a
+  loaded DLL, so deploy renames it to `<name>.dll.old` first (Nexus' own
+  update technique) and moves the new DLL in; Nexus detects the change,
+  unloads (~0.3 ms) and loads the new build, and later removes the `.old`
+  file itself. Keybinds and state registered in `load` must therefore be
+  fully reverted in `unload` (`revert_on_unload`).
+- Crate layout: `crate-type = ["cdylib", "rlib"]`, `nexus` as a
+  `[target.'cfg(windows)'.dependencies]` entry, Nexus glue in a
+  `#[cfg(windows)] mod addon;` → logic modules are tested on Linux with
+  `cargo test`, Windows code linted with `cargo xwin clippy --target
+  x86_64-pc-windows-msvc` (R39).
+- Keybinds that must be unbound by default are registered with the string
+  `"(null)"`. Keybind display names are set via `set_translation(<keybind id>,
+  <lang>, <text>)`.
 
 ## Persisted user data (ROADMAP R22)
 

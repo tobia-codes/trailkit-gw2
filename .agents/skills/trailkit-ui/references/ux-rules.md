@@ -187,13 +187,53 @@ Each rule has an id (`area-name`) so reviews can cite it.
   (en/de) and shown in the user's local time zone; gold values as
   gold/silver/copper with icons.
 
-## 8. GW2 conventions (TO BE RESEARCHED)
+## 8. GW2 conventions (researched 2026-10-31)
 
-To be filled at the start of phase 0 (see `docs/plans/ROADMAP.md`): review
-the native GW2 UI and widely used Nexus/arcdps addons, and record the
-conventions players expect (window chrome, close/lock buttons, tooltips,
-coin display, colors for rarity, keybind display, …). Until then, follow
-sections 1–7.
+Sources: source code + screenshots of popular open-source Nexus addons
+(TaimiHUD, Hoard & Seek, Event Timers, kp_sync), the Nexus source
+(v2026.10.25), the arcdps readme, community rarity color tables
+(discretize-ui, gw2stacks, gw2inventory; the GW2 wiki is login-only).
+Rules G2–G5 were settled as ROADMAP R53–R56.
+
+### 8.1 Observed conventions (facts)
+
+- **Window chrome:** title bar with the addon/window name, close `X` top
+  right, Escape closes (`GUI_RegisterCloseOnEscape`). Tables with a header
+  row; trees with ▸/▾ disclosure arrows.
+- **Quick access icons:** 64×64 RGBA PNG in the Nexus style — parchment/beige
+  fill with a dark outline — plus a lighter `_Hover` variant; tooltip names
+  the action. Several addons offer a "show quick access icon" setting; a
+  right-click context menu is possible (`add_quick_access_context_menu`).
+- **Quick access bar position** is not draggable: Nexus sets it every frame
+  from *Location* (Extend / Under / Bottom / Custom) + *Offset* (pixels from
+  the game window's top-left). Overlays never leave the game window.
+- **Nexus options tab:** most addons render their full settings there.
+- **Item rarity:** item names and icon borders use rarity colors — Junk
+  `#AAAAAA`, Basic `#FFFFFF`, Fine `#62A4DA`, Masterwork `#1A9306`, Rare
+  `#FCD00B`, Exotic `#FFA405`, Ascended `#FB3E8D`, Legendary `#4C139D`
+  (on dark backgrounds tools commonly use `#974EFF` for Legendary).
+- **Gameplay state:** `NexusLink.IsGameplay` is false during loading
+  screens, cutscenes and character select; overlays hide then (TaimiHUD).
+- **arcdps habits:** hotkeys default to Alt+Shift modifiers; "moving requires
+  modifiers" option; right-click context menu per window; option to hide in
+  PvP.
+- **Shared author themes** exist (Hoard & Seek: "Use Pie UI theme (if
+  available)") — same idea as the trailkit theme.
+
+### 8.2 trailkit rules derived from 8.1
+
+- G1 Every window: name in the title bar, close `X`, Escape closes, position
+  and size remembered (already §4).
+- G2 Nexus options tab: header (name + version) + "Open settings" + "Open
+  help" buttons only, no full settings (R53).
+- G3 Rarity colors as `rarity.*` theme tokens, Legendary `#974EFF` in the dark
+  theme, contrast ≥ 3:1 (R54).
+- G4 Quick access icon in Nexus style, generated from SVG sources in the
+  repo; "show quick access icon" setting, default on (R55).
+- G5 All trailkit windows auto-hide while `IsGameplay == false`; per-addon
+  setting "also show outside gameplay", default off (R56).
+- G6 Default keybinds stay unbound (memo M14) to avoid clashes with the game
+  and other addons; help pages explain where to bind them.
 
 ## Not applicable (deliberately excluded)
 

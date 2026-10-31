@@ -1,0 +1,58 @@
+# cargo-deny configuration (ROADMAP R19). Run: `cargo deny check`.
+
+[graph]
+# Addons only ship for Windows; the host target keeps xtask/tests covered.
+targets = ["x86_64-pc-windows-msvc", "x86_64-unknown-linux-gnu"]
+all-features = false
+
+[advisories]
+# RustSec advisories fail the build (default: vulnerabilities, unsound, yanked).
+version = 2
+yanked = "deny"
+# R19 is about security advisories: "unmaintained" notices only fail for our
+# direct dependencies. Transitive ones (e.g. `paste`, `instant` via nexus-rs /
+# arcdps-imgui) are reviewed when bumping nexus-rs.
+unmaintained = "workspace"
+
+[licenses]
+version = 2
+# MIT-compatible permissive licenses only.
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "Unicode-3.0",
+]
+confidence-threshold = 0.9
+
+# nexus-rs (MIT per its LICENSE file) does not declare `license` in its manifests.
+[[licenses.clarify]]
+crate = "nexus"
+expression = "MIT"
+license-files = []
+
+[[licenses.clarify]]
+crate = "nexus_codegen"
+expression = "MIT"
+license-files = []
+
+[licenses.private]
+# Our own unpublished crates (publish = false) need no license check.
+ignore = true
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+allow-wildcard-paths = true
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+# Sole exception to "crates.io only": nexus-rs is only published as a git
+# repository and is pinned to a fixed commit (ROADMAP R31).
+allow-git = ["https://github.com/zerthox/nexus-rs"]

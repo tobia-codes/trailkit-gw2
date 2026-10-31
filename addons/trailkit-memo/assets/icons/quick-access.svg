@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-3 -6 76 76" width="64" height="64">
+  <!-- trailkit-memo quick access icon (ROADMAP R59): note sheet + pencil.
+       #E9DCB8 is the parchment token; the hover PNG replaces it (R58).
+       The viewBox adds padding so the icon matches the visual size of other
+       Nexus quick access icons. -->
+  <path d="M14 7 H40 L50 17 V55 Q50 57 48 57 H14 Q12 57 12 55 V9 Q12 7 14 7 Z"
+        fill="#E9DCB8" stroke="#2B2116" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M40 7 V17 H50" fill="none" stroke="#2B2116" stroke-width="3" stroke-linejoin="round"/>
+  <g stroke="#2B2116" stroke-width="2.5" stroke-linecap="round" opacity="0.65">
+    <line x1="18" y1="25" x2="42" y2="25"/>
+    <line x1="18" y1="32" x2="42" y2="32"/>
+    <line x1="18" y1="39" x2="34" y2="39"/>
+    <line x1="18" y1="46" x2="28" y2="46"/>
+  </g>
+  <g transform="rotate(-45 44 38)" stroke="#2B2116" stroke-width="2.5" stroke-linejoin="round">
+    <path d="M30 38 L37 33.5 V42.5 Z" fill="#E9DCB8"/>
+    <rect x="37" y="33.5" width="17" height="9" fill="#D9A441"/>
+    <rect x="54" y="33.5" width="5" height="9" rx="1.5" fill="#B5543C"/>
+  </g>
+  <path d="M30 38 L32.6 36.3 V39.7 Z" transform="rotate(-45 44 38)" fill="#2B2116"/>
+</svg>

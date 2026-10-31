@@ -1,0 +1,3 @@
+# JS workspace (pnpm, ROADMAP R35). Addon package.json files are version placeholders for Changesets.
+packages:
+  - "addons/*"
