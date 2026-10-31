@@ -1,91 +1,80 @@
 # Next session — handoff
 
-Last updated: 2026-10-31 (session 3).
+Last updated: 2026-10-31 (end of session 3).
 
 ## Where we are
 
-- Planning complete (ROADMAP R1–R39, data-pipeline D1–D26, core C1–C13,
-  memo M1–M15, event E1–E15). **Phase 0 (foundation) in progress** on branch
-  `chore/phase-0-foundation` (cut from `develop`; merge after user approval, R29).
-- Phase 0 grill round settled → R28–R39 in `ROADMAP.md`.
-- Never push without approval. The user converses in German; repo text English.
-
-## Phase 0 status
-
-Done:
-- rustup + pinned toolchain 1.99.1, cargo-xwin, cargo-deny installed.
-- Workspace (`Cargo.toml`, lints, `clippy.toml`, `deny.toml`), `xtask`
-  (`deploy`, `sync-versions`), `addons/trailkit-memo` skeleton, Changesets
-  structure (pnpm), CI workflow (`.github/workflows/ci.yml`, inactive until 0b).
-- Host checks green: fmt, clippy, tests, `cargo deny check`.
-
-Optional for the user:
-- Add `. "$HOME/.cargo/env"` to `~/.bashrc` (rustup was installed with
-  `--no-modify-path`).
-
-Settled since: R47 trailkit-ui crate (theme + StyleScope, done), R48 git
-hooks (done), R49 update provider `Direct`, R50 kebab-case DLL names,
-R51 gold palette, R52 domain `gw2.trailkit.de`; naming conventions (R40–R46, AGENTS.md "Naming conventions", `cargo xtask check-names`).
-
-Settled in session 3: grill rounds 5–6 → R53–R61 (options tab, rarity
-tokens, quick access icons + `cargo xtask build-icons`, gameplay auto-hide).
-
-Open phase 0 work:
-1. ~~Windows build, deploy, in-game test, hot reload~~ — done 2026-10-31.
-2. Memo quick access icon (R55/R57–R59) and gameplay auto-hide (R56/R61) —
-   done 2026-10-31, verified in game by the user (icon size matches other
-   Nexus icons after padding, hover, tooltip, click toggle, auto-hide, hot
-   reload).
-
-**Phase 0 complete.**
-
-## Phase 0b status (price archive)
-
-Settled: R62–R65 (public email rewrite, first push, 0b scope, `ureq`),
-data-pipeline D27–D31 (datagen path, DTOs in datagen, WvW reset snapshot
-times, no item-id diff, gem exchange quantities).
-
-Done 2026-10-31:
-- History rewritten to `tobiacodes@gmail.com` (R62).
-- Public repo `tobia-codes/trailkit-gw2` created; `main` = `develop`
-  pushed (bootstrap push with `--no-verify`, because the pre-push hook only
-  allows work branches; clippy + tests were run by hand).
+- **Phase 0 (foundation) complete** — workspace, xtask, trailkit-ui, memo
+  skeleton with quick access icon + gameplay auto-hide, CI, git hooks
+  (ROADMAP R28–R61).
+- **Phase 0b (price archive) complete except the first scheduled run** —
+  `tools/trailkit-datagen`, workflows `price-archive.yml` and
+  `dpf-reminder.yml`, first manual run on GitHub succeeded (release
+  `prices-2026-10`, all 4 data sets complete). Decisions R62–R68,
+  data-pipeline D27–D40, core C14, BACKLOG BL7.
+- Repo is public: <https://github.com/tobia-codes/trailkit-gw2>.
+  **`develop` is the default branch** (R67) → scheduled workflows run from
+  `develop`. `main` = last release (PR #2). PRs #1–#4 merged.
 - Branch protection: `main` PR-only + required checks (Windows job,
   cargo-deny, branch name), `develop` PR-only; both enforce admins, no force
-  push, no deletion.
-- CI did not trigger on the initial push (GitHub skips it sometimes); the
-  first PR will run it.
+  push, no deletion. (Re-create from R9 if it is ever lost.)
+- Rules that changed in session 3:
+  - Commit email `tobiacodes@gmail.com` (R62); history rewritten.
+  - **No AI attribution** in commits or PRs (R68, AGENTS.md rule 1).
+  - Every push / PR merge still needs the user's explicit approval; work
+    happens on `feature/`/`chore/` branches → PR to `develop`.
+- The user converses in German; repo text English.
 
 ## ▶ Resume here
 
-Done on `chore/datagen-skeleton` (not pushed yet):
-- `tools/trailkit-datagen` (`archive`, `wvw-snapshot`), live-tested locally
-  2026-10-31: all 4 data sets complete (prices 0.38 MB, order book 1.9 MB),
-  catch-up re-runs only incomplete data sets. Decisions R66, D32–D39.
-- Workflows `price-archive.yml` (daily 00:17, catch-up 06:17, WvW Fri 17:23 /
-  Sat 01:23 UTC, keep-alive) and `dpf-reminder.yml` (monthly issue, D18) —
-  **need the user's approval (D9) before the PR**.
+1. **Check the first scheduled archive runs** (2026-11-01):
+   `gh run list --workflow price-archive.yml` — the 00:17 UTC run should have
+   created release `prices-2026-11` with `2026-11-01.*` files; the 06:17 UTC
+   catch-up should be green (it fails only if gaps remain). Look at
+   `2026-11-01.manifest.json` (all data sets `complete`?). If something
+   failed: read the run log, fix on a `bugfix/` branch.
+   Also check that the first DPF reminder issue appears on the 1st (08:00 UTC).
+2. Then **phase 0b is complete** → start **phase 1: trailkit-memo standalone**
+   (no core). Begin with a grill round on what `docs/plans/addons/trailkit-memo.md`
+   (M1–M15) leaves open for implementation — e.g. settings persistence format
+   and location, settings window layout, help window (markdown rendering),
+   note tree data model + drag & drop, storage format of notes, import/export,
+   backups (M11), reset timers (M13, with `jiff`, R66). Phase 1 also builds the
+   shared UI components in `crates/trailkit-ui` and the Nexus options tab (R53).
+3. Next release PR `develop` → `main` will show "out of date" because `main`
+   has the merge commit of PR #2: use "Update branch" (or merge `main` back
+   into `develop` via a PR) before merging.
 
-PR #1 (datagen + workflows) merged into `develop` 2026-10-31; `develop` is
-the default branch since then (R67), so the schedules are active from
-`develop`. Release PR #2 (`develop` → `main`) is open, CI green, merge
-awaits approval. Verify the first scheduled archive (00:17 UTC) or a manual
-run (`gh workflow run price-archive.yml -f mode=catch-up`): release
-`prices-YYYY-MM` exists with the day's files + manifest. Then phase 0b is
-complete → phase 1 (trailkit-memo standalone).
+## Notes from session 3
+
+- The first manual archive run started before the history rewrite; its tag
+  `prices-2026-10` was moved to the rewritten commit `98427aa` (same tree).
+- `prices-2026-10` shows as "Latest" on GitHub although created with
+  `--latest=false` — probably because it is the only release. Re-check once
+  the first addon release exists (end of phase 1).
+- Live archive run takes ~4.5 min; sizes per day: prices ~0.38 MB, order
+  book ~1.9 MB, WvW ~25 KB, gem exchange < 1 KB.
+- The pre-push hook rejects pushing `develop`/`main` directly (by design);
+  the one-time bootstrap/rewrite pushes used `--no-verify` with clippy +
+  tests run by hand.
 
 ## User to-dos
 
+- Add + verify `tobiacodes@gmail.com` on GitHub (Settings → Emails), so the
+  commits are linked to the profile.
 - Verify "trailkit" in TMview + DPMAregister.
-- Add + verify `tobiacodes@gmail.com` on GitHub (Settings → Emails).
 - Google Alert for C-703/25 (D18).
+- Optional: add `. "$HOME/.cargo/env"` to `~/.bashrc` (rustup was installed
+  with `--no-modify-path`).
 
 ## Recurring checks (2026-10-31)
 
 - GW2 wiki: still behind Cognito login → Wayback workaround stays.
-- C-703/25 P: pending, no hearing date; DPF in force.
+- C-703/25 P: pending, no hearing date, no AG opinion; DPF in force
+  (checked again at the start of phase 0b).
 
 ## Environment notes
 
 - GW2 addons folder: `C:\Guild Wars 2\addons` (WSL: `/mnt/c/Guild Wars 2/addons`).
 - Node 24 via fnm, pnpm 11.17.0 already installed.
+- `gh` is logged in as `tobia-codes` (ssh).
