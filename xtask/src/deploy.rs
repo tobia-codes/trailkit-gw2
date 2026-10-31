@@ -58,8 +58,8 @@ pub fn run(addon_name: &str, profile: Profile) -> Result<()> {
         .join("target")
         .join(TARGET)
         .join(profile.dir_name())
-        .join(addon.dll_name());
-    let deployed_dll = addons_dir_path.join(addon.dll_name());
+        .join(addon.built_dll_name());
+    let deployed_dll = addons_dir_path.join(addon.shipped_dll_name());
     replace_file_atomically(&built_dll, &deployed_dll)?;
     println!("deployed {} → {}", addon.name(), deployed_dll.display());
     Ok(())
