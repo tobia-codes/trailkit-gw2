@@ -65,6 +65,8 @@ pub enum Text {
     Hello,
     /// Display name of the open/close keybind in the Nexus keybind list.
     KeybindToggle,
+    /// Tooltip of the quick access icon.
+    QuickAccessTooltip,
 }
 
 impl Text {
@@ -78,6 +80,8 @@ impl Text {
             (Self::Hello, Language::German) => "Hallo von trailkit-memo!",
             (Self::KeybindToggle, Language::English) => "Open/close notes",
             (Self::KeybindToggle, Language::German) => "Notizen öffnen/schließen",
+            (Self::QuickAccessTooltip, Language::English) => "Notes",
+            (Self::QuickAccessTooltip, Language::German) => "Notizen",
         }
     }
 }
