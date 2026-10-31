@@ -2,3 +2,9 @@
 **/*.rs.bk
 .DS_Store
 .claude/settings.local.json
+
+# local developer config (xtask deploy)
+/xtask.local.toml
+
+# JS tooling (Changesets)
+node_modules/
