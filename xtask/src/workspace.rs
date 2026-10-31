@@ -71,9 +71,16 @@ impl Addon {
         root().join("addons").join(&self.name)
     }
 
-    /// File name of the built DLL (`-` replaced by `_`, as cargo does).
+    /// File name of the DLL cargo builds (`-` replaced by `_`).
     #[must_use]
-    pub fn dll_name(&self) -> String {
+    pub fn built_dll_name(&self) -> String {
         format!("{}.dll", self.name.replace('-', "_"))
+    }
+
+    /// File name of the DLL we ship and deploy: the `kebab-case` crate name
+    /// (naming conventions, ROADMAP R50), e.g. `trailkit-memo.dll`.
+    #[must_use]
+    pub fn shipped_dll_name(&self) -> String {
+        format!("{}.dll", self.name)
     }
 }

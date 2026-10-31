@@ -51,6 +51,9 @@ in the crate, document here):
 | Typography | `font.size.small`, `font.size.body`, `font.size.heading` |
 
 - **Built-in themes:** `Dark` (default) and `Light`. Both are full token sets.
+  Values: `crates/trailkit-ui/src/theme.rs` (palette R51: anthracite surfaces,
+  GW2-like gold accent). A unit test enforces ≥ 4.5:1 for every text color on
+  every background — add new text/background tokens to that test.
 - **User customization:** the user can override any token in the settings
   (color pickers, sliders) and save as a custom theme; reset-to-default per
   token and for the whole theme. Overrides are stored as a diff over the base

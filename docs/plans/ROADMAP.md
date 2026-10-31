@@ -55,6 +55,8 @@
 | R47 | `crates/trailkit-ui` exists from phase 0 with **only** theme tokens (`Theme::DARK` default, `Theme::LIGHT`, WCAG contrast test) and the `StyleScope` RAII guard; components move in only on real reuse (rule 7) | 2026-10-31 |
 | R48 | Local git hooks versioned in `.githooks/`, enabled via `cargo xtask install-hooks` (`core.hooksPath`): pre-commit = `cargo fmt --check` + `check-names`; pre-push = `check-branch` + clippy + tests. CI uses the same `cargo xtask check-branch` | 2026-10-31 |
 | R49 | Addon updates use Nexus provider **`Direct`**: a fixed URL per addon serving the latest DLL + `<url>.md5`, published by the release workflow (0b) to GitHub Pages. Reason (Nexus source, v2026.10.25): the `GitHub` provider parses release tags as `v?X.Y.Z` (our `<addon>@x.y.z` tags are skipped) and takes the first `.dll` of the highest release across the whole repo → unusable in a monorepo; `Raidcore` provider is unimplemented. No pre-release channel (betas ship as 0.x). Exact URL/domain: see next decision | 2026-10-31 |
+| R50 | Shipped/deployed DLLs are named after the `kebab-case` crate (`trailkit-memo.dll`); `xtask deploy` and the release workflow rename cargo's `trailkit_memo.dll` | 2026-10-31 |
+| R51 | Theme palette: anthracite surfaces + **GW2-like gold accent** (dark `#D9A441` with dark text, light `#8C5E0A` with white text), green/yellow/red/blue status colors; all text pairs ≥ 4.5:1 (unit-tested); fine-tuning after the first in-game test. Values live in `crates/trailkit-ui/src/theme.rs` | 2026-10-31 |
 
 ## Proposed repository layout
 
