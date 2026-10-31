@@ -18,10 +18,10 @@ file in each skill directory.
 | Skill | Content |
 |-------|---------|
 | `nexus-addon-dev` | Nexus API facts, threading & performance research, inter-addon protocol, i18n, API key handling |
-| `trailpack-ui` | Design system, themes, shared components, full UX rule set for ImGui overlays (`references/ux-rules.md`) |
+| `trailkit-ui` | Design system, themes, shared components, full UX rule set for ImGui overlays (`references/ux-rules.md`) |
 
 ## Inspiration (not vendored)
 
 | Source | Used for | License |
 |--------|----------|---------|
-| [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) | Rules adapted into `trailpack-ui/references/ux-rules.md` (removed as a skill on 2026-10-31: web/mobile-centric, risk of agents applying non-overlay rules) | MIT |
+| [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) | Rules adapted into `trailkit-ui/references/ux-rules.md` (removed as a skill on 2026-10-31: web/mobile-centric, risk of agents applying non-overlay rules) | MIT |

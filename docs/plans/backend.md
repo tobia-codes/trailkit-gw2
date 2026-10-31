@@ -1,14 +1,14 @@
-# trailpack backend
+# trailkit backend
 
 - **Status:** **deferred** (2026-10-31, see [`data-pipeline.md`](data-pipeline.md) D1). Kept as the
   target design for when a dynamic feature (e.g. price history) needs a server.
   Data formats and paths of the static files are chosen so this server can
   take over without changing core.
-- **Crate path:** `backend/` (binary) + shared types in `crates/trailpack-api-types`
+- **Crate path:** `backend/` (binary) + shared types in `crates/trailkit-api-types`
 
 ## Goal
 
-A Rust service that mirrors the data the trailpack addons need from the
+A Rust service that mirrors the data the trailkit addons need from the
 official Guild Wars 2 API into our own database, so addons never hit the
 GW2 API for static/shared data and keep working when the GW2 API is down.
 It also archives trading post prices to enable price history features.
@@ -22,7 +22,7 @@ It also archives trading post prices to enable price history features.
 - Scheduled refresh (cron) with different cadences for fast-changing data
   (prices) and slow-changing data (items, achievements, waypoints, events).
 - Free hosting (Neon was suggested; alternatives welcome).
-- Security: rate limiting; ideally only trailpack addons can query the API.
+- Security: rate limiting; ideally only trailkit addons can query the API.
 - Player-specific data (API key) is **not** handled by the backend — that is
   core-addon ↔ GW2 API directly.
 
@@ -75,7 +75,7 @@ Hosting alternatives (free tiers, to be verified at decision time):
 - **HTTP client:** `reqwest` (+ `backon` or own retry) for the GW2 API.
 - **Scheduling:** in-process `tokio-cron-scheduler` *or* external trigger
   (GitHub Actions `schedule`) — open question.
-- **Serialization/types:** `serde`; API DTOs in `crates/trailpack-api-types`
+- **Serialization/types:** `serde`; API DTOs in `crates/trailkit-api-types`
   shared with the addons (end-to-end typing, like tRPC in TS).
 - **API docs:** `utoipa` (OpenAPI generated from types).
 - **Rate limiting:** `tower_governor` (per-IP token bucket).
@@ -117,12 +117,12 @@ API" is not enforceable; we can only raise the bar and limit damage:
 | B8 | From day one: **always-on Rust runtime with REST API + database** (no static-files-only setup) | 2026-10-31 |
 | B9 | One sync run per day at **00:30 UTC** (prices, items, achievements, waypoints, events). Manual re-sync is **admin-only** (never triggerable by addon users), no cooldown | 2026-10-31 |
 | B10 | Server binary runs as Docker image (built in CI), deployed via SSH script **only with explicit user approval**; Caddy as reverse proxy/TLS; secrets only as env vars on the server | 2026-10-31 |
-| B11 | REST API versioned under `/v1`, `?lang=en|de`; endpoints: `/v1/events`, `/v1/waypoints`, `/v1/achievements`, `/v1/items` (**all at once** or `?ids=`), `/v1/prices` (**all at once** or `?ids=`), `/v1/prices/{item_id}/history`, `/v1/meta`; OpenAPI via `utoipa`; DTOs in `crates/trailpack-api-types` shared with core | 2026-10-31 |
+| B11 | REST API versioned under `/v1`, `?lang=en|de`; endpoints: `/v1/events`, `/v1/waypoints`, `/v1/achievements`, `/v1/items` (**all at once** or `?ids=`), `/v1/prices` (**all at once** or `?ids=`), `/v1/prices/{item_id}/history`, `/v1/meta`; OpenAPI via `utoipa`; DTOs in `crates/trailkit-api-types` shared with core | 2026-10-31 |
 | B12 | Admin re-sync via `POST /admin/sync` protected by an admin token only the owner holds (never shipped in addons), strict rate limit, no cooldown | 2026-10-31 |
-| B13 | Domain bought at **INWX** at the first public release (~5 €/year, DNS included); subdomains (e.g. `api.`, `www.`, further sites) via DNS records, routed per subdomain by Caddy with automatic TLS; name/TLD decided before release. | 2026-10-31 |
+| B13 | Domain bought at **INWX** (timing/name superseded by ROADMAP R27: trailkit.de, bought now) (~5 €/year, DNS included); subdomains (e.g. `api.`, `www.`, further sites) via DNS records, routed per subdomain by Caddy with automatic TLS; name/TLD decided before release. | 2026-10-31 |
 | B20 | **No Cloudflare / no US providers.** DNS at INWX, DDoS protection by Hetzner, rate limiting in the Rust server; a CDN only when needed, then Bunny.net (EU). Independent of the pending CJEU ruling on the EU-US Data Privacy Framework (C-703/25 P). Supersedes the CDN part of B3 | 2026-10-31 |
 | B21 | No backups at launch (DB holds only public, re-syncable data except price history) → backlog BL4 | 2026-10-31 |
-| B19 | Hosting roadmap: phases 0–2 run **locally in WSL** (`docker compose`: Postgres + server, addon talks to localhost, 0 €); from the first public trailpack-core release on: **Hetzner Cloud, Germany** (CX23 or CAX11, whichever is cheaper); migration-ready via Docker + `pg_dump` + DNS switch | 2026-10-31 |
+| B19 | Hosting roadmap: phases 0–2 run **locally in WSL** (`docker compose`: Postgres + server, addon talks to localhost, 0 €); from the first public trailkit-core release on: **Hetzner Cloud, Germany** (CX23 or CAX11, whichever is cheaper); migration-ready via Docker + `pg_dump` + DNS switch | 2026-10-31 |
 | B14 | Caching inside the Rust process (`ArcSwap` for daily data sets, `moka` for price histories); no Redis/Elasticsearch until a concrete need (e.g. multiple servers) | 2026-10-31 |
 | B15 | Bulk item endpoint contains only addon-relevant fields: id, name, icon URL, rarity, type, level, chat link; extended on demand | 2026-10-31 |
 | B16 | **No Neon.** Postgres runs in Docker on our own server; code stays provider-agnostic (`DATABASE_URL`, `sqlx` migrations); nightly off-site backups | 2026-10-31 |

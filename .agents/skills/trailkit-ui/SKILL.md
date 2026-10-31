@@ -1,11 +1,11 @@
 ---
-name: trailpack-ui
-description: Design system and UI rules for all trailpack-gw2 Nexus addons (ImGui) — theme tokens, dark/light themes, user customization, shared components, layout and UX best practices. Use whenever building, changing or reviewing any addon UI.
+name: trailkit-ui
+description: Design system and UI rules for all trailkit-gw2 Nexus addons (ImGui) — theme tokens, dark/light themes, user customization, shared components, layout and UX best practices. Use whenever building, changing or reviewing any addon UI.
 ---
 
-# trailpack UI design system
+# trailkit UI design system
 
-All trailpack addons must look and feel like **one product**. This skill is
+All trailkit addons must look and feel like **one product**. This skill is
 the **single source of truth** for UI/UX in this repo. The detailed rule set
 (game overlay, accessibility, interaction, forms, layout, navigation, states,
 charts) lives in [`references/ux-rules.md`](references/ux-rules.md) — read it
@@ -34,7 +34,7 @@ generic web/mobile UI guidelines (touch targets, breakpoints, CSS, …) here.
 ## 2. Theme tokens
 
 Components never use raw colors or numbers; they read **semantic tokens** from
-the active `Theme` (crate `crates/trailpack-ui`). Token set (initial — extend
+the active `Theme` (crate `crates/trailkit-ui`). Token set (initial — extend
 in the crate, document here):
 
 | Group | Tokens |
@@ -56,13 +56,13 @@ in the crate, document here):
   token and for the whole theme. Overrides are stored as a diff over the base
   theme.
 - **Shared across addons:** the active theme lives in a shared file under the
-  Nexus common directory so all trailpack addons use the same theme; an addon
+  Nexus common directory so all trailkit addons use the same theme; an addon
   may offer per-addon overrides only for addon-specific tokens (e.g. event
   colors). (Exact mechanism: see core plan.)
 - Applying a theme = RAII guard that pushes ImGui style colors/vars and pops
   them on drop. Never touch the global ImGui style (shared with other addons).
 
-## 3. Shared components (crate `trailpack-ui`)
+## 3. Shared components (crate `trailkit-ui`)
 
 Build once, use everywhere. Planned:
 
@@ -72,13 +72,13 @@ Build once, use everywhere. Planned:
 - `Button` variants: primary, secondary, ghost, danger
 - `Popover` / `Tooltip`, `ConfirmDialog`, `UnsavedChangesDialog`
 - `DependencyHint` (greyed feature + explanation + "Open core settings"/
-  "Get trailpack-core" button)
+  "Get trailkit-core" button)
 - `Tree` with drag & drop (groups / subgroups / items)
 - `ColorTokenEditor`, `KeybindHint`, `EmptyState`, `ErrorState`, `Spinner`
 - Markdown renderer (read-only view)
 
 Rule: a component starts life inside one addon. When a second addon needs it,
-move it into `crates/trailpack-ui` (see AGENTS.md "Code sharing").
+move it into `crates/trailkit-ui` (see AGENTS.md "Code sharing").
 
 ## 4. Layout & interaction
 

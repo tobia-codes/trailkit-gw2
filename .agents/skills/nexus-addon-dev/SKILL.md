@@ -1,9 +1,9 @@
 ---
 name: nexus-addon-dev
-description: Project knowledge for building Raidcore Nexus addons in Rust for trailpack-gw2 — Nexus API facts, threading and performance rules, inter-addon communication, settings window, localization, help page, API key handling. Use whenever writing, reviewing or planning code under addons/ or crates/ that runs inside Guild Wars 2.
+description: Project knowledge for building Raidcore Nexus addons in Rust for trailkit-gw2 — Nexus API facts, threading and performance rules, inter-addon communication, settings window, localization, help page, API key handling. Use whenever writing, reviewing or planning code under addons/ or crates/ that runs inside Guild Wars 2.
 ---
 
-# Nexus addon development (trailpack-gw2)
+# Nexus addon development (trailkit-gw2)
 
 Facts below were researched on 2026-10-31 against Nexus API v6
 (`RCGG-lib-nexus-api/Nexus.h`, Nexus source, `zerthox/nexus-rs` 0.12).
@@ -24,7 +24,7 @@ Re-verify when bumping `NEXUS_API_VERSION` or `nexus-rs`.
   `AF_DisableHotloading` exists but do not use it unless unavoidable.
 - One Dear ImGui context is **shared by all addons**. Never change the global
   style; always push style colors/vars before drawing and pop them after
-  (use the `trailpack-ui` theme scope guard).
+  (use the `trailkit-ui` theme scope guard).
 - Fonts: `NexusLinkData_t` exposes `Font`, `FontBig`, `FontUI`;
   `Fonts_AddFromFile/Memory` + `Fonts_Resize` exist for custom sizes.
   Font changes rebuild the atlas — never do it per frame.
@@ -37,7 +37,7 @@ Re-verify when bumping `NEXUS_API_VERSION` or `nexus-rs`.
   tooltip)` adds an icon to the Nexus bar bound to a keybind.
 - Keybinds: `InputBinds_RegisterWithString` — the user can rebind in Nexus.
 - Close on Escape: `GUI_RegisterCloseOnEscape(windowName, &visible)`.
-- Paths: `Paths_GetAddonDirectory("trailpack/<addon>")` for settings and
+- Paths: `Paths_GetAddonDirectory("trailkit/<addon>")` for settings and
   caches; never write next to the game exe.
 
 ## 2. Threading & performance (mandatory)
@@ -87,9 +87,9 @@ Nexus offers two primitives:
 - **Events** (`Events_Raise(id, ptr)`, targeted variants): synchronous
   callbacks, payload is a raw pointer.
 
-Project contract (to be finalized in `docs/plans/addons/trailpack-core.md`):
+Project contract (to be finalized in `docs/plans/addons/trailkit-core.md`):
 
-- All cross-addon types live in **one** crate (`crates/trailpack-protocol`),
+- All cross-addon types live in **one** crate (`crates/trailkit-protocol`),
   `#[repr(C)]`, with an explicit `version: u32` as first field. No Rust-ABI
   types (`String`, `Vec`, `Box`, trait objects) cross the DLL boundary.
 - Memory is freed by the DLL that allocated it.
@@ -102,12 +102,12 @@ Project contract (to be finalized in `docs/plans/addons/trailpack-core.md`):
 ## 4. Localization
 
 - Every addon ships **English and German**. Strings live in typed keys
-  (an enum / generated module per addon, shared keys in `trailpack-i18n`),
+  (an enum / generated module per addon, shared keys in `trailkit-i18n`),
   never as inline literals in UI code.
 - Nexus does **not** expose the active language directly. Trick: at load,
-  `Localization_Set("trailpack.lang", "en", "en")`,
-  `Localization_Set("trailpack.lang", "de", "de")` etc.; then
-  `Localization_Translate("trailpack.lang")` returns the active Nexus language
+  `Localization_Set("trailkit.lang", "en", "en")`,
+  `Localization_Set("trailkit.lang", "de", "de")` etc.; then
+  `Localization_Translate("trailkit.lang")` returns the active Nexus language
   code.
 - Resolution order: language chosen in the addon settings → Nexus language →
   English.
@@ -123,14 +123,14 @@ Project contract (to be finalized in `docs/plans/addons/trailpack-core.md`):
   in core (or core is not installed), the feature is greyed out and shows an
   inline hint explaining *what* to enable *where*, with a button that opens
   the relevant core settings page (or the Nexus addon library for install).
-- Look & feel: follow the `trailpack-ui` skill.
+- Look & feel: follow the `trailkit-ui` skill.
 
 ## 6. Player API keys
 
-- The GW2 API key is stored **only** by trailpack-core, encrypted at rest with
+- The GW2 API key is stored **only** by trailkit-core, encrypted at rest with
   Windows DPAPI (`CryptProtectData`, current-user scope). Never in plain text,
   never in logs, never sent anywhere except `https://api.guildwars2.com`.
-- Never sent to trailpack data hosts or any future trailpack backend.
+- Never sent to trailkit data hosts or any future trailkit backend.
 - Validate with `/v2/tokeninfo`; show granted permissions; mask in UI
   (show/hide toggle, paste button, clear button).
 - Other addons never receive the key — they request data through core.
@@ -139,3 +139,13 @@ Project contract (to be finalized in `docs/plans/addons/trailpack-core.md`):
 
 - See `docs/plans/ROADMAP.md` for the chosen toolchain (WSL cross-compile vs.
   native Windows is an open decision there).
+
+## Persisted user data (ROADMAP R22)
+
+- Every file an addon writes (notes, custom events, settings, theme) contains
+  a `schema_version`.
+- On load, older versions are migrated forward step by step; **write a backup
+  copy before the first migrated save**.
+- A file with an unknown *newer* `schema_version` is never overwritten: run
+  read-only (or disabled) and tell the user to update the addon.
+- Saves are atomic (write temp file + rename) on the worker thread.

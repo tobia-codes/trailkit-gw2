@@ -1,12 +1,12 @@
-# trailpack data pipeline (static data + price archive)
+# trailkit data pipeline (static data + price archive)
 
-- **Status:** draft — D1–D24 settled
+- **Status:** draft — D1–D26 settled
 - **Replaces for now:** the always-on server in [`backend.md`](backend.md) (deferred, see D1)
-- **Code path (proposal):** `tools/trailpack-datagen` (Rust CLI, run by a scheduled CI job)
+- **Code path (proposal):** `tools/trailkit-datagen` (Rust CLI, run by a scheduled CI job)
 
 ## Goal
 
-Provide the data trailpack-core needs (events, items, achievements, waypoints,
+Provide the data trailkit-core needs (events, items, achievements, waypoints,
 current prices) as **static files** that core downloads via plain HTTP(S) —
 **free of charge**, without running our own server. In parallel, archive the
 trading post prices **daily** in a lossless format so that a Postgres
@@ -32,15 +32,15 @@ exists.
 
 ```
 scheduled CI job (daily, UTC)
-  └─ trailpack-datagen (Rust CLI)
+  └─ trailkit-datagen (Rust CLI)
        ├─ GW2 API ──► items, achievements, waypoints, prices, build id
        ├─ data/events/ (curated, in this repo)
-       ├─ writes "current" snapshot  ──► static host  ◄── trailpack-core (HTTP GET + ETag)
+       ├─ writes "current" snapshot  ──► static host  ◄── trailkit-core (HTTP GET + ETag)
        └─ writes price archive file   ──► archive storage (never read by addons)
 ```
 
 - One Rust CLI does both jobs; it reuses the DTOs in
-  `crates/trailpack-api-types` that core uses to parse the files
+  `crates/trailkit-api-types` that core uses to parse the files
   (end-to-end typing, same as the planned REST API).
 - **Paths mirror the future REST API** (`/v1/items.en.json`,
   `/v1/prices.json`, `/v1/meta.json`, …), so a later server can serve the
@@ -59,7 +59,7 @@ scheduled CI job (daily, UTC)
 - Timestamps in UTC, RFC 3339; money as integer copper; no locale-formatted
   values.
 - Each data set documents its target table (`CREATE TABLE` sketch) in
-  `tools/trailpack-datagen/README.md`; `schema_version` bumps on every
+  `tools/trailkit-datagen/README.md`; `schema_version` bumps on every
   breaking change.
 - Localized fields (`name`, `description`) per language file
   (`items.en.json`, `items.de.json`) → table `item_i18n(item_id, lang, …)`.
@@ -90,7 +90,7 @@ scheduled CI job (daily, UTC)
 | Cloudflare R2 / Pages | free | technically ideal | excluded by B20 (US) |
 
 Observation: Nexus addon updates are typically distributed via GitHub
-Releases, so users' clients already contact GitHub for trailpack updates.
+Releases, so users' clients already contact GitHub for trailkit updates.
 
 ## Measurements (2026-10-31, 600 random tradeable ids, extrapolated to 27 999)
 
@@ -161,7 +161,7 @@ See `NEXT_SESSION.md`.
 |---|----------|------|
 | D1 | **No backend server for now.** Static files + scheduled job instead; the server plan in `backend.md` is deferred until a feature needs dynamic queries (e.g. price history). Supersedes B8 for the current phases | 2026-10-31 |
 | D2 | Hosting of the data pipeline must be **free** | 2026-10-31 |
-| D3 | trailpack-core fetches the files via HTTP(S) and keeps its planned behavior (disk cache, ETag/304, daily refresh with jitter, offline start) | 2026-10-31 |
+| D3 | trailkit-core fetches the files via HTTP(S) and keeps its planned behavior (disk cache, ETag/304, daily refresh with jitter, offline start) | 2026-10-31 |
 | D4 | Prices are archived **daily** in a lossless, Postgres-importable format; the archive is write-only (no addon reads it) | 2026-10-31 |
 | D5 | All published data sets follow the Postgres-readiness rules above; only prices are archived, other sets keep the current state only | 2026-10-31 |
 | D6 | Current data files are served via **GitHub Pages** — documented exception to B20 for public game data delivery; GDPR notice required (see assessment) | 2026-10-31 |
@@ -171,7 +171,7 @@ See `NEXT_SESSION.md`.
 | D10 | Formats: archive = raw NDJSON.gz + manifest; served files = JSON per data set and language under `/v1/…` + `meta.json` with hashes | 2026-10-31 |
 | D11 | Core uses the GitHub Pages URL until the first public release, then our own domain (B13); `meta.json` can announce a new base URL that old core versions follow | 2026-10-31 |
 | D12 | Prices for core: one file with all current prices (~1 MB gz), refreshed daily | 2026-10-31 |
-| D13 | Order: the price archive starts right after the phase 0 toolchain, before trailpack-memo | 2026-10-31 |
+| D13 | Order: the price archive starts right after the phase 0 toolchain, before trailkit-memo | 2026-10-31 |
 | D14 | Core shows a one-time first-start notice ("game data is loaded from GitHub, USA; your IP address is transmitted") and downloads nothing until the user confirms; same notice in core's help page and the privacy policy | 2026-10-31 |
 | D15 | Additionally archived: gem exchange rates, `/v2/build`, daily item-id diff (new/removed items), **WvW matches** (daily + snapshots shortly before the EU/NA weekly resets for final scores; ~10–20 MB/year). Never archived: anything requiring an API key | 2026-10-31 |
 | D16 | Archive retention: **keep everything forever** (no deletion); supersedes the 1-year retention of B1 for the archive | 2026-10-31 |
@@ -183,3 +183,5 @@ See `NEXT_SESSION.md`.
 | D22 | Item file fields: B15 fields (id, name, icon, rarity, type, level, chat link) **+ `vendor_value` + `flags`** | 2026-10-31 |
 | D23 | Event schedules are hand-maintained **TOML** files, one per category, in `data/events/` (format in `data/events/README.md`); datagen validates them and generates `/v1/events.json` | 2026-10-31 |
 | D24 | `data/events/` has its own license **CC BY-NC-SA 2.5** (`data/events/LICENSE`, derived from the GW2 wiki); attribution included in `events.json`; the rest of the repo stays MIT; event data must never be monetized | 2026-10-31 |
+| D25 | Schema evolution of served files: adding fields is always allowed (consumers ignore unknown fields); breaking changes get a new path prefix (`/v2/…`); the old prefix keeps being generated for **6 months** after the new one ships | 2026-10-31 |
+| D26 | datagen is a polite GW2 API client: client-side throttle (~4 req/s), retries with backoff on 429/5xx, partial failures recorded in the manifest instead of aborting the whole run | 2026-10-31 |
