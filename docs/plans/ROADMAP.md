@@ -73,6 +73,7 @@
 | R65 | One HTTP client everywhere: **`ureq`** (blocking, `rustls`, no Tokio) for datagen and all addons, so GW2 API code (throttle, retries) can be shared. `reqwest` (most popular, but async/Tokio, also in its blocking mode) is not used in addons; it may be reconsidered for the deferred backend server | 2026-10-31 |
 | R66 | One date/time library everywhere: **`jiff`** (Temporal-like API, built-in time zone database, DST-correct arithmetic — needed later for memo reset times and event schedules in local time); 0.x risk accepted because versions are pinned and bumped deliberately | 2026-10-31 |
 | R67 | **`develop` is the GitHub default branch** (PRs target it automatically). Consequence: scheduled workflows (price archive, DPF reminder) run from `develop`, so datagen/workflow changes take effect when merged into `develop`; addon releases still go `develop` → `main` (R9) | 2026-10-31 |
+| R68 | **No AI attribution** in commits or PRs (no `Co-Authored-By` trailer, no "Generated with …" footer), so only `tobia-codes` appears as contributor. The existing history was rewritten once on 2026-10-31 (branch protection lifted for the force push of `main`/`develop`, then restored) | 2026-10-31 |
 
 ## Proposed repository layout
 
