@@ -7,7 +7,7 @@ trailkit-core downloads. Plan and decisions:
 
 It only reads the public GW2 API (no API key) and writes into a local
 directory. It never talks to GitHub: the scheduled workflow creates the
-monthly release `prices-YYYY-MM` and uploads the files (D34).
+monthly release `archive-YYYY-MM` and uploads the files (D34).
 
 ## Build and test
 

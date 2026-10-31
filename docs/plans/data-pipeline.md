@@ -127,7 +127,7 @@ still applies).
 
 ## Archive layout
 
-- One GitHub Release per month (`prices-YYYY-MM`), **one file per data set
+- One GitHub Release per month (`archive-YYYY-MM`, D41), **one file per data set
   per day** (e.g. `2026-11-01.prices.ndjson.gz`,
   `2026-11-01.orderbook.ndjson.gz`, `2026-11-01.wvw.ndjson.gz`,
   `2026-11-01.manifest.json`) → ~6 files/day, ~190 assets per release
@@ -166,7 +166,7 @@ See `NEXT_SESSION.md`.
 | D5 | All published data sets follow the Postgres-readiness rules above; only prices are archived, other sets keep the current state only | 2026-10-31 |
 | D6 | Current data files are served via **GitHub Pages** — documented exception to B20 for public game data delivery; GDPR notice required (see assessment) | 2026-10-31 |
 | D7 | Scheduled job: GitHub Actions in this repo, daily 00:17 UTC + catch-up run 06:17 UTC that only acts if today's archive is missing or incomplete (amended by D35) | 2026-10-31 |
-| D8 | One repo: current files on orphan branch `gh-pages` (force-pushed, no history); archive as monthly GitHub Releases `prices-YYYY-MM`, one asset per day | 2026-10-31 |
+| D8 | One repo: current files on orphan branch `gh-pages` (force-pushed, no history); archive as monthly GitHub Releases `archive-YYYY-MM` (renamed by D41), one asset per day | 2026-10-31 |
 | D9 | The CI bot may push `gh-pages` and create archive releases without per-push approval; changes to the workflow itself still need approval (AGENTS.md rule 1) | 2026-10-31 |
 | D10 | Formats: archive = raw NDJSON.gz + manifest; served files = JSON per data set and language under `/v1/…` + `meta.json` with hashes | 2026-10-31 |
 | D11 | Core uses the GitHub Pages URL until the first public release, then our own domain (B13; settled as `gw2.trailkit.de`, ROADMAP R52); `meta.json` can announce a new base URL that old core versions follow | 2026-10-31 |
@@ -197,5 +197,6 @@ See `NEXT_SESSION.md`.
 | D36 | Tests use small committed API response fixtures; CI never calls the live GW2 API; a manual local run validates against the live API before the workflow is enabled | 2026-10-31 |
 | D37 | `webpki-roots` (Mozilla CA list, pulled in by `ureq`/`rustls`) is licensed CDLA-Permissive-2.0: allowed via a `cargo-deny` exception for that crate only, not as a general license allowance | 2026-10-31 |
 | D38 | Keep-alive: GitHub disables scheduled workflows after 60 days without repository activity and the archive produces no commits, so every archive run re-enables its own workflow via the API (`gh workflow enable`, `actions: write`) | 2026-10-31 |
-| D39 | Monthly release `prices-YYYY-MM`: tag on the commit the scheduled run uses — the default branch `develop` since R67 — created with `--latest=false` so "Latest release" stays an addon release, body explains the content and links the datagen README | 2026-10-31 |
+| D39 | Monthly release `archive-YYYY-MM` (D41): tag on the commit the scheduled run uses — the default branch `develop` since R67 — created with `--latest=false` so "Latest release" stays an addon release, body explains the content and links the datagen README | 2026-10-31 |
 | D40 | The served prices file (D12, phase 2) is generated **twice daily**: 00:17 UTC from the archive run's price fetch (no extra API requests, right after the daily reset, NA prime time) and 16:17 UTC with a prices-only fetch (before EU prime time). Old files are deleted automatically (keep the last 4). The archive itself stays one snapshot per day and one release per month | 2026-10-31 |
+| D41 | The archive holds more than prices (order book, WvW, gem exchange), so it is named **daily archive**: workflow `daily-archive.yml` ("Daily archive"), monthly release tag `archive-YYYY-MM`, title "GW2 archive YYYY-MM"; the first release `prices-2026-10` was renamed to `archive-2026-10`. Daily file names (`<date>.prices.ndjson.gz`, …) are unchanged | 2026-10-31 |
