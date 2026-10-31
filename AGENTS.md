@@ -21,7 +21,11 @@ Planning documents live in [`docs/plans/`](docs/plans/README.md).
 1. **Never push without explicit approval.** Do not run `git push` (or any
    command that publishes commits, tags or releases to a remote) unless the
    user has approved that specific push in the current conversation. Approval
-   for one push does not carry over to the next. Commit only when asked.
+   for one push does not carry over to the next. Commit only when asked —
+   *except* on local work branches (`feature/`, `chore/`, `bugfix/`,
+   `hotfix/`), where agents may commit logical steps on their own
+   (Conventional Commits). Merging into `develop`/`main` needs approval
+   (ROADMAP R29).
    *Exception:* the scheduled data-pipeline CI job may push the `gh-pages`
    branch and create price-archive releases on its own
    (`docs/plans/data-pipeline.md` D9); changing that workflow still needs
