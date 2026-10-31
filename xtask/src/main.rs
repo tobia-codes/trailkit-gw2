@@ -3,9 +3,12 @@
 //! Commands:
 //! - `deploy <addon> [--release]` — cross-compile an addon with cargo-xwin and
 //!   copy the DLL into the Guild Wars 2 `addons` folder (ROADMAP R32).
+//! - `check-names` — verify file and directory names against the naming
+//!   conventions in AGENTS.md (ROADMAP R46).
 //! - `sync-versions [--check]` — copy each addon's `package.json` version
 //!   (owned by Changesets) into its `Cargo.toml` (ROADMAP R16/R17).
 
+mod check_names;
 mod deploy;
 mod sync_versions;
 mod workspace;
@@ -18,6 +21,7 @@ usage: cargo xtask <command>
 
 commands:
   deploy <addon> [--release]   build an addon for Windows and copy it into the GW2 addons folder
+  check-names                  verify file/directory names against the naming conventions
   sync-versions [--check]      copy package.json versions into Cargo.toml (--check: only verify)
   help                         show this text";
 
@@ -37,6 +41,7 @@ fn main() -> Result<()> {
             };
             deploy::run(addon, profile)
         }
+        ["check-names"] => check_names::run(),
         ["sync-versions"] => sync_versions::run(sync_versions::Mode::Write),
         ["sync-versions", "--check"] => sync_versions::run(sync_versions::Mode::Check),
         [] | ["help" | "--help" | "-h"] => {

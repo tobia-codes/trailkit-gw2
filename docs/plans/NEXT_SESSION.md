@@ -26,6 +26,8 @@ Blocked on the user:
 - Create `xtask.local.toml` (`gw2_addons_dir = "/mnt/c/Guild Wars 2/addons"`)
   or export `TRAILKIT_GW2_ADDONS_DIR`.
 
+Settled since: naming conventions (R40–R46, AGENTS.md "Naming conventions", `cargo xtask check-names`).
+
 Open phase 0 work:
 1. `cargo xwin clippy/build` of trailkit-memo once LLVM is installed; deploy;
    in-game test incl. hot reload (does Nexus allow overwriting the loaded DLL?).

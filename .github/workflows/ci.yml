@@ -32,6 +32,8 @@ jobs:
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: Test
         run: cargo test --workspace
+      - name: Naming conventions (R46)
+        run: cargo xtask check-names
       - name: Version sync check (R16/R17)
         run: cargo xtask sync-versions --check
       - name: Build addons (release)

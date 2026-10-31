@@ -28,6 +28,7 @@ unwrap_used = "warn"
 expect_used = "warn"
 dbg_macro = "warn"
 todo = "warn"
+mod_module_files = "warn"
 
 [profile.release]
 lto = "thin"

@@ -45,6 +45,13 @@
 | R37 | Changesets structure (root `package.json`, `.changeset/`, addon placeholder `package.json`) exists from phase 0; the release workflow (version PR, tags, GitHub releases) comes with the remote in 0b | 2026-10-31 |
 | R38 | The phase 0 "hello" addon is the skeleton of `addons/trailkit-memo` (no throwaway addon) | 2026-10-31 |
 | R39 | Addon crates are `cdylib` + `rlib`; Nexus/ImGui dependencies are `cfg(windows)`-only so platform-independent modules (R23) are unit-tested on the Linux host with plain `cargo test`; Windows-only code is linted with `cargo xwin clippy` locally and natively in CI | 2026-10-31 |
+| R40 | Naming conventions live in **AGENTS.md** ("Naming conventions", always in context for every agent); the README carries a short summary + link (later also `CONTRIBUTING.md`) | 2026-10-31 |
+| R41 | Rust naming strictly per the Rust API Guidelines (types `UpperCamelCase`, acronyms as words; functions/modules `snake_case`; constants `SCREAMING_SNAKE_CASE`); no catch-all names; modules as `foo.rs` + `foo/` (lint `clippy::mod_module_files`). **Readable over short:** descriptive names instead of abbreviations, only widely known abbreviations (`id`, `url`, `api`, `http`, `json`, `ui`, …) | 2026-10-31 |
+| R42 | Directories and non-Rust files `kebab-case` with lowercase extensions; exceptions: Rust sources (`snake_case`), a fixed list of upper-case meta files, tool-mandated names; crates/addons prefixed `trailkit-`. `docs/plans/_TEMPLATE.md` renamed to `plan-template.md` | 2026-10-31 |
+| R43 | Data identifiers (ids, slugs, JSON/TOML keys, settings) `snake_case`; files named after a data id keep it (`world_bosses.toml`) | 2026-10-31 |
+| R44 | Nexus runtime identifiers: `trailkit.<addon>.<kind>.<name>` (`snake_case` segments; kinds `keybind`, `texture`, `shortcut`, `event`, `datalink`, `localization`; cross-addon `trailkit.shared.…`), always typed constants | 2026-10-31 |
+| R45 | TypeScript/React (later): `kebab-case` file names incl. components (case-insensitive file systems); identifiers per TS convention (`PascalCase` components/types, `useXyz` hooks, `camelCase` otherwise) | 2026-10-31 |
+| R46 | Path names enforced by `cargo xtask check-names` (all tracked + untracked-not-ignored paths, vendored skills exempt) in CI and later in the local git hook | 2026-10-31 |
 
 ## Proposed repository layout
 
