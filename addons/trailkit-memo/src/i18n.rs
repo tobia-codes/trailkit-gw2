@@ -348,6 +348,31 @@ mod tests {
     }
 
     #[test]
+    fn every_character_is_in_the_subset_fonts() {
+        use trailkit_ui::fonts::{
+            OPEN_SANS_BOLD, OPEN_SANS_BOLD_ITALIC, OPEN_SANS_ITALIC, OPEN_SANS_REGULAR, covers,
+        };
+        // UI strings plus the help pages (rendered with the same fonts).
+        let texts =
+            Text::all_texts() + include_str!("../help/en.md") + include_str!("../help/de.md");
+        for font in [
+            OPEN_SANS_REGULAR,
+            OPEN_SANS_BOLD,
+            OPEN_SANS_ITALIC,
+            OPEN_SANS_BOLD_ITALIC,
+        ] {
+            let missing: String = texts
+                .chars()
+                .filter(|character| !character.is_control() && !covers(font, *character))
+                .collect();
+            assert!(
+                missing.is_empty(),
+                "missing in the subset fonts (run `cargo xtask subset-fonts`): {missing}"
+            );
+        }
+    }
+
+    #[test]
     fn every_text_is_translated_and_registered() {
         let all = Text::all_texts();
         for text in Text::ALL {

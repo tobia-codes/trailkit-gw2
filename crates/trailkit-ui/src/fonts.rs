@@ -131,9 +131,111 @@ impl FontRole {
     }
 }
 
+/// Whether the TrueType font `data` has a glyph for `character`, read from
+/// its Unicode `cmap` (formats 4 and 12). Used by tests that guard the font
+/// subsets (memo plan M62): every UI string and icon must stay covered.
+#[must_use]
+pub fn covers(data: &[u8], character: char) -> bool {
+    cmap_subtable(data)
+        .is_some_and(|subtable| subtable_covers(data, subtable, u32::from(character)))
+}
+
+/// Reads a big-endian `u16` at `offset`.
+fn read_u16(data: &[u8], offset: usize) -> Option<u16> {
+    Some(u16::from_be_bytes(
+        data.get(offset..offset + 2)?.try_into().ok()?,
+    ))
+}
+
+/// Reads a big-endian `u32` at `offset`.
+fn read_u32(data: &[u8], offset: usize) -> Option<u32> {
+    Some(u32::from_be_bytes(
+        data.get(offset..offset + 4)?.try_into().ok()?,
+    ))
+}
+
+/// The offset of the best Unicode `cmap` subtable (format 12 preferred).
+fn cmap_subtable(data: &[u8]) -> Option<usize> {
+    let tables = usize::from(read_u16(data, 4)?);
+    let cmap = (0..tables).find_map(|index| {
+        let record = 12 + 16 * index;
+        (data.get(record..record + 4)? == b"cmap").then(|| read_u32(data, record + 8))?
+    })?;
+    let cmap = usize::try_from(cmap).ok()?;
+    let count = usize::from(read_u16(data, cmap + 2)?);
+    let mut best: Option<(u16, usize)> = None;
+    for index in 0..count {
+        let record = cmap + 4 + 8 * index;
+        let platform = read_u16(data, record)?;
+        let encoding = read_u16(data, record + 2)?;
+        let offset = cmap + usize::try_from(read_u32(data, record + 4)?).ok()?;
+        let format = read_u16(data, offset)?;
+        let is_unicode = platform == 0 || (platform == 3 && (encoding == 1 || encoding == 10));
+        if is_unicode && (format == 4 || format == 12) && best.is_none_or(|(best, _)| format > best)
+        {
+            best = Some((format, offset));
+        }
+    }
+    best.map(|(_, offset)| offset)
+}
+
+/// Whether the `cmap` subtable at `offset` maps `code` to a real glyph.
+fn subtable_covers(data: &[u8], offset: usize, code: u32) -> bool {
+    match read_u16(data, offset) {
+        Some(12) => {
+            let groups = read_u32(data, offset + 12).unwrap_or(0);
+            (0..groups).any(|group| {
+                let record = offset + 16 + 12 * usize::try_from(group).unwrap_or(usize::MAX / 24);
+                matches!(
+                    (read_u32(data, record), read_u32(data, record + 4)),
+                    (Some(start), Some(end)) if (start..=end).contains(&code)
+                )
+            })
+        }
+        Some(4) => {
+            let segments = usize::from(read_u16(data, offset + 6).unwrap_or(0) / 2);
+            let ends = offset + 14;
+            let starts = ends + 2 * segments + 2;
+            (0..segments).any(|segment| {
+                matches!(
+                    (read_u16(data, starts + 2 * segment), read_u16(data, ends + 2 * segment)),
+                    (Some(start), Some(end))
+                        if (u32::from(start)..=u32::from(end)).contains(&code) && start != 0xFFFF
+                )
+            })
+        }
+        _ => false,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::icons::Icon;
+
+    #[test]
+    fn subset_fonts_keep_icons_latin_and_typography() {
+        for icon in Icon::ALL {
+            assert!(
+                covers(LUCIDE, icon.glyph()),
+                "icon {:?} missing",
+                icon.glyph()
+            );
+        }
+        let text_fonts = [
+            OPEN_SANS_REGULAR,
+            OPEN_SANS_BOLD,
+            OPEN_SANS_ITALIC,
+            OPEN_SANS_BOLD_ITALIC,
+        ];
+        for font in text_fonts {
+            for character in "Aaäöüß ÄÖÜ ŐőŁł •…–—„“”‘’› 0123456789".chars()
+            {
+                assert!(covers(font, character), "{character} missing");
+            }
+            assert!(!covers(font, '\u{4E2D}'), "subset: no CJK");
+        }
+    }
 
     #[test]
     fn identifiers_are_unique_and_shared() {
