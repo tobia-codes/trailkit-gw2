@@ -9,6 +9,7 @@
 use std::ops::Range;
 
 use jiff::Timestamp;
+use trailkit_ui::markdown::{InlineKind, inline_ranges};
 
 use crate::{
     drafts::Draft,
@@ -161,6 +162,14 @@ enum Emphasis {
 }
 
 impl Emphasis {
+    /// The markdown construct this emphasis is parsed as.
+    const fn kind(self) -> InlineKind {
+        match self {
+            Self::Bold => InlineKind::Strong,
+            Self::Italic => InlineKind::Emphasis,
+        }
+    }
+
     /// The marker written on both sides.
     const fn marker(self) -> &'static str {
         match self {
@@ -187,6 +196,20 @@ impl Emphasis {
 /// the cursor between new markers). The selection stays on the text.
 fn toggle_emphasis(text: &str, selection: Range<usize>, emphasis: Emphasis) -> TextEdit {
     let marker = emphasis.marker();
+    // Inside an existing bold/italic span (also with the cursor in the
+    // middle of it): remove that span's markers (M68).
+    if let Some(span) = innermost_range(text, &selection, emphasis.kind()) {
+        let width = marker.len();
+        let inner = &text[span.start + width..span.end - width];
+        let shift = |position: usize| {
+            position.saturating_sub(span.start + width).min(inner.len()) + span.start
+        };
+        return TextEdit {
+            range: span.clone(),
+            replacement: inner.to_owned(),
+            selection: shift(selection.start)..shift(selection.end),
+        };
+    }
     let stars_before = text[..selection.start]
         .bytes()
         .rev()
@@ -222,6 +245,78 @@ fn toggle_emphasis(text: &str, selection: Range<usize>, emphasis: Emphasis) -> T
         range: selection.clone(),
         replacement: format!("{marker}{inner}{marker}"),
         selection: inner_start..inner_start + inner.len(),
+    }
+}
+
+/// The innermost parsed range of `kind` that contains `selection` (for a
+/// cursor: strictly inside, so a cursor right after `**bold**` is outside).
+fn innermost_range(text: &str, selection: &Range<usize>, kind: InlineKind) -> Option<Range<usize>> {
+    inline_ranges(text)
+        .into_iter()
+        .filter(|range| range.kind == kind)
+        .map(|range| range.range)
+        .filter(|range| {
+            if selection.is_empty() {
+                range.start < selection.start && selection.start < range.end
+            } else {
+                range.start <= selection.start && selection.end <= range.end
+            }
+        })
+        .min_by_key(|range| range.len())
+}
+
+/// Which formatting applies at the cursor or selection, for highlighting the
+/// toolbar buttons (M69), like in a word processor.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct ActiveFormats {
+    /// The line is a heading.
+    pub heading: bool,
+    /// Inside bold text.
+    pub bold: bool,
+    /// Inside italic text.
+    pub italic: bool,
+    /// The line is a bulleted list item (not a task).
+    pub bullet_list: bool,
+    /// The line is a task (checkbox) item.
+    pub checkbox: bool,
+    /// Inside a link.
+    pub link: bool,
+}
+
+impl ActiveFormats {
+    /// Whether the button of `command` is active.
+    #[must_use]
+    pub const fn is_active(self, command: FormatCommand) -> bool {
+        match command {
+            FormatCommand::Heading => self.heading,
+            FormatCommand::Bold => self.bold,
+            FormatCommand::Italic => self.italic,
+            FormatCommand::BulletList => self.bullet_list,
+            FormatCommand::Checkbox => self.checkbox,
+            FormatCommand::Link => self.link,
+        }
+    }
+}
+
+/// The formatting active at `selection` in `text` (M69).
+#[must_use]
+pub fn active_formats(text: &str, selection: Range<usize>) -> ActiveFormats {
+    let start = floor_char_boundary(text, selection.start.min(selection.end));
+    let end = floor_char_boundary(text, selection.start.max(selection.end));
+    let line_start = text[..start].rfind('\n').map_or(0, |index| index + 1);
+    let line = text[line_start..].lines().next().unwrap_or("").trim_start();
+    let hashes = line.bytes().take_while(|byte| *byte == b'#').count();
+    let checkbox = ["- [ ] ", "- [x] ", "- [X] "]
+        .iter()
+        .any(|prefix| line.starts_with(prefix));
+    let selection = start..end;
+    ActiveFormats {
+        heading: (1..=6).contains(&hashes) && line[hashes..].starts_with(' '),
+        bold: innermost_range(text, &selection, InlineKind::Strong).is_some(),
+        italic: innermost_range(text, &selection, InlineKind::Emphasis).is_some(),
+        bullet_list: !checkbox && (line.starts_with("- ") || line.starts_with("* ")),
+        checkbox,
+        link: innermost_range(text, &selection, InlineKind::Link).is_some(),
     }
 }
 
@@ -315,6 +410,33 @@ mod tests {
             run("***x***", 3..4, FormatCommand::Bold),
             ("*x*".to_owned(), 1..2)
         );
+    }
+
+    #[test]
+    fn bold_toggles_off_with_the_cursor_inside_the_text() {
+        // The reported case: cursor in the middle of `**dsfsdfsdfsdf**`.
+        let text = "sdasd**dsfsdfsdfsdf**";
+        assert_eq!(
+            run(text, 11..11, FormatCommand::Bold),
+            ("sdasddsfsdfsdfsdf".to_owned(), 9..9)
+        );
+        let (unwrapped, _) = run("a *b c* d", 4..4, FormatCommand::Italic);
+        assert_eq!(unwrapped, "a b c d");
+    }
+
+    #[test]
+    fn active_formats_follow_the_cursor() {
+        let text = "## Title\n- [ ] **bold *both*** [link](https://x)\n- item";
+        let at = |needle: &str| {
+            let position = text.find(needle).unwrap_or(0) + 1;
+            active_formats(text, position..position)
+        };
+        assert!(at("Title").heading);
+        let both = at("both");
+        assert!(both.bold && both.italic && both.checkbox && !both.bullet_list);
+        assert!(at("link").link);
+        let item = at("item");
+        assert!(item.bullet_list && !item.bold);
     }
 
     #[test]

@@ -29,7 +29,7 @@ use trailkit_ui::{
 use crate::{
     drafts::{Draft, DraftsDocument},
     i18n::{Language, Text},
-    note_editing::{EditSession, FormatCommand, format_edit},
+    note_editing::{ActiveFormats, EditSession, FormatCommand, active_formats, format_edit},
     note_tree::{Group, GroupId, NodeId, Note, NoteId, NoteKind, NotesDocument, TreeNode as Node},
     settings::UnsavedChanges,
     storage_worker::StorageSaver,
@@ -145,6 +145,9 @@ struct Editor {
     preview: Option<MarkdownDocument>,
     /// Whether the title input was active in the last frame.
     title_was_active: bool,
+    /// Formatting active at the cursor, cached per text revision and
+    /// selection (M69).
+    active: Option<(u64, std::ops::Range<usize>, ActiveFormats)>,
 }
 
 impl Editor {
@@ -156,6 +159,7 @@ impl Editor {
             body,
             preview: None,
             title_was_active: false,
+            active: None,
         }
     }
 
@@ -166,6 +170,25 @@ impl Editor {
             .apply_edit(edit.range, &edit.replacement, edit.selection);
         self.body.focus();
         self.sync_body();
+    }
+
+    /// The formatting active at the cursor (recomputed only when the text or
+    /// the selection changed).
+    fn active_formats(&mut self) -> ActiveFormats {
+        let revision = self.body.revision();
+        let selection = self.body.selection();
+        match &self.active {
+            Some((cached_revision, cached_selection, formats))
+                if *cached_revision == revision && *cached_selection == selection =>
+            {
+                *formats
+            }
+            _ => {
+                let formats = active_formats(self.body.text(), selection.clone());
+                self.active = Some((revision, selection, formats));
+                formats
+            }
+        }
     }
 
     /// Copies the editor text into the session and marks the preview stale.
@@ -624,11 +647,19 @@ impl MemoWindow {
     /// Draws the editor (M51–M53): formatting toolbar, title input and the
     /// markdown body input filling the rest of the pane.
     fn draw_editor(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+        let active = self
+            .editor
+            .as_mut()
+            .map(Editor::active_formats)
+            .unwrap_or_default();
         draw_format_toolbar(
             ui,
             language,
             theme,
-            self.ui_state.preview_visible,
+            ToolbarState {
+                active,
+                preview_visible: self.ui_state.preview_visible,
+            },
             &mut self.actions,
         );
         draw_separator(ui, theme);
@@ -1114,16 +1145,27 @@ fn draw_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str) -> bool {
     clicked
 }
 
+/// What the formatting toolbar shows as active.
+#[derive(Debug, Clone, Copy)]
+struct ToolbarState {
+    /// Formatting at the cursor (M69).
+    active: ActiveFormats,
+    /// Whether the preview is shown (M60).
+    preview_visible: bool,
+}
+
 /// Draws the formatting buttons of the editor (M53), wrapping onto a new
 /// line when the pane is too narrow (`lay-responsive`). The event button is
-/// disabled without trailkit-core (`form-disabled-why`).
+/// disabled without trailkit-core (`form-disabled-why`); buttons whose
+/// formatting applies at the cursor are drawn in the accent color (M69).
 fn draw_format_toolbar(
     ui: &Ui,
     language: Language,
     theme: &Theme,
-    preview_visible: bool,
+    state: ToolbarState,
     actions: &mut Vec<WindowAction>,
 ) {
+    let preview_visible = state.preview_visible;
     let buttons = [
         (
             Icon::HEADING,
@@ -1165,9 +1207,15 @@ fn draw_format_toolbar(
         let _id = ui.push_id(i32::try_from(index).unwrap_or_default());
         // ImGui 1.80 has no disabled items: a disabled button is drawn in
         // `text.disabled` and its clicks are ignored.
-        let _disabled_color = command
-            .is_none()
-            .then(|| ui.push_style_color(StyleColor::Text, theme.text.disabled.to_array()));
+        // Disabled (no command): `text.disabled`; active at the cursor
+        // (M69): the accent color, like the preview toggle.
+        let icon_color = match command {
+            None => Some(theme.text.disabled),
+            Some(command) if state.active.is_active(command) => Some(theme.accent.base),
+            Some(_) => None,
+        };
+        let _icon_color =
+            icon_color.map(|color| ui.push_style_color(StyleColor::Text, color.to_array()));
         if draw_icon_button(ui, theme, icon, tooltip.get(language))
             && let Some(command) = command
         {

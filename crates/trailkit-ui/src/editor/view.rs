@@ -170,6 +170,19 @@ impl TextEditor {
         self.buffer.selection()
     }
 
+    /// Selects `range` (byte offsets, clamped); an empty range places the
+    /// cursor.
+    pub fn select(&mut self, range: std::ops::Range<usize>) {
+        self.buffer.select(range.start, range.end);
+        self.scroll_to_cursor = true;
+    }
+
+    /// A number that changes whenever the text changes (for caches).
+    #[must_use]
+    pub const fn revision(&self) -> u64 {
+        self.revision
+    }
+
     /// Whether the editor has the keyboard focus.
     #[must_use]
     pub const fn is_focused(&self) -> bool {

@@ -169,6 +169,27 @@ fn editor_with_preview() {
 }
 
 #[test]
+fn toolbar_highlights_the_formatting_at_the_cursor() {
+    let document = sample_document();
+    let ui_state = selected_first(&document);
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    memo.apply(&WindowAction::StartEditing, Language::English);
+    let Some(editor) = memo.editor.as_mut() else {
+        panic!("editing did not start");
+    };
+    // Cursor inside the bold "250" of a task line: bold + checkbox active.
+    let position = editor.body.text().find("250").map_or(0, |index| index + 1);
+    editor.body.select(position..position);
+    editor.body.unfocus();
+    assert_window(
+        &mut memo,
+        [640.0, 300.0],
+        ThemeKind::Dark,
+        "memo-toolbar-active",
+    );
+}
+
+#[test]
 fn unsaved_changes_dialog() {
     let document = sample_document();
     let ui_state = selected_first(&document);
