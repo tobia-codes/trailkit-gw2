@@ -13,7 +13,10 @@ use nexus::imgui::{
     TreeNodeFlags, Ui, Window, WindowFlags, WindowFocusedFlags, WindowHoveredFlags,
 };
 use trailkit_ui::{
-    button::{button_width, draw_primary_button, draw_primary_button_with_size},
+    button::{
+        button_width, draw_button, draw_button_with_size, draw_primary_button,
+        draw_primary_button_with_size,
+    },
     chat_link_chip::ChipContext,
     editor::view::TextEditor,
     font_registry::FontScope,
@@ -642,7 +645,7 @@ impl MemoWindow {
                 true
             }
         };
-        if offers_folder && ui.button(Text::OpenFolder.get(language)) {
+        if offers_folder && draw_button(ui, Text::OpenFolder.get(language)) {
             self.actions.push(WindowAction::OpenFolder);
         }
         draw_separator(ui, theme);
@@ -782,7 +785,7 @@ impl MemoWindow {
             let done = Text::Done.get(language);
             let width = button_width(ui, cancel) + spacing + button_width(ui, done);
             ui.same_line_with_pos(right_edge - width);
-            if ui.button(cancel) {
+            if draw_button(ui, cancel) {
                 self.actions.push(WindowAction::CancelEditing);
             }
             ui.same_line();
@@ -1346,22 +1349,22 @@ fn draw_unsaved_changes_card(
             answer = Some(WindowAction::LeaveSaving);
         }
         ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
-        if ui.button_with_size(keep_editing, full) {
+        if draw_button_with_size(ui, keep_editing, full) {
             answer = Some(WindowAction::LeaveCancelled);
         }
         ui.dummy([0.0, theme.spacing.small]);
         ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
-        if ui.button_with_size(discard, full) {
+        if draw_button_with_size(ui, discard, full) {
             answer = Some(WindowAction::LeaveDiscarding);
         }
     } else {
         ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
-        if ui.button(discard) {
+        if draw_button(ui, discard) {
             answer = Some(WindowAction::LeaveDiscarding);
         }
         let right_group = button_width(ui, keep_editing) + spacing[0] + button_width(ui, save);
         ui.same_line_with_pos(left + content_width - right_group - window_position[0]);
-        if ui.button(keep_editing) {
+        if draw_button(ui, keep_editing) {
             answer = Some(WindowAction::LeaveCancelled);
         }
         ui.same_line();
@@ -1556,7 +1559,7 @@ fn draw_draft_hint(
         actions.push(WindowAction::RestoreDraft(draft.note));
     }
     ui.same_line();
-    if ui.button(Text::DiscardChanges.get(language)) {
+    if draw_button(ui, Text::DiscardChanges.get(language)) {
         actions.push(WindowAction::DiscardDraft(draft.note));
     }
     draw_separator(ui, theme);
@@ -1930,7 +1933,7 @@ fn draw_empty_state(ui: &Ui, language: Language, theme: &Theme, actions: &mut Ve
     } else {
         indent_to_center(ui, secondary_width, available[0]);
     }
-    if ui.button(secondary) {
+    if draw_button(ui, secondary) {
         actions.push(WindowAction::NewGroup);
     }
 }

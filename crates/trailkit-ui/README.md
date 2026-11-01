@@ -34,6 +34,7 @@ Latin up to Extended-B plus punctuation, the icon font only the icons in
 | `chat_link` | finds and decodes GW2 chat codes (`[&…]`) | any |
 | `chat_link_chip` | draws a chat-link chip and its tooltip; texts come from the addon (`ChipContext`) | Windows |
 | `cursor_extent` | measures the mouse cursor (GW2 draws a large one) so `StyleScope` places tooltips right of it | Windows |
+| `glyph_metrics` | where glyphs really sit in a line (centering by capital letters) | Windows |
 
 ## Usage
 
