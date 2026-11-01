@@ -43,7 +43,8 @@ const COLOR_SLOTS: [(StyleColor, ColorToken); 44] = [
     (StyleColor::Button, |theme| theme.surface.input),
     (StyleColor::ButtonHovered, |theme| theme.surface.hover),
     (StyleColor::ButtonActive, |theme| theme.surface.active),
-    (StyleColor::Header, |theme| theme.surface.hover),
+    // `Header` is the selected state of rows (`bg.active`); hover stays distinct.
+    (StyleColor::Header, |theme| theme.surface.active),
     (StyleColor::HeaderHovered, |theme| theme.surface.hover),
     (StyleColor::HeaderActive, |theme| theme.surface.active),
     (StyleColor::Separator, |theme| theme.border.color),
