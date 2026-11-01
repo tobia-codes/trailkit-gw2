@@ -44,7 +44,7 @@ use crate::{
     i18n::{Language, Text},
     main_window::{MemoWindow, NotesProblem},
     note_tree::NotesDocument,
-    settings::{QuickAccessIcon, Settings},
+    settings::{QuickAccessIcon, Settings, TextScale},
     storage_worker::{LoadedDocuments, SAVE_DEBOUNCE, SavingAllowed, StorageSaver, StorageWorker},
 };
 
@@ -318,7 +318,11 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
         return;
     };
     receive_loaded_notes(&mut notes);
-    follow_nexus_font_size();
+    let text_scale = match &*notes {
+        NotesState::Ready(window) => window.text_scale(),
+        NotesState::Loading { .. } | NotesState::Unavailable => settings().text_scale,
+    };
+    follow_nexus_font_size(text_scale);
     let language = Language::from_u8(LANGUAGE.load(Ordering::Relaxed));
     let title = WINDOW_TITLE
         .get()
@@ -380,7 +384,7 @@ fn receive_loaded_notes(notes: &mut NotesState) {
                 saver.clone(),
                 directory.clone(),
                 drafts,
-                settings().unsaved_changes,
+                settings(),
             )))
         }
         Err(TryRecvError::Empty) => return,
@@ -388,8 +392,9 @@ fn receive_loaded_notes(notes: &mut NotesState) {
     };
 }
 
-/// Resizes the shared fonts when Nexus' `FontUI` size changes (M35).
-fn follow_nexus_font_size() {
+/// Resizes the shared fonts when Nexus' `FontUI` size or the memo text
+/// scale changes (M35, M79): body size = `FontUI` size × `text_scale`.
+fn follow_nexus_font_size(text_scale: TextScale) {
     let link = NEXUS_LINK.load(Ordering::Acquire);
     if link.is_null() {
         return;
@@ -399,7 +404,7 @@ fn follow_nexus_font_size() {
     // of the current atlas; `font_size_of` only reads its size.
     let size = unsafe { font_size_of(std::ptr::addr_of!((*link).font_ui).read_volatile()) };
     if let Some(size) = size {
-        follow_body_size(size);
+        follow_body_size(size * text_scale.factor());
     }
 }
 

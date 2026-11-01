@@ -71,6 +71,9 @@ pub struct FrameInput {
     pub control: bool,
     /// Shift held.
     pub shift: bool,
+    /// Vertical mouse wheel movement in this frame (positive: away from the
+    /// user).
+    pub mouse_wheel: f32,
 }
 
 /// A headless ImGui context with the trailkit fonts.
@@ -150,6 +153,7 @@ impl UiHarness {
             io.mouse_down[0] = input.left_button_down;
             io.key_ctrl = input.control;
             io.key_shift = input.shift;
+            io.mouse_wheel = input.mouse_wheel;
             for code in &input.keys {
                 if let Some(down) = io.keys_down.get_mut(*code as usize) {
                     *down = true;

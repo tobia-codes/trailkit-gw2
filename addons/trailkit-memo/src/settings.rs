@@ -42,10 +42,52 @@ pub enum UnsavedChanges {
     SaveAutomatically,
 }
 
+/// Size of all text in the memo window relative to Nexus' `FontUI` size
+/// (memo plan M79): 1.0 = the Nexus size. Changed with Ctrl+mouse wheel in
+/// steps of [`TextScale::STEP`].
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct TextScale(f32);
+
+impl TextScale {
+    /// The default: a bit larger than Nexus' UI text (user decision).
+    pub const DEFAULT: Self = Self(1.125);
+    /// The smallest scale.
+    pub const MINIMUM: f32 = 0.75;
+    /// The largest scale.
+    pub const MAXIMUM: f32 = 2.0;
+    /// One Ctrl+mouse wheel step.
+    pub const STEP: f32 = 0.125;
+
+    /// The factor, clamped to the allowed range (the default if the stored
+    /// value is broken).
+    #[must_use]
+    pub fn factor(self) -> f32 {
+        if self.0.is_finite() {
+            self.0.clamp(Self::MINIMUM, Self::MAXIMUM)
+        } else {
+            Self::DEFAULT.0
+        }
+    }
+
+    /// The scale `steps` steps larger (negative: smaller), clamped.
+    #[must_use]
+    pub fn stepped(self, steps: f32) -> Self {
+        Self((self.factor() + steps * Self::STEP).clamp(Self::MINIMUM, Self::MAXIMUM))
+    }
+}
+
+impl Default for TextScale {
+    /// [`TextScale::DEFAULT`].
+    fn default() -> Self {
+        Self::DEFAULT
+    }
+}
+
 /// All user settings of trailkit-memo.
 ///
 /// A field missing from `settings.json` falls back to its default.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Settings {
     /// Quick access icon visibility.
@@ -54,6 +96,8 @@ pub struct Settings {
     pub outside_gameplay: OutsideGameplay,
     /// Leaving the editor with unsaved changes (M57).
     pub unsaved_changes: UnsavedChanges,
+    /// Size of the text in the memo window (M79).
+    pub text_scale: TextScale,
 }
 
 impl Settings {
@@ -62,6 +106,7 @@ impl Settings {
         quick_access_icon: QuickAccessIcon::Shown,
         outside_gameplay: OutsideGameplay::Hide,
         unsaved_changes: UnsavedChanges::Ask,
+        text_scale: TextScale::DEFAULT,
     };
 
     /// Whether an open window may be drawn in the current game state.
@@ -73,16 +118,16 @@ impl Settings {
 
 impl VersionedDocument for Settings {
     const FILE_STEM: &'static str = "settings";
-    /// Version 2 added `unsaved_changes` (M57).
-    const CURRENT_SCHEMA_VERSION: SchemaVersion = SchemaVersion(2);
+    /// Version 2 added `unsaved_changes` (M57), version 3 `text_scale` (M79).
+    const CURRENT_SCHEMA_VERSION: SchemaVersion = SchemaVersion(3);
 
-    /// Version 1 → 2 only added a field; missing fields take their default
-    /// when reading, so the fields stay as they are.
+    /// Versions 1 → 2 → 3 only added fields; missing fields take their
+    /// default when reading, so the fields stay as they are.
     fn migrate_one_step(
         from: SchemaVersion,
         fields: DocumentFields,
     ) -> Result<DocumentFields, MigrationError> {
-        if from == SchemaVersion::FIRST {
+        if from == SchemaVersion::FIRST || from == SchemaVersion(2) {
             Ok(fields)
         } else {
             Err(MigrationError::NoMigrationPath { from })
@@ -126,5 +171,15 @@ mod tests {
         assert_eq!(partial.unsaved_changes, UnsavedChanges::Ask);
         assert_eq!(value["unsaved_changes"], "ask");
         Ok(())
+    }
+
+    #[test]
+    fn text_scale_steps_and_clamps() {
+        assert!((TextScale::DEFAULT.stepped(1.0).factor() - 1.25).abs() < f32::EPSILON);
+        assert!(
+            (TextScale::DEFAULT.stepped(-20.0).factor() - TextScale::MINIMUM).abs() < f32::EPSILON
+        );
+        assert!((TextScale(f32::NAN).factor() - 1.125).abs() < f32::EPSILON);
+        assert!((TextScale(9.0).factor() - TextScale::MAXIMUM).abs() < f32::EPSILON);
     }
 }

@@ -76,7 +76,7 @@ fn memo_window(
         worker.saver(),
         directory.path().to_path_buf(),
         DraftsDocument::default(),
-        UnsavedChanges::Ask,
+        Settings::DEFAULT,
     );
     (window, worker, directory)
 }
@@ -313,4 +313,40 @@ fn chat_links_show_as_chips_in_the_note_view() {
         ThemeKind::Dark,
         "memo-chat-link-chips",
     );
+}
+
+#[test]
+fn control_mouse_wheel_changes_the_text_scale_and_control_zero_resets_it() {
+    let document = sample_document();
+    let ui_state = selected_first(&document);
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    let size = [480.0, 300.0];
+    let mut harness = UiHarness::new(size);
+    let over_window = [200.0, 150.0];
+    let idle = FrameInput {
+        mouse_position: over_window,
+        ..FrameInput::default()
+    };
+    harness.settle(2, &idle, |ui| draw(ui, &mut memo, size, ThemeKind::Dark));
+    let wheel_up = FrameInput {
+        control: true,
+        mouse_wheel: 1.0,
+        ..idle.clone()
+    };
+    harness.frame(&wheel_up, |ui| draw(ui, &mut memo, size, ThemeKind::Dark));
+    assert_eq!(memo.text_scale(), TextScale::DEFAULT.stepped(1.0));
+    // Clicking focuses the window; Ctrl+0 then resets the size.
+    let click = FrameInput {
+        left_button_down: true,
+        ..idle.clone()
+    };
+    harness.frame(&click, |ui| draw(ui, &mut memo, size, ThemeKind::Dark));
+    harness.frame(&idle, |ui| draw(ui, &mut memo, size, ThemeKind::Dark));
+    let reset = FrameInput {
+        control: true,
+        keys: vec![0x30],
+        ..idle
+    };
+    harness.frame(&reset, |ui| draw(ui, &mut memo, size, ThemeKind::Dark));
+    assert_eq!(memo.text_scale(), TextScale::DEFAULT);
 }
