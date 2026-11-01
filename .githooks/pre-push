@@ -4,5 +4,5 @@ set -e
 # Shells started by git may not have rustup on PATH.
 command -v cargo >/dev/null 2>&1 || . "$HOME/.cargo/env"
 cargo xtask check-branch
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
+cargo clippy --quiet --workspace --all-targets -- -D warnings
+cargo test --quiet --workspace
