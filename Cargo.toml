@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["addons/trailkit-memo", "crates/trailkit-ui", "tools/trailkit-datagen", "xtask"]
+members = ["addons/trailkit-memo", "crates/trailkit-storage", "crates/trailkit-ui", "tools/trailkit-datagen", "xtask"]
 
 [workspace.package]
 edition = "2024"
@@ -12,6 +12,7 @@ authors = ["tobia-codes"]
 [workspace.dependencies]
 # Pinned to a fixed commit (ROADMAP R31); re-verify the nexus-addon-dev skill §1 when bumping.
 trailkit-ui = { path = "crates/trailkit-ui" }
+trailkit-storage = { path = "crates/trailkit-storage" }
 nexus = { git = "https://github.com/zerthox/nexus-rs", rev = "51bff5ab38ad11332316448b452ece1b773018cd", features = ["log"] }
 log = "0.4"
 anyhow = "1"
@@ -19,6 +20,12 @@ toml_edit = "0.25"
 # One HTTP client (R65) and one date/time library (R66) for every crate.
 ureq = "3.5.0"
 jiff = { version = "0.2.38", features = ["serde"] }
+# Persistence and data model (memo plan M16, M25, M29).
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+uuid = { version = "1.29.0", features = ["v7", "serde"] }
+thiserror = "2.0.21"
+tempfile = "3.27.0"
 
 # Lint set (AGENTS.md "Rust conventions", ROADMAP R33). Every crate opts in with `[lints] workspace = true`.
 [workspace.lints.rust]

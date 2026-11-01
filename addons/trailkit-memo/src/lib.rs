@@ -10,7 +10,9 @@
 //! the Nexus glue in `addon` only compiles for Windows.
 
 pub mod i18n;
+pub mod note_tree;
 pub mod settings;
+pub mod storage_worker;
 
 #[cfg(windows)]
 mod addon;

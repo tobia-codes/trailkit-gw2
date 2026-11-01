@@ -67,6 +67,14 @@ pub enum Text {
     KeybindToggle,
     /// Tooltip of the quick access icon.
     QuickAccessTooltip,
+    /// Shown while the notes are being loaded from disk.
+    Loading,
+    /// `notes.json` was unreadable and moved away; followed by the new location.
+    NotesRecovered,
+    /// `notes.json` was written by a newer addon version.
+    NotesNewerVersion,
+    /// `notes.json` exists but cannot be accessed.
+    NotesInaccessible,
 }
 
 impl Text {
@@ -82,6 +90,26 @@ impl Text {
             (Self::KeybindToggle, Language::German) => "Notizen öffnen/schließen",
             (Self::QuickAccessTooltip, Language::English) => "Notes",
             (Self::QuickAccessTooltip, Language::German) => "Notizen",
+            (Self::Loading, Language::English) => "Loading…",
+            (Self::Loading, Language::German) => "Lädt…",
+            (Self::NotesRecovered, Language::English) => {
+                "Your notes could not be loaded. The damaged file was kept in the addon folder as:"
+            }
+            (Self::NotesRecovered, Language::German) => {
+                "Deine Notizen konnten nicht geladen werden. Die beschädigte Datei wurde im Addon-Ordner gesichert als:"
+            }
+            (Self::NotesNewerVersion, Language::English) => {
+                "Your notes were saved by a newer version of trailkit-memo. Please update the addon — until then, changes are not saved."
+            }
+            (Self::NotesNewerVersion, Language::German) => {
+                "Deine Notizen wurden von einer neueren Version von trailkit-memo gespeichert. Bitte aktualisiere das Addon — bis dahin werden Änderungen nicht gespeichert."
+            }
+            (Self::NotesInaccessible, Language::English) => {
+                "Your notes could not be read, so changes are not saved. Details are in the Nexus log."
+            }
+            (Self::NotesInaccessible, Language::German) => {
+                "Deine Notizen konnten nicht gelesen werden, daher werden Änderungen nicht gespeichert. Details stehen im Nexus-Log."
+            }
         }
     }
 }

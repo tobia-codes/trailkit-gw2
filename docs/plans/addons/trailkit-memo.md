@@ -56,7 +56,7 @@ references with autocompletion and status.
 
 ## Open questions
 
-- None currently (session 4 settled M16–M28; details are settled per
+- None currently (session 4 settled M16–M33; details are settled per
   implementation step).
 
 ## Decisions
@@ -91,3 +91,8 @@ references with autocompletion and status.
 | M26 | Character scope (M2, M5) exists only with trailkit-core + API key; a character is identified by name + `created` from the API (survives renames). Without core every note is global; the scope control is greyed out with a core hint. No manual character reassignment | 2026-11-01 |
 | M27 | Phase 1 settings: language (auto/en/de), theme (dark/light), quick access icon, outside-gameplay behavior, reset time display (local/UTC), backups (restore, open folder), settings export/import | 2026-11-01 |
 | M28 | Phase 1 order, one `feature/` branch + PR each: storage & data model → tree & note view (markdown renderer) → editing & toolbar → reset kinds (M13) → drag & drop → search → trash & undo → settings window & options tab → export/import → backups → help page | 2026-11-01 |
+| M29 | Shared persistence crate `crates/trailkit-storage` (atomic write, `schema_version` check, step-wise migration, safety copies, read-only on newer versions — R22); memo keeps only its data model | 2026-11-01 |
+| M30 | Threading: the render thread owns the note tree; every change sends a copy over a channel to the worker, which debounces (M18), serializes and writes; the worker loads at start, the window shows "Loading…" until the data arrives; the render thread never touches files | 2026-11-01 |
+| M31 | Unreadable `notes.json`: never overwritten automatically; preserved as a safety copy (M33), memo starts with an empty list and shows a prominent hint with "Open folder" (plus "Restore from backup" from step 10 on) | 2026-11-01 |
+| M32 | Timestamps are stored as RFC 3339 UTC (`jiff::Timestamp`); unknown fields within the same `schema_version` are ignored (new fields always bump the version, newer versions are read-only) | 2026-11-01 |
+| M33 | All safety copies live in one `backups/` subfolder (shared with the daily backups of M11), each kind capped: migration copy `notes.v<N>.bak.json` written before the first migrated save, only the newest per file, deleted after 30 days; copies of unreadable files `notes.corrupt-<time>.json`, max. 3; daily backups max. 7. The addon folder itself only holds the live files | 2026-11-01 |
