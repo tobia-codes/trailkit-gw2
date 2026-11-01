@@ -29,6 +29,9 @@ pub struct UiState {
     pub note_list_hidden: bool,
     /// Whether the editor shows the markdown preview (M60).
     pub preview_visible: bool,
+    /// Share of the editor width taken by the text when the preview is shown
+    /// side by side (M60).
+    pub preview_split_fraction: f32,
 }
 
 impl Default for UiState {
@@ -41,6 +44,7 @@ impl Default for UiState {
             note_scroll: 0.0,
             note_list_hidden: false,
             preview_visible: false,
+            preview_split_fraction: 0.5,
         }
     }
 }
@@ -55,11 +59,22 @@ impl UiState {
     /// hand-edited or corrupted file).
     #[must_use]
     pub fn clamped_splitter_fraction(&self) -> f32 {
-        if self.splitter_fraction.is_finite() {
-            self.splitter_fraction.clamp(0.1, 0.9)
-        } else {
-            DEFAULT_SPLITTER_FRACTION
-        }
+        clamp_fraction(self.splitter_fraction, DEFAULT_SPLITTER_FRACTION)
+    }
+
+    /// The editor/preview split, clamped like [`Self::clamped_splitter_fraction`].
+    #[must_use]
+    pub fn clamped_preview_split_fraction(&self) -> f32 {
+        clamp_fraction(self.preview_split_fraction, 0.5)
+    }
+}
+
+/// Clamps a stored fraction to a usable range, or `default` if it is broken.
+fn clamp_fraction(fraction: f32, default: f32) -> f32 {
+    if fraction.is_finite() {
+        fraction.clamp(0.1, 0.9)
+    } else {
+        default
     }
 }
 

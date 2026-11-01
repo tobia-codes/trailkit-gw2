@@ -32,4 +32,6 @@ pub mod pane;
 #[cfg(windows)]
 pub mod separator;
 #[cfg(windows)]
+pub mod splitter;
+#[cfg(windows)]
 pub mod style_scope;

@@ -9,8 +9,8 @@ use std::{borrow::Cow, path::PathBuf, sync::Arc};
 
 use jiff::{Timestamp, tz::TimeZone};
 use nexus::imgui::{
-    ChildWindow, Condition, Key, MenuItem, MouseButton, MouseCursor, StyleColor, StyleVar,
-    TreeNode, TreeNodeFlags, Ui, Window, WindowFlags, WindowFocusedFlags,
+    ChildWindow, Condition, Key, MenuItem, MouseButton, StyleColor, StyleVar, TreeNode,
+    TreeNodeFlags, Ui, Window, WindowFlags, WindowFocusedFlags,
 };
 use trailkit_ui::{
     button::{button_width, draw_primary_button},
@@ -22,6 +22,7 @@ use trailkit_ui::{
     markdown_view::{MarkdownAction, draw_markdown, open_web_link},
     pane::draw_pane,
     separator::draw_separator,
+    splitter::draw_vertical_splitter,
     theme::Theme,
 };
 
@@ -497,33 +498,18 @@ impl MemoWindow {
         });
 
         ui.same_line_with_spacing(0.0, 0.0);
-        let splitter_start = ui.cursor_screen_pos();
-        ui.invisible_button("splitter", [gap, available[1].max(1.0)]);
-        let is_dragged = ui.is_item_active();
-        let is_hovered = ui.is_item_hovered();
-        if is_hovered || is_dragged {
-            ui.set_mouse_cursor(Some(MouseCursor::ResizeEW));
-            let color = if is_dragged {
-                theme.accent.active
-            } else {
-                theme.accent.hover
-            };
-            let line_x = splitter_start[0] + gap / 2.0;
-            ui.get_window_draw_list()
-                .add_line(
-                    [line_x, splitter_start[1]],
-                    [line_x, splitter_start[1] + available[1]],
-                    color.to_array(),
-                )
-                .thickness(theme.border.width.max(1.0))
-                .build();
+        let splitter = draw_vertical_splitter(
+            ui,
+            theme,
+            "splitter",
+            tree_width,
+            (pane_minimum, usable - pane_minimum),
+            available[1],
+        );
+        if let Some(width) = splitter.left_width {
+            self.ui_state.splitter_fraction = width / usable;
         }
-        if is_dragged {
-            let new_width =
-                (tree_width + ui.io().mouse_delta[0]).clamp(pane_minimum, usable - pane_minimum);
-            self.ui_state.splitter_fraction = new_width / usable;
-        }
-        if ui.is_item_deactivated() {
+        if splitter.released {
             self.saver.save_ui_state(self.ui_state);
         }
 
@@ -691,9 +677,12 @@ impl MemoWindow {
         let gap = theme.pane.gap;
         let side_by_side = available >= 2.0 * pane_minimum + gap;
         let shows_editor = !self.ui_state.preview_visible || side_by_side;
+        let usable = available - gap;
+        let editor_width = (usable * self.ui_state.clamped_preview_split_fraction())
+            .clamp(pane_minimum, (usable - pane_minimum).max(pane_minimum));
         if shows_editor {
             let width = if self.ui_state.preview_visible {
-                (available - gap) / 2.0
+                editor_width
             } else {
                 0.0
             };
@@ -709,7 +698,22 @@ impl MemoWindow {
         }
         if self.ui_state.preview_visible {
             if shows_editor {
-                ui.same_line_with_spacing(0.0, gap);
+                ui.same_line_with_spacing(0.0, 0.0);
+                let splitter = draw_vertical_splitter(
+                    ui,
+                    theme,
+                    "preview_splitter",
+                    editor_width,
+                    (pane_minimum, usable - pane_minimum),
+                    ui.content_region_avail()[1],
+                );
+                if let Some(width) = splitter.left_width {
+                    self.ui_state.preview_split_fraction = width / usable;
+                }
+                if splitter.released {
+                    self.saver.save_ui_state(self.ui_state);
+                }
+                ui.same_line_with_spacing(0.0, 0.0);
             }
             let preview = editor
                 .preview
