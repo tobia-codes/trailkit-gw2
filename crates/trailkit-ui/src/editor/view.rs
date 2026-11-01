@@ -12,7 +12,7 @@
 
 use nexus::imgui::{
     ChildWindow, InputTextCallbackHandler, InputTextMultilineCallback, Key, MouseButton,
-    MouseCursor, StyleColor, StyleVar, TextCallbackData, Ui,
+    MouseCursor, StyleColor, StyleVar, TextCallbackData, Ui, WindowHoveredFlags,
 };
 
 use super::{
@@ -32,6 +32,16 @@ pub struct EditorResponse {
     pub changed: bool,
     /// Ctrl+Enter was pressed (commit, M52).
     pub submitted: bool,
+}
+
+/// Whether the mouse is over the editor's child window. The keyboard sink
+/// is an active item, and ImGui's plain `IsWindowHovered` reports `false`
+/// while any item is active, so the check must allow that (and the sink's
+/// own tiny child window).
+fn is_editor_hovered(ui: &Ui) -> bool {
+    ui.is_window_hovered_with_flags(
+        WindowHoveredFlags::ALLOW_WHEN_BLOCKED_BY_ACTIVE_ITEM | WindowHoveredFlags::CHILD_WINDOWS,
+    )
 }
 
 /// The layout of a specific text revision, width and font size.
@@ -200,7 +210,7 @@ impl TextEditor {
                 ui.set_scroll_y(cursor_top + line_height - visible_height + 2.0 * padding);
             }
         }
-        if ui.is_window_hovered() {
+        if is_editor_hovered(ui) {
             ui.set_mouse_cursor(Some(MouseCursor::TextInput));
         }
 
@@ -350,7 +360,7 @@ impl TextEditor {
     /// Handles clicks, double-clicks and drags inside the editor; a click
     /// elsewhere takes the focus away.
     fn handle_mouse(&mut self, ui: &Ui, origin: [f32; 2], line_height: f32) {
-        let hovered = ui.is_window_hovered();
+        let hovered = is_editor_hovered(ui);
         if ui.is_mouse_clicked(MouseButton::Left) && !hovered {
             self.focused = false;
             self.dragging = false;
