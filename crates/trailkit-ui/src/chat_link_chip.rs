@@ -18,9 +18,9 @@ use crate::{
 /// rounded, not a pill (memo plan M80).
 const ROUNDING_FACTOR: f32 = 0.75;
 
-/// Icon size relative to the text size (memo plan M81): at 100 % icons look
-/// taller than the capitals, at 80 % too small next to the letters.
-const ICON_SCALE: f32 = 0.9;
+/// Icon size relative to the text size (memo plan M81, M82): at 100 % icons
+/// look taller than the capitals, at 80 % too small next to the letters.
+const ICON_SCALE: f32 = 0.85;
 
 /// Size and vertical position of chip icons in the current fonts: icons are
 /// drawn at [`ICON_SCALE`] of the text size and centered on the capital
@@ -198,11 +198,11 @@ fn piece_width(ui: &Ui, piece: &Piece<'_>, theme: &Theme, icons: IconMetrics) ->
     }
 }
 
-/// How far the pill reaches above and below the text: a third of the
-/// leading of running text, so it stays slim and chips on adjacent lines
-/// keep a clear gap; at least one pixel.
+/// How far the chip reaches above and below the text: a sixth of the
+/// leading of running text, so it stays slim (memo plan M82); at least one
+/// pixel.
 fn vertical_padding(ui: &Ui, theme: &Theme) -> f32 {
-    (theme.typography.leading_for(ui.current_font_size()) / 3.0).max(1.0)
+    (theme.typography.leading_for(ui.current_font_size()) / 6.0).max(1.0)
 }
 
 /// Radius of a coin dot: about the size of a small letter.
