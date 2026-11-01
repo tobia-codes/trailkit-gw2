@@ -15,12 +15,20 @@ publish = false
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+jiff.workspace = true
+log.workspace = true
+serde.workspace = true
+trailkit-storage.workspace = true
 trailkit-ui.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+tempfile.workspace = true
 
 # The Nexus bindings only build for Windows; the platform-independent modules stay testable on Linux.
 [target.'cfg(windows)'.dependencies]
 nexus.workspace = true
-log.workspace = true
 
 [lints]
 workspace = true
