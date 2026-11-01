@@ -322,6 +322,9 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
             NotesState::Unavailable => ui.text_wrapped(Text::NotesInaccessible.get(language)),
             NotesState::Ready(window) => window.draw(ui, language, &theme),
         });
+    if let NotesState::Ready(window) = &mut *notes {
+        window.draw_dialog(ui, language, &theme);
+    }
     let close_requested = !open || CLOSE_REQUESTED.swap(false, Ordering::Relaxed);
     let may_close = match &mut *notes {
         NotesState::Ready(window) => {

@@ -11,7 +11,7 @@ use jiff::{Timestamp, tz::TimeZone};
 use nexus::imgui::{
     ChildWindow, Condition, InputTextCallbackHandler, InputTextMultilineCallback, Key, MenuItem,
     MouseButton, MouseCursor, StyleColor, StyleVar, TextCallbackData, TreeNode, TreeNodeFlags, Ui,
-    WindowFocusedFlags,
+    Window, WindowFlags, WindowFocusedFlags,
 };
 use trailkit_ui::{
     button::{button_width, draw_primary_button},
@@ -265,6 +265,11 @@ pub struct MemoWindow {
     editor: Option<Editor>,
     /// A pending answer of the unsaved changes dialog (M54).
     leave_prompt: Option<LeaveReason>,
+    /// Position and size of the main window in the last frame (for the
+    /// dialog window that covers it).
+    window_rect: Option<[[f32; 2]; 2]>,
+    /// Whether the main window had the focus in the last frame.
+    window_focused: bool,
     /// Set once closing the window is allowed; read by the addon glue.
     close_approved: bool,
     /// Cached draft hint label (note, language, text), so it is not
@@ -326,6 +331,8 @@ impl MemoWindow {
             drafts,
             editor: None,
             leave_prompt: None,
+            window_rect: None,
+            window_focused: false,
             close_approved: false,
             draft_hint: None,
         }
@@ -380,8 +387,9 @@ impl MemoWindow {
     /// Draws the window content and applies what the user did.
     pub fn draw(&mut self, ui: &Ui, language: Language, theme: &Theme) {
         self.actions.clear();
-        let content_start = ui.cursor_screen_pos();
-        let content_size = ui.content_region_avail();
+        self.window_rect = Some([ui.window_pos(), ui.window_size()]);
+        self.window_focused =
+            ui.is_window_focused_with_flags(WindowFocusedFlags::ROOT_AND_CHILD_WINDOWS);
         // Escape closes the window (`overlay-escape`) unless it was meant for
         // a text input (ImGui used it there to leave the input) or a dialog.
         if ui.is_key_pressed(Key::Escape)
@@ -414,8 +422,6 @@ impl MemoWindow {
             }
         }
 
-        self.draw_leave_prompt(ui, language, theme, content_start, content_size);
-
         let actions = std::mem::take(&mut self.actions);
         for action in &actions {
             self.apply(action, language);
@@ -424,89 +430,40 @@ impl MemoWindow {
     }
 
     /// Draws the unsaved changes dialog while an answer is pending (M54,
-    /// `overlay-dialog-scope`): only this window's content (from
-    /// `area_start`, `area_size`) is dimmed and blocked, never the game or
-    /// other windows. "Discard" sits apart from "Keep editing" and the
-    /// primary "Save" (`lay-one-primary`); Enter saves, Escape keeps editing.
-    fn draw_leave_prompt(
-        &mut self,
-        ui: &Ui,
-        language: Language,
-        theme: &Theme,
-        area_start: [f32; 2],
-        area_size: [f32; 2],
-    ) {
+    /// M56, `overlay-dialog-scope`) and applies the answer. Call it after the
+    /// main window is finished: the dialog is its own borderless window
+    /// exactly over the main window, so it dims only that window (title bar
+    /// included) while the game and other windows stay usable. Clicking the
+    /// main window brings the dialog back to the front. "Discard" sits apart
+    /// from "Keep editing" and the primary "Save" (`lay-one-primary`); Enter
+    /// saves, Escape keeps editing.
+    pub fn draw_dialog(&mut self, ui: &Ui, language: Language, theme: &Theme) {
         if self.leave_prompt.is_none() {
             return;
         }
-        ui.set_cursor_screen_pos(area_start);
-        let scrim_color =
-            ui.push_style_color(StyleColor::ChildBg, theme.surface.modal_overlay.to_array());
-        let scrim = ChildWindow::new("dialog_scrim")
-            .size(area_size)
-            .scrollable(false)
-            .scroll_bar(false)
-            .begin(ui);
-        scrim_color.pop();
-        let Some(_scrim) = scrim else {
+        let Some(window_rect) = self.window_rect else {
             return;
         };
-
-        let title = Text::UnsavedChangesTitle.get(language);
-        let question = Text::UnsavedChangesQuestion.get(language);
-        let discard = Text::DiscardChanges.get(language);
-        let keep_editing = Text::KeepEditing.get(language);
-        let save = Text::KeepChanges.get(language);
-        let spacing = ui.clone_style().item_spacing;
-        let padding = theme.pane.padding;
-        let buttons_width = button_width(ui, discard)
-            + theme.spacing.extra_large
-            + button_width(ui, keep_editing)
-            + spacing[0]
-            + button_width(ui, save);
-        let content_width = buttons_width
-            .max(ui.calc_text_size(question)[0])
-            .min(area_size[0] - 2.0 * padding - 2.0 * theme.spacing.medium)
-            .max(1.0);
-        let question_height = ui.calc_text_size_with_opts(question, false, content_width)[1];
-        let height = 2.0 * padding
-            + ui.text_line_height_with_spacing()
-            + question_height
-            + spacing[1]
-            + theme.spacing.small
-            + ui.frame_height();
-        let size = [content_width + 2.0 * padding, height];
-        ui.set_cursor_pos([
-            ((area_size[0] - size[0]) / 2.0).max(0.0),
-            ((area_size[1] - size[1]) / 2.0).max(0.0),
-        ]);
-        let actions = &mut self.actions;
-        draw_pane(ui, theme, "dialog", size, || {
-            {
-                let _bold = FontScope::push(ui, FontRole::BodyBold);
-                ui.text(title);
-            }
-            {
-                let _wrap = ui.push_text_wrap_pos_with_pos(ui.cursor_pos()[0] + content_width);
-                ui.text_wrapped(question);
-            }
-            ui.dummy([0.0, theme.spacing.small]);
-            let mut answer = None;
-            if ui.button(discard) {
-                answer = Some(WindowAction::LeaveDiscarding);
-            }
-            ui.same_line_with_spacing(0.0, theme.spacing.extra_large);
-            if ui.button(keep_editing) || ui.is_key_pressed(Key::Escape) {
-                answer = Some(WindowAction::LeaveCancelled);
-            }
-            ui.same_line();
-            if draw_primary_button(ui, theme, save) || ui.is_key_pressed(Key::Enter) {
-                answer = Some(WindowAction::LeaveSaving);
-            }
-            if let Some(answer) = answer {
-                actions.push(answer);
-            }
-        });
+        let _background =
+            ui.push_style_color(StyleColor::WindowBg, theme.surface.modal_overlay.to_array());
+        let _border = ui.push_style_var(StyleVar::WindowBorderSize(0.0));
+        let mut answer = None;
+        Window::new("###trailkit-memo-dialog")
+            .position(window_rect[0], Condition::Always)
+            .size(window_rect[1], Condition::Always)
+            .flags(
+                WindowFlags::NO_DECORATION
+                    | WindowFlags::NO_MOVE
+                    | WindowFlags::NO_SAVED_SETTINGS
+                    | WindowFlags::NO_NAV,
+            )
+            .focused(self.window_focused)
+            .build(ui, || {
+                answer = draw_unsaved_changes_card(ui, language, theme)
+            });
+        if let Some(answer) = answer {
+            self.apply(&answer, language);
+        }
     }
 
     /// The selected note, if a note (not a group) is selected.
@@ -1069,6 +1026,66 @@ fn find_title(nodes: &[Node], id: NodeId) -> Option<&str> {
             Node::Note(_) => None,
         }
     })
+}
+
+/// Draws the card of the unsaved changes dialog centered in the current
+/// window and returns the chosen answer, if any (M54, M56).
+fn draw_unsaved_changes_card(ui: &Ui, language: Language, theme: &Theme) -> Option<WindowAction> {
+    let title = Text::UnsavedChangesTitle.get(language);
+    let question = Text::UnsavedChangesQuestion.get(language);
+    let discard = Text::DiscardChanges.get(language);
+    let keep_editing = Text::KeepEditing.get(language);
+    let save = Text::KeepChanges.get(language);
+    let available = ui.content_region_avail();
+    let spacing = ui.clone_style().item_spacing;
+    let padding = theme.pane.padding;
+    let buttons_width = button_width(ui, discard)
+        + theme.spacing.extra_large
+        + button_width(ui, keep_editing)
+        + spacing[0]
+        + button_width(ui, save);
+    let content_width = buttons_width
+        .max(ui.calc_text_size(question)[0])
+        .min(available[0] - 2.0 * padding)
+        .max(1.0);
+    let question_height = ui.calc_text_size_with_opts(question, false, content_width)[1];
+    // Title line, question, gap and button row, each followed by item spacing.
+    let height = 2.0 * padding
+        + ui.text_line_height()
+        + question_height
+        + theme.spacing.small
+        + ui.frame_height()
+        + 3.0 * spacing[1];
+    let size = [content_width + 2.0 * padding, height];
+    let start = ui.cursor_pos();
+    ui.set_cursor_pos([
+        start[0] + ((available[0] - size[0]) / 2.0).max(0.0),
+        start[1] + ((available[1] - size[1]) / 2.0).max(0.0),
+    ]);
+    let mut answer = None;
+    draw_pane(ui, theme, "card", size, || {
+        {
+            let _bold = FontScope::push(ui, FontRole::BodyBold);
+            ui.text(title);
+        }
+        {
+            let _wrap = ui.push_text_wrap_pos_with_pos(ui.cursor_pos()[0] + content_width);
+            ui.text_wrapped(question);
+        }
+        ui.dummy([0.0, theme.spacing.small]);
+        if ui.button(discard) {
+            answer = Some(WindowAction::LeaveDiscarding);
+        }
+        ui.same_line_with_spacing(0.0, theme.spacing.extra_large);
+        if ui.button(keep_editing) || ui.is_key_pressed(Key::Escape) {
+            answer = Some(WindowAction::LeaveCancelled);
+        }
+        ui.same_line();
+        if draw_primary_button(ui, theme, save) || ui.is_key_pressed(Key::Enter) {
+            answer = Some(WindowAction::LeaveSaving);
+        }
+    });
+    answer
 }
 
 /// Draws a flat icon button: no background, highlighted only on hover, with

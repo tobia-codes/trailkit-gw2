@@ -44,8 +44,10 @@ Each rule has an id (`area-name`) so reviews can cite it.
   at most once per second.
 - `overlay-dialog-scope` — Dialogs (confirmations, unsaved changes) never
   dim or block the game or other windows: they appear inside their own
-  window, whose content is dimmed with `overlay.modal` behind a centered
-  pane. ImGui's `BeginPopupModal` (whole-screen dim) is not used.
+  window, which is dimmed with `overlay.modal` behind a centered pane.
+  ImGui's `BeginPopupModal` (whole-screen dim) is not used. Implementation:
+  a borderless window exactly over the owning window (child-window scrims
+  do not reliably cover input fields in ImGui 1.80).
 - `overlay-sleep` — Closed windows cost nothing: skip all work for hidden
   windows (no layout, no text formatting).
 - `overlay-click-through` — Purely informational overlays may offer a
