@@ -8,3 +8,6 @@
 
 # JS tooling (Changesets)
 node_modules/
+
+# UI snapshot test failures (actual + diff images, memo plan M65).
+**/tests/snapshots/failures/

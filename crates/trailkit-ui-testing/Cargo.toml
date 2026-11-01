@@ -1,0 +1,21 @@
+[package]
+name = "trailkit-ui-testing"
+version = "0.0.0"
+description = "Test tools for trailkit ImGui code: headless ImGui, input simulation, CPU rasterizer and snapshot comparison (dev-dependency only)"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+png = "0.18.1"
+trailkit-ui.workspace = true
+
+# The headless ImGui harness needs nexus-rs' ImGui, which is Windows only (ROADMAP R39).
+[target.'cfg(windows)'.dependencies]
+nexus.workspace = true
+
+[lints]
+workspace = true
