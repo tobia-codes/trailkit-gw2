@@ -600,6 +600,9 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut TreeContext<'_>) {
         .flags(flags)
         .push(ui);
     let row_start = ui.item_rect_min();
+    // Ask the tree node itself: it spans the whole row, and once a click
+    // makes it the active item, `is_window_hovered` would report false.
+    let is_row_hovered = ui.is_item_hovered();
     let is_renaming = context
         .rename
         .as_ref()
@@ -619,9 +622,7 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut TreeContext<'_>) {
     let label = truncate_to_width(ui, &note.title, row_end - ui.cursor_screen_pos()[0]);
     ui.text(&label);
     // Interaction belongs to the whole row (the tree node item).
-    let row_min = row_start;
-    let row_max = [row_end, row_start[1] + ui.frame_height()];
-    if ui.is_mouse_hovering_rect(row_min, row_max) && ui.is_window_hovered() {
+    if is_row_hovered {
         handle_hovered_row(ui, node, &note.title, &label, context);
     }
     draw_context_menu(ui, node, context);
