@@ -15,6 +15,7 @@
 //! (AGENTS.md rule 7, ROADMAP R47).
 
 pub mod color;
+pub mod editor;
 pub mod fonts;
 pub mod icons;
 pub mod markdown;
