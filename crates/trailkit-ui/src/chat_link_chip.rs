@@ -40,7 +40,7 @@ const fn kind_icon(kind: ChatLinkKind) -> Icon {
         ChatLinkKind::Item => Icon::PACKAGE,
         ChatLinkKind::NpcText => Icon::MESSAGE_SQUARE,
         ChatLinkKind::MapPoint => Icon::MAP_PIN,
-        ChatLinkKind::Skill => Icon::ZAP,
+        ChatLinkKind::Skill => Icon::SWORDS,
         ChatLinkKind::Trait => Icon::SPARKLES,
         ChatLinkKind::Player => Icon::USER,
         ChatLinkKind::Recipe => Icon::SCROLL_TEXT,
@@ -139,6 +139,28 @@ fn piece_width(ui: &Ui, piece: &Piece<'_>, theme: &Theme) -> f32 {
     }
 }
 
+/// How far to move `icon` down from the line top so its visible glyph is
+/// centered in a box of `height`. Lucide glyphs sit on the text baseline
+/// like letters, so drawn at the line top they hang low in a pill. Call it
+/// with the icon font pushed.
+fn icon_centering_offset(icon: Icon, height: f32) -> f32 {
+    let Ok(character) = u16::try_from(u32::from(icon.glyph())) else {
+        return 0.0;
+    };
+    // SAFETY: called on the render thread inside a frame, so the current
+    // font is valid; `ImFont_FindGlyph` only reads it and returns a pointer
+    // into the font (the fallback glyph if the icon is missing), or null.
+    let bounds = unsafe {
+        let font = nexus::imgui::sys::igGetFont();
+        let glyph = nexus::imgui::sys::ImFont_FindGlyph(font, character);
+        glyph.as_ref().map(|glyph| {
+            let scale = nexus::imgui::sys::igGetFontSize() / (*font).FontSize;
+            (glyph.Y0 * scale, glyph.Y1 * scale)
+        })
+    };
+    bounds.map_or(0.0, |(top, bottom)| (height - (bottom - top)) / 2.0 - top)
+}
+
 /// Radius of a coin dot: a third of the font size.
 fn dot_radius(ui: &Ui) -> f32 {
     ui.current_font_size() / 3.0
@@ -192,7 +214,8 @@ pub fn draw_chip(
             Piece::Icon(icon, color) => {
                 let _icons = FontScope::push(ui, FontRole::Icons);
                 let mut buffer = [0; 4];
-                draw_list.add_text([x, position[1]], color.to_array(), icon.as_str(&mut buffer));
+                let y = position[1] + icon_centering_offset(icon, height);
+                draw_list.add_text([x, y], color.to_array(), icon.as_str(&mut buffer));
             }
             Piece::Text(text, color) => {
                 draw_list.add_text([x, position[1]], color.to_array(), text);
