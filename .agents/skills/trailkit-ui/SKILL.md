@@ -47,6 +47,7 @@ in the crate, document here):
 | Event | `event.default`, `event.highlight`, `event.active`, `event.upcoming`, `event.custom` (per category overrides allowed) |
 | Spacing | `space.xs` 4, `space.sm` 8, `space.md` 12, `space.lg` 16, `space.xl` 24 (px at 100 %) |
 | Lists | `list.item_spacing`, `list.indent` |
+| Panes | `pane.padding` 8 (inner padding), `pane.gap` 8 (space between panes) — see `lay-pane-padding` |
 | Shape | `radius` = 0 (user-overridable, default 0) |
 | Typography | `font.size.small`, `font.size.body`, `font.size.heading` |
 
@@ -82,12 +83,18 @@ Build once, use everywhere. Planned:
   any platform) + `markdown_view` (ImGui)
 - Shared fonts (Noto Sans regular/bold/italic/bold italic, headings) and
   Lucide icons — **exist**: `fonts`, `font_registry` (`FontScope`), `icons`
+- `Pane` and inset separator — **exist**: `pane::draw_pane`,
+  `separator::draw_separator`; every sub-region of a window and every
+  separator uses them (`lay-pane-padding`, decided 2026-11-01)
 
 Rule: a component starts life inside one addon. When a second addon needs it,
 move it into `crates/trailkit-ui` (see AGENTS.md "Code sharing").
 
 ## 4. Layout & interaction
 
+- Panes: content regions inside a window are padded panes on `bg.panel`,
+  separated by a gap instead of a line; nothing touches an edge
+  (`lay-pane-padding`).
 - Settings windows: grouped sections with headings, short help text under
   non-obvious options, changes apply live (no "Apply" button) except
   destructive/import actions.

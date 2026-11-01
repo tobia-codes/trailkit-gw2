@@ -48,6 +48,8 @@ pub struct Theme {
     pub spacing: Spacing,
     /// List metrics (`list.*`).
     pub list: ListMetrics,
+    /// Pane metrics (`pane.*`).
+    pub pane: PaneMetrics,
     /// Corner radius (`radius`, default 0 — flat and square).
     pub radius: f32,
     /// Font sizes (`font.size.*`).
@@ -162,6 +164,16 @@ pub struct ListMetrics {
     pub indent: f32,
 }
 
+/// Pane metrics in pixels (content regions inside a window).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PaneMetrics {
+    /// `pane.padding`: inner padding on every side of a pane; no content
+    /// touches a pane edge (`lay-pane-padding`).
+    pub padding: f32,
+    /// `pane.gap`: space between two neighboring panes (holds the splitter).
+    pub gap: f32,
+}
+
 /// Font sizes in pixels.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Typography {
@@ -186,6 +198,12 @@ const SPACING: Spacing = Spacing {
 const LIST_METRICS: ListMetrics = ListMetrics {
     item_spacing: 4.0,
     indent: 16.0,
+};
+
+/// Pane metrics shared by both built-in themes (`space.sm`).
+const PANE_METRICS: PaneMetrics = PaneMetrics {
+    padding: SPACING.small,
+    gap: SPACING.small,
 };
 
 /// Font sizes shared by both built-in themes.
@@ -239,6 +257,7 @@ impl Theme {
         },
         spacing: SPACING,
         list: LIST_METRICS,
+        pane: PANE_METRICS,
         radius: 0.0,
         typography: TYPOGRAPHY,
     };
@@ -286,6 +305,7 @@ impl Theme {
         },
         spacing: SPACING,
         list: LIST_METRICS,
+        pane: PANE_METRICS,
         radius: 0.0,
         typography: TYPOGRAPHY,
     };

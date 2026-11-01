@@ -17,6 +17,7 @@ use crate::{
     fonts::FontRole,
     icons::Icon,
     markdown::{Block, ListMarker, MarkdownDocument, Span, TaskMarker},
+    separator::draw_separator,
     theme::Theme,
 };
 
@@ -95,7 +96,7 @@ pub fn draw_markdown(
                 marker_click.or(text_click)
             }
             Block::Rule => {
-                ui.separator();
+                draw_separator(ui, theme);
                 None
             }
         };
