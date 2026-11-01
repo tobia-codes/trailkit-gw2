@@ -137,6 +137,8 @@ pub struct TextEditor {
     sink: String,
     /// Whether the keyboard sink was active in the last frame.
     sink_was_active: bool,
+    /// Line height of the last drawn frame (for Page Up/Down).
+    line_height: f32,
 }
 
 /// Empties the keyboard sink every frame, so its text never grows.
@@ -164,6 +166,7 @@ impl TextEditor {
             scroll_to_cursor: true,
             sink: String::new(),
             sink_was_active: false,
+            line_height: 0.0,
         }
     }
 
@@ -265,7 +268,9 @@ impl TextEditor {
             return response;
         };
         let layout = &cached.layout;
-        let line_height = ui.text_line_height_with_spacing();
+        // Same line height as the markdown view (`typography.line_height`).
+        let line_height = theme.typography.line_height_for(font_size);
+        self.line_height = line_height;
         let origin = ui.cursor_screen_pos();
         let line_count = layout.lines().len();
         #[expect(clippy::cast_precision_loss, reason = "line counts are small")]
@@ -380,6 +385,8 @@ impl TextEditor {
     ) {
         let draw_list = ui.get_window_draw_list();
         let editor_hovered = is_editor_hovered(ui);
+        // Text sits in the middle of its taller line.
+        let leading = theme.typography.leading_for(ui.current_font_size());
         let selection = self.buffer.selection();
         let cursor = self.buffer.cursor();
         let cursor_line = layout.line_index_of(cursor);
@@ -425,7 +432,7 @@ impl TextEditor {
                     .build();
             }
             for span in layout.spans_in(line.range.clone()) {
-                let position = [origin[0] + line.x_of(span.range.start), top];
+                let position = [origin[0] + line.x_of(span.range.start), top + leading];
                 let piece = &text[span.range.clone()];
                 match span.style {
                     SpanStyle::Strong => {
@@ -463,8 +470,8 @@ impl TextEditor {
                 let x = origin[0] + line.x_of(cursor);
                 draw_list
                     .add_line(
-                        [x, top],
-                        [x, top + ui.text_line_height()],
+                        [x, top + leading],
+                        [x, top + leading + ui.text_line_height()],
                         theme.text.primary.to_array(),
                     )
                     .thickness(1.0)
@@ -614,7 +621,7 @@ impl TextEditor {
             .preferred_x
             .unwrap_or_else(|| layout.line_of(cursor).x_of(cursor));
         #[expect(clippy::cast_possible_truncation, reason = "page sizes are small")]
-        let page = ((ui.window_size()[1] / ui.text_line_height_with_spacing()) as isize).max(1);
+        let page = ((ui.window_size()[1] / self.line_height.max(1.0)) as isize).max(1);
         let target = if ui.is_key_pressed(Key::UpArrow) {
             Some((layout.position_vertically(cursor, -1, x), true))
         } else if ui.is_key_pressed(Key::DownArrow) {

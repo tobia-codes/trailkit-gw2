@@ -196,6 +196,24 @@ pub struct Typography {
     pub body: f32,
     /// `font.size.heading`.
     pub heading: f32,
+    /// `font.line_height`: line height of running text (notes, editor) as a
+    /// multiple of the font size; roomy enough for chat-link chips (M77).
+    pub line_height: f32,
+}
+
+impl Typography {
+    /// The line height of running text in `font_size`, in whole pixels.
+    #[must_use]
+    pub fn line_height_for(&self, font_size: f32) -> f32 {
+        (font_size * self.line_height).round()
+    }
+
+    /// The space above the text in such a line (half the extra height), so
+    /// text sits in the middle of its line.
+    #[must_use]
+    pub fn leading_for(&self, font_size: f32) -> f32 {
+        ((self.line_height_for(font_size) - font_size) / 2.0).floor()
+    }
 }
 
 /// Tokens shared by both built-in themes (sizes, not colors).
@@ -224,6 +242,7 @@ const TYPOGRAPHY: Typography = Typography {
     small: 12.0,
     body: 14.0,
     heading: 18.0,
+    line_height: 1.5,
 };
 
 impl Theme {

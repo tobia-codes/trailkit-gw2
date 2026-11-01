@@ -422,6 +422,9 @@ impl MemoWindow {
 
     /// Draws the window content and applies what the user did.
     pub fn draw(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+        // Everything in the window uses the shared body font at Nexus'
+        // `FontUI` size (M35, M62); the window's default font differs.
+        let _body_font = FontScope::push(ui, FontRole::Body);
         self.actions.clear();
         if let Some(copied) = &mut self.copied_chat_link {
             let since = *copied.shown_since.get_or_insert(ui.time());
@@ -488,6 +491,7 @@ impl MemoWindow {
             self.dialog_height = None;
             return;
         }
+        let _body_font = FontScope::push(ui, FontRole::Body);
         let Some(window_rect) = self.window_rect else {
             return;
         };
