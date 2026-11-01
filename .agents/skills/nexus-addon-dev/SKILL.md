@@ -69,7 +69,9 @@ Re-verify when bumping `NEXUS_API_VERSION` or `nexus-rs`.
   widget keeps an invisible ImGui text input active while focused
   (`trailkit_ui::editor::view`, "keyboard sink"), reads
   `InputQueueCharacters` before that input consumes them, and writes the
-  clipboard after it.
+  clipboard after it. The sink must stay **in view** (draw it at the
+  scrolled top): ImGui does not activate an input scrolled out of its
+  window, and then every key goes to the game (memo M83).
 - ImGui is **1.80**: no `BeginDisabled` (draw disabled items in
   `text.disabled` and ignore clicks), no line wrapping in multiline inputs,
   and Escape in an active input reverts it to its content at activation.
