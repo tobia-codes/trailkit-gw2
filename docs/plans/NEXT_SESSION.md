@@ -62,7 +62,10 @@ Last updated: 2026-11-01 (end of session 5).
 - Sales volumes for a future flipping addon: DataWars2 (api.datawars2.ie,
   Hetzner DE, polls every 4 min) vs GW2BLTC differ by factor 3–10; one hour
   of own 1-minute collection matched Mithril roughly, not ecto/mystic coin.
-  Messages to Silver (DataWars2) and GW2BLTC drafted; nothing sent by Claude.
+  Silver (DataWars2) answered 2026-11-01: free use and archiving allowed,
+  attribution up to us, nginx may log IPs (see BACKLOG BL9). The user asked
+  him why the numbers differ from GW2BLTC (draft given). GW2BLTC e-mail
+  drafted, no answer known.
   A 24 h own collection needs an always-on machine (backend, BL5).
   PieOrCake also has a `flip_out` addon (not looked at).
 - Nexus hover-cursor issue: user may post the drafted Discord message.
