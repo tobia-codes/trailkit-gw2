@@ -14,6 +14,7 @@ use nexus::imgui::{
 };
 use trailkit_ui::{
     button::{button_width, draw_primary_button, draw_primary_button_with_size},
+    chat_link_chip::ChipContext,
     editor::view::TextEditor,
     font_registry::FontScope,
     fonts::FontRole,
@@ -28,7 +29,7 @@ use trailkit_ui::{
 
 use crate::{
     drafts::{Draft, DraftsDocument},
-    i18n::{Language, Text},
+    i18n::{Language, Text, chip_text},
     note_editing::{ActiveFormats, EditSession, FormatCommand, active_formats, format_edit},
     note_tree::{Group, GroupId, NodeId, Note, NoteId, NoteKind, NotesDocument, TreeNode as Node},
     settings::UnsavedChanges,
@@ -44,6 +45,18 @@ const MINIMUM_TREE_CHARACTERS: f32 = 10.0;
 /// Width in characters (of `n`) that editor and preview each keep, so the
 /// splitter between them stays usable (M72).
 const MINIMUM_PREVIEW_SPLIT_CHARACTERS: f32 = 3.0;
+
+/// How long a chat-link chip says "Copied" after a click (M75).
+const COPIED_FEEDBACK_SECONDS: f64 = 1.5;
+
+/// The chat code copied by the last chip click (M75).
+#[derive(Debug)]
+struct CopiedChatLink {
+    /// The copied code.
+    code: String,
+    /// When "Copied" started to show (ImGui time); set on the next frame.
+    shown_since: Option<f64>,
+}
 
 /// Minimum widths of the two-pane layout in pixels (M40, M73).
 #[derive(Debug, Clone, Copy)]
@@ -255,6 +268,8 @@ pub struct MemoWindow {
     parsed: Option<ParsedNote>,
     /// Narrow window: whether the note list drawer is open (M48).
     drawer_open: bool,
+    /// The chat code copied last, while its chip says "Copied" (M75).
+    copied_chat_link: Option<CopiedChatLink>,
     /// Whether the window was too narrow for two panes in the last frame;
     /// decides what the menu button does.
     is_narrow: bool,
@@ -334,6 +349,7 @@ impl MemoWindow {
             rename: None,
             parsed: None,
             drawer_open: false,
+            copied_chat_link: None,
             is_narrow: false,
             restore_scroll: true,
             actions: Vec::new(),
@@ -407,6 +423,12 @@ impl MemoWindow {
     /// Draws the window content and applies what the user did.
     pub fn draw(&mut self, ui: &Ui, language: Language, theme: &Theme) {
         self.actions.clear();
+        if let Some(copied) = &mut self.copied_chat_link {
+            let since = *copied.shown_since.get_or_insert(ui.time());
+            if ui.time() - since > COPIED_FEEDBACK_SECONDS {
+                self.copied_chat_link = None;
+            }
+        }
         self.window_rect = Some([ui.window_pos(), ui.window_size()]);
         self.window_focused =
             ui.is_window_focused_with_flags(WindowFocusedFlags::ROOT_AND_CHILD_WINDOWS);
@@ -776,7 +798,15 @@ impl MemoWindow {
         } else {
             0.0
         };
-        let response = editor.body.draw(ui, theme, "##body", [width, 0.0]);
+        let chip_texts = |text| chip_text(text, language);
+        let chips = ChipContext {
+            text: &chip_texts,
+            copied: self
+                .copied_chat_link
+                .as_ref()
+                .map(|copied| copied.code.as_str()),
+        };
+        let response = editor.body.draw(ui, theme, "##body", [width, 0.0], chips);
         if response.changed {
             editor.sync_body();
         }
@@ -805,9 +835,15 @@ impl MemoWindow {
                 .get_or_insert_with(|| markdown::parse(&editor.session.body));
             let actions = &mut self.actions;
             draw_pane(ui, theme, "preview", [0.0, 0.0], || {
-                // The preview is read-only: links open, checkboxes do not toggle.
-                if let Some(MarkdownAction::OpenLink(url)) = draw_markdown(ui, preview, theme) {
-                    actions.push(WindowAction::Markdown(MarkdownAction::OpenLink(url)));
+                // The preview is read-only: links open and chips copy, but
+                // checkboxes do not toggle.
+                match draw_markdown(ui, preview, theme, chips) {
+                    Some(
+                        action @ (MarkdownAction::OpenLink(_) | MarkdownAction::ChatLinkCopied(_)),
+                    ) => {
+                        actions.push(WindowAction::Markdown(action));
+                    }
+                    Some(MarkdownAction::ToggleTask(_)) | None => {}
                 }
             });
         }
@@ -863,7 +899,15 @@ impl MemoWindow {
         }
         match &self.parsed {
             Some(parsed) if !parsed.document.blocks.is_empty() => {
-                if let Some(action) = draw_markdown(ui, &parsed.document, theme) {
+                let chip_texts = |text| chip_text(text, language);
+                let chips = ChipContext {
+                    text: &chip_texts,
+                    copied: self
+                        .copied_chat_link
+                        .as_ref()
+                        .map(|copied| copied.code.as_str()),
+                };
+                if let Some(action) = draw_markdown(ui, &parsed.document, theme, chips) {
                     self.actions.push(WindowAction::Markdown(action));
                 }
             }
@@ -973,6 +1017,12 @@ impl MemoWindow {
                 }
             }
             WindowAction::Markdown(MarkdownAction::OpenLink(url)) => open_web_link(url),
+            WindowAction::Markdown(MarkdownAction::ChatLinkCopied(code)) => {
+                self.copied_chat_link = Some(CopiedChatLink {
+                    code: code.clone(),
+                    shown_since: None,
+                });
+            }
             WindowAction::OpenFolder => {
                 if let Err(error) = std::process::Command::new("explorer")
                     .arg(&self.addon_directory)

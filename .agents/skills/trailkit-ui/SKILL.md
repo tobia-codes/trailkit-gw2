@@ -44,6 +44,7 @@ in the crate, document here):
 | Accent | `accent`, `accent.hover`, `accent.active` |
 | Status | `success`, `warning`, `danger`, `info` |
 | Border | `border`, `border.focus`, `border.width` |
+| Coin | `coin.gold`, `coin.silver`, `coin.copper` (coin amounts in chat-link chips; graphics, not text) |
 | Event | `event.default`, `event.highlight`, `event.active`, `event.upcoming`, `event.custom` (per category overrides allowed) |
 | Spacing | `space.xs` 4, `space.sm` 8, `space.md` 12, `space.lg` 16, `space.xl` 24 (px at 100 %) |
 | Lists | `list.item_spacing`, `list.indent` |
@@ -83,6 +84,11 @@ Build once, use everywhere. Planned:
   any platform) + `markdown_view` (ImGui)
 - Shared fonts (Open Sans regular/bold/italic/bold italic, headings; M62) and
   Lucide icons — **exist**: `fonts`, `font_registry` (`FontScope`), `icons`
+- Chat-link chip — **exists**: `chat_link` (find/decode `[&…]`, any
+  platform) + `chat_link_chip` (pill: icon, kind, id; coins as amounts with
+  coin dots; `!` warning chip for broken codes). The addon supplies the texts
+  through `ChipContext` (trailkit-ui has no strings). Used by the markdown
+  view and the editor, where a chip is one atomic unit (memo M75)
 - `Pane` and inset separator — **exist**: `pane::draw_pane`,
   `separator::draw_separator`; every sub-region of a window and every
   separator uses them (`lay-pane-padding`, decided 2026-11-01)

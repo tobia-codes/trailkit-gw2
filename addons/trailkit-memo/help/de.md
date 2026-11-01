@@ -21,6 +21,7 @@ Das Fenster zeigt links die Notizliste und rechts die ausgewählte Notiz. Ziehe 
 - **Abzeichen** am rechten Ende einer Zeile: **T** kennzeichnet eine tägliche Notiz (Reset um 00:00 UTC), **W** eine wöchentliche (Reset montags um 07:30 UTC). Fahre mit der Maus darüber für Details.
 - **Checkboxen** in einer Notiz kannst du direkt abhaken.
 - **Links** öffnen sich im Browser (nur `http://` und `https://`); fahre mit der Maus darüber, um das Ziel zu sehen.
+- **Chat-Links** aus dem Spiel (`[&…]`, z. B. eine Wegmarke oder ein Gegenstand) erscheinen als Chips mit Symbol, Art und ID; Münzen zeigen ihren Betrag. Klicke auf einen Chip, um den Code zu kopieren, und füge ihn dann im Spiel-Chat ein. Fahre mit der Maus darüber, um den Code zu sehen. Ein Chip mit **!** hat einen beschädigten Code; der Tooltip sagt, warum. Namen (statt IDs) kommen mit trailkit-core.
 
 Lange Namen werden mit „…“ gekürzt — fahre mit der Maus darüber, um den ganzen Namen zu sehen.
 
@@ -28,6 +29,7 @@ Lange Namen werden mit „…“ gekürzt — fahre mit der Maus darüber, um de
 
 Klicke auf den **Stift** oben rechts in einer Notiz oder doppelklicke die Notiz. Du bearbeitest Titel und Text in Markdown; die Buttons über dem Text fügen Überschriften, **Fett**, *Kursiv*, Aufzählungen, Checkboxen und Links ein (auch **Strg+B** und **Strg+I**); ein erneuter Klick entfernt die Formatierung wieder (auch Links). Die Buttons der Formatierung an der Cursorposition leuchten auf. Der Event-Button benötigt trailkit-core.
 
+- **Chat-Links:** Füge einen Code (`[&…]`) in den Text ein, und er wird zum Chip. Der Cursor springt über einen Chip, und die Rücktaste löscht ihn ganz; um ihn zu ändern, lösche ihn und füge den neuen Code ein.
 - Der **Augen**-Button zeigt eine Vorschau der formatierten Notiz neben dem Text; ziehe den Spalt dazwischen, um die Breiten zu ändern. memo merkt sich beides.
 - **Fertig** (oder **Strg+Enter**) übernimmt deine Änderungen, **Abbrechen** verwirft sie — memo fragt vorher nach, wenn du etwas geändert hast.
 - Wählst du eine andere Notiz, legst eine neue an oder schließt das Fenster, während Änderungen offen sind, fragt memo, ob sie übernommen oder verworfen werden sollen. (Mit `"unsaved_changes": "save_automatically"` in `settings.json` wird ohne Nachfrage übernommen; ein Schalter folgt im Einstellungsfenster.)

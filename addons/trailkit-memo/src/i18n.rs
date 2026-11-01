@@ -4,6 +4,8 @@
 //! UI code. Moves into a shared `trailkit-i18n` crate once a second addon needs
 //! it (AGENTS.md rule 7).
 
+use trailkit_ui::chat_link::{CHIP_DETAIL_CHARACTERS, ChatLinkKind, ChipText, Profession};
+
 /// A user interface language supported by the addon.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[repr(u8)]
@@ -53,6 +55,68 @@ impl Language {
         setting
             .or_else(|| nexus_code.and_then(Self::from_code))
             .unwrap_or_default()
+    }
+}
+
+/// The translation of a chat-link chip text (memo plan M75).
+#[must_use]
+pub const fn chip_text(text: ChipText, language: Language) -> &'static str {
+    let german = matches!(language, Language::German);
+    match text {
+        ChipText::Kind(kind) => match (kind, german) {
+            (ChatLinkKind::Coins, false) => "Coins",
+            (ChatLinkKind::Coins, true) => "Münzen",
+            (ChatLinkKind::Item, false) => "Item",
+            (ChatLinkKind::Item, true) => "Gegenstand",
+            (ChatLinkKind::NpcText, false) => "NPC text",
+            (ChatLinkKind::NpcText, true) => "NPC-Text",
+            (ChatLinkKind::MapPoint, false) => "Map point",
+            (ChatLinkKind::MapPoint, true) => "Kartenpunkt",
+            (ChatLinkKind::Skill, false) => "Skill",
+            (ChatLinkKind::Skill, true) => "Fertigkeit",
+            (ChatLinkKind::Trait, false) => "Trait",
+            (ChatLinkKind::Trait, true) => "Eigenschaft",
+            (ChatLinkKind::Player, false) => "Player",
+            (ChatLinkKind::Player, true) => "Spieler",
+            (ChatLinkKind::Recipe, false) => "Recipe",
+            (ChatLinkKind::Recipe, true) => "Rezept",
+            (ChatLinkKind::Skin, _) => "Skin",
+            (ChatLinkKind::Outfit, _) => "Outfit",
+            (ChatLinkKind::WvwObjective, false) => "WvW objective",
+            (ChatLinkKind::WvwObjective, true) => "WvW-Ziel",
+            (ChatLinkKind::BuildTemplate, _) => "Build",
+            (ChatLinkKind::Achievement, false) => "Achievement",
+            (ChatLinkKind::Achievement, true) => "Erfolg",
+        },
+        ChipText::Profession(profession) => match (profession, german) {
+            (Profession::Guardian, false) => "Guardian",
+            (Profession::Guardian, true) => "Wächter",
+            (Profession::Warrior, false) => "Warrior",
+            (Profession::Warrior, true) => "Krieger",
+            (Profession::Engineer, false) => "Engineer",
+            (Profession::Engineer, true) => "Ingenieur",
+            (Profession::Ranger, false) => "Ranger",
+            (Profession::Ranger, true) => "Waldläufer",
+            (Profession::Thief, false) => "Thief",
+            (Profession::Thief, true) => "Dieb",
+            (Profession::Elementalist, false) => "Elementalist",
+            (Profession::Elementalist, true) => "Elementarmagier",
+            (Profession::Mesmer, _) => "Mesmer",
+            (Profession::Necromancer, false) => "Necromancer",
+            (Profession::Necromancer, true) => "Nekromant",
+            (Profession::Revenant, false) => "Revenant",
+            (Profession::Revenant, true) => "Widergänger",
+        },
+        ChipText::InvalidChatLink if german => "Ungültiger Chat-Link",
+        ChipText::InvalidChatLink => "Invalid chat link",
+        ChipText::UnknownLinkType if german => "Unbekannter Link-Typ",
+        ChipText::UnknownLinkType => "Unknown link type",
+        ChipText::DamagedCode if german => "Der Code ist beschädigt",
+        ChipText::DamagedCode => "The code is damaged",
+        ChipText::ClickToCopy if german => "Klicken zum Kopieren",
+        ChipText::ClickToCopy => "Click to copy",
+        ChipText::Copied if german => "Kopiert",
+        ChipText::Copied => "Copied",
     }
 }
 
@@ -199,9 +263,13 @@ impl Text {
     /// character they use into the font atlas (nexus-addon-dev skill §1).
     #[must_use]
     pub fn all_texts() -> String {
+        let chip_texts = ChipText::all()
+            .flat_map(|text| Language::ALL.map(|language| chip_text(text, language)));
         Self::ALL
             .iter()
             .flat_map(|text| Language::ALL.map(|language| text.get(language)))
+            .chain(chip_texts)
+            .chain([CHIP_DETAIL_CHARACTERS])
             .collect()
     }
 

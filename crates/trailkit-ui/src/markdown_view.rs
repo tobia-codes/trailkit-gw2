@@ -13,6 +13,7 @@
 use nexus::imgui::{MouseCursor, Ui};
 
 use crate::{
+    chat_link_chip::{ChipContext, chip_tooltip, chip_width, draw_chip},
     font_registry::FontScope,
     fonts::FontRole,
     icons::Icon,
@@ -31,6 +32,10 @@ pub enum MarkdownAction {
     ToggleTask(TaskMarker),
     /// A web link was clicked; open it with [`open_web_link`].
     OpenLink(String),
+    /// A chat-link chip was clicked and its code copied to the clipboard
+    /// (memo plan M75); show "Copied" by passing it as
+    /// [`ChipContext::copied`] for a moment.
+    ChatLinkCopied(String),
 }
 
 /// Horizontal layout of one block: where text starts and where it must wrap.
@@ -42,11 +47,13 @@ struct LineBounds {
     right: f32,
 }
 
-/// Draws `document` at the cursor position and returns what the user clicked.
+/// Draws `document` at the cursor position and returns what the user
+/// clicked. `chips` supplies the texts of chat-link chips.
 pub fn draw_markdown(
     ui: &Ui,
     document: &MarkdownDocument,
     theme: &Theme,
+    chips: ChipContext<'_>,
 ) -> Option<MarkdownAction> {
     let _body_font = FontScope::push(ui, FontRole::Body);
     let origin_x = ui.cursor_screen_pos()[0];
@@ -89,14 +96,21 @@ pub fn draw_markdown(
                     left: origin_x,
                     right,
                 };
-                draw_spans(ui, spans, Some(FontRole::heading(*level)), bounds, theme)
+                draw_spans(
+                    ui,
+                    spans,
+                    Some(FontRole::heading(*level)),
+                    bounds,
+                    theme,
+                    chips,
+                )
             }
             Block::Paragraph { depth, spans } => {
                 let bounds = LineBounds {
                     left: origin_x + f32::from(*depth) * indent,
                     right,
                 };
-                draw_spans(ui, spans, None, bounds, theme)
+                draw_spans(ui, spans, None, bounds, theme, chips)
             }
             Block::ListItem {
                 depth,
@@ -109,7 +123,7 @@ pub fn draw_markdown(
                     left: left + marker_column,
                     right,
                 };
-                let text_click = draw_spans(ui, spans, None, bounds, theme);
+                let text_click = draw_spans(ui, spans, None, bounds, theme, chips);
                 marker_click.or(text_click)
             }
             Block::Rule => {
@@ -193,13 +207,15 @@ fn draw_list_marker(
 
 /// Lays out `spans` word by word between `bounds`, starting at the current
 /// line, and leaves the cursor below the last line. `heading` overrides the
-/// font of every span. Returns a link click.
+/// font of every span; chat codes are drawn as chips. Returns a link or chip
+/// click.
 fn draw_spans(
     ui: &Ui,
     spans: &[Span],
     heading: Option<FontRole>,
     bounds: LineBounds,
     theme: &Theme,
+    chips: ChipContext<'_>,
 ) -> Option<MarkdownAction> {
     let line_height = {
         let _font = FontScope::push(ui, heading.unwrap_or(FontRole::Body));
@@ -209,7 +225,7 @@ fn draw_spans(
     let mut y = ui.cursor_screen_pos()[1];
     let mut action = None;
 
-    for span in spans {
+    for (index, span) in spans.iter().enumerate() {
         if span.is_line_break() {
             x = bounds.left;
             y += line_height;
@@ -217,6 +233,29 @@ fn draw_spans(
         }
         let role = heading.unwrap_or_else(|| FontRole::body(span.style.bold, span.style.italic));
         let _font = FontScope::push(ui, role);
+        if let Some(chip) = &span.chip {
+            let width = chip_width(ui, chip, theme, chips);
+            if x > bounds.left && x + width > bounds.right {
+                x = bounds.left;
+                y += line_height;
+            }
+            let _id = ui.push_id(i32::try_from(index).unwrap_or(i32::MAX));
+            ui.set_cursor_screen_pos([x, y]);
+            ui.invisible_button("##chip", [width, ui.text_line_height()]);
+            let hovered = ui.is_item_hovered();
+            let clicked = ui.is_item_clicked();
+            draw_chip(ui, &ui.get_window_draw_list(), chip, [x, y], theme, chips);
+            if hovered {
+                ui.set_mouse_cursor(Some(MouseCursor::Hand));
+                chip_tooltip(ui, chip, theme, chips, true);
+            }
+            if clicked {
+                ui.set_clipboard_text(&chip.code);
+                action = action.or_else(|| Some(MarkdownAction::ChatLinkCopied(chip.code.clone())));
+            }
+            x += width;
+            continue;
+        }
         for token in span.text.split_inclusive(' ') {
             let word = token.trim_end_matches(' ');
             let word_width = ui.calc_text_size(word)[0];
