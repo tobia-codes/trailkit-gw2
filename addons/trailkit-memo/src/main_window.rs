@@ -29,7 +29,7 @@ use trailkit_ui::{
 
 use crate::{
     drafts::{Draft, DraftsDocument},
-    i18n::{Language, Text, chip_text},
+    i18n::{Language, Text, chip_text, label_with_percent},
     note_editing::{ActiveFormats, EditSession, FormatCommand, active_formats, format_edit},
     note_tree::{Group, GroupId, NodeId, Note, NoteId, NoteKind, NotesDocument, TreeNode as Node},
     settings::{Settings, TextScale, UnsavedChanges},
@@ -45,6 +45,13 @@ const MINIMUM_TREE_CHARACTERS: f32 = 10.0;
 /// Width in characters (of `n`) that editor and preview each keep, so the
 /// splitter between them stays usable (M72).
 const MINIMUM_PREVIEW_SPLIT_CHARACTERS: f32 = 3.0;
+
+/// How long the text size waits after the last Ctrl+mouse wheel step before
+/// the fonts are rebuilt (M80): rebuilding on every step flickers.
+const TEXT_SCALE_APPLY_DELAY_SECONDS: f64 = 0.4;
+
+/// How long the text size percentage stays visible after a change (M80).
+const TEXT_SCALE_INDICATOR_SECONDS: f64 = 1.5;
 
 /// How long a chat-link chip says "Copied" after a click (M75).
 const COPIED_FEEDBACK_SECONDS: f64 = 1.5;
@@ -293,6 +300,12 @@ pub struct MemoWindow {
     window_focused: bool,
     /// The user settings; the window changes the text scale (M57, M79).
     settings: Settings,
+    /// The text scale the fonts are built for; follows
+    /// `settings.text_scale` once the wheel rests (M80).
+    applied_text_scale: TextScale,
+    /// When the text scale last changed (ImGui time), while its percentage
+    /// is shown or the change is not applied yet (M80).
+    text_scale_changed_at: Option<f64>,
     /// Height of the dialog card measured in the last frame (its content
     /// wraps, so the height is only known after drawing it once).
     dialog_height: Option<f32>,
@@ -361,6 +374,8 @@ impl MemoWindow {
             leave_prompt: None,
             window_rect: None,
             window_focused: false,
+            applied_text_scale: settings.text_scale,
+            text_scale_changed_at: None,
             settings,
             close_approved: false,
             draft_hint: None,
@@ -368,10 +383,11 @@ impl MemoWindow {
         }
     }
 
-    /// The text size the window wants (M79).
+    /// The text size the fonts should have (M79); lags behind Ctrl+mouse
+    /// wheel steps until the wheel rests (M80).
     #[must_use]
     pub fn text_scale(&self) -> TextScale {
-        self.settings.text_scale
+        self.applied_text_scale
     }
 
     /// Ctrl+mouse wheel over the window makes the text larger or smaller,
@@ -396,6 +412,29 @@ impl MemoWindow {
         if scale != self.settings.text_scale {
             self.settings.text_scale = scale;
             self.saver.save_settings(self.settings);
+        }
+        // Show the size even when it is already at a limit.
+        self.text_scale_changed_at = Some(ui.time());
+    }
+
+    /// Applies a changed text size once the wheel rests and shows its
+    /// percentage next to the mouse while it changes (M80).
+    fn update_text_scale(&mut self, ui: &Ui, language: Language) {
+        let Some(changed_at) = self.text_scale_changed_at else {
+            return;
+        };
+        let elapsed = ui.time() - changed_at;
+        if elapsed >= TEXT_SCALE_APPLY_DELAY_SECONDS {
+            self.applied_text_scale = self.settings.text_scale;
+        }
+        if elapsed < TEXT_SCALE_INDICATOR_SECONDS {
+            ui.tooltip_text(label_with_percent(
+                Text::TextSize.get(language),
+                self.settings.text_scale.factor() * 100.0,
+                language,
+            ));
+        } else {
+            self.text_scale_changed_at = None;
         }
     }
 
@@ -472,6 +511,7 @@ impl MemoWindow {
         self.window_focused =
             ui.is_window_focused_with_flags(WindowFocusedFlags::ROOT_AND_CHILD_WINDOWS);
         self.handle_text_scale_keys(ui);
+        self.update_text_scale(ui, language);
         self.draw_problem(ui, language, theme);
 
         if self.document.root.is_empty() {

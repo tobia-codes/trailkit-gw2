@@ -25,7 +25,7 @@ The window shows the note list on the left and the selected note on the right. D
 
 Long names are shortened with "…" — hover them to see the full name.
 
-**Text size:** hold **Ctrl** and turn the mouse wheel over the window to make all text larger or smaller; **Ctrl+0** goes back to the default. memo remembers the size; it builds on the UI font size set in Nexus.
+**Text size:** hold **Ctrl** and turn the mouse wheel over the window to make all text larger or smaller; **Ctrl+0** goes back to the default. The current size shows next to the mouse in percent. memo remembers the size; it builds on the UI font size set in Nexus.
 
 ## Editing a note
 

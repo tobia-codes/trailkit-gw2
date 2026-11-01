@@ -14,9 +14,60 @@ use crate::{
     theme::Theme,
 };
 
-/// Icon size relative to the text: about the height of capital letters, so
-/// chips do not stand out of the line (memo plan M79).
-const ICON_SCALE: f32 = 0.8;
+/// Corner radius of a chip relative to `spacing.extra_small`: slightly
+/// rounded, not a pill (memo plan M80).
+const ROUNDING_FACTOR: f32 = 0.75;
+
+/// Size and vertical position of chip icons in the current fonts: icons are
+/// drawn at the text size (smaller ones look too small next to letters) and
+/// centered on the capital letters (memo plan M80).
+#[derive(Debug, Clone, Copy)]
+struct IconMetrics {
+    /// Factor from the icon font's own size to the drawn size.
+    scale: f32,
+    /// Distance from the line top to the top of the drawn icon.
+    offset: f32,
+}
+
+/// The vertical bounds `(top, bottom)` of `character` in the current font at
+/// the current size, measured from the line top; `None` if unknown.
+fn glyph_bounds(character: char) -> Option<(f32, f32)> {
+    let character = u16::try_from(u32::from(character)).ok()?;
+    // SAFETY: called on the render thread inside a frame, so the current
+    // font is valid; `ImFont_FindGlyph` only reads it and returns a pointer
+    // into the font (the fallback glyph if the character is missing), or
+    // null.
+    unsafe {
+        let font = nexus::imgui::sys::igGetFont();
+        let glyph = nexus::imgui::sys::ImFont_FindGlyph(font, character).as_ref()?;
+        let scale = nexus::imgui::sys::igGetFontSize() / (*font).FontSize;
+        Some((glyph.Y0 * scale, glyph.Y1 * scale))
+    }
+}
+
+/// Measures the icon size and offset for the current text font. Lucide draws
+/// all icons on one grid, so the full square stands for every icon (centering
+/// each glyph by its own shape would shift flat icons off the line).
+/// Measured: a 16 px "H" is 9 px tall, the icon square 15 px.
+fn icon_metrics(ui: &Ui) -> IconMetrics {
+    let capital = glyph_bounds('H');
+    let square = {
+        let _icons = FontScope::push(ui, FontRole::Icons);
+        glyph_bounds(Icon::SQUARE.glyph())
+    };
+    match (capital, square) {
+        (Some((capital_top, capital_bottom)), Some((square_top, square_bottom))) => {
+            let scale = 1.0;
+            let offset =
+                (capital_top + capital_bottom) / 2.0 - (square_top + square_bottom) / 2.0 * scale;
+            IconMetrics { scale, offset }
+        }
+        _ => IconMetrics {
+            scale: 1.0,
+            offset: 0.0,
+        },
+    }
+}
 
 /// What a chip needs from the addon: its texts and the code copied last.
 #[derive(Clone, Copy)]
@@ -130,41 +181,17 @@ fn for_each_piece(
 }
 
 /// The width of a piece in the current font.
-fn piece_width(ui: &Ui, piece: &Piece<'_>, theme: &Theme) -> f32 {
+fn piece_width(ui: &Ui, piece: &Piece<'_>, theme: &Theme, icons: IconMetrics) -> f32 {
     match piece {
         Piece::Icon(icon, _) => {
             let _icons = FontScope::push(ui, FontRole::Icons);
             let mut buffer = [0; 4];
-            ui.calc_text_size(icon.as_str(&mut buffer))[0] * ICON_SCALE + theme.spacing.extra_small
+            ui.calc_text_size(icon.as_str(&mut buffer))[0] * icons.scale + theme.spacing.extra_small
         }
         Piece::Text(text, _) => ui.calc_text_size(text)[0],
         // A little air before the dot, more after it (before the next amount).
         Piece::Dot(_) => dot_radius(ui) * 2.0 + theme.spacing.extra_small * 1.5,
     }
-}
-
-/// How far to move every icon, drawn at `icon_size`, down from the line top
-/// so icons are centered in a box of `height`. Lucide draws all icons on one
-/// grid, so the offset comes from one reference glyph (the full square) and
-/// is the same for every icon; centering each glyph by its own shape would
-/// shift flat icons (e.g. the outfit mask) off the line. Call it with the
-/// icon font pushed.
-fn icon_centering_offset(height: f32, icon_size: f32) -> f32 {
-    let Ok(character) = u16::try_from(u32::from(Icon::SQUARE.glyph())) else {
-        return 0.0;
-    };
-    // SAFETY: called on the render thread inside a frame, so the current
-    // font is valid; `ImFont_FindGlyph` only reads it and returns a pointer
-    // into the font (the fallback glyph if the icon is missing), or null.
-    let bounds = unsafe {
-        let font = nexus::imgui::sys::igGetFont();
-        let glyph = nexus::imgui::sys::ImFont_FindGlyph(font, character);
-        glyph.as_ref().map(|glyph| {
-            let scale = icon_size / (*font).FontSize;
-            (glyph.Y0 * scale, glyph.Y1 * scale)
-        })
-    };
-    bounds.map_or(0.0, |(top, bottom)| (height - (bottom - top)) / 2.0 - top)
 }
 
 /// How far the pill reaches above and below the text: a third of the
@@ -215,9 +242,10 @@ fn padding(theme: &Theme) -> f32 {
 /// The width `chip` takes in the current font, padding included.
 #[must_use]
 pub fn chip_width(ui: &Ui, chip: &ChatLinkChip, theme: &Theme, context: ChipContext<'_>) -> f32 {
+    let icons = icon_metrics(ui);
     let mut width = 2.0 * padding(theme);
     for_each_piece(chip, theme, context, |piece| {
-        width += piece_width(ui, &piece, theme);
+        width += piece_width(ui, &piece, theme, icons);
     });
     width
 }
@@ -239,7 +267,7 @@ pub fn draw_chip(
     let vertical_padding = vertical_padding(ui, theme);
     let min = [position[0], position[1] - vertical_padding];
     let max = [position[0] + width, position[1] + height + vertical_padding];
-    let rounding = (max[1] - min[1]) / 2.0;
+    let rounding = theme.spacing.extra_small * ROUNDING_FACTOR;
     draw_list
         .add_rect(min, max, theme.surface.hover.with_alpha(0.6).to_array())
         .filled(true)
@@ -252,18 +280,18 @@ pub fn draw_chip(
             .thickness(theme.border.width.max(1.0))
             .build();
     }
-    let (icon_size, icon_offset) = {
+    let icons = icon_metrics(ui);
+    let icon_size = {
         let _icons = FontScope::push(ui, FontRole::Icons);
-        let icon_size = (ui.current_font_size() * ICON_SCALE).round();
-        (icon_size, icon_centering_offset(height, icon_size))
+        ui.current_font_size() * icons.scale
     };
     let mut x = position[0] + padding(theme);
     for_each_piece(chip, theme, context, |piece| {
-        let advance = piece_width(ui, &piece, theme);
+        let advance = piece_width(ui, &piece, theme, icons);
         match piece {
             Piece::Icon(icon, color) => {
                 let _icons = FontScope::push(ui, FontRole::Icons);
-                draw_scaled_icon(icon, [x, position[1] + icon_offset], icon_size, color);
+                draw_scaled_icon(icon, [x, position[1] + icons.offset], icon_size, color);
             }
             Piece::Text(text, color) => {
                 draw_list.add_text([x, position[1]], color.to_array(), text);

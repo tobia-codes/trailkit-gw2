@@ -334,7 +334,9 @@ fn control_mouse_wheel_changes_the_text_scale_and_control_zero_resets_it() {
         ..idle.clone()
     };
     harness.frame(&wheel_up, |ui| draw(ui, &mut memo, size, ThemeKind::Dark));
-    assert_eq!(memo.text_scale(), TextScale::DEFAULT.stepped(1.0));
+    assert_eq!(memo.settings.text_scale, TextScale::DEFAULT.stepped(1.0));
+    // The fonts follow only once the wheel rests.
+    assert_eq!(memo.text_scale(), TextScale::DEFAULT);
     // Clicking focuses the window; Ctrl+0 then resets the size.
     let click = FrameInput {
         left_button_down: true,
@@ -348,5 +350,5 @@ fn control_mouse_wheel_changes_the_text_scale_and_control_zero_resets_it() {
         ..idle
     };
     harness.frame(&reset, |ui| draw(ui, &mut memo, size, ThemeKind::Dark));
-    assert_eq!(memo.text_scale(), TextScale::DEFAULT);
+    assert_eq!(memo.settings.text_scale, TextScale::DEFAULT);
 }
