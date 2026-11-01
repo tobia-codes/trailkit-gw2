@@ -59,7 +59,9 @@ trailkit-core.
   geändert hast.
 - Wählst du eine andere Notiz, legst eine neue an oder schließt das Fenster,
   während Änderungen offen sind, fragt memo, ob sie übernommen oder
-  verworfen werden sollen.
+  verworfen werden sollen. (Mit `"unsaved_changes": "save_automatically"`
+  in `settings.json` wird ohne Nachfrage übernommen; ein Schalter folgt im
+  Einstellungsfenster.)
 - **Escape** verlässt zuerst das Textfeld, ein zweites Escape schließt das
   Fenster.
 - Wird das Spiel oder das Addon beim Bearbeiten beendet, bleiben deine

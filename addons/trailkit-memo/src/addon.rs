@@ -366,6 +366,7 @@ fn receive_loaded_notes(notes: &mut NotesState) {
                 saver.clone(),
                 directory.clone(),
                 drafts,
+                settings().unsaved_changes,
             )))
         }
         Err(TryRecvError::Empty) => return,

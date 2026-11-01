@@ -30,6 +30,7 @@ use crate::{
     i18n::{Language, Text},
     note_editing::{EditSession, FormatCommand, TextEdit, format_edit},
     note_tree::{Group, GroupId, NodeId, Note, NoteId, NoteKind, NotesDocument, TreeNode as Node},
+    settings::UnsavedChanges,
     storage_worker::StorageSaver,
     ui_state::UiState,
 };
@@ -270,6 +271,8 @@ pub struct MemoWindow {
     window_rect: Option<[[f32; 2]; 2]>,
     /// Whether the main window had the focus in the last frame.
     window_focused: bool,
+    /// Whether leaving the editor with changes asks or saves (M57).
+    unsaved_changes: UnsavedChanges,
     /// Set once closing the window is allowed; read by the addon glue.
     close_approved: bool,
     /// Cached draft hint label (note, language, text), so it is not
@@ -304,6 +307,7 @@ impl MemoWindow {
         saver: StorageSaver,
         addon_directory: PathBuf,
         drafts: DraftsDocument,
+        unsaved_changes: UnsavedChanges,
     ) -> Self {
         let mut drafts = drafts;
         if drafts.prune(Timestamp::now(), |note| document.note(note).is_some()) {
@@ -333,6 +337,7 @@ impl MemoWindow {
             leave_prompt: None,
             window_rect: None,
             window_focused: false,
+            unsaved_changes,
             close_approved: false,
             draft_hint: None,
         }
@@ -351,6 +356,9 @@ impl MemoWindow {
     /// changes dialog opens and [`Self::take_close_approval`] reports the
     /// answer later (M54).
     pub fn request_close(&mut self) -> bool {
+        if self.has_unsaved_changes() && self.unsaved_changes == UnsavedChanges::SaveAutomatically {
+            self.commit_editor(Timestamp::now());
+        }
         if self.has_unsaved_changes() {
             if self.leave_prompt.is_none() {
                 self.leave_prompt = Some(LeaveReason::CloseWindow);
@@ -801,11 +809,14 @@ impl MemoWindow {
             if self.leave_prompt.is_some() {
                 return;
             }
-            if editor.session.has_changes() {
-                self.leave_prompt = Some(LeaveReason::Action(action.clone()));
-                return;
+            match (editor.session.has_changes(), self.unsaved_changes) {
+                (true, UnsavedChanges::Ask) => {
+                    self.leave_prompt = Some(LeaveReason::Action(action.clone()));
+                    return;
+                }
+                (true, UnsavedChanges::SaveAutomatically) => self.commit_editor(now),
+                (false, _) => self.editor = None,
             }
-            self.editor = None;
         }
         match action {
             WindowAction::Select(node) => self.select(*node),
@@ -900,7 +911,7 @@ impl MemoWindow {
             }
             WindowAction::FinishEditing => self.commit_editor(now),
             WindowAction::CancelEditing => {
-                if self.has_unsaved_changes() {
+                if self.has_unsaved_changes() && self.unsaved_changes == UnsavedChanges::Ask {
                     self.leave_prompt = Some(LeaveReason::Cancel);
                 } else {
                     self.editor = None;
@@ -1049,9 +1060,13 @@ fn draw_unsaved_changes_card(ui: &Ui, language: Language, theme: &Theme) -> Opti
         .min(available[0] - 2.0 * padding)
         .max(1.0);
     let question_height = ui.calc_text_size_with_opts(question, false, content_width)[1];
-    // Title line, question, gap and button row, each followed by item spacing.
+    let title_height = {
+        let _heading = FontScope::push(ui, FontRole::Heading3);
+        ui.text_line_height()
+    };
+    // Heading, question, gap and button row, each followed by item spacing.
     let height = 2.0 * padding
-        + ui.text_line_height()
+        + title_height
         + question_height
         + theme.spacing.small
         + ui.frame_height()
@@ -1065,7 +1080,7 @@ fn draw_unsaved_changes_card(ui: &Ui, language: Language, theme: &Theme) -> Opti
     let mut answer = None;
     draw_pane(ui, theme, "card", size, || {
         {
-            let _bold = FontScope::push(ui, FontRole::BodyBold);
+            let _heading = FontScope::push(ui, FontRole::Heading3);
             ui.text(title);
         }
         {

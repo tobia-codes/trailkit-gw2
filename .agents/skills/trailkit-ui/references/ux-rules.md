@@ -48,6 +48,8 @@ Each rule has an id (`area-name`) so reviews can cite it.
   ImGui's `BeginPopupModal` (whole-screen dim) is not used. Implementation:
   a borderless window exactly over the owning window (child-window scrims
   do not reliably cover input fields in ImGui 1.80).
+- `overlay-dialog-layout` — A dialog has a heading (Heading3), a short
+  question or explanation, and one button row (see `lay-one-primary`).
 - `overlay-sleep` — Closed windows cost nothing: skip all work for hidden
   windows (no layout, no text formatting).
 - `overlay-click-through` — Purely informational overlays may offer a

@@ -49,7 +49,9 @@ insert headings, **bold**, *italic*, lists, checkboxes and links (also
 - **Done** (or **Ctrl+Enter**) saves your changes, **Cancel** throws them
   away — memo asks first if you changed something.
 - If you choose another note, create one or close the window while you have
-  unsaved changes, memo asks whether to save or discard them.
+  unsaved changes, memo asks whether to save or discard them. (Set
+  `"unsaved_changes": "save_automatically"` in `settings.json` to save
+  without asking; a switch follows in the settings window.)
 - **Escape** first leaves the text field, a second Escape closes the window.
 - If the game or the addon closes while you are editing, your changes are
   kept as a draft. Next time you open the note, choose **Restore** to
