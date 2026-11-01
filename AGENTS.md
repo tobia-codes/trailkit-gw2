@@ -22,6 +22,10 @@ Planning documents live in [`docs/plans/`](docs/plans/README.md).
    (`feature/`, `chore/`, `bugfix/`, `hotfix/`), open PRs into `develop` and
    merge them **on their own once every CI check of the PR is green**
    (ROADMAP R69); a red or pending check means: fix or wait, never merge.
+   Merge with `gh pr merge --auto --merge --delete-branch` right after
+   opening the PR and keep working instead of waiting: `develop` requires
+   all CI checks, so GitHub merges only when they are green (R70). Group
+   related logical commits into one PR instead of one PR per commit.
    Everything else that publishes needs the user's explicit approval in the
    current conversation, every time: merging into `main`, release PRs, tags,
    GitHub releases, force pushes, and changes to branch protection or CI

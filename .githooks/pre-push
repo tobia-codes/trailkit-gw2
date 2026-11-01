@@ -6,3 +6,6 @@ command -v cargo >/dev/null 2>&1 || . "$HOME/.cargo/env"
 cargo xtask check-branch
 cargo clippy --quiet --workspace --all-targets -- -D warnings
 cargo test --quiet --workspace
+# The addon UI is `#[cfg(windows)]`; lint it for the real target too, so CI
+# does not find it first (R70). Needs cargo-xwin.
+cargo xwin clippy --quiet --target x86_64-pc-windows-msvc --workspace --all-targets -- -D warnings

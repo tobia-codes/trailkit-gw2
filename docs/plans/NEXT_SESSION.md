@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-01 (end of session 5, after PR #30).
+Last updated: 2026-11-01 (session 6: drawer scrim fix PR #33, faster dev loop R70).
 
 ## Where we are
 
@@ -54,7 +54,9 @@ Last updated: 2026-11-01 (end of session 5, after PR #30).
 - ImGui 1.80: alpha 0 windows skip all items; `CalcTextSize` rounds up per
   call (measure glyphs with `ImFont_CalcTextSizeA`); no `BeginDisabled`;
   dragging where no item is moves the window (`movable(false)` on children);
-  child-window scrims don't reliably cover inputs (use a borderless window).
+  child backgrounds render into the parent's draw list, so a `ChildBg` scrim
+  sits below earlier siblings — draw the dimming rectangle in the scrim's own
+  draw list (PR #33, trailkit-ui skill §4).
 - Nexus keeps fonts per identifier until the game restarts (font changes
   need a restart, not a hot reload).
 - The game's hover cursor (gear, speech bubble) leaks through addon windows —

@@ -75,6 +75,7 @@
 | R67 | **`develop` is the GitHub default branch** (PRs target it automatically). Consequence: scheduled workflows (price archive, DPF reminder) run from `develop`, so datagen/workflow changes take effect when merged into `develop`; addon releases still go `develop` → `main` (R9) | 2026-10-31 |
 | R68 | **No AI attribution** in commits or PRs (no `Co-Authored-By` trailer, no "Generated with …" footer), so only `tobia-codes` appears as contributor. The existing history was rewritten once on 2026-10-31 (branch protection lifted for the force push of `main`/`develop`, then restored) | 2026-10-31 |
 | R69 | Agents push work branches and merge PRs into `develop` on their own once all CI checks of the PR are green (supersedes the approval requirement of R29 for `develop`); merging into `main`, releases, tags, force pushes and changes to branch protection or CI workflows still need explicit user approval each time (AGENTS.md rule 1) | 2026-11-01 |
+| R70 | Faster development loop (user decision 2026-11-01): fewer, larger PRs (one commit per logical step, related steps in one PR); PRs into `develop` use GitHub auto-merge, `develop` requires the CI checks (Windows build, cargo-deny, branch name); docs-only PRs (`docs/**`, `*.md` except `addons/*/help/`) skip the Windows job; CI runs on push only for `main`; the pre-push hook also runs `cargo xwin clippy` for the Windows target | 2026-11-01 |
 
 ## Proposed repository layout
 
