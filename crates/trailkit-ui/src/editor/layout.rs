@@ -10,6 +10,7 @@
 use std::ops::Range;
 
 use super::highlight::{SpanStyle, StyledSpan, highlight_line};
+use crate::chat_link::ChatLinkChip;
 
 /// One line on screen.
 #[derive(Debug, Clone, PartialEq)]
@@ -67,11 +68,14 @@ pub struct Layout {
     lines: Vec<VisualLine>,
     /// Highlighting spans covering the text, in order.
     spans: Vec<StyledSpan>,
+    /// The decoded chat-link chips with their start positions, in order.
+    chips: Vec<(usize, ChatLinkChip)>,
 }
 
 impl Layout {
     /// Wraps `text` at `width` (a line holds at least one character).
-    /// `measure` returns the width of a single character in a style.
+    /// `measure` returns the width of a single character in a style, or of
+    /// a whole chat code (style [`SpanStyle::ChatLink`]) drawn as a chip.
     pub fn build(text: &str, width: f32, mut measure: impl FnMut(&str, SpanStyle) -> f32) -> Self {
         let mut spans = Vec::new();
         let mut lines = Vec::new();
@@ -95,7 +99,30 @@ impl Layout {
             }
             line_start = line_end + 1;
         }
-        Self { lines, spans }
+        let chips = spans
+            .iter()
+            .filter(|span| span.style == SpanStyle::ChatLink)
+            .map(|span| {
+                (
+                    span.range.start,
+                    ChatLinkChip::new(&text[span.range.clone()]),
+                )
+            })
+            .collect();
+        Self {
+            lines,
+            spans,
+            chips,
+        }
+    }
+
+    /// The chat-link chip whose code starts at `position`.
+    #[must_use]
+    pub fn chip_at(&self, position: usize) -> Option<&ChatLinkChip> {
+        self.chips
+            .binary_search_by_key(&position, |(start, _)| *start)
+            .ok()
+            .map(|index| &self.chips[index].1)
     }
 
     /// The visual lines, top to bottom (at least one).
@@ -195,21 +222,35 @@ fn wrap_logical_line(
     // Index into `boundaries` right after the last space: a wrap opportunity.
     let mut last_break: Option<usize> = None;
     let mut span_index = 0;
-    for (offset, character) in text[range.clone()].char_indices() {
-        let position = range.start + offset;
+    let mut position = range.start;
+    while position < range.end {
         while spans
             .get(span_index)
             .is_some_and(|span| span.range.end <= position)
         {
             span_index += 1;
         }
-        let style = spans
-            .get(span_index)
-            .map_or(SpanStyle::Text, |span| span.style);
-        let mut encoded = [0; 4];
-        let advance = measure(character.encode_utf8(&mut encoded), style);
+        let span = spans.get(span_index);
+        let style = span.map_or(SpanStyle::Text, |span| span.style);
+        // A chat code is one unit (memo plan M75): one advance, no boundary
+        // inside, so the cursor can only stand before or after it.
+        let (unit_end, advance, is_space) = match span {
+            Some(span) if style == SpanStyle::ChatLink && span.range.start == position => (
+                span.range.end,
+                measure(&text[span.range.clone()], style),
+                false,
+            ),
+            _ => {
+                let character = text[position..].chars().next().unwrap_or(' ');
+                let mut encoded = [0; 4];
+                (
+                    position + character.len_utf8(),
+                    measure(character.encode_utf8(&mut encoded), style),
+                    character == ' ' || character == '\t',
+                )
+            }
+        };
         let x = boundaries.last().map_or(0.0, |(_, x)| *x);
-        let is_space = character == ' ' || character == '\t';
         if !is_space && x + advance > width && position > line_start {
             let split = last_break
                 .filter(|index| *index > 1)
@@ -233,10 +274,11 @@ fn wrap_logical_line(
             last_break = None;
         }
         let x = boundaries.last().map_or(0.0, |(_, x)| *x);
-        boundaries.push((position + character.len_utf8(), x + advance));
+        boundaries.push((unit_end, x + advance));
         if is_space {
             last_break = Some(boundaries.len() - 1);
         }
+        position = unit_end;
     }
     lines.push(VisualLine {
         range: line_start..range.end,
@@ -249,9 +291,14 @@ fn wrap_logical_line(
 mod tests {
     use super::*;
 
-    /// Every character is one unit wide; bold is two.
+    /// Every character is one unit wide; bold is two; a chat-link chip is
+    /// three, whatever its code.
     fn monospace(_: &str, style: SpanStyle) -> f32 {
-        if style == SpanStyle::Strong { 2.0 } else { 1.0 }
+        match style {
+            SpanStyle::Strong => 2.0,
+            SpanStyle::ChatLink => 3.0,
+            SpanStyle::Text | SpanStyle::Marker => 1.0,
+        }
     }
 
     /// The visual lines of `text` wrapped at `width`, as strings.
@@ -323,5 +370,19 @@ mod tests {
             styles,
             [SpanStyle::Text, SpanStyle::Marker, SpanStyle::Text]
         );
+    }
+
+    #[test]
+    fn chat_codes_are_one_unit_without_inner_positions() {
+        let text = "ab [&BDgAAAA=] c";
+        let layout = Layout::build(text, 100.0, monospace);
+        let line = &layout.lines()[0];
+        // "ab " is 3 units, the chip 3 more.
+        assert!((line.x_of(14) - 6.0).abs() < f32::EPSILON);
+        // Clicking inside the chip lands before or after it, never inside.
+        assert_eq!(line.position_at(4.0), 3);
+        assert_eq!(line.position_at(5.0), 14);
+        // A chip that does not fit wraps whole.
+        assert_eq!(wrapped(text, 4.0), ["ab ", "[&BDgAAAA=] ", "c"]);
     }
 }

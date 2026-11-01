@@ -3,6 +3,8 @@
 //! Source of truth for the rules: the `trailkit-ui` skill
 //! (`.agents/skills/trailkit-ui/SKILL.md`). This crate provides:
 //!
+//! - [`chat_link`]: finding and decoding GW2 chat links (`chat_link_chip`
+//!   draws them, Windows only);
 //! - [`color`]: an RGBA color type with WCAG contrast helpers;
 //! - [`theme`]: the semantic theme tokens and the built-in `Dark` / `Light`
 //!   themes;
@@ -14,6 +16,7 @@
 //! Shared components move in here only once a second addon needs them
 //! (AGENTS.md rule 7, ROADMAP R47).
 
+pub mod chat_link;
 pub mod color;
 pub mod editor;
 pub mod fonts;
@@ -23,6 +26,8 @@ pub mod theme;
 
 #[cfg(windows)]
 pub mod button;
+#[cfg(windows)]
+pub mod chat_link_chip;
 #[cfg(windows)]
 pub mod font_registry;
 #[cfg(windows)]

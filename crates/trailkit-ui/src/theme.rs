@@ -44,6 +44,8 @@ pub struct Theme {
     pub border: BorderTokens,
     /// Event timeline colors (`event.*`).
     pub event: EventColors,
+    /// Coin colors of chat-link chips (memo plan M75).
+    pub coin: CoinColors,
     /// Spacing scale (`space.*`).
     pub spacing: Spacing,
     /// List metrics (`list.*`).
@@ -123,6 +125,17 @@ pub struct BorderTokens {
     pub focus: Color,
     /// `border.width`: border thickness in pixels.
     pub width: f32,
+}
+
+/// Gold, silver and copper, as the game colors coin amounts.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct CoinColors {
+    /// `coin.gold`.
+    pub gold: Color,
+    /// `coin.silver`.
+    pub silver: Color,
+    /// `coin.copper`.
+    pub copper: Color,
 }
 
 /// Event timeline colors (per-category overrides allowed later).
@@ -248,6 +261,11 @@ impl Theme {
             focus: Color::from_rgb_hex(0xD9A441),
             width: 1.0,
         },
+        coin: CoinColors {
+            gold: Color::from_rgba_hex(0xE8C1_4AFF),
+            silver: Color::from_rgba_hex(0xC4C8_CEFF),
+            copper: Color::from_rgba_hex(0xC87F_4AFF),
+        },
         event: EventColors {
             default: Color::from_rgb_hex(0x8A9099),
             highlight: Color::from_rgb_hex(0xF2C14E),
@@ -295,6 +313,11 @@ impl Theme {
             color: Color::from_rgb_hex(0xC9CED6),
             focus: Color::from_rgb_hex(0x8C5E0A),
             width: 1.0,
+        },
+        coin: CoinColors {
+            gold: Color::from_rgba_hex(0xA67C_00FF),
+            silver: Color::from_rgba_hex(0x7A80_88FF),
+            copper: Color::from_rgba_hex(0x9C5A_2AFF),
         },
         event: EventColors {
             default: Color::from_rgb_hex(0x5F6670),

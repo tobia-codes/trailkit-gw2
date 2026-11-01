@@ -21,6 +21,7 @@ The window shows the note list on the left and the selected note on the right. D
 - **Badges** at the right end of a row: **D** marks a daily note (reset at 00:00 UTC), **W** a weekly note (reset on Mondays at 07:30 UTC). Hover a badge for details.
 - **Checkboxes** in a note can be ticked directly.
 - **Links** open in your browser (only `http://` and `https://`); hover a link to see where it goes.
+- **Chat links** from the game (`[&…]`, e.g. a waypoint or an item) show as chips with an icon, the kind and the id; coins show their amount. Click a chip to copy its code, then paste it into the game chat. Hover it to see the code. A chip with **!** has a broken code; the tooltip says why. Names (instead of ids) will come with trailkit-core.
 
 Long names are shortened with "…" — hover them to see the full name.
 
@@ -28,6 +29,7 @@ Long names are shortened with "…" — hover them to see the full name.
 
 Click the **pencil** at the top right of a note, or double-click the note. You edit the title and the text in markdown; the buttons above the text insert headings, **bold**, *italic*, lists, checkboxes and links (also **Ctrl+B** and **Ctrl+I**); clicking a button again removes the formatting (also links). Buttons of the formatting at the cursor light up. The event button needs trailkit-core.
 
+- **Chat links:** paste a code (`[&…]`) into the text and it becomes a chip. The cursor jumps over a chip and Backspace deletes it whole; to change it, delete it and paste the new code.
 - The **eye** button shows a preview of the formatted note next to the text; drag the gap between them to change the widths. memo remembers both.
 - **Done** (or **Ctrl+Enter**) saves your changes, **Cancel** throws them away — memo asks first if you changed something.
 - If you choose another note, create one or close the window while you have unsaved changes, memo asks whether to save or discard them. (Set `"unsaved_changes": "save_automatically"` in `settings.json` to save without asking; a switch follows in the settings window.)

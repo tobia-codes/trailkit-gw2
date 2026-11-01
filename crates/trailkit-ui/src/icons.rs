@@ -44,8 +44,34 @@ impl Icon {
     /// `eye`: show or hide the preview (M60).
     pub const EYE: Self = Self('\u{e0ba}');
 
+    /// `coins`: coins chat link (M75).
+    pub const COINS: Self = Self('\u{e097}');
+    /// `package`: item chat link (M75).
+    pub const PACKAGE: Self = Self('\u{e129}');
+    /// `message-square`: NPC text chat link (M75).
+    pub const MESSAGE_SQUARE: Self = Self('\u{e117}');
+    /// `map-pin`: waypoint / point of interest / vista chat link (M75).
+    pub const MAP_PIN: Self = Self('\u{e111}');
+    /// `zap`: skill chat link (M75).
+    pub const ZAP: Self = Self('\u{e1b4}');
+    /// `sparkles`: trait chat link (M75).
+    pub const SPARKLES: Self = Self('\u{e412}');
+    /// `user`: player chat link (M75).
+    pub const USER: Self = Self('\u{e19f}');
+    /// `scroll-text`: recipe chat link (M75).
+    pub const SCROLL_TEXT: Self = Self('\u{e45f}');
+    /// `shirt`: skin chat link (M75).
+    pub const SHIRT: Self = Self('\u{e1ca}');
+    /// `venetian-mask`: outfit chat link (M75).
+    pub const VENETIAN_MASK: Self = Self('\u{e2aa}');
+    /// `castle`: WvW objective chat link (M75).
+    pub const CASTLE: Self = Self('\u{e3e0}');
+    /// `hammer`: build template chat link (M75).
+    pub const HAMMER: Self = Self('\u{e0ec}');
+    /// `trophy`: achievement chat link (M75).
+    pub const TROPHY: Self = Self('\u{e373}');
     /// Every icon above; keep in sync when adding one.
-    pub const ALL: [Self; 16] = [
+    pub const ALL: [Self; 29] = [
         Self::FILE_PLUS,
         Self::FOLDER_PLUS,
         Self::MENU,
@@ -62,6 +88,19 @@ impl Icon {
         Self::LINK,
         Self::CALENDAR_CLOCK,
         Self::EYE,
+        Self::COINS,
+        Self::PACKAGE,
+        Self::MESSAGE_SQUARE,
+        Self::MAP_PIN,
+        Self::ZAP,
+        Self::SPARKLES,
+        Self::USER,
+        Self::SCROLL_TEXT,
+        Self::SHIRT,
+        Self::VENETIAN_MASK,
+        Self::CASTLE,
+        Self::HAMMER,
+        Self::TROPHY,
     ];
 
     /// The glyph as a character of the icon font.

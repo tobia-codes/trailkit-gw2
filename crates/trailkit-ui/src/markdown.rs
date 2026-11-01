@@ -9,6 +9,8 @@
 
 use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 
+use crate::chat_link::{ChatLinkChip, find_chat_codes};
+
 /// A parsed markdown document, ready to draw.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct MarkdownDocument {
@@ -76,6 +78,9 @@ pub struct Span {
     pub text: String,
     /// How the text is drawn.
     pub style: SpanStyle,
+    /// The decoded chat link if this span is a chat code (`text` is the
+    /// raw code); drawn as one chip (memo plan M75).
+    pub chip: Option<Box<ChatLinkChip>>,
 }
 
 /// Inline style of a [`Span`].
@@ -177,6 +182,48 @@ pub fn toggle_task(source: &str, marker: TaskMarker) -> Option<String> {
 pub fn is_web_link(url: &str) -> bool {
     let lower = url.trim_start().to_ascii_lowercase();
     lower.starts_with("https://") || lower.starts_with("http://")
+}
+
+/// Splits every chat code out of `spans` into a chip span of the same style
+/// (memo plan M75). Link texts stay text: a chip inside a link would hide it.
+fn split_chat_codes(spans: Vec<Span>) -> Vec<Span> {
+    if !spans.iter().any(|span| span.text.contains("[&")) {
+        return spans;
+    }
+    let mut split = Vec::with_capacity(spans.len());
+    for span in spans {
+        if span.style.link.is_some() || span.is_line_break() {
+            split.push(span);
+            continue;
+        }
+        let mut text_start = 0;
+        for range in find_chat_codes(&span.text) {
+            if range.start > text_start {
+                split.push(Span {
+                    text: span.text[text_start..range.start].to_owned(),
+                    style: span.style.clone(),
+                    chip: None,
+                });
+            }
+            let code = &span.text[range.clone()];
+            split.push(Span {
+                text: code.to_owned(),
+                style: span.style.clone(),
+                chip: Some(Box::new(ChatLinkChip::new(code))),
+            });
+            text_start = range.end;
+        }
+        if text_start == 0 {
+            split.push(span);
+        } else if text_start < span.text.len() {
+            split.push(Span {
+                text: span.text[text_start..].to_owned(),
+                style: span.style.clone(),
+                chip: None,
+            });
+        }
+    }
+    split
 }
 
 /// Collects pulldown-cmark events into blocks.
@@ -329,6 +376,7 @@ impl Builder {
         self.spans.push(Span {
             text: text.to_owned(),
             style,
+            chip: None,
         });
     }
 
@@ -337,7 +385,7 @@ impl Builder {
         let Some(pending) = self.pending.take() else {
             return;
         };
-        let spans = std::mem::take(&mut self.spans);
+        let spans = split_chat_codes(std::mem::take(&mut self.spans));
         let depth = u8::try_from(self.lists.len()).unwrap_or(u8::MAX);
         let block = match pending {
             PendingBlock::Heading(level) => Block::Heading { level, spans },
@@ -386,6 +434,7 @@ mod tests {
         Span {
             text: text.to_owned(),
             style: SpanStyle::default(),
+            chip: None,
         }
     }
 
@@ -541,5 +590,27 @@ mod tests {
         assert!(is_web_link("HTTP://example.com"));
         assert!(!is_web_link("javascript:alert(1)"));
         assert!(!is_web_link("file:///C:/x"));
+    }
+
+    #[test]
+    fn chat_codes_become_chip_spans() {
+        let document = parse("Buy **[&AgH1WQAA] now** at [&BDgAAAA=]");
+        let Some(Block::Paragraph { spans, .. }) = document.blocks.first() else {
+            panic!("expected a paragraph: {document:?}");
+        };
+        let texts: Vec<(&str, bool, bool)> = spans
+            .iter()
+            .map(|span| (span.text.as_str(), span.style.bold, span.chip.is_some()))
+            .collect();
+        assert_eq!(
+            texts,
+            [
+                ("Buy ", false, false),
+                ("[&AgH1WQAA]", true, true),
+                (" now", true, false),
+                (" at ", false, false),
+                ("[&BDgAAAA=]", false, true),
+            ]
+        );
     }
 }

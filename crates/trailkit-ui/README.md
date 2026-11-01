@@ -30,7 +30,9 @@ Latin up to Extended-B plus punctuation, the icon font only the icons in
 | `separator` | `draw_separator` — horizontal line that ends at the window/pane padding | Windows |
 | `style_scope` | `StyleScope` — RAII guard that pushes a theme onto the shared ImGui context and pops it on drop (no per-frame allocation) | Windows |
 | `font_registry` | registers the shared fonts and glyphs with Nexus, follows the `FontUI` size, `FontScope` guard | Windows |
-| `markdown_view` | draws a parsed markdown document with word wrapping; returns task/link clicks | Windows |
+| `markdown_view` | draws a parsed markdown document with word wrapping; returns task/link clicks and copies chat-link chips | Windows |
+| `chat_link` | finds and decodes GW2 chat codes (`[&…]`) | any |
+| `chat_link_chip` | draws a chat-link chip and its tooltip; texts come from the addon (`ChipContext`) | Windows |
 
 ## Usage
 

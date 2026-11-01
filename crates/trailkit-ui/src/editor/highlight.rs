@@ -1,9 +1,12 @@
 //! Light markdown highlighting for the editor (memo plan M60): heading text
 //! is bold, markdown markers (`#`, list bullets, task boxes, `**`, `*`,
 //! backticks, link brackets and targets) are dimmed. Everything else is
-//! plain text. Works line by line and never fails: unknown syntax is text.
+//! plain text. Chat codes (`[&…]`) are chips (memo plan M75). Works line by
+//! line and never fails: unknown syntax is text.
 
 use std::ops::Range;
+
+use crate::chat_link::find_chat_codes;
 
 /// How a piece of text is drawn.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -14,6 +17,8 @@ pub enum SpanStyle {
     Marker,
     /// Heading text, drawn bold.
     Strong,
+    /// A chat code, drawn as one chip; never merged with a neighbour.
+    ChatLink,
 }
 
 /// A styled range of the text (byte offsets into the whole text).
@@ -37,6 +42,7 @@ pub fn highlight_line(line: &str, offset: usize, spans: &mut Vec<StyledSpan>) {
         let range = offset + range.start..offset + range.end;
         if let Some(last) = spans[first..].last_mut()
             && last.style == style
+            && style != SpanStyle::ChatLink
             && last.range.end == range.start
         {
             last.range.end = range.end;
@@ -56,7 +62,19 @@ pub fn highlight_line(line: &str, offset: usize, spans: &mut Vec<StyledSpan>) {
     let bytes = line.as_bytes();
     let mut index = prefix.length;
     let mut text_start = index;
+    let mut codes = find_chat_codes(line)
+        .skip_while(|code| code.start < prefix.length)
+        .peekable();
     while index < bytes.len() {
+        // Codes swallowed by a marker (e.g. inside a link target) are text.
+        while codes.next_if(|code| code.start < index).is_some() {}
+        if let Some(code) = codes.next_if(|code| code.start == index) {
+            push(text_start..index, base);
+            push(code.clone(), SpanStyle::ChatLink);
+            index = code.end;
+            text_start = index;
+            continue;
+        }
         let marker_length = inline_marker_length(line, index);
         if marker_length > 0 {
             push(text_start..index, base);
@@ -151,6 +169,7 @@ mod tests {
                     SpanStyle::Text => "t",
                     SpanStyle::Marker => "m",
                     SpanStyle::Strong => "s",
+                    SpanStyle::ChatLink => "c",
                 };
                 format!("{tag}:{}", &line[span.range.clone()])
             })
@@ -198,6 +217,14 @@ mod tests {
         assert_eq!(
             spans.last().map(|span| span.range.end),
             Some(10 + "- ä".len())
+        );
+    }
+
+    #[test]
+    fn chat_codes_are_separate_chip_spans() {
+        assert_eq!(
+            render("- go [&BDgAAAA=][&BDgAAAA=] now"),
+            ["m:- ", "t:go ", "c:[&BDgAAAA=]", "c:[&BDgAAAA=]", "t: now"]
         );
     }
 }

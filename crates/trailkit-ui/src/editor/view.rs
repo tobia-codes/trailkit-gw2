@@ -20,7 +20,13 @@ use super::{
     highlight::SpanStyle,
     layout::Layout,
 };
-use crate::{font_registry::FontScope, fonts::FontRole, theme::Theme};
+use crate::{
+    chat_link::{ChatLinkChip, ChipText},
+    chat_link_chip::{ChipContext, chip_tooltip, chip_width, draw_chip},
+    font_registry::FontScope,
+    fonts::FontRole,
+    theme::Theme,
+};
 
 /// Half a cursor blink period in seconds (on, then off).
 const BLINK_HALF_PERIOD: f64 = 0.6;
@@ -101,6 +107,9 @@ struct CachedLayout {
     width: f32,
     /// Font size.
     font_size: f32,
+    /// Identifies the chip texts (their language) the chips were measured
+    /// with: the address of one of them.
+    chip_texts: usize,
     /// The layout.
     layout: Layout,
 }
@@ -215,8 +224,16 @@ impl TextEditor {
     }
 
     /// Draws the editor filling `size` (ImGui child sizing) and handles
-    /// input. `id` must be unique in the current window.
-    pub fn draw(&mut self, ui: &Ui, theme: &Theme, id: &str, size: [f32; 2]) -> EditorResponse {
+    /// input. `id` must be unique in the current window; `chips` supplies the
+    /// texts of chat-link chips (memo plan M75).
+    pub fn draw(
+        &mut self,
+        ui: &Ui,
+        theme: &Theme,
+        id: &str,
+        size: [f32; 2],
+        chips: ChipContext<'_>,
+    ) -> EditorResponse {
         let mut response = EditorResponse::default();
         let padding = theme.spacing.small;
         let _colors = ui.push_style_color(StyleColor::ChildBg, theme.surface.input.to_array());
@@ -243,7 +260,7 @@ impl TextEditor {
 
         let width = ui.content_region_avail()[0].max(1.0);
         let font_size = ui.current_font_size();
-        self.refresh_layout(ui, width, font_size);
+        self.refresh_layout(ui, theme, width, font_size, chips);
         let Some(cached) = self.layout.as_ref() else {
             return response;
         };
@@ -286,6 +303,7 @@ impl TextEditor {
             line_height,
             scroll,
             visible_height,
+            chips,
         );
         response
     }
@@ -310,28 +328,39 @@ impl TextEditor {
         ui.set_cursor_pos(start);
     }
 
-    /// Rebuilds the layout if the text, width or font size changed.
-    fn refresh_layout(&mut self, ui: &Ui, width: f32, font_size: f32) {
+    /// Rebuilds the layout if the text, width, font size or the language of
+    /// the chip texts changed.
+    fn refresh_layout(
+        &mut self,
+        ui: &Ui,
+        theme: &Theme,
+        width: f32,
+        font_size: f32,
+        chips: ChipContext<'_>,
+    ) {
+        let chip_texts = (chips.text)(ChipText::ClickToCopy).as_ptr().addr();
         let is_current = self.layout.as_ref().is_some_and(|cached| {
             cached.revision == self.revision
                 && (cached.width - width).abs() < 0.5
                 && (cached.font_size - font_size).abs() < f32::EPSILON
+                && cached.chip_texts == chip_texts
         });
         if is_current {
             return;
         }
-        let layout = Layout::build(self.buffer.text(), width, |character, style| {
-            if style == SpanStyle::Strong {
+        let layout = Layout::build(self.buffer.text(), width, |piece, style| match style {
+            SpanStyle::Strong => {
                 let _bold = FontScope::push(ui, FontRole::BodyBold);
-                unrounded_width(character)
-            } else {
-                unrounded_width(character)
+                unrounded_width(piece)
             }
+            SpanStyle::ChatLink => chip_width(ui, &ChatLinkChip::new(piece), theme, chips),
+            SpanStyle::Text | SpanStyle::Marker => unrounded_width(piece),
         });
         self.layout = Some(CachedLayout {
             revision: self.revision,
             width,
             font_size,
+            chip_texts,
             layout,
         });
     }
@@ -347,8 +376,10 @@ impl TextEditor {
         line_height: f32,
         scroll: f32,
         visible_height: f32,
+        chips: ChipContext<'_>,
     ) {
         let draw_list = ui.get_window_draw_list();
+        let editor_hovered = is_editor_hovered(ui);
         let selection = self.buffer.selection();
         let cursor = self.buffer.cursor();
         let cursor_line = layout.line_index_of(cursor);
@@ -406,6 +437,23 @@ impl TextEditor {
                     }
                     SpanStyle::Text => {
                         draw_list.add_text(position, theme.text.primary.to_array(), piece);
+                    }
+                    SpanStyle::ChatLink => {
+                        let Some(chip) = layout.chip_at(span.range.start) else {
+                            draw_list.add_text(position, theme.text.primary.to_array(), piece);
+                            continue;
+                        };
+                        let [min, max] = draw_chip(ui, &draw_list, chip, position, theme, chips);
+                        // The chip covers the selection drawn below it.
+                        if selection.start < span.range.end && span.range.start < selection.end {
+                            draw_list
+                                .add_rect(min, max, theme.accent.base.with_alpha(0.35).to_array())
+                                .filled(true)
+                                .build();
+                        }
+                        if editor_hovered && ui.is_mouse_hovering_rect(min, max) {
+                            chip_tooltip(ui, chip, theme, chips, false);
+                        }
                     }
                 }
             }

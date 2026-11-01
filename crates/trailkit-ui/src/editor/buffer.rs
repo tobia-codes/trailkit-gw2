@@ -7,6 +7,8 @@
 
 use std::ops::Range;
 
+use crate::chat_link::chat_code_around;
+
 /// At most this many undo steps are kept.
 const MAXIMUM_UNDO_STEPS: usize = 200;
 
@@ -142,6 +144,11 @@ impl TextBuffer {
     /// Selects the word (or run of spaces or punctuation) at `position`.
     pub fn select_word_at(&mut self, position: usize) {
         let position = floor_char_boundary(&self.text, position);
+        // A chat-link chip is selected whole (memo plan M75).
+        if let Some(code) = chat_code_around(&self.text, position + 1) {
+            self.select(code.start, code.end);
+            return;
+        }
         let class_at = |index: usize| self.text[index..].chars().next().map(CharacterClass::of);
         let class = class_at(position)
             .filter(|class| *class != CharacterClass::LineBreak)
@@ -164,16 +171,22 @@ impl TextBuffer {
         self.select(start, end);
     }
 
-    /// The position one step from the cursor in `direction`.
+    /// The position one step from the cursor in `direction`. A step never
+    /// ends inside a chat code: it skips the whole chip (memo plan M75).
     #[must_use]
     pub fn position_after(&self, direction: Direction, step: Step) -> usize {
-        match (direction, step) {
+        let target = match (direction, step) {
             (Direction::Backward, Step::Character) => {
                 previous_char_start(&self.text, self.cursor).unwrap_or(0)
             }
             (Direction::Forward, Step::Character) => next_char_end(&self.text, self.cursor),
             (Direction::Backward, Step::Word) => previous_word_start(&self.text, self.cursor),
             (Direction::Forward, Step::Word) => next_word_end(&self.text, self.cursor),
+        };
+        match (chat_code_around(&self.text, target), direction) {
+            (Some(code), Direction::Backward) => code.start,
+            (Some(code), Direction::Forward) => code.end,
+            (None, _) => target,
         }
     }
 
@@ -600,5 +613,22 @@ mod tests {
             steps += 1;
         }
         assert_eq!(steps, MAXIMUM_UNDO_STEPS);
+    }
+
+    #[test]
+    fn chat_codes_move_and_delete_as_one_unit() {
+        let text = "a [&BDgAAAA=] b";
+        let mut buffer = TextBuffer::new(text);
+        buffer.set_cursor(2, false);
+        buffer.move_horizontally(Direction::Forward, Step::Character, false);
+        assert_eq!(buffer.cursor(), 13);
+        buffer.move_horizontally(Direction::Backward, Step::Character, false);
+        assert_eq!(buffer.cursor(), 2);
+        buffer.set_cursor(13, false);
+        buffer.delete(Direction::Backward, Step::Character);
+        assert_eq!(buffer.text(), "a  b");
+        buffer.undo();
+        buffer.select_word_at(2);
+        assert_eq!(buffer.selected_text(), "[&BDgAAAA=]");
     }
 }

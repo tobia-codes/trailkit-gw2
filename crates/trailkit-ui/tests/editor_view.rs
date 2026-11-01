@@ -6,7 +6,13 @@
 #![cfg(windows)]
 
 use nexus::imgui::{Condition, Ui, Window, WindowFlags};
-use trailkit_ui::{editor::view::TextEditor, style_scope::StyleScope, theme::ThemeKind};
+use trailkit_ui::{
+    chat_link::{ChatLinkKind, ChipText},
+    chat_link_chip::ChipContext,
+    editor::view::TextEditor,
+    style_scope::StyleScope,
+    theme::ThemeKind,
+};
 use trailkit_ui_testing::{
     harness::{FrameInput, UiHarness},
     snapshot::assert_snapshot,
@@ -17,6 +23,21 @@ const SIZE: [f32; 2] = [360.0, 180.0];
 
 /// A note that wraps and uses every highlighted construct.
 const SAMPLE: &str = "# Raids\n- [x] **Ectos** kaufen und danach noch ganz viele Wörter, damit die Zeile umbricht\n- [ ] [Wiki](https://wiki.guildwars2.com) `code`";
+
+/// English chip texts, as an addon would supply them.
+fn chip_text(text: ChipText) -> &'static str {
+    match text {
+        ChipText::Kind(ChatLinkKind::Item) => "Item",
+        ChipText::Kind(ChatLinkKind::MapPoint) => "Map point",
+        ChipText::Kind(_) => "Link",
+        ChipText::Profession(_) => "Mesmer",
+        ChipText::InvalidChatLink => "Invalid chat link",
+        ChipText::UnknownLinkType => "Unknown link type",
+        ChipText::DamagedCode => "Damaged code",
+        ChipText::ClickToCopy => "Click to copy",
+        ChipText::Copied => "Copied",
+    }
+}
 
 /// Draws `editor` in a borderless window filling the image; returns the
 /// window position.
@@ -30,7 +51,11 @@ fn draw(ui: &Ui, editor: &mut TextEditor, theme: ThemeKind) -> [f32; 2] {
         .flags(WindowFlags::NO_TITLE_BAR | WindowFlags::NO_RESIZE)
         .build(ui, || {
             position = ui.window_pos();
-            editor.draw(ui, &theme, "body", [0.0, 0.0]);
+            let chips = ChipContext {
+                text: &chip_text,
+                copied: None,
+            };
+            editor.draw(ui, &theme, "body", [0.0, 0.0], chips);
         });
     position
 }
@@ -109,4 +134,17 @@ fn dragging_selects_text_and_keeps_the_window_in_place() {
         positions.windows(2).all(|pair| pair[0] == pair[1]),
         "the window did not move: {positions:?}"
     );
+}
+
+#[test]
+fn chat_codes_are_chips_the_cursor_skips() {
+    let mut harness = UiHarness::new(SIZE);
+    let mut editor = TextEditor::new(
+        "Go to [&BDgAAAA=] and buy [&AvoJTQAA] for [&AdsnAAA=]\nBroken: [&KgAAAAA=]",
+    );
+    editor.unfocus();
+    let image = harness.settle(3, &FrameInput::default(), |ui| {
+        draw(ui, &mut editor, ThemeKind::Dark);
+    });
+    assert_snapshot(env!("CARGO_MANIFEST_DIR"), "editor-chips", &image);
 }
