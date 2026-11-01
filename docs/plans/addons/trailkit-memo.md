@@ -56,7 +56,7 @@ references with autocompletion and status.
 
 ## Open questions
 
-- None currently (session 4 settled M16–M45; details are settled per
+- None currently (session 4 settled M16–M46; details are settled per
   implementation step).
 
 ## Decisions
@@ -108,3 +108,4 @@ references with autocompletion and status.
 | M43 | New notes/groups go into the selected group, else the root, appended at the end, titled "New note"/"New group" in rename mode with the text selected; a new note is selected | 2026-11-01 |
 | M44 | Inline rename via double-click or context menu: Enter or clicking elsewhere commits, Escape cancels, an empty title restores the old one | 2026-11-01 |
 | M45 | Tree icons: none for groups (expand arrow) and normal notes; reset notes get a letter badge in a fixed leading column (empty for normal notes, so titles stay aligned): en **D**/**W**, de **T**/**W**, rounded box in Lucide style with accent color, drawn with ImGui; tooltip names the kind and reset time | 2026-11-01 |
+| M46 | The reset badge counts as an icon: Lucide style with round corners, although panels and buttons keep the theme's radius 0 | 2026-11-01 |
