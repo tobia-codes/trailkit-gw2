@@ -317,6 +317,10 @@ impl TextEditor {
     /// focused, so Nexus routes key presses to ImGui, not to the game.
     fn draw_keyboard_sink(&mut self, ui: &Ui) {
         let start = ui.cursor_pos();
+        // At the visible top, not the content top: ImGui does not activate
+        // an input scrolled out of view, and then Nexus sends the keys to
+        // the game (long notes, M83).
+        ui.set_cursor_pos([start[0], start[1] + ui.scroll_y()]);
         // Not 0.0: ImGui 1.80 skips all items of a window begun with alpha 0,
         // and a multiline input is a child window. The smallest positive
         // alpha still rounds to fully transparent colors.

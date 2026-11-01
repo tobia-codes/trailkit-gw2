@@ -148,3 +148,25 @@ fn chat_codes_are_chips_the_cursor_skips() {
     });
     assert_snapshot(env!("CARGO_MANIFEST_DIR"), "editor-chips", &image);
 }
+
+#[test]
+fn keyboard_stays_captured_when_the_editor_is_scrolled() {
+    let mut harness = UiHarness::new(SIZE);
+    let text: String = (1..=40).map(|line| format!("Line {line}\n")).collect();
+    let mut editor = TextEditor::new(text.clone());
+    // The cursor at the end scrolls the editor to the bottom.
+    editor.select(text.len()..text.len());
+    let idle = FrameInput::default();
+    harness.settle(5, &idle, |ui| {
+        draw(ui, &mut editor, ThemeKind::Dark);
+    });
+    let mut captured = false;
+    harness.frame(&idle, |ui| {
+        captured = ui.io().want_text_input;
+        draw(ui, &mut editor, ThemeKind::Dark);
+    });
+    assert!(
+        captured,
+        "Nexus routes keys to ImGui only while a text input is active"
+    );
+}
