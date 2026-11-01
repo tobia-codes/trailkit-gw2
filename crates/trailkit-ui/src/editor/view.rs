@@ -332,7 +332,6 @@ impl TextEditor {
             .callback(InputTextMultilineCallback::ALWAYS, ClearSink)
             .build();
         let sink_active = ui.is_item_active();
-        if sink_active != self.sink_was_active {}
         self.sink_was_active = sink_active;
         self.sink.clear();
         ui.set_cursor_pos(start);
