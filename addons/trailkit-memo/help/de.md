@@ -1,7 +1,7 @@
 # trailkit-memo
 
-> Vorab-Version — Notizen lassen sich anlegen, umbenennen und ansehen;
-> den Inhalt bearbeiten kommt in einer späteren Version.
+> Vorab-Version — Notizen lassen sich anlegen, umbenennen, ansehen und
+> bearbeiten.
 
 ## Fenster öffnen
 
@@ -46,11 +46,36 @@ Darüberfahren erscheint eine Linie).
 Lange Namen werden mit „…“ gekürzt — fahre mit der Maus darüber, um den
 ganzen Namen zu sehen.
 
+## Eine Notiz bearbeiten
+
+Klicke auf den **Stift** oben rechts in einer Notiz oder doppelklicke die
+Notiz. Du bearbeitest Titel und Text in Markdown; die Buttons über dem Text
+fügen Überschriften, **Fett**, *Kursiv*, Aufzählungen, Checkboxen und Links
+ein (auch **Strg+B** und **Strg+I**). Der Event-Button benötigt
+trailkit-core.
+
+- **Fertig** (oder **Strg+Enter**) übernimmt deine Änderungen,
+  **Abbrechen** verwirft sie — memo fragt vorher nach, wenn du etwas
+  geändert hast.
+- Wählst du eine andere Notiz, legst eine neue an oder schließt das Fenster,
+  während Änderungen offen sind, fragt memo, ob sie übernommen oder
+  verworfen werden sollen. (Mit `"unsaved_changes": "save_automatically"`
+  in `settings.json` wird ohne Nachfrage übernommen; ein Schalter folgt im
+  Einstellungsfenster.)
+- **Escape** verlässt zuerst das Textfeld, ein zweites Escape schließt das
+  Fenster.
+- Wird das Spiel oder das Addon beim Bearbeiten beendet, bleiben deine
+  Änderungen als Entwurf erhalten. Beim nächsten Öffnen der Notiz wählst du
+  **Wiederherstellen** zum Weitermachen oder **Verwerfen**. Entwürfe werden
+  nach 30 Tagen automatisch gelöscht.
+- Lange Zeilen werden beim Bearbeiten nicht umgebrochen (seitlich
+  scrollen); die normale Ansicht bricht sie um.
+
 ## Wo deine Notizen gespeichert werden
 
 Deine Notizen werden kurz nach jeder Änderung automatisch gespeichert, in
-`addons/trailkit/memo/` im Guild-Wars-2-Ordner (`notes.json` und
-`settings.json`).
+`addons/trailkit/memo/` im Guild-Wars-2-Ordner (`notes.json`,
+`settings.json` und `drafts.json`, solange ein Entwurf existiert).
 
 - Ist die Notizdatei beschädigt, startet memo mit einer leeren Liste und
   weist dich darauf hin. Die beschädigte Datei bleibt im Ordner `backups`

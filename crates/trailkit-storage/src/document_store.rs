@@ -213,6 +213,21 @@ impl DocumentStore {
     }
 }
 
+impl DocumentStore {
+    /// Deletes the file of document type `T`, e.g. when a document became
+    /// empty and should not linger on disk. A missing file is not an error.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`StorageError`] if the file exists but cannot be deleted.
+    pub fn delete<T: VersionedDocument>(&self) -> Result<(), StorageError> {
+        match fs::remove_file(self.path_of::<T>()) {
+            Err(error) if error.kind() != io::ErrorKind::NotFound => Err(error.into()),
+            _ => Ok(()),
+        }
+    }
+}
+
 /// A successfully parsed file.
 enum Parsed<T> {
     /// The file was in the current format.
@@ -329,6 +344,18 @@ mod tests {
     /// Writes raw file content for the test document.
     fn write_raw(store: &DocumentStore, content: &str) -> io::Result<()> {
         fs::write(store.path_of::<TestDocument>(), content)
+    }
+
+    #[test]
+    fn delete_removes_the_file_and_tolerates_a_missing_one()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (_directory, store) = store()?;
+        store.delete::<TestDocument>()?;
+        store.save(&TestDocument::default())?;
+        assert!(store.path_of::<TestDocument>().exists());
+        store.delete::<TestDocument>()?;
+        assert!(!store.path_of::<TestDocument>().exists());
+        Ok(())
     }
 
     #[test]

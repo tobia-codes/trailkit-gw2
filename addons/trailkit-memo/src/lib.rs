@@ -9,7 +9,9 @@
 //! lives in modules without ImGui/Nexus so it can be unit-tested on any host;
 //! the Nexus glue in `addon` only compiles for Windows.
 
+pub mod drafts;
 pub mod i18n;
+pub mod note_editing;
 pub mod note_tree;
 pub mod settings;
 pub mod storage_worker;

@@ -1,18 +1,20 @@
-//! The memo main window: note tree, note view, empty state and storage hints
-//! (Windows only; memo plan M21, M31, M34, M37–M45).
+//! The memo main window: note tree, note view, editor, empty state and
+//! storage hints (Windows only; memo plan M21, M31, M34, M37–M55).
 //!
 //! The window owns the note tree (M30). Drawing collects user actions into a
 //! reused list; they are applied after the tree has been drawn, then changed
 //! documents are handed to the storage worker.
 
-use std::{borrow::Cow, path::PathBuf, sync::Arc};
+use std::{borrow::Cow, ops::Range, path::PathBuf, sync::Arc};
 
-use jiff::Timestamp;
+use jiff::{Timestamp, tz::TimeZone};
 use nexus::imgui::{
-    ChildWindow, Condition, Key, MenuItem, MouseButton, MouseCursor, StyleColor, StyleVar,
-    TreeNode, TreeNodeFlags, Ui,
+    ChildWindow, Condition, InputTextCallbackHandler, InputTextMultilineCallback, Key, MenuItem,
+    MouseButton, MouseCursor, StyleColor, StyleVar, TextCallbackData, TreeNode, TreeNodeFlags, Ui,
+    Window, WindowFlags, WindowFocusedFlags,
 };
 use trailkit_ui::{
+    button::{button_width, draw_primary_button},
     font_registry::FontScope,
     fonts::FontRole,
     icons::Icon,
@@ -24,8 +26,11 @@ use trailkit_ui::{
 };
 
 use crate::{
+    drafts::{Draft, DraftsDocument},
     i18n::{Language, Text},
+    note_editing::{EditSession, FormatCommand, TextEdit, format_edit},
     note_tree::{Group, GroupId, NodeId, Note, NoteId, NoteKind, NotesDocument, TreeNode as Node},
+    settings::UnsavedChanges,
     storage_worker::StorageSaver,
     ui_state::UiState,
 };
@@ -36,6 +41,12 @@ const MINIMUM_PANE_CHARACTERS: f32 = 22.0;
 /// Largest share of the window the note list drawer may cover, so a strip
 /// of the dimmed note stays visible to click away (M48, `lay-drawer`).
 const DRAWER_MAXIMUM_FRACTION: f32 = 0.85;
+
+/// Windows virtual-key code of `B` (Nexus feeds ImGui with virtual-key codes).
+const VIRTUAL_KEY_B: i32 = 0x42;
+
+/// Windows virtual-key code of `I`.
+const VIRTUAL_KEY_I: i32 = 0x49;
 
 /// A problem with `notes.json` shown above the notes (M31).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -75,6 +86,131 @@ enum WindowAction {
     Markdown(MarkdownAction),
     /// Open the addon folder in the file explorer.
     OpenFolder,
+    /// Start editing the selected note (M51).
+    StartEditing,
+    /// Commit the edit ("Done", Ctrl+Enter).
+    FinishEditing,
+    /// Leave the editor without saving; asks first if something changed.
+    CancelEditing,
+    /// Apply a formatting button to the editor (M53).
+    Format(FormatCommand),
+    /// Continue editing a note from its draft (M54).
+    RestoreDraft(NoteId),
+    /// Delete a note's draft (M54).
+    DiscardDraft(NoteId),
+    /// Unsaved changes dialog: save, then continue.
+    LeaveSaving,
+    /// Unsaved changes dialog: discard, then continue.
+    LeaveDiscarding,
+    /// Unsaved changes dialog: stay in the editor.
+    LeaveCancelled,
+    /// Escape: close the window (asks first if something is unsaved).
+    RequestClose,
+}
+
+impl WindowAction {
+    /// Whether this action leaves the editor of `note` (M54): choosing
+    /// another entry or creating one. These ask first if something changed.
+    fn leaves_editor_of(&self, note: NoteId) -> bool {
+        match self {
+            Self::Select(node) => *node != NodeId::Note(note),
+            Self::NewNote | Self::NewGroup => true,
+            _ => false,
+        }
+    }
+}
+
+/// What happens once the unsaved changes dialog is answered (M54).
+#[derive(Debug, Clone, PartialEq)]
+enum LeaveReason {
+    /// Continue with this action.
+    Action(WindowAction),
+    /// Close the window.
+    CloseWindow,
+    /// Leave the editor ("Cancel").
+    Cancel,
+}
+
+/// The editor of one note (M51–M53).
+#[derive(Debug)]
+struct Editor {
+    /// Uncommitted title and body.
+    session: EditSession,
+    /// Last known selection of the body input (byte range), kept while
+    /// toolbar buttons take the focus.
+    selection: Range<usize>,
+    /// A formatting command to apply in the next input callback.
+    pending_format: Option<FormatCommand>,
+    /// Whether the next callback should restore `selection` (after the
+    /// input got the focus back from a toolbar button).
+    restore_selection: bool,
+    /// Whether the body input should take the keyboard focus.
+    focus_body: bool,
+    /// Whether the body input was active in the last frame.
+    body_was_active: bool,
+    /// Whether the title input was active in the last frame.
+    title_was_active: bool,
+}
+
+impl Editor {
+    /// Opens an editor for `session`, focused on the body.
+    fn new(session: EditSession) -> Self {
+        Self {
+            session,
+            selection: 0..0,
+            pending_format: None,
+            restore_selection: false,
+            focus_body: true,
+            body_was_active: false,
+            title_was_active: false,
+        }
+    }
+}
+
+/// Input callback of the body editor: applies pending formatting commands
+/// and remembers the selection (M53).
+struct BodyCallback<'state> {
+    /// Last known selection, updated every frame the input is active.
+    selection: &'state mut Range<usize>,
+    /// Formatting command to apply now.
+    pending: &'state mut Option<FormatCommand>,
+    /// Use `selection` instead of ImGui's (focus just came back).
+    restore_selection: &'state mut bool,
+}
+
+impl InputTextCallbackHandler for BodyCallback<'_> {
+    /// Runs every frame while the input is active.
+    fn on_always(&mut self, mut data: TextCallbackData) {
+        let selection = if std::mem::take(self.restore_selection) {
+            self.selection.clone()
+        } else {
+            let range = data.selection();
+            if range.start == range.end {
+                data.cursor_pos()..data.cursor_pos()
+            } else {
+                range.start.min(range.end)..range.start.max(range.end)
+            }
+        };
+        if let Some(command) = self.pending.take() {
+            let edit = format_edit(data.str(), selection, command);
+            apply_text_edit(&mut data, &edit);
+            *self.selection = edit.selection;
+        } else {
+            *self.selection = selection;
+        }
+    }
+}
+
+/// Applies `edit` to the text of an active ImGui input and moves its
+/// selection.
+fn apply_text_edit(data: &mut TextCallbackData, edit: &TextEdit) {
+    let removed_characters = data.str()[edit.range.clone()].chars().count();
+    data.remove_chars(edit.range.start, removed_characters);
+    data.insert_chars(edit.range.start, &edit.replacement);
+    let to_imgui = |position: usize| i32::try_from(position).unwrap_or(i32::MAX);
+    *data.selection_start_mut() = to_imgui(edit.selection.start);
+    *data.selection_end_mut() = to_imgui(edit.selection.end);
+    data.set_cursor_pos(edit.selection.end);
 }
 
 /// An inline rename in progress (M44).
@@ -124,6 +260,24 @@ pub struct MemoWindow {
     restore_scroll: bool,
     /// Actions collected while drawing; reused every frame.
     actions: Vec<WindowAction>,
+    /// Drafts kept from earlier unloads (M54, M55).
+    drafts: DraftsDocument,
+    /// The open editor, if a note is being edited (M51).
+    editor: Option<Editor>,
+    /// A pending answer of the unsaved changes dialog (M54).
+    leave_prompt: Option<LeaveReason>,
+    /// Position and size of the main window in the last frame (for the
+    /// dialog window that covers it).
+    window_rect: Option<[[f32; 2]; 2]>,
+    /// Whether the main window had the focus in the last frame.
+    window_focused: bool,
+    /// Whether leaving the editor with changes asks or saves (M57).
+    unsaved_changes: UnsavedChanges,
+    /// Set once closing the window is allowed; read by the addon glue.
+    close_approved: bool,
+    /// Cached draft hint label (note, language, text), so it is not
+    /// formatted every frame.
+    draft_hint: Option<(NoteId, Language, String)>,
 }
 
 /// Everything the tree drawing functions need besides the nodes.
@@ -152,7 +306,13 @@ impl MemoWindow {
         ui_state: UiState,
         saver: StorageSaver,
         addon_directory: PathBuf,
+        drafts: DraftsDocument,
+        unsaved_changes: UnsavedChanges,
     ) -> Self {
+        let mut drafts = drafts;
+        if drafts.prune(Timestamp::now(), |note| document.note(note).is_some()) {
+            saver.save_drafts(drafts.clone());
+        }
         let mut ui_state = ui_state;
         if ui_state
             .selected
@@ -172,12 +332,81 @@ impl MemoWindow {
             is_narrow: false,
             restore_scroll: true,
             actions: Vec::new(),
+            drafts,
+            editor: None,
+            leave_prompt: None,
+            window_rect: None,
+            window_focused: false,
+            unsaved_changes,
+            close_approved: false,
+            draft_hint: None,
         }
+    }
+
+    /// Whether the editor holds changes that are not saved yet (M54).
+    #[must_use]
+    pub fn has_unsaved_changes(&self) -> bool {
+        self.editor
+            .as_ref()
+            .is_some_and(|editor| editor.session.has_changes())
+    }
+
+    /// Asks to close the window (close button, keybind, quick access icon,
+    /// Escape). Returns `true` if it may close now; otherwise the unsaved
+    /// changes dialog opens and [`Self::take_close_approval`] reports the
+    /// answer later (M54).
+    pub fn request_close(&mut self) -> bool {
+        if self.has_unsaved_changes() && self.unsaved_changes == UnsavedChanges::SaveAutomatically {
+            self.commit_editor(Timestamp::now());
+        }
+        if self.has_unsaved_changes() {
+            if self.leave_prompt.is_none() {
+                self.leave_prompt = Some(LeaveReason::CloseWindow);
+            }
+            return false;
+        }
+        self.editor = None;
+        true
+    }
+
+    /// Whether the unsaved changes dialog allowed closing the window since the
+    /// last call.
+    pub fn take_close_approval(&mut self) -> bool {
+        std::mem::take(&mut self.close_approved)
+    }
+
+    /// Keeps unsaved changes as a draft before the addon unloads (M54); the
+    /// storage worker writes it during its shutdown.
+    pub fn keep_draft_for_unload(&mut self) {
+        let Some(editor) = &self.editor else {
+            return;
+        };
+        if !editor.session.has_changes() {
+            return;
+        }
+        let Some(note) = self.document.note(editor.session.note) else {
+            return;
+        };
+        let draft = editor.session.to_draft(Timestamp::now(), note.updated_at);
+        self.drafts.upsert(draft);
+        self.saver.save_drafts(self.drafts.clone());
     }
 
     /// Draws the window content and applies what the user did.
     pub fn draw(&mut self, ui: &Ui, language: Language, theme: &Theme) {
         self.actions.clear();
+        self.window_rect = Some([ui.window_pos(), ui.window_size()]);
+        self.window_focused =
+            ui.is_window_focused_with_flags(WindowFocusedFlags::ROOT_AND_CHILD_WINDOWS);
+        // Escape closes the window (`overlay-escape`) unless it was meant for
+        // a text input (ImGui used it there to leave the input) or a dialog.
+        if ui.is_key_pressed(Key::Escape)
+            && !ui.io().want_text_input
+            && self.leave_prompt.is_none()
+            && ui.is_window_focused_with_flags(WindowFocusedFlags::ROOT_AND_CHILD_WINDOWS)
+        {
+            self.actions.push(WindowAction::RequestClose);
+        }
         self.draw_problem(ui, language, theme);
 
         if self.document.root.is_empty() {
@@ -206,6 +435,52 @@ impl MemoWindow {
             self.apply(action, language);
         }
         self.actions = actions;
+    }
+
+    /// Draws the unsaved changes dialog while an answer is pending (M54,
+    /// M56, `overlay-dialog-scope`) and applies the answer. Call it after the
+    /// main window is finished: the dialog is its own borderless window
+    /// exactly over the main window, so it dims only that window (title bar
+    /// included) while the game and other windows stay usable. Clicking the
+    /// main window brings the dialog back to the front; a click on the dimmed
+    /// area keeps editing, like Escape. "Discard" sits apart
+    /// from "Keep editing" and the primary "Save" (`lay-one-primary`); Enter
+    /// saves, Escape keeps editing.
+    pub fn draw_dialog(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+        if self.leave_prompt.is_none() {
+            return;
+        }
+        let Some(window_rect) = self.window_rect else {
+            return;
+        };
+        let _background =
+            ui.push_style_color(StyleColor::WindowBg, theme.surface.modal_overlay.to_array());
+        let _border = ui.push_style_var(StyleVar::WindowBorderSize(0.0));
+        let mut answer = None;
+        Window::new("###trailkit-memo-dialog")
+            .position(window_rect[0], Condition::Always)
+            .size(window_rect[1], Condition::Always)
+            .flags(
+                WindowFlags::NO_DECORATION
+                    | WindowFlags::NO_MOVE
+                    | WindowFlags::NO_SAVED_SETTINGS
+                    | WindowFlags::NO_NAV,
+            )
+            .focused(self.window_focused)
+            .build(ui, || {
+                answer = draw_unsaved_changes_card(ui, language, theme);
+                // A click on the dimmed area picks the harmless answer
+                // (`overlay-dialog-layout`); the card itself is a child window.
+                if answer.is_none()
+                    && ui.is_window_hovered()
+                    && ui.is_mouse_clicked(MouseButton::Left)
+                {
+                    answer = Some(WindowAction::LeaveCancelled);
+                }
+            });
+        if let Some(answer) = answer {
+            self.apply(&answer, language);
+        }
     }
 
     /// The selected note, if a note (not a group) is selected.
@@ -353,12 +628,119 @@ impl MemoWindow {
     /// then the note in its own scroll region so the toolbar stays in place.
     /// `menu_tooltip` names what the menu button does.
     fn draw_note_pane(&mut self, ui: &Ui, language: Language, theme: &Theme, menu_tooltip: Text) {
-        draw_menu_button(ui, language, theme, menu_tooltip, &mut self.actions);
+        if draw_icon_button(ui, theme, Icon::MENU, menu_tooltip.get(language)) {
+            self.actions.push(WindowAction::ToggleNoteList);
+        }
+        self.draw_note_toolbar_end(ui, language, theme);
         draw_separator(ui, theme);
-        ChildWindow::new("note_body")
-            .size([0.0, 0.0])
-            .draw_background(false)
-            .build(ui, || self.draw_note_body(ui, language, theme));
+        if self.editor.is_some() {
+            self.draw_editor(ui, language, theme);
+        } else {
+            ChildWindow::new("note_body")
+                .size([0.0, 0.0])
+                .draw_background(false)
+                .build(ui, || self.draw_note_body(ui, language, theme));
+        }
+    }
+
+    /// Draws the right end of the note toolbar (M51): the edit button while
+    /// viewing, "Cancel" and the primary "Done" while editing.
+    fn draw_note_toolbar_end(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+        let right_edge = ui.window_content_region_max()[0];
+        let spacing = ui.clone_style().item_spacing[0];
+        if self.editor.is_some() {
+            let cancel = Text::Cancel.get(language);
+            let done = Text::Done.get(language);
+            let width = button_width(ui, cancel) + spacing + button_width(ui, done);
+            ui.same_line_with_pos(right_edge - width);
+            if ui.button(cancel) {
+                self.actions.push(WindowAction::CancelEditing);
+            }
+            ui.same_line();
+            if draw_primary_button(ui, theme, done) {
+                self.actions.push(WindowAction::FinishEditing);
+            }
+            if ui.is_item_hovered() {
+                ui.tooltip_text(Text::DoneTooltip.get(language));
+            }
+        } else if self.selected_note().is_some() {
+            let width = {
+                let _icons = FontScope::push(ui, FontRole::Icons);
+                let mut buffer = [0; 4];
+                button_width(ui, Icon::PENCIL.as_str(&mut buffer))
+            };
+            ui.same_line_with_pos(right_edge - width);
+            if draw_icon_button(ui, theme, Icon::PENCIL, Text::EditNote.get(language)) {
+                self.actions.push(WindowAction::StartEditing);
+            }
+        }
+    }
+
+    /// Draws the editor (M51–M53): formatting toolbar, title input and the
+    /// markdown body input filling the rest of the pane.
+    fn draw_editor(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+        draw_format_toolbar(ui, language, theme, &mut self.actions);
+        draw_separator(ui, theme);
+        // While the unsaved changes dialog is shown, typing must not change
+        // what the dialog asks about.
+        let is_dialog_open = self.leave_prompt.is_some();
+        let Some(editor) = self.editor.as_mut() else {
+            return;
+        };
+        // ImGui reverts an input to its content at activation when Escape is
+        // pressed; keep the typed text instead (only copied on that frame).
+        let escape_pressed = ui.is_key_pressed(Key::Escape);
+
+        let title_backup =
+            (escape_pressed && editor.title_was_active).then(|| editor.session.title.clone());
+        {
+            let _heading = FontScope::push(ui, FontRole::Heading1);
+            ui.set_next_item_width(-f32::MIN_POSITIVE);
+            ui.input_text("##title", &mut editor.session.title)
+                .hint(Text::TitleHint.get(language))
+                .read_only(is_dialog_open)
+                .build();
+        }
+        editor.title_was_active = ui.is_item_active();
+        if ui.is_item_deactivated()
+            && let Some(title) = title_backup
+        {
+            editor.session.title = title;
+        }
+
+        if editor.body_was_active && ui.io().key_ctrl {
+            if ui.is_key_index_pressed(VIRTUAL_KEY_B) {
+                editor.pending_format = Some(FormatCommand::Bold);
+            } else if ui.is_key_index_pressed(VIRTUAL_KEY_I) {
+                editor.pending_format = Some(FormatCommand::Italic);
+            }
+        }
+        if std::mem::take(&mut editor.focus_body) {
+            ui.set_keyboard_focus_here();
+        }
+        let body_backup =
+            (escape_pressed && editor.body_was_active).then(|| editor.session.body.clone());
+        let callback = BodyCallback {
+            selection: &mut editor.selection,
+            pending: &mut editor.pending_format,
+            restore_selection: &mut editor.restore_selection,
+        };
+        ui.input_text_multiline(
+            "##body",
+            &mut editor.session.body,
+            [-f32::MIN_POSITIVE, -f32::MIN_POSITIVE],
+        )
+        .read_only(is_dialog_open)
+        .callback(InputTextMultilineCallback::ALWAYS, callback)
+        .build();
+        editor.body_was_active = ui.is_item_active();
+        if ui.is_item_deactivated() {
+            if let Some(body) = body_backup {
+                editor.session.body = body;
+            } else if ui.io().key_ctrl && ui.is_key_pressed(Key::Enter) {
+                self.actions.push(WindowAction::FinishEditing);
+            }
+        }
     }
 
     /// Draws the selected note: its title and rendered content.
@@ -384,11 +766,26 @@ impl MemoWindow {
             });
         }
 
+        if let Some(draft) = self.drafts.get(note_id) {
+            draw_draft_hint(
+                ui,
+                language,
+                theme,
+                draft,
+                note.updated_at,
+                &mut self.draft_hint,
+                &mut self.actions,
+            );
+        }
+
         {
             let _heading = FontScope::push(ui, FontRole::Heading1);
             ui.text_wrapped(&note.title);
         }
         draw_separator(ui, theme);
+        if ui.is_window_hovered() && ui.is_mouse_double_clicked(MouseButton::Left) {
+            self.actions.push(WindowAction::StartEditing);
+        }
 
         if self.restore_scroll {
             ui.set_scroll_y(self.ui_state.note_scroll);
@@ -415,6 +812,21 @@ impl MemoWindow {
     /// Applies one collected action.
     fn apply(&mut self, action: &WindowAction, language: Language) {
         let now = Timestamp::now();
+        if let Some(editor) = &self.editor
+            && action.leaves_editor_of(editor.session.note)
+        {
+            if self.leave_prompt.is_some() {
+                return;
+            }
+            match (editor.session.has_changes(), self.unsaved_changes) {
+                (true, UnsavedChanges::Ask) => {
+                    self.leave_prompt = Some(LeaveReason::Action(action.clone()));
+                    return;
+                }
+                (true, UnsavedChanges::SaveAutomatically) => self.commit_editor(now),
+                (false, _) => self.editor = None,
+            }
+        }
         match action {
             WindowAction::Select(node) => self.select(*node),
             WindowAction::SetExpanded(group, expanded) => {
@@ -499,6 +911,88 @@ impl MemoWindow {
                     log::warn!("cannot open the addon folder: {error}");
                 }
             }
+            WindowAction::StartEditing => {
+                if self.editor.is_none()
+                    && let Some(note) = self.selected_note()
+                {
+                    self.editor = Some(Editor::new(EditSession::start(note)));
+                }
+            }
+            WindowAction::FinishEditing => self.commit_editor(now),
+            WindowAction::CancelEditing => {
+                if self.has_unsaved_changes() && self.unsaved_changes == UnsavedChanges::Ask {
+                    self.leave_prompt = Some(LeaveReason::Cancel);
+                } else {
+                    self.editor = None;
+                }
+            }
+            WindowAction::Format(command) => {
+                if let Some(editor) = self.editor.as_mut() {
+                    editor.pending_format = Some(*command);
+                    editor.focus_body = true;
+                    editor.restore_selection = true;
+                }
+            }
+            WindowAction::RestoreDraft(id) => {
+                if self.editor.is_none()
+                    && let Some(note) = self.document.note(*id)
+                    && let Some(draft) = self.drafts.take(*id)
+                {
+                    self.editor = Some(Editor::new(EditSession::from_draft(note, draft)));
+                    self.saver.save_drafts(self.drafts.clone());
+                }
+            }
+            WindowAction::DiscardDraft(id) => {
+                if self.drafts.take(*id).is_some() {
+                    self.saver.save_drafts(self.drafts.clone());
+                }
+            }
+            WindowAction::LeaveSaving | WindowAction::LeaveDiscarding => {
+                let Some(reason) = self.leave_prompt.take() else {
+                    return;
+                };
+                if *action == WindowAction::LeaveSaving {
+                    self.commit_editor(now);
+                } else {
+                    self.editor = None;
+                }
+                match reason {
+                    LeaveReason::Action(next) => self.apply(&next, language),
+                    LeaveReason::CloseWindow => self.close_approved = true,
+                    LeaveReason::Cancel => {}
+                }
+            }
+            WindowAction::LeaveCancelled => self.leave_prompt = None,
+            WindowAction::RequestClose => {
+                if self.request_close() {
+                    self.close_approved = true;
+                }
+            }
+        }
+    }
+
+    /// Writes the editor's title and body back into the note, saves, and
+    /// deletes the note's draft (M52, M55). An empty title keeps the old one.
+    fn commit_editor(&mut self, now: Timestamp) {
+        let Some(editor) = self.editor.take() else {
+            return;
+        };
+        let session = editor.session;
+        let mut changed = self
+            .document
+            .rename(NodeId::Note(session.note), &session.title, now);
+        if let Some(note) = self.document.note_mut(session.note)
+            && note.body != session.body
+        {
+            note.body = session.body;
+            note.updated_at = now;
+            changed = true;
+        }
+        if changed {
+            self.save_notes();
+        }
+        if self.drafts.take(session.note).is_some() {
+            self.saver.save_drafts(self.drafts.clone());
         }
     }
 
@@ -554,15 +1048,74 @@ fn find_title(nodes: &[Node], id: NodeId) -> Option<&str> {
     })
 }
 
-/// Draws the flat menu button (Lucide `menu`) that toggles the note list
-/// (M48); flat like an icon, highlighted only on hover (`a11y-icon-tooltip`).
-fn draw_menu_button(
-    ui: &Ui,
-    language: Language,
-    theme: &Theme,
-    tooltip: Text,
-    actions: &mut Vec<WindowAction>,
-) {
+/// Draws the card of the unsaved changes dialog centered in the current
+/// window and returns the chosen answer, if any (M54, M56).
+fn draw_unsaved_changes_card(ui: &Ui, language: Language, theme: &Theme) -> Option<WindowAction> {
+    let title = Text::UnsavedChangesTitle.get(language);
+    let question = Text::UnsavedChangesQuestion.get(language);
+    let discard = Text::DiscardChanges.get(language);
+    let keep_editing = Text::KeepEditing.get(language);
+    let save = Text::KeepChanges.get(language);
+    let available = ui.content_region_avail();
+    let spacing = ui.clone_style().item_spacing;
+    let padding = theme.pane.padding;
+    let buttons_width = button_width(ui, discard)
+        + theme.spacing.extra_large
+        + button_width(ui, keep_editing)
+        + spacing[0]
+        + button_width(ui, save);
+    let content_width = buttons_width
+        .max(ui.calc_text_size(question)[0])
+        .min(available[0] - 2.0 * padding)
+        .max(1.0);
+    let question_height = ui.calc_text_size_with_opts(question, false, content_width)[1];
+    let title_height = {
+        let _heading = FontScope::push(ui, FontRole::Heading3);
+        ui.text_line_height()
+    };
+    // Heading, question, gap and button row, each followed by item spacing.
+    let height = 2.0 * padding
+        + title_height
+        + question_height
+        + theme.spacing.small
+        + ui.frame_height()
+        + 3.0 * spacing[1];
+    let size = [content_width + 2.0 * padding, height];
+    let start = ui.cursor_pos();
+    ui.set_cursor_pos([
+        start[0] + ((available[0] - size[0]) / 2.0).max(0.0),
+        start[1] + ((available[1] - size[1]) / 2.0).max(0.0),
+    ]);
+    let mut answer = None;
+    draw_pane(ui, theme, "card", size, || {
+        {
+            let _heading = FontScope::push(ui, FontRole::Heading3);
+            ui.text(title);
+        }
+        {
+            let _wrap = ui.push_text_wrap_pos_with_pos(ui.cursor_pos()[0] + content_width);
+            ui.text_wrapped(question);
+        }
+        ui.dummy([0.0, theme.spacing.small]);
+        if ui.button(discard) {
+            answer = Some(WindowAction::LeaveDiscarding);
+        }
+        ui.same_line_with_spacing(0.0, theme.spacing.extra_large);
+        if ui.button(keep_editing) || ui.is_key_pressed(Key::Escape) {
+            answer = Some(WindowAction::LeaveCancelled);
+        }
+        ui.same_line();
+        if draw_primary_button(ui, theme, save) || ui.is_key_pressed(Key::Enter) {
+            answer = Some(WindowAction::LeaveSaving);
+        }
+    });
+    answer
+}
+
+/// Draws a flat icon button: no background, highlighted only on hover, with
+/// a tooltip (`a11y-icon-tooltip`; menu button M48, note toolbar M51, M53).
+/// Returns whether it was clicked.
+fn draw_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str) -> bool {
     let clicked = {
         let _colors = [
             ui.push_style_color(StyleColor::Button, [0.0; 4]),
@@ -571,14 +1124,121 @@ fn draw_menu_button(
         ];
         let _icons = FontScope::push(ui, FontRole::Icons);
         let mut buffer = [0; 4];
-        ui.button(Icon::MENU.as_str(&mut buffer))
+        ui.button(icon.as_str(&mut buffer))
     };
     if ui.is_item_hovered() {
-        ui.tooltip_text(tooltip.get(language));
+        ui.tooltip_text(tooltip);
     }
-    if clicked {
-        actions.push(WindowAction::ToggleNoteList);
+    clicked
+}
+
+/// Draws the formatting buttons of the editor (M53), wrapping onto a new
+/// line when the pane is too narrow (`lay-responsive`). The event button is
+/// disabled without trailkit-core (`form-disabled-why`).
+fn draw_format_toolbar(
+    ui: &Ui,
+    language: Language,
+    theme: &Theme,
+    actions: &mut Vec<WindowAction>,
+) {
+    let buttons = [
+        (
+            Icon::HEADING,
+            Text::FormatHeading,
+            Some(FormatCommand::Heading),
+        ),
+        (Icon::BOLD, Text::FormatBold, Some(FormatCommand::Bold)),
+        (
+            Icon::ITALIC,
+            Text::FormatItalic,
+            Some(FormatCommand::Italic),
+        ),
+        (
+            Icon::LIST,
+            Text::FormatBulletList,
+            Some(FormatCommand::BulletList),
+        ),
+        (
+            Icon::LIST_TODO,
+            Text::FormatCheckbox,
+            Some(FormatCommand::Checkbox),
+        ),
+        (Icon::LINK, Text::FormatLink, Some(FormatCommand::Link)),
+        (Icon::CALENDAR_CLOCK, Text::InsertEventRequiresCore, None),
+    ];
+    let right_edge = ui.window_content_region_max()[0] + ui.window_pos()[0];
+    for (index, (icon, tooltip, command)) in buttons.into_iter().enumerate() {
+        let width = {
+            let _icons = FontScope::push(ui, FontRole::Icons);
+            let mut buffer = [0; 4];
+            button_width(ui, icon.as_str(&mut buffer))
+        };
+        if index > 0 {
+            ui.same_line();
+            if ui.cursor_screen_pos()[0] + width > right_edge {
+                ui.new_line();
+            }
+        }
+        let _id = ui.push_id(i32::try_from(index).unwrap_or_default());
+        // ImGui 1.80 has no disabled items: a disabled button is drawn in
+        // `text.disabled` and its clicks are ignored.
+        let _disabled_color = command
+            .is_none()
+            .then(|| ui.push_style_color(StyleColor::Text, theme.text.disabled.to_array()));
+        if draw_icon_button(ui, theme, icon, tooltip.get(language))
+            && let Some(command) = command
+        {
+            actions.push(WindowAction::Format(command));
+        }
     }
+}
+
+/// Draws the draft hint above a note (M54): when the draft was saved, whether
+/// the note changed since, and "Restore" (primary) / "Discard".
+fn draw_draft_hint(
+    ui: &Ui,
+    language: Language,
+    theme: &Theme,
+    draft: &Draft,
+    note_updated_at: Timestamp,
+    cache: &mut Option<(NoteId, Language, String)>,
+    actions: &mut Vec<WindowAction>,
+) {
+    let is_cached = cache.as_ref().is_some_and(|(note, cached_language, _)| {
+        *note == draft.note && *cached_language == language
+    });
+    if !is_cached {
+        let pattern = match language {
+            Language::German => "%d.%m.%Y, %H:%M",
+            Language::English => "%Y-%m-%d %H:%M",
+        };
+        let time = draft
+            .saved_at
+            .to_zoned(TimeZone::system())
+            .strftime(pattern);
+        *cache = Some((
+            draft.note,
+            language,
+            format!("{} {time}", Text::DraftFound.get(language)),
+        ));
+    }
+    if let Some((_, _, label)) = cache.as_ref() {
+        ui.text_colored(theme.status.warning.to_array(), label);
+    }
+    if draft.note_updated_at != note_updated_at {
+        ui.text_colored(
+            theme.text.secondary.to_array(),
+            Text::DraftNoteChangedSince.get(language),
+        );
+    }
+    if draw_primary_button(ui, theme, Text::RestoreDraft.get(language)) {
+        actions.push(WindowAction::RestoreDraft(draft.note));
+    }
+    ui.same_line();
+    if ui.button(Text::DiscardChanges.get(language)) {
+        actions.push(WindowAction::DiscardDraft(draft.note));
+    }
+    draw_separator(ui, theme);
 }
 
 /// Draws the "new note" / "new group" icon buttons, led by the menu button
@@ -591,7 +1251,9 @@ fn draw_toolbar(
     actions: &mut Vec<WindowAction>,
 ) {
     if let Some(tooltip) = menu {
-        draw_menu_button(ui, language, theme, tooltip, actions);
+        if draw_icon_button(ui, theme, Icon::MENU, tooltip.get(language)) {
+            actions.push(WindowAction::ToggleNoteList);
+        }
         ui.same_line();
     }
     let buttons = [
@@ -927,22 +1589,14 @@ fn draw_empty_state(ui: &Ui, language: Language, theme: &Theme, actions: &mut Ve
     let fits_one_row = primary_width + spacing + secondary_width <= available[0];
 
     // Primary action uses the accent (`lay-one-primary`).
-    {
-        let _colors = [
-            ui.push_style_color(StyleColor::Button, theme.accent.base.to_array()),
-            ui.push_style_color(StyleColor::ButtonHovered, theme.accent.hover.to_array()),
-            ui.push_style_color(StyleColor::ButtonActive, theme.accent.active.to_array()),
-            ui.push_style_color(StyleColor::Text, theme.text.on_accent.to_array()),
-        ];
-        let row_width = if fits_one_row {
-            primary_width + spacing + secondary_width
-        } else {
-            primary_width
-        };
-        indent_to_center(ui, row_width, available[0]);
-        if ui.button(primary) {
-            actions.push(WindowAction::NewNote);
-        }
+    let row_width = if fits_one_row {
+        primary_width + spacing + secondary_width
+    } else {
+        primary_width
+    };
+    indent_to_center(ui, row_width, available[0]);
+    if draw_primary_button(ui, theme, primary) {
+        actions.push(WindowAction::NewNote);
     }
     if fits_one_row {
         ui.same_line_with_spacing(0.0, spacing);

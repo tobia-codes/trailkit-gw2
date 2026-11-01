@@ -21,6 +21,8 @@ pub mod markdown;
 pub mod theme;
 
 #[cfg(windows)]
+pub mod button;
+#[cfg(windows)]
 pub mod font_registry;
 #[cfg(windows)]
 pub mod markdown_view;

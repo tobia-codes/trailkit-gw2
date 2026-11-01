@@ -121,6 +121,15 @@ static NEXUS_LINK: AtomicPtr<NexusLink> = AtomicPtr::new(std::ptr::null_mut());
 /// Whether the main window is visible. Written by keybind and render callbacks.
 static VISIBLE: AtomicBool = AtomicBool::new(false);
 
+/// Whether the editor holds unsaved changes (M54). Written by the render
+/// callback, so a keybind or quick access click that hid the window can be
+/// turned into the unsaved changes dialog instead.
+static UNSAVED_CHANGES: AtomicBool = AtomicBool::new(false);
+
+/// Set when the window was hidden from outside while changes were unsaved;
+/// the render callback shows it again and asks (M54).
+static CLOSE_REQUESTED: AtomicBool = AtomicBool::new(false);
+
 /// Effective UI language, stored as the [`Language`] discriminant.
 static LANGUAGE: AtomicU8 = AtomicU8::new(Language::English as u8);
 
@@ -180,6 +189,12 @@ fn load() {
 fn unload() {
     log::info!("unloading");
     NEXUS_LINK.store(std::ptr::null_mut(), Ordering::Release);
+    // Unsaved edits become a draft; the worker writes it while shutting down (M54).
+    if let Ok(mut notes) = NOTES.lock()
+        && let NotesState::Ready(window) = &mut *notes
+    {
+        window.keep_draft_for_unload();
+    }
     let worker = STORAGE_WORKER
         .lock()
         .map_or(None, |mut worker| worker.take());
@@ -275,6 +290,12 @@ fn detect_nexus_language() -> Option<String> {
 /// Draws the main window. Returns immediately while the window is closed, and
 /// skips drawing (keeping it open) outside gameplay unless the settings allow it.
 fn render_main_window(ui: &nexus::imgui::Ui) {
+    // Hidden by keybind or quick access with unsaved changes: show it again
+    // and ask instead (M54).
+    if !VISIBLE.load(Ordering::Relaxed) && UNSAVED_CHANGES.load(Ordering::Relaxed) {
+        VISIBLE.store(true, Ordering::Relaxed);
+        CLOSE_REQUESTED.store(true, Ordering::Relaxed);
+    }
     if !VISIBLE.load(Ordering::Relaxed) || !settings().allows_drawing(is_gameplay()) {
         return;
     }
@@ -301,7 +322,21 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
             NotesState::Unavailable => ui.text_wrapped(Text::NotesInaccessible.get(language)),
             NotesState::Ready(window) => window.draw(ui, language, &theme),
         });
-    if !open {
+    if let NotesState::Ready(window) = &mut *notes {
+        window.draw_dialog(ui, language, &theme);
+    }
+    let close_requested = !open || CLOSE_REQUESTED.swap(false, Ordering::Relaxed);
+    let may_close = match &mut *notes {
+        NotesState::Ready(window) => {
+            let may_close =
+                window.take_close_approval() || (close_requested && window.request_close());
+            UNSAVED_CHANGES.store(window.has_unsaved_changes(), Ordering::Relaxed);
+            may_close
+        }
+        _ => close_requested,
+    };
+    if may_close {
+        UNSAVED_CHANGES.store(false, Ordering::Relaxed);
         VISIBLE.store(false, Ordering::Relaxed);
     }
 }
@@ -321,6 +356,7 @@ fn receive_loaded_notes(notes: &mut NotesState) {
         Ok(LoadedDocuments {
             notes: outcome,
             ui_state,
+            drafts,
         }) => {
             let (document, problem) = document_and_problem(outcome);
             NotesState::Ready(Box::new(MemoWindow::new(
@@ -329,6 +365,8 @@ fn receive_loaded_notes(notes: &mut NotesState) {
                 ui_state,
                 saver.clone(),
                 directory.clone(),
+                drafts,
+                settings().unsaved_changes,
             )))
         }
         Err(TryRecvError::Empty) => return,

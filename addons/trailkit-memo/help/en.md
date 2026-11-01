@@ -1,7 +1,6 @@
 # trailkit-memo
 
-> Pre-release — notes can be created, renamed and viewed; editing the
-> content comes in a later version.
+> Pre-release — notes can be created, renamed, viewed and edited.
 
 ## Opening the window
 
@@ -40,11 +39,32 @@ appears when you point at it).
 
 Long names are shortened with "…" — hover them to see the full name.
 
+## Editing a note
+
+Click the **pencil** at the top right of a note, or double-click the note.
+You edit the title and the text in markdown; the buttons above the text
+insert headings, **bold**, *italic*, lists, checkboxes and links (also
+**Ctrl+B** and **Ctrl+I**). The event button needs trailkit-core.
+
+- **Done** (or **Ctrl+Enter**) saves your changes, **Cancel** throws them
+  away — memo asks first if you changed something.
+- If you choose another note, create one or close the window while you have
+  unsaved changes, memo asks whether to save or discard them. (Set
+  `"unsaved_changes": "save_automatically"` in `settings.json` to save
+  without asking; a switch follows in the settings window.)
+- **Escape** first leaves the text field, a second Escape closes the window.
+- If the game or the addon closes while you are editing, your changes are
+  kept as a draft. Next time you open the note, choose **Restore** to
+  continue or **Discard** to drop them. Drafts are deleted automatically
+  after 30 days.
+- Long lines do not wrap while editing (scroll sideways); the normal view
+  wraps them.
+
 ## Where your notes are stored
 
 Your notes are saved automatically a moment after every change, in
-`addons/trailkit/memo/` inside your Guild Wars 2 folder (`notes.json` and
-`settings.json`).
+`addons/trailkit/memo/` inside your Guild Wars 2 folder (`notes.json`,
+`settings.json`, and `drafts.json` while a draft exists).
 
 - If the notes file is damaged, memo starts with an empty list and tells
   you. The damaged file is kept in the `backups` folder next to it, so

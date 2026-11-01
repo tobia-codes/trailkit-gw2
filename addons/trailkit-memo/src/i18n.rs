@@ -89,6 +89,46 @@ pub enum Text {
     ShowNoteList,
     /// Tooltip of the menu button while the note list is shown (M48).
     HideNoteList,
+    /// Tooltip of the edit button (M51).
+    EditNote,
+    /// Button committing an edit (M51).
+    Done,
+    /// Tooltip of the "Done" button with its shortcut (M51).
+    DoneTooltip,
+    /// Button cancelling an edit (M51).
+    Cancel,
+    /// Placeholder of the title input (M51).
+    TitleHint,
+    /// Tooltip of the heading button (M53).
+    FormatHeading,
+    /// Tooltip of the bold button (M53).
+    FormatBold,
+    /// Tooltip of the italic button (M53).
+    FormatItalic,
+    /// Tooltip of the bulleted list button (M53).
+    FormatBulletList,
+    /// Tooltip of the checkbox button (M53).
+    FormatCheckbox,
+    /// Tooltip of the link button (M53).
+    FormatLink,
+    /// Tooltip of the disabled event button without trailkit-core (M53).
+    InsertEventRequiresCore,
+    /// Title of the unsaved changes dialog (M54).
+    UnsavedChangesTitle,
+    /// Text of the unsaved changes dialog (M54).
+    UnsavedChangesQuestion,
+    /// Keep the changes (unsaved changes dialog).
+    KeepChanges,
+    /// Throw the changes away (unsaved changes dialog, draft hint).
+    DiscardChanges,
+    /// Stay in the editor (unsaved changes dialog).
+    KeepEditing,
+    /// Draft hint, followed by the date and time of the draft (M54).
+    DraftFound,
+    /// Draft hint addition when the note changed after the draft (M54).
+    DraftNoteChangedSince,
+    /// Restore a draft into the editor (M54).
+    RestoreDraft,
     /// Shown instead of an empty note's content.
     EmptyNote,
     /// Shown in the note pane when no note is selected.
@@ -105,7 +145,7 @@ pub enum Text {
 
 impl Text {
     /// Every string, for registering their characters with Nexus' font atlas.
-    pub const ALL: [Self; 21] = [
+    pub const ALL: [Self; 41] = [
         Self::MainWindowTitle,
         Self::KeybindToggle,
         Self::QuickAccessTooltip,
@@ -121,6 +161,26 @@ impl Text {
         Self::CreateFirstNote,
         Self::ShowNoteList,
         Self::HideNoteList,
+        Self::EditNote,
+        Self::Done,
+        Self::DoneTooltip,
+        Self::Cancel,
+        Self::TitleHint,
+        Self::FormatHeading,
+        Self::FormatBold,
+        Self::FormatItalic,
+        Self::FormatBulletList,
+        Self::FormatCheckbox,
+        Self::FormatLink,
+        Self::InsertEventRequiresCore,
+        Self::UnsavedChangesTitle,
+        Self::UnsavedChangesQuestion,
+        Self::KeepChanges,
+        Self::DiscardChanges,
+        Self::KeepEditing,
+        Self::DraftFound,
+        Self::DraftNoteChangedSince,
+        Self::RestoreDraft,
         Self::EmptyNote,
         Self::SelectNote,
         Self::DailyBadge,
@@ -185,6 +245,54 @@ impl Text {
             (Self::ShowNoteList, Language::German) => "Notizliste einblenden",
             (Self::HideNoteList, Language::English) => "Hide note list",
             (Self::HideNoteList, Language::German) => "Notizliste ausblenden",
+            (Self::EditNote, Language::English) => "Edit note",
+            (Self::EditNote, Language::German) => "Notiz bearbeiten",
+            (Self::Done, Language::English) => "Done",
+            (Self::Done, Language::German) => "Fertig",
+            (Self::DoneTooltip, Language::English) => "Save changes (Ctrl+Enter)",
+            (Self::DoneTooltip, Language::German) => "Änderungen übernehmen (Strg+Enter)",
+            (Self::Cancel, Language::English) => "Cancel",
+            (Self::Cancel, Language::German) => "Abbrechen",
+            (Self::TitleHint, Language::English) => "Title",
+            (Self::TitleHint, Language::German) => "Titel",
+            (Self::FormatHeading, Language::English) => "Heading",
+            (Self::FormatHeading, Language::German) => "Überschrift",
+            (Self::FormatBold, Language::English) => "Bold (Ctrl+B)",
+            (Self::FormatBold, Language::German) => "Fett (Strg+B)",
+            (Self::FormatItalic, Language::English) => "Italic (Ctrl+I)",
+            (Self::FormatItalic, Language::German) => "Kursiv (Strg+I)",
+            (Self::FormatBulletList, Language::English) => "Bulleted list",
+            (Self::FormatBulletList, Language::German) => "Aufzählung",
+            (Self::FormatCheckbox, Language::English) => "Checkbox",
+            (Self::FormatCheckbox, Language::German) => "Checkbox",
+            (Self::FormatLink, Language::English) => "Link",
+            (Self::FormatLink, Language::German) => "Link",
+            (Self::InsertEventRequiresCore, Language::English) => {
+                "Insert event — requires trailkit-core"
+            }
+            (Self::InsertEventRequiresCore, Language::German) => {
+                "Event einfügen – benötigt trailkit-core"
+            }
+            (Self::UnsavedChangesTitle, Language::English) => "Unsaved changes",
+            (Self::UnsavedChangesTitle, Language::German) => "Ungespeicherte Änderungen",
+            (Self::UnsavedChangesQuestion, Language::English) => {
+                "This note has changes that are not saved yet."
+            }
+            (Self::UnsavedChangesQuestion, Language::German) => {
+                "Diese Notiz hat Änderungen, die noch nicht übernommen wurden."
+            }
+            (Self::KeepChanges, Language::English) => "Save",
+            (Self::KeepChanges, Language::German) => "Übernehmen",
+            (Self::DiscardChanges, Language::English) => "Discard",
+            (Self::DiscardChanges, Language::German) => "Verwerfen",
+            (Self::KeepEditing, Language::English) => "Keep editing",
+            (Self::KeepEditing, Language::German) => "Weiter bearbeiten",
+            (Self::DraftFound, Language::English) => "Unsaved changes from",
+            (Self::DraftFound, Language::German) => "Ungespeicherte Änderungen vom",
+            (Self::DraftNoteChangedSince, Language::English) => "The note was changed since.",
+            (Self::DraftNoteChangedSince, Language::German) => "Die Notiz wurde seitdem geändert.",
+            (Self::RestoreDraft, Language::English) => "Restore",
+            (Self::RestoreDraft, Language::German) => "Wiederherstellen",
             (Self::EmptyNote, Language::English) => "This note is empty.",
             (Self::EmptyNote, Language::German) => "Diese Notiz ist leer.",
             (Self::SelectNote, Language::English) => "Select a note in the list.",

@@ -56,7 +56,13 @@ Re-verify when bumping `NEXUS_API_VERSION` or `nexus-rs`.
   triggers the keybind). Textures come from committed PNGs embedded with
   `include_bytes!` and loaded via `Textures_LoadFromMemory` (R57).
 - Keybinds: `InputBinds_RegisterWithString` — the user can rebind in Nexus.
-- Close on Escape: `GUI_RegisterCloseOnEscape(windowName, &visible)`.
+- Close on Escape: `GUI_RegisterCloseOnEscape(windowName, &visible)` — Nexus
+  then writes the bool directly. A window that must ask before closing
+  (unsaved changes) handles Escape itself instead: on `Escape` with the
+  window focused and `io.want_text_input` false (memo M54).
+- ImGui is **1.80**: no `BeginDisabled` (draw disabled items in
+  `text.disabled` and ignore clicks), no line wrapping in multiline inputs,
+  and Escape in an active input reverts it to its content at activation.
 - Paths: `Paths_GetAddonDirectory("trailkit/<addon>")` for settings and
   caches; never write next to the game exe.
 

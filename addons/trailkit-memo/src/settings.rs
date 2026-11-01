@@ -5,7 +5,7 @@
 //! rules can be unit-tested on any host.
 
 use serde::{Deserialize, Serialize};
-use trailkit_storage::{SchemaVersion, VersionedDocument};
+use trailkit_storage::{DocumentFields, MigrationError, SchemaVersion, VersionedDocument};
 
 /// Whether the addon adds its icon to the Nexus quick access bar (R55).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
@@ -30,6 +30,18 @@ pub enum OutsideGameplay {
     Show,
 }
 
+/// What happens when the user leaves the editor with unsaved changes by
+/// closing the window or navigating (memo plan M57).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum UnsavedChanges {
+    /// Ask "Save / Discard / Keep editing" (default).
+    #[default]
+    Ask,
+    /// Save without asking; "Cancel" discards without asking.
+    SaveAutomatically,
+}
+
 /// All user settings of trailkit-memo.
 ///
 /// A field missing from `settings.json` falls back to its default.
@@ -40,6 +52,8 @@ pub struct Settings {
     pub quick_access_icon: QuickAccessIcon,
     /// Window behavior outside gameplay.
     pub outside_gameplay: OutsideGameplay,
+    /// Leaving the editor with unsaved changes (M57).
+    pub unsaved_changes: UnsavedChanges,
 }
 
 impl Settings {
@@ -47,6 +61,7 @@ impl Settings {
     pub const DEFAULT: Self = Self {
         quick_access_icon: QuickAccessIcon::Shown,
         outside_gameplay: OutsideGameplay::Hide,
+        unsaved_changes: UnsavedChanges::Ask,
     };
 
     /// Whether an open window may be drawn in the current game state.
@@ -58,7 +73,21 @@ impl Settings {
 
 impl VersionedDocument for Settings {
     const FILE_STEM: &'static str = "settings";
-    const CURRENT_SCHEMA_VERSION: SchemaVersion = SchemaVersion::FIRST;
+    /// Version 2 added `unsaved_changes` (M57).
+    const CURRENT_SCHEMA_VERSION: SchemaVersion = SchemaVersion(2);
+
+    /// Version 1 → 2 only added a field; missing fields take their default
+    /// when reading, so the fields stay as they are.
+    fn migrate_one_step(
+        from: SchemaVersion,
+        fields: DocumentFields,
+    ) -> Result<DocumentFields, MigrationError> {
+        if from == SchemaVersion::FIRST {
+            Ok(fields)
+        } else {
+            Err(MigrationError::NoMigrationPath { from })
+        }
+    }
 }
 
 #[cfg(test)]
@@ -94,6 +123,8 @@ mod tests {
         let partial: Settings = serde_json::from_str(r#"{"quick_access_icon": "hidden"}"#)?;
         assert_eq!(partial.quick_access_icon, QuickAccessIcon::Hidden);
         assert_eq!(partial.outside_gameplay, OutsideGameplay::Hide);
+        assert_eq!(partial.unsaved_changes, UnsavedChanges::Ask);
+        assert_eq!(value["unsaved_changes"], "ask");
         Ok(())
     }
 }
