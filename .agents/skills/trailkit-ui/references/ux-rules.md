@@ -149,7 +149,12 @@ Each rule has an id (`area-name`) so reviews can cite it.
   where possible; restore scroll position when reopening.
 - `lay-text-case` — Sentence case for labels and headings, no trailing colons
   on section headings.
-- `lay-icons` — One consistent icon set across all addons; no emoji as icons.
+- `lay-icons` — One icon set across all addons: **Lucide** (ISC), embedded as
+  an icon font in the ImGui atlas so icons scale with the text and take text
+  color tokens; no emoji as icons. **Custom icons follow Lucide's style**:
+  24×24 grid, 2 px stroke, round caps and joins, outlines only (no fills).
+  Exception: Nexus quick access bar icons are colored and filled to match the
+  other icons in that bar (ROADMAP R59).
 - `lay-dark-light` — Design and check Dark and Light together; Dark uses
   desaturated tones, not inverted colors.
 

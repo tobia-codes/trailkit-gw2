@@ -56,7 +56,7 @@ references with autocompletion and status.
 
 ## Open questions
 
-- None currently (session 4 settled M16–M33; details are settled per
+- None currently (session 4 settled M16–M45; details are settled per
   implementation step).
 
 ## Decisions
@@ -96,3 +96,15 @@ references with autocompletion and status.
 | M31 | Unreadable `notes.json`: never overwritten automatically; preserved as a safety copy (M33), memo starts with an empty list and shows a prominent hint with "Open folder" (plus "Restore from backup" from step 10 on) | 2026-11-01 |
 | M32 | Timestamps are stored as RFC 3339 UTC (`jiff::Timestamp`); unknown fields within the same `schema_version` are ignored (new fields always bump the version, newer versions are read-only) | 2026-11-01 |
 | M33 | All safety copies live in one `backups/` subfolder (shared with the daily backups of M11), each kind capped: migration copy `notes.v<N>.bak.json` written before the first migrated save, only the newest per file, deleted after 30 days; copies of unreadable files `notes.corrupt-<time>.json`, max. 3; daily backups max. 7. The addon folder itself only holds the live files | 2026-11-01 |
+| M34 | Step 2 scope: tree display, expand/collapse, select + rendered view, "New note"/"New group", inline rename; body editing in step 3, delete in step 7 | 2026-11-01 |
+| M35 | Bold/italic/headings: embedded **Noto Sans** family (regular, bold, italic, bold italic, OFL) in `trailkit-ui`, registered once via the Nexus font API for all addons; body size = Nexus `FontUI` size (follows the GW2 interface size), headings 1.5× / 1.3× / 1.15×; fonts are rebuilt only on load or a size change, never per frame | 2026-11-01 |
+| M36 | Icons: Lucide as icon font for all addons; custom icons in Lucide style (`lay-icons`) | 2026-11-01 |
+| M37 | Links open in the default browser on click, only for `http(s)://` (other schemes render as text); tooltip shows the full URL; no confirmation | 2026-11-01 |
+| M38 | Checkboxes are clickable in view mode; a click toggles `[ ]`/`[x]` in the markdown source and triggers a save | 2026-11-01 |
+| M39 | Window state (selected note, splitter position, scroll position) is stored in its own `ui_state.json`, not in `settings.json`; window position/size is kept by ImGui | 2026-11-01 |
+| M40 | Single-pane below two minimum pane widths; minimum pane width ≈ 22 characters of the current font (≈ 440 px threshold at default size, scales with the font) | 2026-11-01 |
+| M41 | Code location: markdown renderer, fonts and icons in `trailkit-ui`; tree, splitter and empty state start in memo (move on second use, rule 7) | 2026-11-01 |
+| M42 | Empty state: short text ("No notes yet") with primary button "Create your first note" and secondary "New group" | 2026-11-01 |
+| M43 | New notes/groups go into the selected group, else the root, appended at the end, titled "New note"/"New group" in rename mode with the text selected; a new note is selected | 2026-11-01 |
+| M44 | Inline rename via double-click or context menu: Enter or clicking elsewhere commits, Escape cancels, an empty title restores the old one | 2026-11-01 |
+| M45 | Tree icons: none for groups (expand arrow) and normal notes; reset notes get a letter badge in a fixed leading column (empty for normal notes, so titles stay aligned): en **D**/**W**, de **T**/**W**, rounded box in Lucide style with accent color, drawn with ImGui; tooltip names the kind and reset time | 2026-11-01 |
