@@ -63,7 +63,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Install pinned toolchain
-        run: rustup show active-toolchain || rustup toolchain install
+        run: rustup toolchain install # explicit: rustup auto-install is deprecated
       - uses: Swatinem/rust-cache@v2
       - name: Build trailkit-datagen
         run: cargo build --release --locked -p trailkit-datagen
