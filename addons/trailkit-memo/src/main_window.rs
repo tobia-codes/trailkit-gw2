@@ -607,7 +607,15 @@ impl MemoWindow {
     /// then the note in its own scroll region so the toolbar stays in place.
     /// `menu_tooltip` names what the menu button does.
     fn draw_note_pane(&mut self, ui: &Ui, language: Language, theme: &Theme, menu_tooltip: Text) {
-        if draw_icon_button(ui, theme, Icon::MENU, menu_tooltip.get(language)) {
+        // The menu button is "on" while the note list is visible (M71).
+        let list_visible = menu_tooltip == Text::HideNoteList;
+        if draw_icon_toggle(
+            ui,
+            theme,
+            Icon::MENU,
+            menu_tooltip.get(language),
+            list_visible,
+        ) {
             self.actions.push(WindowAction::ToggleNoteList);
         }
         self.draw_note_toolbar_end(ui, language, theme);
@@ -1202,6 +1210,14 @@ fn draw_unsaved_changes_card(
 /// a tooltip (`a11y-icon-tooltip`; menu button M48, note toolbar M51, M53).
 /// Returns whether it was clicked.
 fn draw_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str) -> bool {
+    draw_icon_toggle(ui, theme, icon, tooltip, false)
+}
+
+/// Like [`draw_icon_button`], but the icon is drawn in the accent color when
+/// `active` (toggles whose state is on, M69, M71).
+fn draw_icon_toggle(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str, active: bool) -> bool {
+    let _active_color =
+        active.then(|| ui.push_style_color(StyleColor::Text, theme.accent.base.to_array()));
     let clicked = {
         let _colors = [
             ui.push_style_color(StyleColor::Button, [0.0; 4]),
@@ -1378,7 +1394,13 @@ fn draw_toolbar(
     actions: &mut Vec<WindowAction>,
 ) {
     if let Some(tooltip) = menu {
-        if draw_icon_button(ui, theme, Icon::MENU, tooltip.get(language)) {
+        if draw_icon_toggle(
+            ui,
+            theme,
+            Icon::MENU,
+            tooltip.get(language),
+            tooltip == Text::HideNoteList,
+        ) {
             actions.push(WindowAction::ToggleNoteList);
         }
         ui.same_line();

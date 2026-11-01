@@ -2,7 +2,7 @@
 //! M65).
 //!
 //! References live in `<crate>/tests/snapshots/<name>.png`. A test fails when
-//! more than [`MAXIMUM_DIFFERENT_SHARE`] of the pixels differ by more than
+//! more than [`MAXIMUM_DIFFERENT_SHARE`] of the pixels (none) differ by more than
 //! [`CHANNEL_TOLERANCE`] in any channel; it then writes the rendered image and
 //! a diff image (differences in red) to `tests/snapshots/failures/`.
 //! Running with `TRAILKIT_UPDATE_SNAPSHOTS=1` writes the references instead.
@@ -21,8 +21,10 @@ use crate::raster::Image;
 /// Largest per-channel difference that still counts as equal.
 pub const CHANNEL_TOLERANCE: u8 = 3;
 
-/// Largest share of different pixels that still passes (0.05 %).
-pub const MAXIMUM_DIFFERENT_SHARE: f64 = 0.0005;
+/// Largest share of different pixels that still passes: none. Rendering is
+/// deterministic (WSL/clang-cl and CI/MSVC produce the same images), and even
+/// a recolored icon changes only ~70 of 230 000 pixels.
+pub const MAXIMUM_DIFFERENT_SHARE: f64 = 0.0;
 
 /// Environment variable that switches to writing references.
 const UPDATE_VARIABLE: &str = "TRAILKIT_UPDATE_SNAPSHOTS";
@@ -215,7 +217,7 @@ mod tests {
         );
         let mut changed = image.clone();
         changed.pixels[0] = [200, 20, 30, 255];
-        // One of 64 pixels is far above the 0.05 % allowance.
+        // One differing pixel is enough to fail.
         assert!(matches!(
             compare_snapshot(&directory, "square", &changed, false)?,
             SnapshotOutcome::Differs {
