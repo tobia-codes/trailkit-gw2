@@ -81,7 +81,7 @@ Build once, use everywhere. Planned:
 - `ColorTokenEditor`, `KeybindHint`, `EmptyState`, `ErrorState`, `Spinner`
 - Markdown renderer (read-only view) — **exists**: `markdown` (parser,
   any platform) + `markdown_view` (ImGui)
-- Shared fonts (Noto Sans regular/bold/italic/bold italic, headings) and
+- Shared fonts (Open Sans regular/bold/italic/bold italic, headings; M62) and
   Lucide icons — **exist**: `fonts`, `font_registry` (`FontScope`), `icons`
 - `Pane` and inset separator — **exist**: `pane::draw_pane`,
   `separator::draw_separator`; every sub-region of a window and every

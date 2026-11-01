@@ -1,5 +1,5 @@
-//! The shared trailkit fonts: Noto Sans text faces and the Lucide icon font
-//! (memo plan M35, M36).
+//! The shared trailkit fonts: Open Sans text faces and the Lucide icon font
+//! (memo plan M35, M36, M62).
 //!
 //! Every addon registers the same font identifiers with Nexus; Nexus loads a
 //! font once and shares it between all addons that ask for the same id. The
@@ -7,20 +7,20 @@
 //! headings are derived from it. This module only describes the fonts and is
 //! platform-independent; registration lives in `font_registry` (Windows).
 
-/// Noto Sans Regular (OFL, see `assets/fonts/noto-sans/LICENSE`).
-pub static NOTO_SANS_REGULAR: &[u8] =
-    include_bytes!("../assets/fonts/noto-sans/noto-sans-regular.ttf");
+/// Open Sans Regular (OFL, see `assets/fonts/open-sans/LICENSE`).
+pub static OPEN_SANS_REGULAR: &[u8] =
+    include_bytes!("../assets/fonts/open-sans/open-sans-regular.ttf");
 
-/// Noto Sans Bold.
-pub static NOTO_SANS_BOLD: &[u8] = include_bytes!("../assets/fonts/noto-sans/noto-sans-bold.ttf");
+/// Open Sans Bold.
+pub static OPEN_SANS_BOLD: &[u8] = include_bytes!("../assets/fonts/open-sans/open-sans-bold.ttf");
 
-/// Noto Sans Italic.
-pub static NOTO_SANS_ITALIC: &[u8] =
-    include_bytes!("../assets/fonts/noto-sans/noto-sans-italic.ttf");
+/// Open Sans Italic.
+pub static OPEN_SANS_ITALIC: &[u8] =
+    include_bytes!("../assets/fonts/open-sans/open-sans-italic.ttf");
 
-/// Noto Sans Bold Italic.
-pub static NOTO_SANS_BOLD_ITALIC: &[u8] =
-    include_bytes!("../assets/fonts/noto-sans/noto-sans-bold-italic.ttf");
+/// Open Sans Bold Italic.
+pub static OPEN_SANS_BOLD_ITALIC: &[u8] =
+    include_bytes!("../assets/fonts/open-sans/open-sans-bold-italic.ttf");
 
 /// Lucide icon font (ISC, see `assets/fonts/lucide/LICENSE`).
 pub static LUCIDE: &[u8] = include_bytes!("../assets/fonts/lucide/lucide.ttf");
@@ -82,10 +82,10 @@ impl FontRole {
     #[must_use]
     pub fn data(self) -> &'static [u8] {
         match self {
-            Self::Body => NOTO_SANS_REGULAR,
-            Self::BodyBold | Self::Heading1 | Self::Heading2 | Self::Heading3 => NOTO_SANS_BOLD,
-            Self::BodyItalic => NOTO_SANS_ITALIC,
-            Self::BodyBoldItalic => NOTO_SANS_BOLD_ITALIC,
+            Self::Body => OPEN_SANS_REGULAR,
+            Self::BodyBold | Self::Heading1 | Self::Heading2 | Self::Heading3 => OPEN_SANS_BOLD,
+            Self::BodyItalic => OPEN_SANS_ITALIC,
+            Self::BodyBoldItalic => OPEN_SANS_BOLD_ITALIC,
             Self::Icons => LUCIDE,
         }
     }
