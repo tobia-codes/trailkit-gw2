@@ -19,8 +19,8 @@ impl Icon {
     pub const MENU: Self = Self('\u{e115}');
     /// `square`: unchecked task.
     pub const SQUARE: Self = Self('\u{e167}');
-    /// `square-check-big`: checked task.
-    pub const SQUARE_CHECK: Self = Self('\u{e16a}');
+    /// `square-check`: checked task (tick inside the box, M64).
+    pub const SQUARE_CHECK: Self = Self('\u{e559}');
     /// `triangle-alert`: warning or error hint.
     pub const TRIANGLE_ALERT: Self = Self('\u{e193}');
     /// `folder-open`: open a folder in the file explorer.
