@@ -178,3 +178,9 @@ Project contract (to be finalized in `docs/plans/addons/trailkit-core.md`):
 - A file with an unknown *newer* `schema_version` is never overwritten: run
   read-only (or disabled) and tell the user to update the addon.
 - Saves are atomic (write temp file + rename) on the worker thread.
+- Use `crates/trailkit-storage` for all of the above — never hand-roll file
+  persistence in an addon (memo plan M29).
+- Safety copies (migration copies, copies of unreadable files, backups) go
+  into one `backups/` subfolder with a fixed cap per kind and automatic
+  pruning, so the addon folder never fills up with forgotten copies
+  (memo plan M33). An unreadable file is never overwritten.
