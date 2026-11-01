@@ -30,6 +30,9 @@ tempfile.workspace = true
 [target.'cfg(windows)'.dependencies]
 nexus.workspace = true
 
+# Headless ImGui harness for the window snapshot tests (memo plan M65).
+[target.'cfg(windows)'.dev-dependencies]
+trailkit-ui-testing.workspace = true
 
 [lints]
 workspace = true

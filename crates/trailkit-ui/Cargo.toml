@@ -17,5 +17,9 @@ pulldown-cmark.workspace = true
 log.workspace = true
 nexus.workspace = true
 
+# Headless ImGui harness for the integration tests in `tests/` (memo plan M65).
+[target.'cfg(windows)'.dev-dependencies]
+trailkit-ui-testing.workspace = true
+
 [lints]
 workspace = true

@@ -1664,3 +1664,7 @@ fn truncate_to_width<'text>(ui: &Ui, text: &'text str, width: f32) -> Cow<'text,
     }
     Cow::Owned(format!("{}{ellipsis}", text[..end].trim_end()))
 }
+
+#[cfg(test)]
+#[path = "main_window_tests.rs"]
+mod tests;

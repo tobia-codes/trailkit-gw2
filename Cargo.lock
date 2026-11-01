@@ -1256,6 +1256,7 @@ dependencies = [
  "tempfile",
  "trailkit-storage",
  "trailkit-ui",
+ "trailkit-ui-testing",
  "uuid",
 ]
 
@@ -1278,6 +1279,16 @@ dependencies = [
  "log",
  "nexus",
  "pulldown-cmark",
+ "trailkit-ui-testing",
+]
+
+[[package]]
+name = "trailkit-ui-testing"
+version = "0.0.0"
+dependencies = [
+ "nexus",
+ "png",
+ "trailkit-ui",
 ]
 
 [[package]]

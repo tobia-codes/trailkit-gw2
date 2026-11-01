@@ -22,6 +22,7 @@ Build only: `cargo xwin build -p trailkit-memo --target x86_64-pc-windows-msvc`.
 
 ```sh
 cargo test -p trailkit-memo   # platform-independent logic (i18n, …) on the host
+cargo xtask ui-test           # window snapshots (tests/snapshots/) via the headless ImGui harness
 ```
 
 ## Layout

@@ -12,6 +12,7 @@ invoked from the repo root as `cargo xtask <command>` (alias in `.cargo/config.t
 | `cargo xtask build-icons --check` | Only verifies the committed PNGs match a fresh render (CI). |
 | `cargo xtask check-branch [--head B] [--base B]` | Verifies a branch name (R14); without options the current branch. Used by CI and the pre-push hook. |
 | `cargo xtask install-hooks` | Enables the versioned git hooks in `.githooks/` (pre-commit: fmt + names; pre-push: branch + clippy + tests). |
+| `cargo xtask ui-test [--update]` | Builds the Windows test binaries of `trailkit-ui`, `trailkit-ui-testing` and `trailkit-memo` with `cargo xwin test --no-run` and runs them directly through WSL interop (cargo would try wine). Sets `TRAILKIT_SNAPSHOT_ROOT` per crate via `WSLENV` path translation; `--update` rewrites the snapshot references (M65). |
 | `cargo xtask check-names` | Verifies every file/directory name against [AGENTS.md → Naming conventions](../AGENTS.md#naming-conventions). |
 | `cargo xtask sync-versions` | Copies each addon's `package.json` version (owned by Changesets) into its `Cargo.toml`. |
 | `cargo xtask sync-versions --check` | Only verifies the versions match (CI). |

@@ -44,6 +44,29 @@ fn is_editor_hovered(ui: &Ui) -> bool {
     )
 }
 
+/// The characters typed in this frame (ImGui's input queue), without
+/// consuming them.
+///
+/// `Io::peek_input_characters` is not used: it builds a slice from the
+/// queue's data pointer, which is null until the first character arrives in
+/// a context, and `slice::from_raw_parts(null, 0)` aborts debug builds (found
+/// by the UI tests, M65).
+fn typed_characters() -> String {
+    // SAFETY: called on the render thread inside a frame, so the IO is valid;
+    // the queue holds `Size` UTF-16 code units at `Data` (only read when
+    // `Size > 0`, so `Data` is non-null).
+    let units: &[u16] = unsafe {
+        let queue = &(*nexus::imgui::sys::igGetIO()).InputQueueCharacters;
+        match usize::try_from(queue.Size) {
+            Ok(size) if size > 0 && !queue.Data.is_null() => {
+                std::slice::from_raw_parts(queue.Data, size)
+            }
+            _ => &[],
+        }
+    };
+    String::from_utf16_lossy(units)
+}
+
 /// The width of `text` in the current font, exactly as ImGui draws it.
 /// `Ui::calc_text_size` rounds every result up to a whole pixel, which adds
 /// up when characters are measured one by one and moves the cursor away
@@ -198,7 +221,7 @@ impl TextEditor {
 
         if self.focused {
             // Read the typed characters before the sink consumes them.
-            let typed = ui.io().peek_input_characters();
+            let typed = typed_characters();
             self.draw_keyboard_sink(ui);
             self.handle_keyboard(ui, &typed, &mut response);
         } else {

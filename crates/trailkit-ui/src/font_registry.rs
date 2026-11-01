@@ -103,6 +103,25 @@ pub unsafe fn font_size_of(font: *const sys::ImFont) -> Option<f32> {
     unsafe { font.as_ref() }.map(|font| font.FontSize)
 }
 
+/// Uses `font` for `role` without Nexus: for the headless test harness
+/// (`trailkit-ui-testing`, memo plan M65) or any host that builds its own
+/// font atlas. A null pointer makes [`FontScope`] fall back to the current
+/// font.
+///
+/// # Safety
+///
+/// `font` must be null or point to an `ImFont` of the current ImGui context's
+/// atlas, and stay valid until it is replaced (or the context is destroyed
+/// after the last frame that used it).
+pub unsafe fn install_font(role: FontRole, font: *mut sys::ImFont) {
+    if let Some(index) = FontRole::ALL
+        .iter()
+        .position(|candidate| *candidate == role)
+    {
+        FONT_POINTERS[index].store(font, Ordering::Release);
+    }
+}
+
 /// Stores the font pointer Nexus delivered for `identifier`.
 fn store_font(identifier: &str, font: Option<&mut sys::ImFont>) {
     let Some(index) = FontRole::ALL

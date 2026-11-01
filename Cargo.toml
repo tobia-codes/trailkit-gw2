@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["addons/trailkit-memo", "crates/trailkit-storage", "crates/trailkit-ui", "tools/trailkit-datagen", "xtask"]
+members = ["addons/trailkit-memo", "crates/trailkit-storage", "crates/trailkit-ui", "crates/trailkit-ui-testing", "tools/trailkit-datagen", "xtask"]
 
 [workspace.package]
 edition = "2024"
@@ -13,6 +13,7 @@ authors = ["tobia-codes"]
 # Pinned to a fixed commit (ROADMAP R31); re-verify the nexus-addon-dev skill §1 when bumping.
 trailkit-ui = { path = "crates/trailkit-ui" }
 trailkit-storage = { path = "crates/trailkit-storage" }
+trailkit-ui-testing = { path = "crates/trailkit-ui-testing" }
 nexus = { git = "https://github.com/zerthox/nexus-rs", rev = "51bff5ab38ad11332316448b452ece1b773018cd", features = ["log"] }
 log = "0.4"
 anyhow = "1"

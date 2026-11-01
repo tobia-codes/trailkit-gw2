@@ -12,6 +12,8 @@
 //!   conventions in AGENTS.md (ROADMAP R46).
 //! - `sync-versions [--check]` — copy each addon's `package.json` version
 //!   (owned by Changesets) into its `Cargo.toml` (ROADMAP R16/R17).
+//! - `ui-test [--update]` — build the Windows UI tests and run them (from WSL
+//!   through interop); `--update` rewrites the snapshot references (M65).
 
 mod build_icons;
 mod check_branch;
@@ -19,6 +21,7 @@ mod check_names;
 mod deploy;
 mod install_hooks;
 mod sync_versions;
+mod ui_test;
 mod workspace;
 
 use anyhow::{Result, bail};
@@ -34,6 +37,7 @@ commands:
   install-hooks                enable the git hooks in .githooks/
   check-names                  verify file/directory names against the naming conventions
   sync-versions [--check]      copy package.json versions into Cargo.toml (--check: only verify)
+  ui-test [--update]           build and run the Windows UI tests (--update: rewrite snapshots)
   help                         show this text";
 
 /// Entry point: parses the command line and dispatches to a command.
@@ -62,6 +66,8 @@ fn main() -> Result<()> {
         ["install-hooks"] => install_hooks::run(),
         ["sync-versions"] => sync_versions::run(sync_versions::Mode::Write),
         ["sync-versions", "--check"] => sync_versions::run(sync_versions::Mode::Check),
+        ["ui-test"] => ui_test::run(ui_test::Mode::Compare),
+        ["ui-test", "--update"] => ui_test::run(ui_test::Mode::Update),
         [] | ["help" | "--help" | "-h"] => {
             println!("{USAGE}");
             Ok(())

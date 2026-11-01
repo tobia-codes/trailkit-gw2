@@ -41,5 +41,8 @@ fn render(ui: &nexus::imgui::Ui) {
 ## Test
 
 ```sh
-cargo test -p trailkit-ui   # includes the 4.5:1 text contrast check for every theme
+cargo test -p trailkit-ui   # logic tests, incl. the 4.5:1 text contrast check for every theme
+cargo xtask ui-test         # ImGui tests (Windows binaries via WSL): editor snapshots and input
 ```
+
+Snapshot references live in `tests/snapshots/`; see `crates/trailkit-ui-testing`.
