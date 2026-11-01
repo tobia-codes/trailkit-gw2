@@ -109,3 +109,4 @@ references with autocompletion and status.
 | M44 | Inline rename via double-click or context menu: Enter or clicking elsewhere commits, Escape cancels, an empty title restores the old one | 2026-11-01 |
 | M45 | Tree icons: none for groups (expand arrow) and normal notes; reset notes get a letter badge in a fixed leading column (empty for normal notes, so titles stay aligned): en **D**/**W**, de **T**/**W**, rounded box in Lucide style with accent color, drawn with ImGui; tooltip names the kind and reset time | 2026-11-01 |
 | M46 | The reset badge counts as an icon: Lucide style with round corners, although panels and buttons keep the theme's radius 0 | 2026-11-01 |
+| M47 | Amends M45: the badge column of a note row sits in the slot of the expand arrow (notes never have one), so note and group titles on one level align and the tree is not indented twice; tree rows are one frame tall; rename follows `lay-inline-edit` | 2026-11-01 |

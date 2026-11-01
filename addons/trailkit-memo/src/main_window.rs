@@ -547,10 +547,8 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut TreeContext<'_>) {
         flags |= TreeNodeFlags::SELECTED;
     }
 
-    // ImGui puts the title of a tree node after the arrow: font size plus
-    // twice the horizontal frame padding.
     let row_start = ui.cursor_screen_pos();
-    let title_offset = ui.current_font_size() + 2.0 * context.frame_padding[0];
+    let title_offset = title_offset(ui, context);
     let row_width = ui.content_region_avail()[0] - title_offset;
     let label = if is_renaming {
         Cow::Borrowed("")
@@ -571,14 +569,21 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut TreeContext<'_>) {
     }
     if is_renaming {
         ui.same_line_with_spacing(0.0, 0.0);
-        draw_rename_input(ui, row_start[0] + title_offset, context);
+        draw_rename_input(ui, row_start, row_start[0] + title_offset, context);
     }
     if let Some(_token) = token {
         draw_nodes(ui, &group.children, context);
     }
 }
 
-/// Draws one note row: badge column (M45) and title.
+/// Horizontal offset of a row title from the row start. ImGui puts the title
+/// of a tree node after the arrow (font size plus twice the horizontal frame
+/// padding); note titles use the same offset, so titles on one level align.
+fn title_offset(ui: &Ui, context: &TreeContext<'_>) -> f32 {
+    ui.current_font_size() + 2.0 * context.frame_padding[0]
+}
+
+/// Draws one note row: the badge in the arrow slot (M45) and the title.
 fn draw_note_row(ui: &Ui, note: &Note, context: &mut TreeContext<'_>) {
     let _id = ui.push_id(note.id.imgui_id());
     let node = NodeId::Note(note.id);
@@ -600,11 +605,14 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut TreeContext<'_>) {
         .as_ref()
         .is_some_and(|rename| rename.node == node);
 
+    // Notes never have an arrow, so the badge column sits in its slot.
+    let arrow_center_x = row_start[0] + context.frame_padding[0] + ui.current_font_size() / 2.0;
+    draw_badge(ui, note.kind, [arrow_center_x, row_start[1]], context);
+    let title_x = row_start[0] + title_offset(ui, context);
     ui.same_line_with_spacing(0.0, 0.0);
-    draw_badge(ui, note.kind, context.language, context.theme);
-    ui.same_line_with_spacing(0.0, 0.0);
+    ui.set_cursor_screen_pos([title_x, row_start[1]]);
     if is_renaming {
-        draw_rename_input(ui, ui.cursor_screen_pos()[0], context);
+        draw_rename_input(ui, row_start, title_x, context);
         return;
     }
     let row_end = ui.window_content_region_max()[0] + ui.window_pos()[0];
@@ -667,19 +675,37 @@ fn draw_context_menu(ui: &Ui, node: NodeId, context: &mut TreeContext<'_>) {
 
 /// Draws the inline rename input and records commit or cancel (M44).
 ///
-/// The input is exactly as tall as a row and starts so that its text sits at
-/// `title_x`, where the title was drawn before renaming.
-fn draw_rename_input(ui: &Ui, title_x: f32, context: &mut TreeContext<'_>) {
+/// Inline editing in lists (`lay-inline-edit`): the input has no background
+/// of its own, so the row keeps one uniform color; a focus border frames the
+/// whole row starting at `row_start`. The input text sits at `title_x`, where
+/// the title was drawn before renaming.
+fn draw_rename_input(ui: &Ui, row_start: [f32; 2], title_x: f32, context: &mut TreeContext<'_>) {
     let Some(rename) = context.rename.as_mut() else {
         return;
     };
-    let padding_x = context.theme.spacing.extra_small;
+    let theme = context.theme;
+    let row_end = ui.window_content_region_max()[0] + ui.window_pos()[0];
+    ui.get_window_draw_list()
+        .add_rect(
+            row_start,
+            [row_end, row_start[1] + ui.frame_height()],
+            theme.border.focus.to_array(),
+        )
+        .thickness(theme.border.width.max(1.0))
+        .build();
+
+    let padding_x = theme.spacing.extra_small;
     let _padding = ui.push_style_var(StyleVar::FramePadding([
         padding_x,
         context.frame_padding[1],
     ]));
-    let row_top = ui.cursor_screen_pos()[1];
-    ui.set_cursor_screen_pos([title_x - padding_x, row_top]);
+    let transparent = [0.0; 4];
+    let _background = [
+        ui.push_style_color(StyleColor::FrameBg, transparent),
+        ui.push_style_color(StyleColor::FrameBgHovered, transparent),
+        ui.push_style_color(StyleColor::FrameBgActive, transparent),
+    ];
+    ui.set_cursor_screen_pos([title_x - padding_x, row_start[1]]);
     if !rename.focused {
         ui.set_keyboard_focus_here();
         rename.focused = true;
@@ -702,18 +728,18 @@ fn draw_rename_input(ui: &Ui, title_x: f32, context: &mut TreeContext<'_>) {
     }
 }
 
-/// Draws the reset badge column of a note row (M45): an outlined rounded box
-/// with a letter for reset notes, empty space for normal notes.
-fn draw_badge(ui: &Ui, kind: NoteKind, language: Language, theme: &Theme) {
+/// Draws the reset badge of a note row (M45): an outlined rounded box with a
+/// letter for reset notes, nothing for normal notes. The badge is centered
+/// horizontally on `anchor[0]` and vertically in the row starting at
+/// `anchor[1]` (one frame tall).
+fn draw_badge(ui: &Ui, kind: NoteKind, anchor: [f32; 2], context: &TreeContext<'_>) {
+    let (language, theme) = (context.language, context.theme);
     let line_height = ui.text_line_height();
     let padding = theme.spacing.extra_small;
     let width = ui.calc_text_size("W")[0] + 2.0 * padding;
-    let cursor = ui.cursor_screen_pos();
-    ui.dummy([width + padding, line_height]);
-    // Vertically centered in the row, which is one frame tall.
     let start = [
-        cursor[0],
-        cursor[1] + ((ui.frame_height() - line_height) / 2.0).max(0.0),
+        anchor[0] - width / 2.0,
+        anchor[1] + ((ui.frame_height() - line_height) / 2.0).max(0.0),
     ];
 
     let (letter, tooltip) = match kind {

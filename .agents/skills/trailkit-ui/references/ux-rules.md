@@ -147,6 +147,12 @@ Each rule has an id (`area-name`) so reviews can cite it.
   narrow instead of running past the window or screen edge; panels shrink or
   stack. Nothing may require horizontal scrolling or be clipped by the window
   border.
+- `lay-inline-edit` — Inline editing in a list (e.g. renaming a row) keeps
+  the row one uniform color: the input has no background of its own
+  (transparent frame), a 1 px `border.focus` frame surrounds the whole row
+  from edge to edge, and the input text sits exactly where the static text
+  was, so nothing jumps. Rows are one frame tall, so the input fits without
+  changing the row height.
 - `lay-truncation` — Text that belongs on one line (a note or group in the
   note list, a list row, a tab or column label) does not wrap: it is
   shortened with an ellipsis ("…") to the available width and shows the full
