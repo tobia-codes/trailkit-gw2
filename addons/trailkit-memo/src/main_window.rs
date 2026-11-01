@@ -94,6 +94,8 @@ enum WindowAction {
     CancelEditing,
     /// Apply a formatting button to the editor (M53).
     Format(FormatCommand),
+    /// Show or hide the editor preview (M60).
+    TogglePreview,
     /// Continue editing a note from its draft (M54).
     RestoreDraft(NoteId),
     /// Delete a note's draft (M54).
@@ -137,6 +139,9 @@ struct Editor {
     /// The word-wrapping body editor; its text is mirrored into
     /// `session.body` on every change.
     body: TextEditor,
+    /// The parsed preview of the body (M60); `None` when it must be parsed
+    /// again because the text changed.
+    preview: Option<MarkdownDocument>,
     /// Whether the title input was active in the last frame.
     title_was_active: bool,
 }
@@ -148,6 +153,7 @@ impl Editor {
         Self {
             session,
             body,
+            preview: None,
             title_was_active: false,
         }
     }
@@ -158,8 +164,14 @@ impl Editor {
         self.body
             .apply_edit(edit.range, &edit.replacement, edit.selection);
         self.body.focus();
+        self.sync_body();
+    }
+
+    /// Copies the editor text into the session and marks the preview stale.
+    fn sync_body(&mut self) {
         self.session.body.clear();
         self.session.body.push_str(self.body.text());
+        self.preview = None;
     }
 }
 
@@ -626,7 +638,13 @@ impl MemoWindow {
     /// Draws the editor (M51–M53): formatting toolbar, title input and the
     /// markdown body input filling the rest of the pane.
     fn draw_editor(&mut self, ui: &Ui, language: Language, theme: &Theme) {
-        draw_format_toolbar(ui, language, theme, &mut self.actions);
+        draw_format_toolbar(
+            ui,
+            language,
+            theme,
+            self.ui_state.preview_visible,
+            &mut self.actions,
+        );
         draw_separator(ui, theme);
         // While the unsaved changes dialog is shown, typing must not change
         // what the dialog asks about.
@@ -665,13 +683,44 @@ impl MemoWindow {
                 editor.format(FormatCommand::Italic);
             }
         }
-        let response = editor.body.draw(ui, theme, "##body", [0.0, 0.0]);
-        if response.changed {
-            editor.session.body.clear();
-            editor.session.body.push_str(editor.body.text());
+        // Preview (M60): side by side when two panes fit, otherwise the
+        // button switches between editor and preview.
+        let available = ui.content_region_avail()[0];
+        let pane_minimum =
+            ui.calc_text_size("n")[0] * MINIMUM_PANE_CHARACTERS + 2.0 * theme.pane.padding;
+        let gap = theme.pane.gap;
+        let side_by_side = available >= 2.0 * pane_minimum + gap;
+        let shows_editor = !self.ui_state.preview_visible || side_by_side;
+        if shows_editor {
+            let width = if self.ui_state.preview_visible {
+                (available - gap) / 2.0
+            } else {
+                0.0
+            };
+            let response = editor.body.draw(ui, theme, "##body", [width, 0.0]);
+            if response.changed {
+                editor.sync_body();
+            }
+            if response.submitted {
+                self.actions.push(WindowAction::FinishEditing);
+            }
+        } else {
+            editor.body.unfocus();
         }
-        if response.submitted {
-            self.actions.push(WindowAction::FinishEditing);
+        if self.ui_state.preview_visible {
+            if shows_editor {
+                ui.same_line_with_spacing(0.0, gap);
+            }
+            let preview = editor
+                .preview
+                .get_or_insert_with(|| markdown::parse(&editor.session.body));
+            let actions = &mut self.actions;
+            draw_pane(ui, theme, "preview", [0.0, 0.0], || {
+                // The preview is read-only: links open, checkboxes do not toggle.
+                if let Some(MarkdownAction::OpenLink(url)) = draw_markdown(ui, preview, theme) {
+                    actions.push(WindowAction::Markdown(MarkdownAction::OpenLink(url)));
+                }
+            });
         }
     }
 
@@ -862,6 +911,10 @@ impl MemoWindow {
                 if let Some(editor) = self.editor.as_mut() {
                     editor.format(*command);
                 }
+            }
+            WindowAction::TogglePreview => {
+                self.ui_state.preview_visible = !self.ui_state.preview_visible;
+                self.saver.save_ui_state(self.ui_state);
             }
             WindowAction::RestoreDraft(id) => {
                 if self.editor.is_none()
@@ -1064,6 +1117,7 @@ fn draw_format_toolbar(
     ui: &Ui,
     language: Language,
     theme: &Theme,
+    preview_visible: bool,
     actions: &mut Vec<WindowAction>,
 ) {
     let buttons = [
@@ -1115,6 +1169,29 @@ fn draw_format_toolbar(
         {
             actions.push(WindowAction::Format(command));
         }
+    }
+
+    // The preview toggle sits apart from the formatting buttons; its icon is
+    // drawn in the accent color while the preview is visible.
+    let width = {
+        let _icons = FontScope::push(ui, FontRole::Icons);
+        let mut buffer = [0; 4];
+        button_width(ui, Icon::EYE.as_str(&mut buffer))
+    };
+    ui.same_line_with_spacing(0.0, theme.spacing.extra_large);
+    if ui.cursor_screen_pos()[0] + width > right_edge {
+        ui.new_line();
+    }
+    let (tooltip, _selected) = if preview_visible {
+        (
+            Text::HidePreview,
+            Some(ui.push_style_color(StyleColor::Text, theme.accent.base.to_array())),
+        )
+    } else {
+        (Text::ShowPreview, None)
+    };
+    if draw_icon_button(ui, theme, Icon::EYE, tooltip.get(language)) {
+        actions.push(WindowAction::TogglePreview);
     }
 }
 

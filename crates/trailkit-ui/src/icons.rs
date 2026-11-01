@@ -41,9 +41,11 @@ impl Icon {
     pub const LINK: Self = Self('\u{e102}');
     /// `calendar-clock`: insert an event reference.
     pub const CALENDAR_CLOCK: Self = Self('\u{e304}');
+    /// `eye`: show or hide the preview (M60).
+    pub const EYE: Self = Self('\u{e0ba}');
 
     /// Every icon above; keep in sync when adding one.
-    pub const ALL: [Self; 15] = [
+    pub const ALL: [Self; 16] = [
         Self::FILE_PLUS,
         Self::FOLDER_PLUS,
         Self::MENU,
@@ -59,6 +61,7 @@ impl Icon {
         Self::LIST_TODO,
         Self::LINK,
         Self::CALENDAR_CLOCK,
+        Self::EYE,
     ];
 
     /// The glyph as a character of the icon font.

@@ -27,16 +27,20 @@ pub struct UiState {
     pub note_scroll: f32,
     /// Whether the user hid the note list column of the two-pane layout (M48).
     pub note_list_hidden: bool,
+    /// Whether the editor shows the markdown preview (M60).
+    pub preview_visible: bool,
 }
 
 impl Default for UiState {
-    /// Nothing selected, default splitter, top of the note, note list shown.
+    /// Nothing selected, default splitter, top of the note, note list shown,
+    /// no preview.
     fn default() -> Self {
         Self {
             selected: None,
             splitter_fraction: DEFAULT_SPLITTER_FRACTION,
             note_scroll: 0.0,
             note_list_hidden: false,
+            preview_visible: false,
         }
     }
 }

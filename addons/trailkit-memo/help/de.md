@@ -28,11 +28,11 @@ Lange Namen werden mit „…“ gekürzt — fahre mit der Maus darüber, um de
 
 Klicke auf den **Stift** oben rechts in einer Notiz oder doppelklicke die Notiz. Du bearbeitest Titel und Text in Markdown; die Buttons über dem Text fügen Überschriften, **Fett**, *Kursiv*, Aufzählungen, Checkboxen und Links ein (auch **Strg+B** und **Strg+I**). Der Event-Button benötigt trailkit-core.
 
+- Der **Augen**-Button zeigt eine Vorschau der formatierten Notiz neben dem Text (im schmalen Fenster wechselt er zwischen Text und Vorschau). memo merkt sich, ob sie an ist.
 - **Fertig** (oder **Strg+Enter**) übernimmt deine Änderungen, **Abbrechen** verwirft sie — memo fragt vorher nach, wenn du etwas geändert hast.
 - Wählst du eine andere Notiz, legst eine neue an oder schließt das Fenster, während Änderungen offen sind, fragt memo, ob sie übernommen oder verworfen werden sollen. (Mit `"unsaved_changes": "save_automatically"` in `settings.json` wird ohne Nachfrage übernommen; ein Schalter folgt im Einstellungsfenster.)
 - **Escape** schließt das Fenster; bei ungespeicherten Änderungen fragt memo vorher nach.
 - Wird das Spiel oder das Addon beim Bearbeiten beendet, bleiben deine Änderungen als Entwurf erhalten. Beim nächsten Öffnen der Notiz wählst du **Wiederherstellen** zum Weitermachen oder **Verwerfen**. Entwürfe werden nach 30 Tagen automatisch gelöscht.
-- Lange Zeilen werden beim Bearbeiten nicht umgebrochen (seitlich scrollen); die normale Ansicht bricht sie um.
 
 ## Wo deine Notizen gespeichert werden
 

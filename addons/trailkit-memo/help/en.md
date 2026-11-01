@@ -28,11 +28,11 @@ Long names are shortened with "…" — hover them to see the full name.
 
 Click the **pencil** at the top right of a note, or double-click the note. You edit the title and the text in markdown; the buttons above the text insert headings, **bold**, *italic*, lists, checkboxes and links (also **Ctrl+B** and **Ctrl+I**). The event button needs trailkit-core.
 
+- The **eye** button shows a preview of the formatted note next to the text (in a narrow window it switches between text and preview). memo remembers whether it is on.
 - **Done** (or **Ctrl+Enter**) saves your changes, **Cancel** throws them away — memo asks first if you changed something.
 - If you choose another note, create one or close the window while you have unsaved changes, memo asks whether to save or discard them. (Set `"unsaved_changes": "save_automatically"` in `settings.json` to save without asking; a switch follows in the settings window.)
 - **Escape** closes the window; with unsaved changes memo asks first.
 - If the game or the addon closes while you are editing, your changes are kept as a draft. Next time you open the note, choose **Restore** to continue or **Discard** to drop them. Drafts are deleted automatically after 30 days.
-- Long lines do not wrap while editing (scroll sideways); the normal view wraps them.
 
 ## Where your notes are stored
 

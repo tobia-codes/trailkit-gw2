@@ -158,8 +158,8 @@ Each rule has an id (`area-name`) so reviews can cite it.
   button rows, chips, filters) wrap onto the next line when the window is too
   narrow instead of running past the window or screen edge; panels shrink or
   stack. Nothing may require horizontal scrolling or be clipped by the window
-  border. *Known exception:* ImGui 1.80 multiline text inputs cannot wrap
-  lines, so editors scroll sideways for long lines (memo M53, BACKLOG BL8).
+  border. ImGui 1.80 multiline inputs cannot wrap lines: multi-line text is
+  edited with `trailkit_ui::editor::view::TextEditor` (memo M58), which wraps.
 - `lay-drawer` — A list that does not fit next to its content (narrow
   window, or a column the user hid) opens as a drawer from the left **over**
   the content: a pane on `bg.panel`, the content behind it dimmed with

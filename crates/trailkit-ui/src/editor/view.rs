@@ -105,8 +105,6 @@ pub struct TextEditor {
     sink: String,
     /// Whether the keyboard sink was active in the last frame.
     sink_was_active: bool,
-    /// TEMPORARY diagnostics: last logged focus state.
-    logged_focus: bool,
 }
 
 /// Empties the keyboard sink every frame, so its text never grows.
@@ -134,7 +132,6 @@ impl TextEditor {
             scroll_to_cursor: true,
             sink: String::new(),
             sink_was_active: false,
-            logged_focus: false,
         }
     }
 
@@ -196,18 +193,9 @@ impl TextEditor {
             return response;
         };
 
-        if self.focused != self.logged_focus {
-            // TEMPORARY diagnostics for the keyboard routing (remove before merge).
-            log::info!("editor focused: {}", self.focused);
-            self.logged_focus = self.focused;
-        }
         if self.focused {
             // Read the typed characters before the sink consumes them.
             let typed = ui.io().peek_input_characters();
-            if !typed.is_empty() {
-                // TEMPORARY diagnostics for the keyboard routing (remove before merge).
-                log::info!("editor received {} characters", typed.chars().count());
-            }
             self.draw_keyboard_sink(ui);
             self.handle_keyboard(ui, &typed, &mut response);
         } else {
@@ -278,14 +266,6 @@ impl TextEditor {
             .callback(InputTextMultilineCallback::ALWAYS, ClearSink)
             .build();
         let sink_active = ui.is_item_active();
-        if sink_active != self.sink_was_active {
-            // TEMPORARY diagnostics for the keyboard routing (remove before merge).
-            log::info!(
-                "editor sink active: {sink_active}, want_text_input: {}, want_capture_keyboard: {}",
-                ui.io().want_text_input,
-                ui.io().want_capture_keyboard
-            );
-        }
         self.sink_was_active = sink_active;
         self.sink.clear();
         ui.set_cursor_pos(start);

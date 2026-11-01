@@ -129,6 +129,10 @@ pub enum Text {
     DraftNoteChangedSince,
     /// Restore a draft into the editor (M54).
     RestoreDraft,
+    /// Tooltip of the preview button while the preview is hidden (M60).
+    ShowPreview,
+    /// Tooltip of the preview button while the preview is shown (M60).
+    HidePreview,
     /// Shown instead of an empty note's content.
     EmptyNote,
     /// Shown in the note pane when no note is selected.
@@ -145,7 +149,7 @@ pub enum Text {
 
 impl Text {
     /// Every string, for registering their characters with Nexus' font atlas.
-    pub const ALL: [Self; 41] = [
+    pub const ALL: [Self; 43] = [
         Self::MainWindowTitle,
         Self::KeybindToggle,
         Self::QuickAccessTooltip,
@@ -181,6 +185,8 @@ impl Text {
         Self::DraftFound,
         Self::DraftNoteChangedSince,
         Self::RestoreDraft,
+        Self::ShowPreview,
+        Self::HidePreview,
         Self::EmptyNote,
         Self::SelectNote,
         Self::DailyBadge,
@@ -293,6 +299,10 @@ impl Text {
             (Self::DraftNoteChangedSince, Language::German) => "Die Notiz wurde seitdem geändert.",
             (Self::RestoreDraft, Language::English) => "Restore",
             (Self::RestoreDraft, Language::German) => "Wiederherstellen",
+            (Self::ShowPreview, Language::English) => "Show preview",
+            (Self::ShowPreview, Language::German) => "Vorschau einblenden",
+            (Self::HidePreview, Language::English) => "Hide preview",
+            (Self::HidePreview, Language::German) => "Vorschau ausblenden",
             (Self::EmptyNote, Language::English) => "This note is empty.",
             (Self::EmptyNote, Language::German) => "Diese Notiz ist leer.",
             (Self::SelectNote, Language::English) => "Select a note in the list.",
