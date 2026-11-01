@@ -10,10 +10,11 @@ Last updated: 2026-11-01 (end of session 5).
   M58–M64) are merged into `develop` and tested in game by the user.
   Decisions M16–M65 in `docs/plans/addons/trailkit-memo.md`.
 - Order from here (M28 as amended by M58, M62, M65):
-  **visual & interaction tests (M65)** → font subsetting (M62) →
+  ~~visual & interaction tests (M65)~~ (done, PR #21) → font subsetting (M62) →
   3c chat-link chips (M61, own name lookup, no Decoder Ring) → reset kinds
   (M13) → drag & drop → search → trash & undo → settings window → export/import
-  → backups → help page.
+  → backups → help page → **release preparation** (full test, screenshots
+  M67, docs).
 - Session 5 also: Open Sans replaces Noto Sans (M62), panes with padding
   (`lay-pane-padding`), drawer + menu button (M48), titles flush left with
   right-aligned badges (M49), bold groups with note count (M50), in-window
