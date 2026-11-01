@@ -70,7 +70,14 @@ pub fn draw_markdown(
     let mut action = None;
     for (index, block) in document.blocks.iter().enumerate() {
         let _id = ui.push_id(i32::try_from(index).unwrap_or(i32::MAX));
-        if index > 0 {
+        // Items of one list stand close together; every other block boundary
+        // gets the paragraph gap (memo plan M66).
+        let continues_list = matches!(block, Block::ListItem { .. })
+            && index
+                .checked_sub(1)
+                .and_then(|previous| document.blocks.get(previous))
+                .is_some_and(|previous| matches!(previous, Block::ListItem { .. }));
+        if index > 0 && !continues_list {
             ui.dummy([0.0, theme.spacing.small]);
         }
         let clicked = match block {
