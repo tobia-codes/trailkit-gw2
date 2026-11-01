@@ -115,6 +115,9 @@ move it into `crates/trailkit-ui` (see AGENTS.md "Code sharing").
   section headers.
 - Every window remembers position/size; Escape closes (register via
   `GUI_RegisterCloseOnEscape`).
+- Text buttons: always `button::draw_button` / `draw_primary_button`, never
+  `ui.button` with a text label (Open Sans sits low in ImGui's centering,
+  memo M85).
 - Tooltips: plain ImGui tooltips; `StyleScope` moves them right of the real
   cursor (GW2's cursor is large, memo M84) — never position them by hand.
 - Overlays inside a window (scrims): ImGui renders a child window's

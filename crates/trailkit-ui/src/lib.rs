@@ -33,6 +33,8 @@ pub mod cursor_extent;
 #[cfg(windows)]
 pub mod font_registry;
 #[cfg(windows)]
+pub mod glyph_metrics;
+#[cfg(windows)]
 pub mod markdown_view;
 #[cfg(windows)]
 pub mod pane;

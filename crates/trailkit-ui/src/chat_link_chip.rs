@@ -10,6 +10,7 @@ use crate::{
     color::Color,
     font_registry::FontScope,
     fonts::FontRole,
+    glyph_metrics::glyph_bounds,
     icons::Icon,
     theme::Theme,
 };
@@ -31,22 +32,6 @@ struct IconMetrics {
     scale: f32,
     /// Distance from the line top to the top of the drawn icon.
     offset: f32,
-}
-
-/// The vertical bounds `(top, bottom)` of `character` in the current font at
-/// the current size, measured from the line top; `None` if unknown.
-fn glyph_bounds(character: char) -> Option<(f32, f32)> {
-    let character = u16::try_from(u32::from(character)).ok()?;
-    // SAFETY: called on the render thread inside a frame, so the current
-    // font is valid; `ImFont_FindGlyph` only reads it and returns a pointer
-    // into the font (the fallback glyph if the character is missing), or
-    // null.
-    unsafe {
-        let font = nexus::imgui::sys::igGetFont();
-        let glyph = nexus::imgui::sys::ImFont_FindGlyph(font, character).as_ref()?;
-        let scale = nexus::imgui::sys::igGetFontSize() / (*font).FontSize;
-        Some((glyph.Y0 * scale, glyph.Y1 * scale))
-    }
 }
 
 /// Measures the icon size and offset for the current text font. Lucide draws

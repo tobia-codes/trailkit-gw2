@@ -24,7 +24,7 @@ Latin up to Extended-B plus punctuation, the icon font only the icons in
 | `fonts` | shared font roles (body, bold, italic, headings, icons), embedded Open Sans + Lucide | any |
 | `icons` | Lucide icon glyphs used by trailkit (add new ones here) | any |
 | `markdown` | markdown → blocks and styled spans; task toggling; `http(s)`-only links | any |
-| `button` | `draw_primary_button` (accent, `lay-one-primary`), `button_width` | Windows |
+| `button` | `draw_button` (label centered by its capitals, M85), `draw_primary_button` (accent, `lay-one-primary`), `button_width` | Windows |
 | `pane` | `draw_pane` — a content region on `bg.panel` with `pane.padding` on every side (`lay-pane-padding`) | Windows |
 | `splitter` | `draw_vertical_splitter` — resizable gap between two panes (accent line on hover/drag) | Windows |
 | `separator` | `draw_separator` — horizontal line that ends at the window/pane padding | Windows |
@@ -34,6 +34,7 @@ Latin up to Extended-B plus punctuation, the icon font only the icons in
 | `chat_link` | finds and decodes GW2 chat codes (`[&…]`) | any |
 | `chat_link_chip` | draws a chat-link chip and its tooltip; texts come from the addon (`ChipContext`) | Windows |
 | `cursor_extent` | measures the mouse cursor (GW2 draws a large one) so `StyleScope` places tooltips right of it | Windows |
+| `glyph_metrics` | where glyphs really sit in a line (centering by capital letters) | Windows |
 
 ## Usage
 
