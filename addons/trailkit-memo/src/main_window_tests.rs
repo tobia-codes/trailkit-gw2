@@ -352,3 +352,25 @@ fn control_mouse_wheel_changes_the_text_scale_and_control_zero_resets_it() {
     harness.frame(&reset, |ui| draw(ui, &mut memo, size, ThemeKind::Dark));
     assert_eq!(memo.settings.text_scale, TextScale::DEFAULT);
 }
+
+#[test]
+fn note_title_stays_at_the_top_while_the_content_scrolls() {
+    let mut document = sample_document();
+    if let Some(Node::Note(first)) = document.root.first_mut() {
+        first.body = (1..=30)
+            .map(|line| format!("- Line {line}"))
+            .collect::<Vec<_>>()
+            .join("\n");
+    }
+    let ui_state = UiState {
+        note_scroll: 200.0,
+        ..selected_first(&document)
+    };
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    assert_window(
+        &mut memo,
+        [640.0, 300.0],
+        ThemeKind::Dark,
+        "memo-scrolled-note",
+    );
+}

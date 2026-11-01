@@ -18,9 +18,13 @@ use crate::{
 /// rounded, not a pill (memo plan M80).
 const ROUNDING_FACTOR: f32 = 0.75;
 
+/// Icon size relative to the text size (memo plan M81): at 100 % icons look
+/// taller than the capitals, at 80 % too small next to the letters.
+const ICON_SCALE: f32 = 0.9;
+
 /// Size and vertical position of chip icons in the current fonts: icons are
-/// drawn at the text size (smaller ones look too small next to letters) and
-/// centered on the capital letters (memo plan M80).
+/// drawn at [`ICON_SCALE`] of the text size and centered on the capital
+/// letters (memo plan M80, M81).
 #[derive(Debug, Clone, Copy)]
 struct IconMetrics {
     /// Factor from the icon font's own size to the drawn size.
@@ -57,7 +61,7 @@ fn icon_metrics(ui: &Ui) -> IconMetrics {
     };
     match (capital, square) {
         (Some((capital_top, capital_bottom)), Some((square_top, square_bottom))) => {
-            let scale = 1.0;
+            let scale = ICON_SCALE;
             let offset =
                 (capital_top + capital_bottom) / 2.0 - (square_top + square_bottom) / 2.0 * scale;
             IconMetrics { scale, offset }
