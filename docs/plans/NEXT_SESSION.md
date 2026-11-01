@@ -1,17 +1,19 @@
 # Next session — handoff
 
-Last updated: 2026-11-01 (session 6: drawer scrim fix PR #33, faster dev loop R70).
+Last updated: 2026-11-01 (end of session 6, after PR #50).
 
 ## Where we are
 
 - **Phase 0 + 0b complete.** Daily archive runs (sometimes hours late).
 - **Phase 1 (trailkit-memo standalone):** steps 1 (storage), 2 (tree & note
-  view), 3 (editing, M51–M57) and 3b (own word-wrapping editor with preview,
-  M58–M64) are merged into `develop` and tested in game by the user.
-  Decisions M16–M65 in `docs/plans/addons/trailkit-memo.md`.
+  view), 3 (editing, M51–M57), 3b (own word-wrapping editor with preview,
+  M58–M64) and **3c (chat-link chips, M75–M77)** are merged into `develop`
+  and tested in game by the user. Decisions M16–M85 in
+  `docs/plans/addons/trailkit-memo.md`.
 - Order from here (M28 as amended by M58, M62, M65):
   ~~visual & interaction tests (M65)~~ (done, PR #21) → ~~font subsetting
-  (M62)~~ (done, PR #25: release DLL 2.1 MB) → 3c chat-link chips (M61, own name lookup, no Decoder Ring) → reset kinds
+  (M62)~~ (done, PR #25: release DLL 2.1 MB) → ~~3c chat-link chips~~
+  (done, PRs #39–#47) → reset kinds
   (M13) → drag & drop → search → trash & undo → settings window → export/import
   → backups → help page → **release preparation** (full test, screenshots
   M67, docs).
@@ -21,12 +23,29 @@ Last updated: 2026-11-01 (session 6: drawer scrim fix PR #33, faster dev loop R7
   note list is visible (M71), roomier unsaved-changes dialog with a border,
   right-aligned primary and stacked buttons in narrow windows (M70).
   Snapshot tests are strict now (no differing pixels; CI renders identically).
-- Session 6 (PRs #33–#39): drawer scrim really dims (#33), editor and
-  preview always side by side (M72), narrower note list + earlier drawer
-  while previewing (M73), fixed note-list width (M74), faster dev loop
-  (R70: auto-merge, required checks on `develop`, docs-only PRs skip the
-  Windows job, pre-push lints the Windows target), chat-link chips (3c,
-  M75–M77; core C15/C16, BL10).
+- Session 6 (PRs #33–#50), all tested in game by the user:
+  - Layout: drawer scrim really dims (#33), editor and preview always side
+    by side (M72), narrower note list + earlier drawer while previewing
+    (M73), fixed note-list width (M74), note title stays at the top while
+    the content scrolls (M81).
+  - Dev loop (R70): auto-merge with required checks on `develop` (user set
+    branch protection + `allow_auto_merge`), docs-only PRs skip the
+    Windows job (verified, ~40 s), CI runs on push only for `main`,
+    pre-push also runs `cargo xwin clippy` for the Windows target.
+  - **3c chat-link chips** (M75–M77, M80–M82): `trailkit_ui::chat_link`
+    decodes every link type locally, `chat_link_chip` draws them (icon at
+    85 % of the text size, centered on the capitals; 3 px radius; slim);
+    click copies in view/preview, atomic in the editor; warning chip for
+    broken codes. Names later via core (C15); slash commands `/w`, `/e`
+    with core (M76); never touch the game chat (C16); "open in wiki" → BL10.
+  - Text: line height 1.5 × (token `font.line_height`, M78); whole memo
+    window uses the body font (list and note had different sizes); text
+    size setting `text_scale` (default 112.5 %, Ctrl+mouse wheel, Ctrl+0,
+    percentage tooltip, fonts rebuilt only after the wheel rests; M79/M80).
+  - Fixes: keyboard sink stays in view in scrolled editors (keys went to
+    the game in long notes, M83); tooltips start right of GW2's large
+    cursor (`cursor_extent`, M84); text-button labels centered by their
+    capitals (`draw_button`, M85).
 - Session 5 also: Open Sans replaces Noto Sans (M62), panes with padding
   (`lay-pane-padding`), drawer + menu button (M48), titles flush left with
   right-aligned badges (M49), bold groups with note count (M50), in-window
@@ -34,15 +53,35 @@ Last updated: 2026-11-01 (session 6: drawer scrim fix PR #33, faster dev loop R7
 
 ## ▶ Resume here
 
-1. **Test step 3c in game** (PR #39, chat-link chips M75/M77): paste codes
-   into a note, check chips in view, preview and editor, click-to-copy into
-   the game chat. Fix what the user finds.
-2. Then **grill reset kinds (M13)**.
+1. **Quick in-game check of the last fixes** (user had not seen them yet):
+   button labels centered (M85, "Done"/"Cancel" at 112.5 %). The user
+   confirmed: tooltips (M84), keyboard in long notes (M83), chips.
+2. Then **grill reset kinds (M13)** — next phase-1 step.
 3. UI tests: `cargo xtask ui-test [--update]`; look at the PNGs in
    `tests/snapshots/` (and `failures/`) before deploying UI changes.
 4. Token economy (user asked): keep tool output short (`| tail`/`grep`, also
    for `git push` — the pre-push hook prints all tests), look at snapshot
    PNGs only when they changed, avoid re-reading files.
+
+## Facts learned in session 6 (also in the skills)
+
+- The keyboard sink must stay **in view**: ImGui does not activate an
+  input scrolled out of its window, and Nexus then sends every key to the
+  game (M83, nexus-addon-dev skill).
+- Open Sans sits low in ImGui's line-box centering; center by the capitals
+  (`glyph_metrics::capital_middle`) — text buttons via `draw_button` (M85).
+  Lucide icons fill the whole line box: a 16 px "H" is 9 px tall, the icon
+  square 15 px.
+- `DrawListMut` is a singleton in imgui-rs: shared components draw through
+  the raw `ImDrawList_*` calls when a caller may hold one (dialog card).
+- Tooltip position = mouse + 24 px × `style.MouseCursorScale`; `StyleScope`
+  sets the scale from the measured cursor (`cursor_extent`).
+- Nexus font resizes (`resize_font`) flicker; debounce them (text size).
+- The test harness fonts are 16 px; in game the body is FontUI × 1.125
+  (18 px) — measure in-game screenshots when sizes matter
+  (`png_measure`-style pixel checks worked well).
+- Auto mode blocks: changing branch protection (user ran it) and
+  `git commit --amend` (use a follow-up commit).
 
 ## Nexus / ImGui facts learned in session 5 (also in the nexus-addon-dev skill)
 
