@@ -207,3 +207,22 @@ fn unsaved_changes_dialog() {
         "memo-unsaved-dialog",
     );
 }
+
+#[test]
+fn unsaved_changes_dialog_stacks_buttons_in_a_narrow_window() {
+    let document = sample_document();
+    let ui_state = selected_first(&document);
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    memo.apply(&WindowAction::StartEditing, Language::English);
+    let Some(editor) = memo.editor.as_mut() else {
+        panic!("editing did not start");
+    };
+    editor.session.title.push_str(" (changed)");
+    assert!(!memo.request_close(), "closing must ask first");
+    assert_window(
+        &mut memo,
+        [220.0, 420.0],
+        ThemeKind::Dark,
+        "memo-unsaved-dialog-narrow",
+    );
+}

@@ -1146,6 +1146,8 @@ fn draw_unsaved_changes_card(
         ui.text(title);
     }
     {
+        // Every new line starts at the window padding; move into the card.
+        ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
         let _wrap = ui.push_text_wrap_pos_with_pos(left - window_position[0] + content_width);
         ui.text_wrapped(question);
     }

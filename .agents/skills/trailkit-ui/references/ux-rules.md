@@ -52,6 +52,11 @@ Each rule has an id (`area-name`) so reviews can cite it.
   question or explanation, and one button row (see `lay-one-primary`).
   Escape and a click on the dimmed area choose the harmless answer (e.g.
   "Keep editing"), never one that saves or discards.
+  Card: `bg.panel`, 1 px `border` frame, `space.lg` padding, min ≈ 28
+  characters wide, max 90 % of the window, text wraps. Button row: the
+  destructive button on the left, the others right-aligned with the primary
+  button last (right); when the row does not fit, buttons stack full width,
+  primary first, destructive last.
 - `overlay-sleep` — Closed windows cost nothing: skip all work for hidden
   windows (no layout, no text formatting).
 - `overlay-click-through` — Purely informational overlays may offer a
