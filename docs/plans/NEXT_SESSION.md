@@ -21,6 +21,12 @@ Last updated: 2026-11-01 (session 6: drawer scrim fix PR #33, faster dev loop R7
   note list is visible (M71), roomier unsaved-changes dialog with a border,
   right-aligned primary and stacked buttons in narrow windows (M70).
   Snapshot tests are strict now (no differing pixels; CI renders identically).
+- Session 6 (PRs #33–#39): drawer scrim really dims (#33), editor and
+  preview always side by side (M72), narrower note list + earlier drawer
+  while previewing (M73), fixed note-list width (M74), faster dev loop
+  (R70: auto-merge, required checks on `develop`, docs-only PRs skip the
+  Windows job, pre-push lints the Windows target), chat-link chips (3c,
+  M75–M77; core C15/C16, BL10).
 - Session 5 also: Open Sans replaces Noto Sans (M62), panes with padding
   (`lay-pane-padding`), drawer + menu button (M48), titles flush left with
   right-aligned badges (M49), bold groups with note count (M50), in-window
@@ -28,15 +34,10 @@ Last updated: 2026-11-01 (session 6: drawer scrim fix PR #33, faster dev loop R7
 
 ## ▶ Resume here
 
-1. **Grill round for step 3c (chat-link chips, M61).** Key question: memo
-   works without trailkit-core in phase 1 (M1) and has no network access, but
-   names (waypoint, item, …) need data. Likely phase-1 scope: decode
-   `[&…]` locally (type + id), show a chip with type icon + label, click
-   copies the code, right-click "Open in wiki"?; names later via core / our
-   data pipeline (own lookup — the user does not want Decoder Ring).
-   Magpie Memo (PieOrCake, MIT) is a good reference for chips as atomic
-   editor cells (`src/ChipTextEdit.*`).
-2. Then reset kinds (M13).
+1. **Test step 3c in game** (PR #39, chat-link chips M75/M77): paste codes
+   into a note, check chips in view, preview and editor, click-to-copy into
+   the game chat. Fix what the user finds.
+2. Then **grill reset kinds (M13)**.
 3. UI tests: `cargo xtask ui-test [--update]`; look at the PNGs in
    `tests/snapshots/` (and `failures/`) before deploying UI changes.
 4. Token economy (user asked): keep tool output short (`| tail`/`grep`, also
