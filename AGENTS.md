@@ -18,14 +18,16 @@ Planning documents live in [`docs/plans/`](docs/plans/README.md).
 
 ## Hard rules
 
-1. **Never push without explicit approval.** Do not run `git push` (or any
-   command that publishes commits, tags or releases to a remote) unless the
-   user has approved that specific push in the current conversation. Approval
-   for one push does not carry over to the next. Commit only when asked —
-   *except* on local work branches (`feature/`, `chore/`, `bugfix/`,
-   `hotfix/`), where agents may commit logical steps on their own
-   (Conventional Commits). Merging into `develop`/`main` needs approval
-   (ROADMAP R29).
+1. **Pushing and merging.** Agents may push their work branches
+   (`feature/`, `chore/`, `bugfix/`, `hotfix/`), open PRs into `develop` and
+   merge them **on their own once every CI check of the PR is green**
+   (ROADMAP R69); a red or pending check means: fix or wait, never merge.
+   Everything else that publishes needs the user's explicit approval in the
+   current conversation, every time: merging into `main`, release PRs, tags,
+   GitHub releases, force pushes, and changes to branch protection or CI
+   workflows. Direct pushes to `develop`/`main` stay blocked by the pre-push
+   hook. Agents commit logical steps on work branches on their own
+   (Conventional Commits).
    **No AI attribution:** commit messages and PR descriptions carry no
    `Co-Authored-By` trailer for an AI and no "Generated with …" footer
    (ROADMAP R68).

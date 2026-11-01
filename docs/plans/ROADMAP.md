@@ -74,6 +74,7 @@
 | R66 | One date/time library everywhere: **`jiff`** (Temporal-like API, built-in time zone database, DST-correct arithmetic — needed later for memo reset times and event schedules in local time); 0.x risk accepted because versions are pinned and bumped deliberately | 2026-10-31 |
 | R67 | **`develop` is the GitHub default branch** (PRs target it automatically). Consequence: scheduled workflows (price archive, DPF reminder) run from `develop`, so datagen/workflow changes take effect when merged into `develop`; addon releases still go `develop` → `main` (R9) | 2026-10-31 |
 | R68 | **No AI attribution** in commits or PRs (no `Co-Authored-By` trailer, no "Generated with …" footer), so only `tobia-codes` appears as contributor. The existing history was rewritten once on 2026-10-31 (branch protection lifted for the force push of `main`/`develop`, then restored) | 2026-10-31 |
+| R69 | Agents push work branches and merge PRs into `develop` on their own once all CI checks of the PR are green (supersedes the approval requirement of R29 for `develop`); merging into `main`, releases, tags, force pushes and changes to branch protection or CI workflows still need explicit user approval each time (AGENTS.md rule 1) | 2026-11-01 |
 
 ## Proposed repository layout
 
