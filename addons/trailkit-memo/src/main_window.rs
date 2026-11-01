@@ -5,16 +5,16 @@
 //! reused list; they are applied after the tree has been drawn, then changed
 //! documents are handed to the storage worker.
 
-use std::{borrow::Cow, ops::Range, path::PathBuf, sync::Arc};
+use std::{borrow::Cow, path::PathBuf, sync::Arc};
 
 use jiff::{Timestamp, tz::TimeZone};
 use nexus::imgui::{
-    ChildWindow, Condition, InputTextCallbackHandler, InputTextMultilineCallback, Key, MenuItem,
-    MouseButton, MouseCursor, StyleColor, StyleVar, TextCallbackData, TreeNode, TreeNodeFlags, Ui,
-    Window, WindowFlags, WindowFocusedFlags,
+    ChildWindow, Condition, Key, MenuItem, MouseButton, MouseCursor, StyleColor, StyleVar,
+    TreeNode, TreeNodeFlags, Ui, Window, WindowFlags, WindowFocusedFlags,
 };
 use trailkit_ui::{
     button::{button_width, draw_primary_button},
+    editor::view::TextEditor,
     font_registry::FontScope,
     fonts::FontRole,
     icons::Icon,
@@ -28,7 +28,7 @@ use trailkit_ui::{
 use crate::{
     drafts::{Draft, DraftsDocument},
     i18n::{Language, Text},
-    note_editing::{EditSession, FormatCommand, TextEdit, format_edit},
+    note_editing::{EditSession, FormatCommand, format_edit},
     note_tree::{Group, GroupId, NodeId, Note, NoteId, NoteKind, NotesDocument, TreeNode as Node},
     settings::UnsavedChanges,
     storage_worker::StorageSaver,
@@ -129,23 +129,14 @@ enum LeaveReason {
     Cancel,
 }
 
-/// The editor of one note (M51–M53).
+/// The editor of one note (M51–M53, M58).
 #[derive(Debug)]
 struct Editor {
     /// Uncommitted title and body.
     session: EditSession,
-    /// Last known selection of the body input (byte range), kept while
-    /// toolbar buttons take the focus.
-    selection: Range<usize>,
-    /// A formatting command to apply in the next input callback.
-    pending_format: Option<FormatCommand>,
-    /// Whether the next callback should restore `selection` (after the
-    /// input got the focus back from a toolbar button).
-    restore_selection: bool,
-    /// Whether the body input should take the keyboard focus.
-    focus_body: bool,
-    /// Whether the body input was active in the last frame.
-    body_was_active: bool,
+    /// The word-wrapping body editor; its text is mirrored into
+    /// `session.body` on every change.
+    body: TextEditor,
     /// Whether the title input was active in the last frame.
     title_was_active: bool,
 }
@@ -153,62 +144,23 @@ struct Editor {
 impl Editor {
     /// Opens an editor for `session`, focused on the body.
     fn new(session: EditSession) -> Self {
+        let body = TextEditor::new(session.body.clone());
         Self {
             session,
-            selection: 0..0,
-            pending_format: None,
-            restore_selection: false,
-            focus_body: true,
-            body_was_active: false,
+            body,
             title_was_active: false,
         }
     }
-}
 
-/// Input callback of the body editor: applies pending formatting commands
-/// and remembers the selection (M53).
-struct BodyCallback<'state> {
-    /// Last known selection, updated every frame the input is active.
-    selection: &'state mut Range<usize>,
-    /// Formatting command to apply now.
-    pending: &'state mut Option<FormatCommand>,
-    /// Use `selection` instead of ImGui's (focus just came back).
-    restore_selection: &'state mut bool,
-}
-
-impl InputTextCallbackHandler for BodyCallback<'_> {
-    /// Runs every frame while the input is active.
-    fn on_always(&mut self, mut data: TextCallbackData) {
-        let selection = if std::mem::take(self.restore_selection) {
-            self.selection.clone()
-        } else {
-            let range = data.selection();
-            if range.start == range.end {
-                data.cursor_pos()..data.cursor_pos()
-            } else {
-                range.start.min(range.end)..range.start.max(range.end)
-            }
-        };
-        if let Some(command) = self.pending.take() {
-            let edit = format_edit(data.str(), selection, command);
-            apply_text_edit(&mut data, &edit);
-            *self.selection = edit.selection;
-        } else {
-            *self.selection = selection;
-        }
+    /// Applies a formatting command to the body at its selection (M53).
+    fn format(&mut self, command: FormatCommand) {
+        let edit = format_edit(self.body.text(), self.body.selection(), command);
+        self.body
+            .apply_edit(edit.range, &edit.replacement, edit.selection);
+        self.body.focus();
+        self.session.body.clear();
+        self.session.body.push_str(self.body.text());
     }
-}
-
-/// Applies `edit` to the text of an active ImGui input and moves its
-/// selection.
-fn apply_text_edit(data: &mut TextCallbackData, edit: &TextEdit) {
-    let removed_characters = data.str()[edit.range.clone()].chars().count();
-    data.remove_chars(edit.range.start, removed_characters);
-    data.insert_chars(edit.range.start, &edit.replacement);
-    let to_imgui = |position: usize| i32::try_from(position).unwrap_or(i32::MAX);
-    *data.selection_start_mut() = to_imgui(edit.selection.start);
-    *data.selection_end_mut() = to_imgui(edit.selection.end);
-    data.set_cursor_pos(edit.selection.end);
 }
 
 /// An inline rename in progress (M44).
@@ -703,38 +655,23 @@ impl MemoWindow {
             editor.session.title = title;
         }
 
-        if editor.body_was_active && ui.io().key_ctrl {
+        if is_dialog_open {
+            editor.body.unfocus();
+        }
+        if editor.body.is_focused() && ui.io().key_ctrl {
             if ui.is_key_index_pressed(VIRTUAL_KEY_B) {
-                editor.pending_format = Some(FormatCommand::Bold);
+                editor.format(FormatCommand::Bold);
             } else if ui.is_key_index_pressed(VIRTUAL_KEY_I) {
-                editor.pending_format = Some(FormatCommand::Italic);
+                editor.format(FormatCommand::Italic);
             }
         }
-        if std::mem::take(&mut editor.focus_body) {
-            ui.set_keyboard_focus_here();
+        let response = editor.body.draw(ui, theme, "##body", [0.0, 0.0]);
+        if response.changed {
+            editor.session.body.clear();
+            editor.session.body.push_str(editor.body.text());
         }
-        let body_backup =
-            (escape_pressed && editor.body_was_active).then(|| editor.session.body.clone());
-        let callback = BodyCallback {
-            selection: &mut editor.selection,
-            pending: &mut editor.pending_format,
-            restore_selection: &mut editor.restore_selection,
-        };
-        ui.input_text_multiline(
-            "##body",
-            &mut editor.session.body,
-            [-f32::MIN_POSITIVE, -f32::MIN_POSITIVE],
-        )
-        .read_only(is_dialog_open)
-        .callback(InputTextMultilineCallback::ALWAYS, callback)
-        .build();
-        editor.body_was_active = ui.is_item_active();
-        if ui.is_item_deactivated() {
-            if let Some(body) = body_backup {
-                editor.session.body = body;
-            } else if ui.io().key_ctrl && ui.is_key_pressed(Key::Enter) {
-                self.actions.push(WindowAction::FinishEditing);
-            }
+        if response.submitted {
+            self.actions.push(WindowAction::FinishEditing);
         }
     }
 
@@ -923,9 +860,7 @@ impl MemoWindow {
             }
             WindowAction::Format(command) => {
                 if let Some(editor) = self.editor.as_mut() {
-                    editor.pending_format = Some(*command);
-                    editor.focus_body = true;
-                    editor.restore_selection = true;
+                    editor.format(*command);
                 }
             }
             WindowAction::RestoreDraft(id) => {
