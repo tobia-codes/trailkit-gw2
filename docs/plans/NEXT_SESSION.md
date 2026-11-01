@@ -1,41 +1,83 @@
 # Next session — handoff
 
-Last updated: 2026-11-01 (session 4).
+Last updated: 2026-11-01 (end of session 4).
 
 ## Where we are
 
-- **Phase 0 (foundation) and phase 0b (daily archive) complete.** First
-  scheduled run on 2026-11-01: release `archive-2026-11`, all 4 data sets
-  `complete`. Repo public: <https://github.com/tobia-codes/trailkit-gw2>,
-  `develop` is the default branch (R67); work on `feature/`/`chore/`
-  branches → PR to `develop`; every push / merge needs explicit approval;
-  no AI attribution (R68).
-- **Phase 1 (trailkit-memo standalone) planned** — session 4 settled M16–M28
-  in `docs/plans/addons/trailkit-memo.md` (storage, data model, markdown
-  renderer in `trailkit-ui`, layout, drag & drop, character scope only with
-  core, phase-1 settings, implementation order) and the UX rule
-  `lay-responsive` (all addons: content adapts to the window, toolbars wrap,
-  single-line items truncate with "…" + tooltip).
-- Open PRs: #6 `chore/rustup-toolchain-install` (explicit toolchain install
-  in CI + archive workflow). The decisions of session 4 are on
-  `chore/phase-1-decisions`.
+- **Phase 0 + 0b complete.** First scheduled archive run 2026-11-01 OK
+  (release `archive-2026-11`, all 4 data sets `complete`) — but ~6 h late.
+- **Phase 1 (trailkit-memo standalone) in progress** — decisions M16–M46 in
+  `docs/plans/addons/trailkit-memo.md`, implementation order M28 (11 steps).
+  - **Step 1 (storage & data model): done**, PR #8 open
+    (`feature/memo-storage`): new crate `crates/trailkit-storage`, note tree
+    model, settings persistence, storage worker thread.
+  - **Step 2 (tree & note view): done, not pushed** — branch
+    `feature/memo-tree-view` (based on `feature/memo-storage`): shared fonts
+    (Noto Sans) + Lucide icons + markdown parser/view in `trailkit-ui`,
+    memo main window (two panes, tree, D/W·T/W badges, rename, empty state,
+    `ui_state.json`).
+  - **Neither step is tested in game yet.** Riskiest spots: badge/title
+    position in note rows, inline rename input, font loading (glyph trick).
+- **New working rule (R69, AGENTS.md rule 1):** agents push work branches and
+  merge PRs into `develop` on their own once **all CI checks are green**.
+  `main`, releases, tags, force pushes, CI-workflow / branch-protection
+  changes: **always ask**. Committed on `chore/agent-merge-develop`
+  (`03b77d2`), not pushed yet.
+- Rules unchanged: no AI attribution (R68); conversation German, repo English.
 
 ## ▶ Resume here
 
-1. **Cron delays:** the 00:17 UTC archive run of 2026-11-01 started at
-   06:14 UTC (~6 h late, GitHub load); the 06:17 catch-up had not run by
-   07:30. Keep watching `gh run list --workflow daily-archive.yml`, especially
-   the first **WvW EU snapshot Fri 2026-11-06 17:23 UTC** (D29 only has
-   ~35 min margin). If it is late, run a grill round on mitigation
-   (earlier/duplicate cron, external `workflow_dispatch` trigger — GDPR!).
-2. Check the DPF reminder issue of 2026-11-01 (08:00 UTC) appeared.
-3. **Phase 1, step 1 (M28): storage & data model** on `feature/memo-storage`
-   — `notes.json`/`settings.json` per M16–M18, M23–M25, R22 (migration,
-   newer-version read-only, atomic writes on the worker thread). Grill the
-   step's open details first, then implement step by step through M28.
-4. Next release PR `develop` → `main` will show "out of date" because `main`
-   has the merge commit of PR #2: use "Update branch" (or merge `main` back
-   into `develop` via a PR) before merging.
+1. **Permissions (user, before restart):**
+   - `.claude/settings.local.json` — done (autoMode allow for develop merges).
+   - `.claude/settings.json` — remove `"Bash(git push:*)"` and
+     `"Bash(git push)"` from `ask` (still present at end of session 4).
+   - Restart Claude Code. If a push/merge is still blocked by the auto-mode
+     classifier, tell the user; do not work around it.
+2. **Land the open work (no need to ask, R69):** for each, wait for green
+   checks, then `gh pr merge --merge --delete-branch`:
+   1. PR #8 `feature/memo-storage` → `develop`.
+   2. `chore/agent-merge-develop` → push, PR, merge (include the
+      `settings.json` change if the user made it in the working tree).
+   3. `feature/memo-tree-view` → rebase/merge onto updated `develop`, push,
+      PR, merge.
+3. **In-game test with the user:** `cargo xtask deploy trailkit-memo`, then
+   check: fonts (bold/italic/headings, umlauts, "…"), icons in the toolbar,
+   new note/group + rename, badges, checkbox click, link tooltip, splitter,
+   single-pane below ~440 px, empty state, restart keeps selection. Fix on
+   `bugfix/` branches.
+4. **Phase 1 step 3: editing & toolbar** (M3, M4 without events, "cancel
+   with unsaved changes asks", M28). Start with a grill round (e.g. edit/view
+   toggle placement, toolbar buttons, unsaved-changes dialog, `/e` deferred
+   to core, autosave vs. explicit save).
+5. **Checks to keep doing:**
+   - Cron delays: watch `gh run list --workflow daily-archive.yml`; the
+     06:17 catch-up of 2026-11-01 never ran; the **WvW EU snapshot Fri
+     2026-11-06 17:23 UTC** is the real test (D29 margin ~35 min). If late →
+     grill round on mitigation.
+   - **DPF reminder issue did not appear** on 2026-11-01 (due 08:00 UTC, no
+     run of `dpf-reminder.yml` by 09:50 UTC). Check `gh run list --workflow
+     dpf-reminder.yml`; if it never ran, investigate (scheduled workflows on
+     a new default branch? disabled?) and trigger it once via
+     `workflow_dispatch` — changing the workflow needs approval.
+6. Next release PR `develop` → `main` (needs approval!) will show "out of
+   date" because `main` has the merge commit of PR #2: "Update branch" first.
+
+## Session 4 notes
+
+- `trailkit-storage`: atomic JSON saves, `schema_version` + step-wise
+  migration, read-only on newer versions, unreadable files moved to
+  `backups/` (max 3), migration copy (newest only, 30 days). memo reads
+  `settings.json` synchronously in `load` (quick access icon needs it); notes
+  and `ui_state.json` load on the worker.
+- Nexus font atlas facts (verified in Nexus' source, now in the
+  nexus-addon-dev skill): font data is copied; same identifier = shared;
+  atlas = Latin + Latin-1 + Latin Ext-A/B + characters of all registered
+  localization texts → icons and UI strings are registered as glyph texts.
+  Emoji/CJK in notes render as `?` (accepted).
+- DLL size grows by ~2.7 MB per addon (embedded fonts), accepted.
+- New Nexus identifier kind `font` (AGENTS.md naming table).
+- Lucide 1.66.0 icons; custom icons follow Lucide style (`lay-icons`);
+  quick access bar icons stay colored (R59).
 
 ## Notes from session 3
 
@@ -63,8 +105,8 @@ Last updated: 2026-11-01 (session 4).
 ## Recurring checks
 
 - GW2 wiki (2026-10-31): still behind Cognito login → Wayback workaround stays.
-- C-703/25 P (2026-11-01, start of phase 1): still pending, no hearing date
-  or judgment reported; DPF in force. Microsoft intervened for the
+- C-703/25 P (checked 2026-11-01, start of phase 1): still pending, no
+  hearing date or judgment reported; DPF in force. Microsoft intervened for the
   Commission; noyb asked for repeal (2026-06-30) but has not sued yet.
 
 ## Environment notes
