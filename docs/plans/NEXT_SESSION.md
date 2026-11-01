@@ -10,8 +10,8 @@ Last updated: 2026-11-01 (end of session 5).
   M58–M64) are merged into `develop` and tested in game by the user.
   Decisions M16–M65 in `docs/plans/addons/trailkit-memo.md`.
 - Order from here (M28 as amended by M58, M62, M65):
-  ~~visual & interaction tests (M65)~~ (done, PR #21) → font subsetting (M62) →
-  3c chat-link chips (M61, own name lookup, no Decoder Ring) → reset kinds
+  ~~visual & interaction tests (M65)~~ (done, PR #21) → ~~font subsetting
+  (M62)~~ (done, PR #25: release DLL 2.1 MB) → 3c chat-link chips (M61, own name lookup, no Decoder Ring) → reset kinds
   (M13) → drag & drop → search → trash & undo → settings window → export/import
   → backups → help page → **release preparation** (full test, screenshots
   M67, docs).
@@ -22,23 +22,17 @@ Last updated: 2026-11-01 (end of session 5).
 
 ## ▶ Resume here
 
-1. **Step "visual & interaction tests" (M65)** on a `feature/` branch:
-   - new crate `crates/trailkit-ui-testing` (dev-dependency only): headless
-     ImGui context with the real fonts/themes, input simulation, CPU
-     rasterizer for ImGui draw data → PNG, reference-image comparison with
-     tolerance + diff image, regeneration on purpose;
-   - move more logic out of `editor::view` into Linux-testable functions (key
-     → command mapping, hit testing);
-   - first coverage: editor (empty, wrapped, selection, highlighting), memo
-     main window (wide, narrow, drawer, empty state), unsaved changes dialog —
-     dark and light;
-   - runs on the Windows CI runner; check whether it runs locally via WSL
-     interop (then Claude can look at the PNGs before deploying).
-   - Open details for a short grill round when starting: snapshot
-     tolerance, where `FontScope` gets fonts without Nexus in tests.
-2. Then font subsetting at build time (M62): Latin + used icons, roughly
-   halves the DLL (release 3.5 MB now).
-3. Then step 3c (chat-link chips, M61).
+1. **Grill round for step 3c (chat-link chips, M61).** Key question: memo
+   works without trailkit-core in phase 1 (M1) and has no network access, but
+   names (waypoint, item, …) need data. Likely phase-1 scope: decode
+   `[&…]` locally (type + id), show a chip with type icon + label, click
+   copies the code, right-click "Open in wiki"?; names later via core / our
+   data pipeline (own lookup — the user does not want Decoder Ring).
+   Magpie Memo (PieOrCake, MIT) is a good reference for chips as atomic
+   editor cells (`src/ChipTextEdit.*`).
+2. Then reset kinds (M13).
+3. UI tests: `cargo xtask ui-test [--update]`; look at the PNGs in
+   `tests/snapshots/` (and `failures/`) before deploying UI changes.
 
 ## Nexus / ImGui facts learned in session 5 (also in the nexus-addon-dev skill)
 
@@ -63,8 +57,9 @@ Last updated: 2026-11-01 (end of session 5).
   Hetzner DE, polls every 4 min) vs GW2BLTC differ by factor 3–10; one hour
   of own 1-minute collection matched Mithril roughly, not ecto/mystic coin.
   Silver (DataWars2) answered 2026-11-01: free use and archiving allowed,
-  attribution up to us, nginx may log IPs (see BACKLOG BL9). The user asked
-  him why the numbers differ from GW2BLTC (draft given). GW2BLTC e-mail
+  attribution up to us, nginx may log IPs (see BACKLOG BL9). He confirmed the
+  `calculate_sold` branch looks wrong (untested `-total > cutoff` case
+  overstates `listed`); the user sent him the fix (use the `else` formula). GW2BLTC e-mail
   drafted, no answer known.
   A 24 h own collection needs an always-on machine (backend, BL5).
   PieOrCake also has a `flip_out` addon (not looked at).
