@@ -15,9 +15,15 @@ reappears afterwards.
 ## Your notes
 
 The window shows the note list on the left and the selected note on the
-right. If the window is narrow, it shows one of them at a time; use
-**Back** to return to the list. Drag the line between both sides to change
-their widths.
+right. Drag the gap between both sides to change their widths (a line
+appears when you point at it).
+
+- **Menu button** (three lines, top left of the note): hides the note list
+  so the note gets the full width; click it again to show the list. memo
+  remembers your choice.
+- **Narrow window:** the note fills the window and the menu button opens the
+  note list over it. Choose a note, click the dimmed note or the menu button
+  again to close the list.
 
 - **New note / new group:** the two buttons above the list. The new entry
   goes into the selected group (or the group of the selected note), at the

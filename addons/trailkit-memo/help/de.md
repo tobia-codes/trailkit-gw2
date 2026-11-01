@@ -15,9 +15,17 @@ Fenster ausgeblendet und erscheint danach wieder.
 
 ## Deine Notizen
 
-Das Fenster zeigt links die Notizliste und rechts die ausgewählte Notiz. Ist
-das Fenster schmal, siehst du immer nur eines davon; mit **Zurück** geht es
-zur Liste. Ziehe die Linie zwischen beiden Seiten, um ihre Breite zu ändern.
+Das Fenster zeigt links die Notizliste und rechts die ausgewählte Notiz.
+Ziehe den Spalt zwischen beiden Seiten, um ihre Breite zu ändern (beim
+Darüberfahren erscheint eine Linie).
+
+- **Menü-Button** (drei Striche, oben links in der Notiz): blendet die
+  Notizliste aus, damit die Notiz die ganze Breite bekommt; ein weiterer
+  Klick blendet sie wieder ein. memo merkt sich deine Wahl.
+- **Schmales Fenster:** Die Notiz füllt das Fenster, und der Menü-Button
+  öffnet die Notizliste darüber. Wähle eine Notiz, klicke auf die
+  abgedunkelte Notiz oder erneut auf den Menü-Button, um die Liste zu
+  schließen.
 
 - **Neue Notiz / neue Gruppe:** die beiden Buttons über der Liste. Der neue
   Eintrag landet in der ausgewählten Gruppe (bzw. der Gruppe der

@@ -9,8 +9,8 @@ use std::{borrow::Cow, path::PathBuf, sync::Arc};
 
 use jiff::Timestamp;
 use nexus::imgui::{
-    Condition, Key, MenuItem, MouseButton, MouseCursor, StyleColor, StyleVar, TreeNode,
-    TreeNodeFlags, Ui,
+    ChildWindow, Condition, Key, MenuItem, MouseButton, MouseCursor, StyleColor, StyleVar,
+    TreeNode, TreeNodeFlags, Ui,
 };
 use trailkit_ui::{
     font_registry::FontScope,
@@ -32,6 +32,10 @@ use crate::{
 
 /// Minimum content width of each pane in average characters (M40).
 const MINIMUM_PANE_CHARACTERS: f32 = 22.0;
+
+/// Largest share of the window the note list drawer may cover, so a strip
+/// of the dimmed note stays visible to click away (M48, `lay-drawer`).
+const DRAWER_MAXIMUM_FRACTION: f32 = 0.85;
 
 /// A problem with `notes.json` shown above the notes (M31).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -62,8 +66,11 @@ enum WindowAction {
     NewNote,
     /// Create a group.
     NewGroup,
-    /// Show the tree again (single-pane layout).
-    Back,
+    /// The menu button: hide/show the note list column, or open/close the
+    /// drawer in a narrow window (M48).
+    ToggleNoteList,
+    /// Close the drawer (click on the dimmed note).
+    CloseDrawer,
     /// Toggle a task checkbox in the shown note.
     Markdown(MarkdownAction),
     /// Open the addon folder in the file explorer.
@@ -108,8 +115,11 @@ pub struct MemoWindow {
     rename: Option<RenameState>,
     /// Markdown cache of the shown note.
     parsed: Option<ParsedNote>,
-    /// Single-pane layout: whether the note (not the tree) is shown.
-    single_pane_shows_note: bool,
+    /// Narrow window: whether the note list drawer is open (M48).
+    drawer_open: bool,
+    /// Whether the window was too narrow for two panes in the last frame;
+    /// decides what the menu button does.
+    is_narrow: bool,
     /// Whether the saved scroll position still has to be applied.
     restore_scroll: bool,
     /// Actions collected while drawing; reused every frame.
@@ -158,7 +168,8 @@ impl MemoWindow {
             addon_directory,
             rename: None,
             parsed: None,
-            single_pane_shows_note: false,
+            drawer_open: false,
+            is_narrow: false,
             restore_scroll: true,
             actions: Vec::new(),
         }
@@ -175,17 +186,18 @@ impl MemoWindow {
             let pane_minimum =
                 ui.calc_text_size("n")[0] * MINIMUM_PANE_CHARACTERS + 2.0 * theme.pane.padding;
             let available = ui.content_region_avail();
-            if available[0] >= 2.0 * pane_minimum + theme.pane.gap {
+            self.is_narrow = available[0] < 2.0 * pane_minimum + theme.pane.gap;
+            if !self.is_narrow && !self.ui_state.note_list_hidden {
                 self.draw_two_panes(ui, language, theme, pane_minimum);
-            } else if self.single_pane_shows_note && self.selected_note().is_some() {
-                self.draw_back_button(ui, language, theme);
-                draw_pane(ui, theme, "note", [0.0, 0.0], || {
-                    self.draw_note_pane(ui, language, theme);
-                });
             } else {
-                draw_pane(ui, theme, "tree", [0.0, 0.0], || {
-                    self.draw_tree_pane(ui, language, theme);
+                let area_start = ui.cursor_screen_pos();
+                draw_pane(ui, theme, "note", [0.0, 0.0], || {
+                    self.draw_note_pane(ui, language, theme, Text::ShowNoteList);
                 });
+                // Without a selected note there is nothing to show but the list.
+                if self.is_narrow && (self.drawer_open || self.selected_note().is_none()) {
+                    self.draw_drawer(ui, language, theme, area_start, available, pane_minimum);
+                }
             }
         }
 
@@ -247,7 +259,7 @@ impl MemoWindow {
             .clamp(pane_minimum, usable - pane_minimum);
 
         draw_pane(ui, theme, "tree", [tree_width, 0.0], || {
-            self.draw_tree_pane(ui, language, theme);
+            self.draw_tree_pane(ui, language, theme, None);
         });
 
         ui.same_line_with_spacing(0.0, 0.0);
@@ -283,13 +295,49 @@ impl MemoWindow {
 
         ui.same_line_with_spacing(0.0, 0.0);
         draw_pane(ui, theme, "note", [0.0, 0.0], || {
-            self.draw_note_pane(ui, language, theme);
+            self.draw_note_pane(ui, language, theme, Text::HideNoteList);
         });
     }
 
-    /// Draws the toolbar and the tree.
-    fn draw_tree_pane(&mut self, ui: &Ui, language: Language, theme: &Theme) {
-        draw_toolbar(ui, language, theme, &mut self.actions);
+    /// Draws the note list as a drawer over the dimmed note (narrow window,
+    /// M48, `lay-drawer`): it appears instantly (`overlay-motion`) and closes
+    /// on a click on the dimmed area. `start` and `size` cover the note pane.
+    fn draw_drawer(
+        &mut self,
+        ui: &Ui,
+        language: Language,
+        theme: &Theme,
+        start: [f32; 2],
+        size: [f32; 2],
+        pane_minimum: f32,
+    ) {
+        ui.set_cursor_screen_pos(start);
+        // The scrim dims the note and takes its clicks; ImGui reads the
+        // background color in `BeginChild`, so it is popped right after.
+        let scrim_color =
+            ui.push_style_color(StyleColor::ChildBg, theme.surface.modal_overlay.to_array());
+        let scrim = ChildWindow::new("drawer_scrim")
+            .size(size)
+            .scrollable(false)
+            .scroll_bar(false)
+            .begin(ui);
+        scrim_color.pop();
+        let Some(_scrim) = scrim else {
+            return;
+        };
+        let width = pane_minimum.min(size[0] * DRAWER_MAXIMUM_FRACTION);
+        draw_pane(ui, theme, "drawer", [width, 0.0], || {
+            self.draw_tree_pane(ui, language, theme, Some(Text::HideNoteList));
+        });
+        if ui.is_window_hovered() && ui.is_mouse_clicked(MouseButton::Left) {
+            self.actions.push(WindowAction::CloseDrawer);
+        }
+    }
+
+    /// Draws the toolbar and the tree. `menu` is the tooltip of a leading
+    /// menu button (drawer only, so it closes where it opened).
+    fn draw_tree_pane(&mut self, ui: &Ui, language: Language, theme: &Theme, menu: Option<Text>) {
+        draw_toolbar(ui, language, theme, menu, &mut self.actions);
         let mut context = TreeContext {
             selected: self.ui_state.selected,
             rename: &mut self.rename,
@@ -301,22 +349,20 @@ impl MemoWindow {
         draw_nodes(ui, &self.document.root, &mut context);
     }
 
-    /// Draws the "Back" button of the single-pane layout.
-    fn draw_back_button(&mut self, ui: &Ui, language: Language, theme: &Theme) {
-        {
-            let _icons = FontScope::push(ui, FontRole::Icons);
-            let mut buffer = [0; 4];
-            ui.text(Icon::CHEVRON_LEFT.as_str(&mut buffer));
-        }
-        ui.same_line();
-        if ui.small_button(Text::Back.get(language)) {
-            self.actions.push(WindowAction::Back);
-        }
+    /// Draws the note pane: the note toolbar with the menu button (M48),
+    /// then the note in its own scroll region so the toolbar stays in place.
+    /// `menu_tooltip` names what the menu button does.
+    fn draw_note_pane(&mut self, ui: &Ui, language: Language, theme: &Theme, menu_tooltip: Text) {
+        draw_menu_button(ui, language, theme, menu_tooltip, &mut self.actions);
         draw_separator(ui, theme);
+        ChildWindow::new("note_body")
+            .size([0.0, 0.0])
+            .draw_background(false)
+            .build(ui, || self.draw_note_body(ui, language, theme));
     }
 
     /// Draws the selected note: its title and rendered content.
-    fn draw_note_pane(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+    fn draw_note_body(&mut self, ui: &Ui, language: Language, theme: &Theme) {
         // Borrow only the document, so the markdown cache can be updated below.
         let Some(note) = selected_note_in(&self.document, self.ui_state.selected) else {
             ui.text_colored(
@@ -422,7 +468,15 @@ impl MemoWindow {
                 self.start_rename_of_new(id, Text::NewGroup.get(language));
                 self.save_notes();
             }
-            WindowAction::Back => self.single_pane_shows_note = false,
+            WindowAction::ToggleNoteList => {
+                if self.is_narrow {
+                    self.drawer_open = !self.drawer_open;
+                } else {
+                    self.ui_state.note_list_hidden = !self.ui_state.note_list_hidden;
+                    self.saver.save_ui_state(self.ui_state);
+                }
+            }
+            WindowAction::CloseDrawer => self.drawer_open = false,
             WindowAction::Markdown(MarkdownAction::ToggleTask(marker)) => {
                 let Some(NodeId::Note(id)) = self.ui_state.selected else {
                     return;
@@ -456,12 +510,16 @@ impl MemoWindow {
             self.restore_scroll = true;
             self.saver.save_ui_state(self.ui_state);
         }
-        self.single_pane_shows_note = matches!(node, NodeId::Note(_));
+        // Choosing a note closes the drawer; groups keep it open (M48).
+        if matches!(node, NodeId::Note(_)) {
+            self.drawer_open = false;
+        }
     }
 
     /// Puts a just-created note or group into rename mode (M43).
     fn start_rename_of_new(&mut self, node: NodeId, title: &str) {
-        self.single_pane_shows_note = false;
+        // The rename happens in the list, so a narrow window shows it.
+        self.drawer_open = true;
         self.rename = Some(RenameState {
             node,
             buffer: title.to_owned(),
@@ -496,8 +554,46 @@ fn find_title(nodes: &[Node], id: NodeId) -> Option<&str> {
     })
 }
 
-/// Draws the "new note" / "new group" icon buttons.
-fn draw_toolbar(ui: &Ui, language: Language, theme: &Theme, actions: &mut Vec<WindowAction>) {
+/// Draws the flat menu button (Lucide `menu`) that toggles the note list
+/// (M48); flat like an icon, highlighted only on hover (`a11y-icon-tooltip`).
+fn draw_menu_button(
+    ui: &Ui,
+    language: Language,
+    theme: &Theme,
+    tooltip: Text,
+    actions: &mut Vec<WindowAction>,
+) {
+    let clicked = {
+        let _colors = [
+            ui.push_style_color(StyleColor::Button, [0.0; 4]),
+            ui.push_style_color(StyleColor::ButtonHovered, theme.surface.hover.to_array()),
+            ui.push_style_color(StyleColor::ButtonActive, theme.surface.active.to_array()),
+        ];
+        let _icons = FontScope::push(ui, FontRole::Icons);
+        let mut buffer = [0; 4];
+        ui.button(Icon::MENU.as_str(&mut buffer))
+    };
+    if ui.is_item_hovered() {
+        ui.tooltip_text(tooltip.get(language));
+    }
+    if clicked {
+        actions.push(WindowAction::ToggleNoteList);
+    }
+}
+
+/// Draws the "new note" / "new group" icon buttons, led by the menu button
+/// when `menu` holds its tooltip.
+fn draw_toolbar(
+    ui: &Ui,
+    language: Language,
+    theme: &Theme,
+    menu: Option<Text>,
+    actions: &mut Vec<WindowAction>,
+) {
+    if let Some(tooltip) = menu {
+        draw_menu_button(ui, language, theme, tooltip, actions);
+        ui.same_line();
+    }
     let buttons = [
         (Icon::FILE_PLUS, Text::NewNote, WindowAction::NewNote),
         (Icon::FOLDER_PLUS, Text::NewGroup, WindowAction::NewGroup),

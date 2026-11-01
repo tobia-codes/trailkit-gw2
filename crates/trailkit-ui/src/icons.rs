@@ -15,8 +15,8 @@ impl Icon {
     pub const FILE_PLUS: Self = Self('\u{e0c9}');
     /// `folder-plus`: create a group.
     pub const FOLDER_PLUS: Self = Self('\u{e0d9}');
-    /// `chevron-left`: back (single-pane layout).
-    pub const CHEVRON_LEFT: Self = Self('\u{e06e}');
+    /// `menu`: show or hide a list (memo note list, M48).
+    pub const MENU: Self = Self('\u{e115}');
     /// `square`: unchecked task.
     pub const SQUARE: Self = Self('\u{e167}');
     /// `square-check-big`: checked task.
@@ -30,7 +30,7 @@ impl Icon {
     pub const ALL: [Self; 7] = [
         Self::FILE_PLUS,
         Self::FOLDER_PLUS,
-        Self::CHEVRON_LEFT,
+        Self::MENU,
         Self::SQUARE,
         Self::SQUARE_CHECK,
         Self::TRIANGLE_ALERT,

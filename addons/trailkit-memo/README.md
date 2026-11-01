@@ -49,7 +49,7 @@ Stored in `addons/trailkit/memo/` inside the Guild Wars 2 folder, through
 |------|---------|
 | `notes.json` | all notes, groups and the trash |
 | `settings.json` | user settings |
-| `ui_state.json` | selected note, splitter position, scroll position |
+| `ui_state.json` | selected note, splitter position, scroll position, note list hidden (M48) |
 | `backups/` | safety copies (migration copies, unreadable files; later the daily backups) |
 
 ## Usage
