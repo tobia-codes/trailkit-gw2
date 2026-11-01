@@ -25,15 +25,18 @@ pub struct UiState {
     pub splitter_fraction: f32,
     /// Vertical scroll position of the note view.
     pub note_scroll: f32,
+    /// Whether the user hid the note list column of the two-pane layout (M48).
+    pub note_list_hidden: bool,
 }
 
 impl Default for UiState {
-    /// Nothing selected, default splitter, top of the note.
+    /// Nothing selected, default splitter, top of the note, note list shown.
     fn default() -> Self {
         Self {
             selected: None,
             splitter_fraction: DEFAULT_SPLITTER_FRACTION,
             note_scroll: 0.0,
+            note_list_hidden: false,
         }
     }
 }
@@ -66,6 +69,7 @@ mod tests {
         assert_eq!(state.selected, None);
         assert!((state.splitter_fraction - DEFAULT_SPLITTER_FRACTION).abs() < f32::EPSILON);
         assert!((state.note_scroll - 12.5).abs() < f32::EPSILON);
+        assert!(!state.note_list_hidden);
         Ok(())
     }
 

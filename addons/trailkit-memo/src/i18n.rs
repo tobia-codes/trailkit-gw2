@@ -85,8 +85,10 @@ pub enum Text {
     NoNotesYet,
     /// Primary empty-state button.
     CreateFirstNote,
-    /// Back button of the single-pane layout.
-    Back,
+    /// Tooltip of the menu button while the note list is hidden (M48).
+    ShowNoteList,
+    /// Tooltip of the menu button while the note list is shown (M48).
+    HideNoteList,
     /// Shown instead of an empty note's content.
     EmptyNote,
     /// Shown in the note pane when no note is selected.
@@ -103,7 +105,7 @@ pub enum Text {
 
 impl Text {
     /// Every string, for registering their characters with Nexus' font atlas.
-    pub const ALL: [Self; 20] = [
+    pub const ALL: [Self; 21] = [
         Self::MainWindowTitle,
         Self::KeybindToggle,
         Self::QuickAccessTooltip,
@@ -117,7 +119,8 @@ impl Text {
         Self::Rename,
         Self::NoNotesYet,
         Self::CreateFirstNote,
-        Self::Back,
+        Self::ShowNoteList,
+        Self::HideNoteList,
         Self::EmptyNote,
         Self::SelectNote,
         Self::DailyBadge,
@@ -178,8 +181,10 @@ impl Text {
             (Self::NoNotesYet, Language::German) => "Noch keine Notizen",
             (Self::CreateFirstNote, Language::English) => "Create your first note",
             (Self::CreateFirstNote, Language::German) => "Erste Notiz anlegen",
-            (Self::Back, Language::English) => "Back",
-            (Self::Back, Language::German) => "Zurück",
+            (Self::ShowNoteList, Language::English) => "Show note list",
+            (Self::ShowNoteList, Language::German) => "Notizliste einblenden",
+            (Self::HideNoteList, Language::English) => "Hide note list",
+            (Self::HideNoteList, Language::German) => "Notizliste ausblenden",
             (Self::EmptyNote, Language::English) => "This note is empty.",
             (Self::EmptyNote, Language::German) => "Diese Notiz ist leer.",
             (Self::SelectNote, Language::English) => "Select a note in the list.",

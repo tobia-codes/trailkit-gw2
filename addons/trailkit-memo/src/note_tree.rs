@@ -189,6 +189,19 @@ impl Group {
             expanded: true,
         }
     }
+
+    /// Number of notes in this group, including those in nested groups
+    /// (shown next to the group title, M50).
+    #[must_use]
+    pub fn note_count(&self) -> usize {
+        self.children
+            .iter()
+            .map(|child| match child {
+                TreeNode::Note(_) => 1,
+                TreeNode::Group(group) => group.note_count(),
+            })
+            .sum()
+    }
 }
 
 impl TreeNode {
@@ -440,6 +453,28 @@ mod tests {
         );
         assert!(document.rename(NodeId::Group(group_id), "Raids & strikes", later));
         assert!(!document.rename(NodeId::Group(GroupId::new_unique()), "x", later));
+    }
+
+    #[test]
+    fn note_count_includes_nested_groups() {
+        let mut outer = Group::new("Outer".to_owned());
+        assert_eq!(outer.note_count(), 0);
+        let mut inner = Group::new("Inner".to_owned());
+        inner.children.push(TreeNode::Note(Note::new(
+            "A".to_owned(),
+            NoteKind::Normal,
+            noon(),
+        )));
+        inner
+            .children
+            .push(TreeNode::Group(Group::new("Empty".to_owned())));
+        outer.children.push(TreeNode::Group(inner));
+        outer.children.push(TreeNode::Note(Note::new(
+            "B".to_owned(),
+            NoteKind::Normal,
+            noon(),
+        )));
+        assert_eq!(outer.note_count(), 2);
     }
 
     #[test]

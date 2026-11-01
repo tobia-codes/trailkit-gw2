@@ -9,8 +9,8 @@ use std::{borrow::Cow, path::PathBuf, sync::Arc};
 
 use jiff::Timestamp;
 use nexus::imgui::{
-    Condition, Key, MenuItem, MouseButton, MouseCursor, StyleColor, StyleVar, TreeNode,
-    TreeNodeFlags, Ui,
+    ChildWindow, Condition, Key, MenuItem, MouseButton, MouseCursor, StyleColor, StyleVar,
+    TreeNode, TreeNodeFlags, Ui,
 };
 use trailkit_ui::{
     font_registry::FontScope,
@@ -32,6 +32,10 @@ use crate::{
 
 /// Minimum content width of each pane in average characters (M40).
 const MINIMUM_PANE_CHARACTERS: f32 = 22.0;
+
+/// Largest share of the window the note list drawer may cover, so a strip
+/// of the dimmed note stays visible to click away (M48, `lay-drawer`).
+const DRAWER_MAXIMUM_FRACTION: f32 = 0.85;
 
 /// A problem with `notes.json` shown above the notes (M31).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -62,8 +66,11 @@ enum WindowAction {
     NewNote,
     /// Create a group.
     NewGroup,
-    /// Show the tree again (single-pane layout).
-    Back,
+    /// The menu button: hide/show the note list column, or open/close the
+    /// drawer in a narrow window (M48).
+    ToggleNoteList,
+    /// Close the drawer (click on the dimmed note).
+    CloseDrawer,
     /// Toggle a task checkbox in the shown note.
     Markdown(MarkdownAction),
     /// Open the addon folder in the file explorer.
@@ -108,8 +115,11 @@ pub struct MemoWindow {
     rename: Option<RenameState>,
     /// Markdown cache of the shown note.
     parsed: Option<ParsedNote>,
-    /// Single-pane layout: whether the note (not the tree) is shown.
-    single_pane_shows_note: bool,
+    /// Narrow window: whether the note list drawer is open (M48).
+    drawer_open: bool,
+    /// Whether the window was too narrow for two panes in the last frame;
+    /// decides what the menu button does.
+    is_narrow: bool,
     /// Whether the saved scroll position still has to be applied.
     restore_scroll: bool,
     /// Actions collected while drawing; reused every frame.
@@ -158,7 +168,8 @@ impl MemoWindow {
             addon_directory,
             rename: None,
             parsed: None,
-            single_pane_shows_note: false,
+            drawer_open: false,
+            is_narrow: false,
             restore_scroll: true,
             actions: Vec::new(),
         }
@@ -175,17 +186,18 @@ impl MemoWindow {
             let pane_minimum =
                 ui.calc_text_size("n")[0] * MINIMUM_PANE_CHARACTERS + 2.0 * theme.pane.padding;
             let available = ui.content_region_avail();
-            if available[0] >= 2.0 * pane_minimum + theme.pane.gap {
+            self.is_narrow = available[0] < 2.0 * pane_minimum + theme.pane.gap;
+            if !self.is_narrow && !self.ui_state.note_list_hidden {
                 self.draw_two_panes(ui, language, theme, pane_minimum);
-            } else if self.single_pane_shows_note && self.selected_note().is_some() {
-                self.draw_back_button(ui, language, theme);
-                draw_pane(ui, theme, "note", [0.0, 0.0], || {
-                    self.draw_note_pane(ui, language, theme);
-                });
             } else {
-                draw_pane(ui, theme, "tree", [0.0, 0.0], || {
-                    self.draw_tree_pane(ui, language, theme);
+                let area_start = ui.cursor_screen_pos();
+                draw_pane(ui, theme, "note", [0.0, 0.0], || {
+                    self.draw_note_pane(ui, language, theme, Text::ShowNoteList);
                 });
+                // Without a selected note there is nothing to show but the list.
+                if self.is_narrow && (self.drawer_open || self.selected_note().is_none()) {
+                    self.draw_drawer(ui, language, theme, area_start, available, pane_minimum);
+                }
             }
         }
 
@@ -247,7 +259,7 @@ impl MemoWindow {
             .clamp(pane_minimum, usable - pane_minimum);
 
         draw_pane(ui, theme, "tree", [tree_width, 0.0], || {
-            self.draw_tree_pane(ui, language, theme);
+            self.draw_tree_pane(ui, language, theme, None);
         });
 
         ui.same_line_with_spacing(0.0, 0.0);
@@ -283,13 +295,49 @@ impl MemoWindow {
 
         ui.same_line_with_spacing(0.0, 0.0);
         draw_pane(ui, theme, "note", [0.0, 0.0], || {
-            self.draw_note_pane(ui, language, theme);
+            self.draw_note_pane(ui, language, theme, Text::HideNoteList);
         });
     }
 
-    /// Draws the toolbar and the tree.
-    fn draw_tree_pane(&mut self, ui: &Ui, language: Language, theme: &Theme) {
-        draw_toolbar(ui, language, theme, &mut self.actions);
+    /// Draws the note list as a drawer over the dimmed note (narrow window,
+    /// M48, `lay-drawer`): it appears instantly (`overlay-motion`) and closes
+    /// on a click on the dimmed area. `start` and `size` cover the note pane.
+    fn draw_drawer(
+        &mut self,
+        ui: &Ui,
+        language: Language,
+        theme: &Theme,
+        start: [f32; 2],
+        size: [f32; 2],
+        pane_minimum: f32,
+    ) {
+        ui.set_cursor_screen_pos(start);
+        // The scrim dims the note and takes its clicks; ImGui reads the
+        // background color in `BeginChild`, so it is popped right after.
+        let scrim_color =
+            ui.push_style_color(StyleColor::ChildBg, theme.surface.modal_overlay.to_array());
+        let scrim = ChildWindow::new("drawer_scrim")
+            .size(size)
+            .scrollable(false)
+            .scroll_bar(false)
+            .begin(ui);
+        scrim_color.pop();
+        let Some(_scrim) = scrim else {
+            return;
+        };
+        let width = pane_minimum.min(size[0] * DRAWER_MAXIMUM_FRACTION);
+        draw_pane(ui, theme, "drawer", [width, 0.0], || {
+            self.draw_tree_pane(ui, language, theme, Some(Text::HideNoteList));
+        });
+        if ui.is_window_hovered() && ui.is_mouse_clicked(MouseButton::Left) {
+            self.actions.push(WindowAction::CloseDrawer);
+        }
+    }
+
+    /// Draws the toolbar and the tree. `menu` is the tooltip of a leading
+    /// menu button (drawer only, so it closes where it opened).
+    fn draw_tree_pane(&mut self, ui: &Ui, language: Language, theme: &Theme, menu: Option<Text>) {
+        draw_toolbar(ui, language, theme, menu, &mut self.actions);
         let mut context = TreeContext {
             selected: self.ui_state.selected,
             rename: &mut self.rename,
@@ -301,22 +349,20 @@ impl MemoWindow {
         draw_nodes(ui, &self.document.root, &mut context);
     }
 
-    /// Draws the "Back" button of the single-pane layout.
-    fn draw_back_button(&mut self, ui: &Ui, language: Language, theme: &Theme) {
-        {
-            let _icons = FontScope::push(ui, FontRole::Icons);
-            let mut buffer = [0; 4];
-            ui.text(Icon::CHEVRON_LEFT.as_str(&mut buffer));
-        }
-        ui.same_line();
-        if ui.small_button(Text::Back.get(language)) {
-            self.actions.push(WindowAction::Back);
-        }
+    /// Draws the note pane: the note toolbar with the menu button (M48),
+    /// then the note in its own scroll region so the toolbar stays in place.
+    /// `menu_tooltip` names what the menu button does.
+    fn draw_note_pane(&mut self, ui: &Ui, language: Language, theme: &Theme, menu_tooltip: Text) {
+        draw_menu_button(ui, language, theme, menu_tooltip, &mut self.actions);
         draw_separator(ui, theme);
+        ChildWindow::new("note_body")
+            .size([0.0, 0.0])
+            .draw_background(false)
+            .build(ui, || self.draw_note_body(ui, language, theme));
     }
 
     /// Draws the selected note: its title and rendered content.
-    fn draw_note_pane(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+    fn draw_note_body(&mut self, ui: &Ui, language: Language, theme: &Theme) {
         // Borrow only the document, so the markdown cache can be updated below.
         let Some(note) = selected_note_in(&self.document, self.ui_state.selected) else {
             ui.text_colored(
@@ -422,7 +468,15 @@ impl MemoWindow {
                 self.start_rename_of_new(id, Text::NewGroup.get(language));
                 self.save_notes();
             }
-            WindowAction::Back => self.single_pane_shows_note = false,
+            WindowAction::ToggleNoteList => {
+                if self.is_narrow {
+                    self.drawer_open = !self.drawer_open;
+                } else {
+                    self.ui_state.note_list_hidden = !self.ui_state.note_list_hidden;
+                    self.saver.save_ui_state(self.ui_state);
+                }
+            }
+            WindowAction::CloseDrawer => self.drawer_open = false,
             WindowAction::Markdown(MarkdownAction::ToggleTask(marker)) => {
                 let Some(NodeId::Note(id)) = self.ui_state.selected else {
                     return;
@@ -456,12 +510,16 @@ impl MemoWindow {
             self.restore_scroll = true;
             self.saver.save_ui_state(self.ui_state);
         }
-        self.single_pane_shows_note = matches!(node, NodeId::Note(_));
+        // Choosing a note closes the drawer; groups keep it open (M48).
+        if matches!(node, NodeId::Note(_)) {
+            self.drawer_open = false;
+        }
     }
 
     /// Puts a just-created note or group into rename mode (M43).
     fn start_rename_of_new(&mut self, node: NodeId, title: &str) {
-        self.single_pane_shows_note = false;
+        // The rename happens in the list, so a narrow window shows it.
+        self.drawer_open = true;
         self.rename = Some(RenameState {
             node,
             buffer: title.to_owned(),
@@ -496,8 +554,46 @@ fn find_title(nodes: &[Node], id: NodeId) -> Option<&str> {
     })
 }
 
-/// Draws the "new note" / "new group" icon buttons.
-fn draw_toolbar(ui: &Ui, language: Language, theme: &Theme, actions: &mut Vec<WindowAction>) {
+/// Draws the flat menu button (Lucide `menu`) that toggles the note list
+/// (M48); flat like an icon, highlighted only on hover (`a11y-icon-tooltip`).
+fn draw_menu_button(
+    ui: &Ui,
+    language: Language,
+    theme: &Theme,
+    tooltip: Text,
+    actions: &mut Vec<WindowAction>,
+) {
+    let clicked = {
+        let _colors = [
+            ui.push_style_color(StyleColor::Button, [0.0; 4]),
+            ui.push_style_color(StyleColor::ButtonHovered, theme.surface.hover.to_array()),
+            ui.push_style_color(StyleColor::ButtonActive, theme.surface.active.to_array()),
+        ];
+        let _icons = FontScope::push(ui, FontRole::Icons);
+        let mut buffer = [0; 4];
+        ui.button(Icon::MENU.as_str(&mut buffer))
+    };
+    if ui.is_item_hovered() {
+        ui.tooltip_text(tooltip.get(language));
+    }
+    if clicked {
+        actions.push(WindowAction::ToggleNoteList);
+    }
+}
+
+/// Draws the "new note" / "new group" icon buttons, led by the menu button
+/// when `menu` holds its tooltip.
+fn draw_toolbar(
+    ui: &Ui,
+    language: Language,
+    theme: &Theme,
+    menu: Option<Text>,
+    actions: &mut Vec<WindowAction>,
+) {
+    if let Some(tooltip) = menu {
+        draw_menu_button(ui, language, theme, tooltip, actions);
+        ui.same_line();
+    }
     let buttons = [
         (Icon::FILE_PLUS, Text::NewNote, WindowAction::NewNote),
         (Icon::FOLDER_PLUS, Text::NewGroup, WindowAction::NewGroup),
@@ -547,19 +643,33 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut TreeContext<'_>) {
         flags |= TreeNodeFlags::SELECTED;
     }
 
+    // M50: groups stand out by a bold title and their note count, shown
+    // right-aligned in the secondary text color like other row info (M49).
     let row_start = ui.cursor_screen_pos();
-    let title_offset = title_offset(ui, context);
-    let row_width = ui.content_region_avail()[0] - title_offset;
-    let label = if is_renaming {
-        Cow::Borrowed("")
-    } else {
-        truncate_to_width(ui, &group.title, row_width)
+    let title_offset = group_title_offset(ui, context);
+    let mut count_buffer = [0; 20];
+    let count = format_count(group.note_count(), &mut count_buffer);
+    let count_x = row_content_end(ui, context) - ui.calc_text_size(count)[0];
+    let title_end = count_x - context.theme.spacing.small;
+    let (label, token) = {
+        let _bold = FontScope::push(ui, FontRole::BodyBold);
+        let label = if is_renaming {
+            Cow::Borrowed("")
+        } else {
+            truncate_to_width(ui, &group.title, title_end - (row_start[0] + title_offset))
+        };
+        let token = TreeNode::new("group")
+            .label::<&str, _>(&label)
+            .flags(flags)
+            .opened(group.expanded, Condition::Always)
+            .push(ui);
+        (label, token)
     };
-    let token = TreeNode::new("group")
-        .label::<&str, _>(&label)
-        .flags(flags)
-        .opened(group.expanded, Condition::Always)
-        .push(ui);
+    ui.get_window_draw_list().add_text(
+        [count_x, row_start[1] + context.frame_padding[1]],
+        context.theme.text.secondary.to_array(),
+        count,
+    );
     let is_open = token.is_some();
     handle_row_interaction(ui, node, &group.title, &label, context);
     if is_open != group.expanded {
@@ -569,21 +679,33 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut TreeContext<'_>) {
     }
     if is_renaming {
         ui.same_line_with_spacing(0.0, 0.0);
-        draw_rename_input(ui, row_start, row_start[0] + title_offset, context);
+        let _bold = FontScope::push(ui, FontRole::BodyBold);
+        draw_rename_input(
+            ui,
+            row_start,
+            [row_start[0] + title_offset, title_end],
+            context,
+        );
     }
     if let Some(_token) = token {
         draw_nodes(ui, &group.children, context);
     }
 }
 
-/// Horizontal offset of a row title from the row start. ImGui puts the title
-/// of a tree node after the arrow (font size plus twice the horizontal frame
-/// padding); note titles use the same offset, so titles on one level align.
-fn title_offset(ui: &Ui, context: &TreeContext<'_>) -> f32 {
+/// Horizontal offset of a group title from the row start: ImGui puts it
+/// after the arrow (font size plus twice the horizontal frame padding).
+fn group_title_offset(ui: &Ui, context: &TreeContext<'_>) -> f32 {
     ui.current_font_size() + 2.0 * context.frame_padding[0]
 }
 
-/// Draws one note row: the badge in the arrow slot (M45) and the title.
+/// Screen x where row content (title, badges) ends: the row's right edge
+/// minus the horizontal frame padding, mirroring the inset on the left.
+fn row_content_end(ui: &Ui, context: &TreeContext<'_>) -> f32 {
+    ui.window_content_region_max()[0] + ui.window_pos()[0] - context.frame_padding[0]
+}
+
+/// Draws one note row (M49): the title flush left, a reset badge at the
+/// right edge.
 fn draw_note_row(ui: &Ui, note: &Note, context: &mut TreeContext<'_>) {
     let _id = ui.push_id(note.id.imgui_id());
     let node = NodeId::Note(note.id);
@@ -608,18 +730,20 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut TreeContext<'_>) {
         .as_ref()
         .is_some_and(|rename| rename.node == node);
 
-    // Notes never have an arrow, so the badge column sits in its slot.
-    let arrow_center_x = row_start[0] + context.frame_padding[0] + ui.current_font_size() / 2.0;
-    draw_badge(ui, note.kind, [arrow_center_x, row_start[1]], context);
-    let title_x = row_start[0] + title_offset(ui, context);
+    // Notes have no arrow: the title starts where a group's arrow does.
+    let title_x = row_start[0] + context.frame_padding[0];
+    let content_end = row_content_end(ui, context);
+    let title_end = match draw_badge(ui, note.kind, [content_end, row_start[1]], context) {
+        Some(badge_start) => badge_start - context.theme.spacing.small,
+        None => content_end,
+    };
     ui.same_line_with_spacing(0.0, 0.0);
     ui.set_cursor_screen_pos([title_x, row_start[1]]);
     if is_renaming {
-        draw_rename_input(ui, row_start, title_x, context);
+        draw_rename_input(ui, row_start, [title_x, title_end], context);
         return;
     }
-    let row_end = ui.window_content_region_max()[0] + ui.window_pos()[0];
-    let label = truncate_to_width(ui, &note.title, row_end - ui.cursor_screen_pos()[0]);
+    let label = truncate_to_width(ui, &note.title, title_end - title_x);
     ui.text(&label);
     // Interaction belongs to the whole row (the tree node item).
     if is_row_hovered {
@@ -678,9 +802,16 @@ fn draw_context_menu(ui: &Ui, node: NodeId, context: &mut TreeContext<'_>) {
 ///
 /// Inline editing in lists (`lay-inline-edit`): the input has no background
 /// of its own, so the row keeps one uniform color; a focus border frames the
-/// whole row starting at `row_start`. The input text sits at `title_x`, where
-/// the title was drawn before renaming.
-fn draw_rename_input(ui: &Ui, row_start: [f32; 2], title_x: f32, context: &mut TreeContext<'_>) {
+/// whole row starting at `row_start`. The input text spans `title_span`
+/// (start and end x), where the title was drawn before renaming, so badges
+/// next to it stay visible.
+fn draw_rename_input(
+    ui: &Ui,
+    row_start: [f32; 2],
+    title_span: [f32; 2],
+    context: &mut TreeContext<'_>,
+) {
+    let [title_x, title_end] = title_span;
     let Some(rename) = context.rename.as_mut() else {
         return;
     };
@@ -711,7 +842,7 @@ fn draw_rename_input(ui: &Ui, row_start: [f32; 2], title_x: f32, context: &mut T
         ui.set_keyboard_focus_here();
         rename.focused = true;
     }
-    ui.set_next_item_width(-1.0);
+    ui.set_next_item_width((title_end - title_x + 2.0 * padding_x).max(1.0));
     let entered = ui
         .input_text("##rename", &mut rename.buffer)
         .auto_select_all(true)
@@ -729,25 +860,25 @@ fn draw_rename_input(ui: &Ui, row_start: [f32; 2], title_x: f32, context: &mut T
     }
 }
 
-/// Draws the reset badge of a note row (M45): an outlined rounded box with a
-/// letter for reset notes, nothing for normal notes. The badge is centered
-/// horizontally on `anchor[0]` and vertically in the row starting at
-/// `anchor[1]` (one frame tall).
-fn draw_badge(ui: &Ui, kind: NoteKind, anchor: [f32; 2], context: &TreeContext<'_>) {
+/// Draws the reset badge of a note row (M45, M49): an outlined rounded box
+/// with a letter for reset notes, nothing for normal notes. The badge ends at
+/// `anchor[0]` and is vertically centered in the row starting at `anchor[1]`
+/// (one frame tall). Returns the badge's left edge, or `None` if no badge
+/// was drawn.
+fn draw_badge(ui: &Ui, kind: NoteKind, anchor: [f32; 2], context: &TreeContext<'_>) -> Option<f32> {
     let (language, theme) = (context.language, context.theme);
+    let (letter, tooltip) = match kind {
+        NoteKind::Normal => return None,
+        NoteKind::DailyReset { .. } => (Text::DailyBadge, Text::DailyTooltip),
+        NoteKind::WeeklyReset { .. } => (Text::WeeklyBadge, Text::WeeklyTooltip),
+    };
     let line_height = ui.text_line_height();
     let padding = theme.spacing.extra_small;
     let width = ui.calc_text_size("W")[0] + 2.0 * padding;
     let start = [
-        anchor[0] - width / 2.0,
+        anchor[0] - width,
         anchor[1] + ((ui.frame_height() - line_height) / 2.0).max(0.0),
     ];
-
-    let (letter, tooltip) = match kind {
-        NoteKind::Normal => return,
-        NoteKind::DailyReset { .. } => (Text::DailyBadge, Text::DailyTooltip),
-        NoteKind::WeeklyReset { .. } => (Text::WeeklyBadge, Text::WeeklyTooltip),
-    };
     let letter = letter.get(language);
     let color = theme.accent.base.to_array();
     // Lucide style (`lay-icons`): outline only, round corners, stroke ≈ 2/24 of the size.
@@ -771,6 +902,7 @@ fn draw_badge(ui: &Ui, kind: NoteKind, anchor: [f32; 2], context: &TreeContext<'
     if ui.is_mouse_hovering_rect(start, max) {
         ui.tooltip_text(tooltip.get(language));
     }
+    Some(start[0])
 }
 
 /// Draws the empty state (M42): headline, primary and secondary button.
@@ -840,6 +972,18 @@ fn indent_to_center(ui: &Ui, item_width: f32, width: f32) {
         position[0] + ((width - item_width) / 2.0).max(0.0),
         position[1],
     ]);
+}
+
+/// Formats `count` into `buffer` without allocating (drawn every frame).
+fn format_count(count: usize, buffer: &mut [u8; 20]) -> &str {
+    use std::io::Write;
+    let mut cursor = std::io::Cursor::new(&mut buffer[..]);
+    // 20 bytes hold every `usize`, so the write cannot fail.
+    let written = match write!(cursor, "{count}") {
+        Ok(()) => usize::try_from(cursor.position()).unwrap_or(0),
+        Err(_) => 0,
+    };
+    std::str::from_utf8(&buffer[..written]).unwrap_or_default()
 }
 
 /// Shortens `text` with "…" so it fits into `width` (`lay-truncation`).
