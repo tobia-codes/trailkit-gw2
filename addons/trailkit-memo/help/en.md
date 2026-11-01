@@ -52,7 +52,7 @@ insert headings, **bold**, *italic*, lists, checkboxes and links (also
   unsaved changes, memo asks whether to save or discard them. (Set
   `"unsaved_changes": "save_automatically"` in `settings.json` to save
   without asking; a switch follows in the settings window.)
-- **Escape** first leaves the text field, a second Escape closes the window.
+- **Escape** closes the window; with unsaved changes memo asks first.
 - If the game or the addon closes while you are editing, your changes are
   kept as a draft. Next time you open the note, choose **Restore** to
   continue or **Discard** to drop them. Drafts are deleted automatically

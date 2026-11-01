@@ -104,8 +104,6 @@ enum WindowAction {
     LeaveDiscarding,
     /// Unsaved changes dialog: stay in the editor.
     LeaveCancelled,
-    /// Escape: close the window (asks first if something is unsaved).
-    RequestClose,
 }
 
 impl WindowAction {
@@ -356,6 +354,12 @@ impl MemoWindow {
     /// changes dialog opens and [`Self::take_close_approval`] reports the
     /// answer later (M54).
     pub fn request_close(&mut self) -> bool {
+        // Escape (sent by Nexus as a close request) while the dialog is shown
+        // picks the harmless answer (`overlay-dialog-layout`).
+        if self.leave_prompt.is_some() {
+            self.leave_prompt = None;
+            return false;
+        }
         if self.has_unsaved_changes() && self.unsaved_changes == UnsavedChanges::SaveAutomatically {
             self.commit_editor(Timestamp::now());
         }
@@ -398,15 +402,6 @@ impl MemoWindow {
         self.window_rect = Some([ui.window_pos(), ui.window_size()]);
         self.window_focused =
             ui.is_window_focused_with_flags(WindowFocusedFlags::ROOT_AND_CHILD_WINDOWS);
-        // Escape closes the window (`overlay-escape`) unless it was meant for
-        // a text input (ImGui used it there to leave the input) or a dialog.
-        if ui.is_key_pressed(Key::Escape)
-            && !ui.io().want_text_input
-            && self.leave_prompt.is_none()
-            && ui.is_window_focused_with_flags(WindowFocusedFlags::ROOT_AND_CHILD_WINDOWS)
-        {
-            self.actions.push(WindowAction::RequestClose);
-        }
         self.draw_problem(ui, language, theme);
 
         if self.document.root.is_empty() {
@@ -963,11 +958,6 @@ impl MemoWindow {
                 }
             }
             WindowAction::LeaveCancelled => self.leave_prompt = None,
-            WindowAction::RequestClose => {
-                if self.request_close() {
-                    self.close_approved = true;
-                }
-            }
         }
     }
 

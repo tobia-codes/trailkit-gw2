@@ -57,9 +57,11 @@ Re-verify when bumping `NEXUS_API_VERSION` or `nexus-rs`.
   `include_bytes!` and loaded via `Textures_LoadFromMemory` (R57).
 - Keybinds: `InputBinds_RegisterWithString` — the user can rebind in Nexus.
 - Close on Escape: `GUI_RegisterCloseOnEscape(windowName, &visible)` — Nexus
-  then writes the bool directly. A window that must ask before closing
-  (unsaved changes) handles Escape itself instead: on `Escape` with the
-  window focused and `io.want_text_input` false (memo M54).
+  then writes the bool directly. **Nexus consumes Escape before ImGui sees
+  it** (verified in game 2026-11-01: an addon's own `IsKeyPressed(Escape)`
+  check never fires), so always register. A window that must ask before
+  closing (unsaved changes) notices the cleared flag in its render callback,
+  shows itself again and asks (memo M54). Deregister in `unload`.
 - ImGui is **1.80**: no `BeginDisabled` (draw disabled items in
   `text.disabled` and ignore clicks), no line wrapping in multiline inputs,
   and Escape in an active input reverts it to its content at activation.
