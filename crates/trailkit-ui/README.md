@@ -19,6 +19,7 @@ Third-party assets: `assets/fonts/noto-sans/` (SIL Open Font License) and
 | `fonts` | shared font roles (body, bold, italic, headings, icons), embedded Noto Sans + Lucide | any |
 | `icons` | Lucide icon glyphs used by trailkit (add new ones here) | any |
 | `markdown` | markdown → blocks and styled spans; task toggling; `http(s)`-only links | any |
+| `button` | `draw_primary_button` (accent, `lay-one-primary`), `button_width` | Windows |
 | `pane` | `draw_pane` — a content region on `bg.panel` with `pane.padding` on every side (`lay-pane-padding`) | Windows |
 | `separator` | `draw_separator` — horizontal line that ends at the window/pane padding | Windows |
 | `style_scope` | `StyleScope` — RAII guard that pushes a theme onto the shared ImGui context and pops it on drop (no per-frame allocation) | Windows |

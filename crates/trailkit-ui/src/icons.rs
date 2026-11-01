@@ -25,9 +25,25 @@ impl Icon {
     pub const TRIANGLE_ALERT: Self = Self('\u{e193}');
     /// `folder-open`: open a folder in the file explorer.
     pub const FOLDER_OPEN: Self = Self('\u{e247}');
+    /// `pencil`: start editing.
+    pub const PENCIL: Self = Self('\u{e1f9}');
+    /// `heading`: format as heading.
+    pub const HEADING: Self = Self('\u{e384}');
+    /// `bold`: format as bold.
+    pub const BOLD: Self = Self('\u{e05d}');
+    /// `italic`: format as italic.
+    pub const ITALIC: Self = Self('\u{e0fb}');
+    /// `list`: bulleted list.
+    pub const LIST: Self = Self('\u{e106}');
+    /// `list-todo`: checkbox (task) list item.
+    pub const LIST_TODO: Self = Self('\u{e4c3}');
+    /// `link`: insert a link.
+    pub const LINK: Self = Self('\u{e102}');
+    /// `calendar-clock`: insert an event reference.
+    pub const CALENDAR_CLOCK: Self = Self('\u{e304}');
 
     /// Every icon above; keep in sync when adding one.
-    pub const ALL: [Self; 7] = [
+    pub const ALL: [Self; 15] = [
         Self::FILE_PLUS,
         Self::FOLDER_PLUS,
         Self::MENU,
@@ -35,6 +51,14 @@ impl Icon {
         Self::SQUARE_CHECK,
         Self::TRIANGLE_ALERT,
         Self::FOLDER_OPEN,
+        Self::PENCIL,
+        Self::HEADING,
+        Self::BOLD,
+        Self::ITALIC,
+        Self::LIST,
+        Self::LIST_TODO,
+        Self::LINK,
+        Self::CALENDAR_CLOCK,
     ];
 
     /// The glyph as a character of the icon font.

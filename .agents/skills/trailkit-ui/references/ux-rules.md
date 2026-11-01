@@ -148,7 +148,8 @@ Each rule has an id (`area-name`) so reviews can cite it.
   button rows, chips, filters) wrap onto the next line when the window is too
   narrow instead of running past the window or screen edge; panels shrink or
   stack. Nothing may require horizontal scrolling or be clipped by the window
-  border.
+  border. *Known exception:* ImGui 1.80 multiline text inputs cannot wrap
+  lines, so editors scroll sideways for long lines (memo M53, BACKLOG BL8).
 - `lay-drawer` — A list that does not fit next to its content (narrow
   window, or a column the user hid) opens as a drawer from the left **over**
   the content: a pane on `bg.panel`, the content behind it dimmed with
@@ -203,7 +204,9 @@ Each rule has an id (`area-name`) so reviews can cite it.
 - `nav-search` — Long lists (notes, events, settings) offer a search field at
   the top; matches are highlighted and their parents expanded.
 - `nav-modal-use` — Modals only for decisions that block progress
-  (confirmations, conflicts); never for navigation.
+  (confirmations, conflicts); never for navigation. Asking about unsaved
+  changes before navigating away is such a decision (`form-unsaved`), and it
+  appears only if something actually changed.
 
 ## 7. States & data (MEDIUM)
 
