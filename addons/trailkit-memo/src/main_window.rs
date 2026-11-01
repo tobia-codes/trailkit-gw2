@@ -9,8 +9,7 @@ use std::{borrow::Cow, path::PathBuf, sync::Arc};
 
 use jiff::Timestamp;
 use nexus::imgui::{
-    ChildWindow, Condition, Key, MenuItem, MouseButton, MouseCursor, StyleColor, TreeNode,
-    TreeNodeFlags, Ui,
+    Condition, Key, MenuItem, MouseButton, MouseCursor, StyleColor, TreeNode, TreeNodeFlags, Ui,
 };
 use trailkit_ui::{
     font_registry::FontScope,
@@ -18,6 +17,8 @@ use trailkit_ui::{
     icons::Icon,
     markdown::{self, MarkdownDocument},
     markdown_view::{MarkdownAction, draw_markdown, open_web_link},
+    pane::draw_pane,
+    separator::draw_separator,
     theme::Theme,
 };
 
@@ -28,11 +29,8 @@ use crate::{
     ui_state::UiState,
 };
 
-/// Minimum width of each pane in average characters (M40).
+/// Minimum content width of each pane in average characters (M40).
 const MINIMUM_PANE_CHARACTERS: f32 = 22.0;
-
-/// Width of the draggable splitter between the panes.
-const SPLITTER_WIDTH: f32 = 6.0;
 
 /// A problem with `notes.json` shown above the notes (M31).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -170,15 +168,20 @@ impl MemoWindow {
         if self.document.root.is_empty() {
             draw_empty_state(ui, language, theme, &mut self.actions);
         } else {
-            let pane_minimum = ui.calc_text_size("n")[0] * MINIMUM_PANE_CHARACTERS;
+            let pane_minimum =
+                ui.calc_text_size("n")[0] * MINIMUM_PANE_CHARACTERS + 2.0 * theme.pane.padding;
             let available = ui.content_region_avail();
-            if available[0] >= 2.0 * pane_minimum + SPLITTER_WIDTH {
+            if available[0] >= 2.0 * pane_minimum + theme.pane.gap {
                 self.draw_two_panes(ui, language, theme, pane_minimum);
             } else if self.single_pane_shows_note && self.selected_note().is_some() {
-                self.draw_back_button(ui, language);
-                self.draw_note_pane(ui, language, theme);
+                self.draw_back_button(ui, language, theme);
+                draw_pane(ui, theme, "note", [0.0, 0.0], || {
+                    self.draw_note_pane(ui, language, theme);
+                });
             } else {
-                self.draw_tree_pane(ui, language, theme);
+                draw_pane(ui, theme, "tree", [0.0, 0.0], || {
+                    self.draw_tree_pane(ui, language, theme);
+                });
             }
         }
 
@@ -226,27 +229,46 @@ impl MemoWindow {
         if offers_folder && ui.button(Text::OpenFolder.get(language)) {
             self.actions.push(WindowAction::OpenFolder);
         }
-        ui.separator();
+        draw_separator(ui, theme);
     }
 
-    /// Draws tree and note side by side with a draggable splitter (M21).
+    /// Draws tree and note as two panes with a draggable splitter in the gap
+    /// between them (M21). The splitter shows an accent line only while it
+    /// is hovered or dragged.
     fn draw_two_panes(&mut self, ui: &Ui, language: Language, theme: &Theme, pane_minimum: f32) {
         let available = ui.content_region_avail();
-        let usable = available[0] - SPLITTER_WIDTH;
+        let gap = theme.pane.gap;
+        let usable = available[0] - gap;
         let tree_width = (usable * self.ui_state.clamped_splitter_fraction())
             .clamp(pane_minimum, usable - pane_minimum);
 
-        ChildWindow::new("tree")
-            .size([tree_width, 0.0])
-            .build(ui, || self.draw_tree_pane(ui, language, theme));
+        draw_pane(ui, theme, "tree", [tree_width, 0.0], || {
+            self.draw_tree_pane(ui, language, theme);
+        });
 
         ui.same_line_with_spacing(0.0, 0.0);
         let splitter_start = ui.cursor_screen_pos();
-        ui.invisible_button("splitter", [SPLITTER_WIDTH, available[1].max(1.0)]);
-        if ui.is_item_hovered() || ui.is_item_active() {
+        ui.invisible_button("splitter", [gap, available[1].max(1.0)]);
+        let is_dragged = ui.is_item_active();
+        let is_hovered = ui.is_item_hovered();
+        if is_hovered || is_dragged {
             ui.set_mouse_cursor(Some(MouseCursor::ResizeEW));
+            let color = if is_dragged {
+                theme.accent.active
+            } else {
+                theme.accent.hover
+            };
+            let line_x = splitter_start[0] + gap / 2.0;
+            ui.get_window_draw_list()
+                .add_line(
+                    [line_x, splitter_start[1]],
+                    [line_x, splitter_start[1] + available[1]],
+                    color.to_array(),
+                )
+                .thickness(theme.border.width.max(1.0))
+                .build();
         }
-        if ui.is_item_active() {
+        if is_dragged {
             let new_width =
                 (tree_width + ui.io().mouse_delta[0]).clamp(pane_minimum, usable - pane_minimum);
             self.ui_state.splitter_fraction = new_width / usable;
@@ -254,24 +276,16 @@ impl MemoWindow {
         if ui.is_item_deactivated() {
             self.saver.save_ui_state(self.ui_state);
         }
-        let line_x = splitter_start[0] + SPLITTER_WIDTH / 2.0;
-        ui.get_window_draw_list()
-            .add_line(
-                [line_x, splitter_start[1]],
-                [line_x, splitter_start[1] + available[1]],
-                theme.border.color.to_array(),
-            )
-            .build();
 
         ui.same_line_with_spacing(0.0, 0.0);
-        ChildWindow::new("note")
-            .size([0.0, 0.0])
-            .build(ui, || self.draw_note_pane(ui, language, theme));
+        draw_pane(ui, theme, "note", [0.0, 0.0], || {
+            self.draw_note_pane(ui, language, theme);
+        });
     }
 
     /// Draws the toolbar and the tree.
     fn draw_tree_pane(&mut self, ui: &Ui, language: Language, theme: &Theme) {
-        draw_toolbar(ui, language, &mut self.actions);
+        draw_toolbar(ui, language, theme, &mut self.actions);
         let mut context = TreeContext {
             selected: self.ui_state.selected,
             rename: &mut self.rename,
@@ -283,7 +297,7 @@ impl MemoWindow {
     }
 
     /// Draws the "Back" button of the single-pane layout.
-    fn draw_back_button(&mut self, ui: &Ui, language: Language) {
+    fn draw_back_button(&mut self, ui: &Ui, language: Language, theme: &Theme) {
         {
             let _icons = FontScope::push(ui, FontRole::Icons);
             let mut buffer = [0; 4];
@@ -293,7 +307,7 @@ impl MemoWindow {
         if ui.small_button(Text::Back.get(language)) {
             self.actions.push(WindowAction::Back);
         }
-        ui.separator();
+        draw_separator(ui, theme);
     }
 
     /// Draws the selected note: its title and rendered content.
@@ -323,7 +337,7 @@ impl MemoWindow {
             let _heading = FontScope::push(ui, FontRole::Heading1);
             ui.text_wrapped(&note.title);
         }
-        ui.separator();
+        draw_separator(ui, theme);
 
         if self.restore_scroll {
             ui.set_scroll_y(self.ui_state.note_scroll);
@@ -478,7 +492,7 @@ fn find_title(nodes: &[Node], id: NodeId) -> Option<&str> {
 }
 
 /// Draws the "new note" / "new group" icon buttons.
-fn draw_toolbar(ui: &Ui, language: Language, actions: &mut Vec<WindowAction>) {
+fn draw_toolbar(ui: &Ui, language: Language, theme: &Theme, actions: &mut Vec<WindowAction>) {
     let buttons = [
         (Icon::FILE_PLUS, Text::NewNote, WindowAction::NewNote),
         (Icon::FOLDER_PLUS, Text::NewGroup, WindowAction::NewGroup),
@@ -500,7 +514,7 @@ fn draw_toolbar(ui: &Ui, language: Language, actions: &mut Vec<WindowAction>) {
             actions.push(action);
         }
     }
-    ui.separator();
+    draw_separator(ui, theme);
 }
 
 /// Draws `nodes` and, recursively, the children of expanded groups.

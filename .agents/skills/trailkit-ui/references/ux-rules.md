@@ -126,6 +126,16 @@ Each rule has an id (`area-name`) so reviews can cite it.
 - `lay-tokens-only` — Colors, spacing, sizes and font sizes come from theme
   tokens only — no raw hex or pixel numbers in components.
 - `lay-spacing-scale` — Use the 4/8 px spacing scale (`space.*`).
+- `lay-pane-padding` — **No content touches a window or pane edge.**
+  Sub-regions of a window are panes (`bg.panel` surface) drawn only through
+  `trailkit_ui::pane::draw_pane`, which applies `pane.padding` (8 px) on every
+  side; ImGui's bare `ChildWindow` has no padding and is not used directly.
+  Neighboring panes are separated by a `pane.gap` (8 px) of window
+  background, not by a line; a splitter sits in that gap and shows an accent
+  line only while hovered or dragged (plus the resize cursor). Selection and
+  hover highlights of rows stay inside the padding. Horizontal separators
+  inside a window or pane use `trailkit_ui::separator::draw_separator`, which
+  ends at the padding (ImGui's `Separator` spans the full width).
 - `lay-hierarchy` — Hierarchy through size, weight, spacing and contrast,
   not through color alone or decoration. Radius stays 0.
 - `lay-one-primary` — At most one primary button per window/dialog;

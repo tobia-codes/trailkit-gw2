@@ -6,6 +6,8 @@
 //! - [`color`]: an RGBA color type with WCAG contrast helpers;
 //! - [`theme`]: the semantic theme tokens and the built-in `Dark` / `Light`
 //!   themes;
+//! - `pane` and `separator` (Windows only): padded content regions and a
+//!   separator that respects that padding (`lay-pane-padding`);
 //! - `style_scope` (Windows only): an RAII guard that applies a theme to the
 //!   shared ImGui context and restores the previous style on drop.
 //!
@@ -22,5 +24,9 @@ pub mod theme;
 pub mod font_registry;
 #[cfg(windows)]
 pub mod markdown_view;
+#[cfg(windows)]
+pub mod pane;
+#[cfg(windows)]
+pub mod separator;
 #[cfg(windows)]
 pub mod style_scope;
