@@ -643,20 +643,33 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut TreeContext<'_>) {
         flags |= TreeNodeFlags::SELECTED;
     }
 
+    // M50: groups stand out by a bold title and their note count, shown
+    // right-aligned in the secondary text color like other row info (M49).
     let row_start = ui.cursor_screen_pos();
     let title_offset = group_title_offset(ui, context);
-    let title_end = row_content_end(ui, context);
-    let row_width = title_end - (row_start[0] + title_offset);
-    let label = if is_renaming {
-        Cow::Borrowed("")
-    } else {
-        truncate_to_width(ui, &group.title, row_width)
+    let mut count_buffer = [0; 20];
+    let count = format_count(group.note_count(), &mut count_buffer);
+    let count_x = row_content_end(ui, context) - ui.calc_text_size(count)[0];
+    let title_end = count_x - context.theme.spacing.small;
+    let (label, token) = {
+        let _bold = FontScope::push(ui, FontRole::BodyBold);
+        let label = if is_renaming {
+            Cow::Borrowed("")
+        } else {
+            truncate_to_width(ui, &group.title, title_end - (row_start[0] + title_offset))
+        };
+        let token = TreeNode::new("group")
+            .label::<&str, _>(&label)
+            .flags(flags)
+            .opened(group.expanded, Condition::Always)
+            .push(ui);
+        (label, token)
     };
-    let token = TreeNode::new("group")
-        .label::<&str, _>(&label)
-        .flags(flags)
-        .opened(group.expanded, Condition::Always)
-        .push(ui);
+    ui.get_window_draw_list().add_text(
+        [count_x, row_start[1] + context.frame_padding[1]],
+        context.theme.text.secondary.to_array(),
+        count,
+    );
     let is_open = token.is_some();
     handle_row_interaction(ui, node, &group.title, &label, context);
     if is_open != group.expanded {
@@ -666,6 +679,7 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut TreeContext<'_>) {
     }
     if is_renaming {
         ui.same_line_with_spacing(0.0, 0.0);
+        let _bold = FontScope::push(ui, FontRole::BodyBold);
         draw_rename_input(
             ui,
             row_start,
@@ -958,6 +972,18 @@ fn indent_to_center(ui: &Ui, item_width: f32, width: f32) {
         position[0] + ((width - item_width) / 2.0).max(0.0),
         position[1],
     ]);
+}
+
+/// Formats `count` into `buffer` without allocating (drawn every frame).
+fn format_count(count: usize, buffer: &mut [u8; 20]) -> &str {
+    use std::io::Write;
+    let mut cursor = std::io::Cursor::new(&mut buffer[..]);
+    // 20 bytes hold every `usize`, so the write cannot fail.
+    let written = match write!(cursor, "{count}") {
+        Ok(()) => usize::try_from(cursor.position()).unwrap_or(0),
+        Err(_) => 0,
+    };
+    std::str::from_utf8(&buffer[..written]).unwrap_or_default()
 }
 
 /// Shortens `text` with "…" so it fits into `width` (`lay-truncation`).
