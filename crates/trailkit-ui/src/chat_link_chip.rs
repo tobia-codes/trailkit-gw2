@@ -139,12 +139,14 @@ fn piece_width(ui: &Ui, piece: &Piece<'_>, theme: &Theme) -> f32 {
     }
 }
 
-/// How far to move `icon` down from the line top so its visible glyph is
-/// centered in a box of `height`. Lucide glyphs sit on the text baseline
-/// like letters, so drawn at the line top they hang low in a pill. Call it
-/// with the icon font pushed.
-fn icon_centering_offset(icon: Icon, height: f32) -> f32 {
-    let Ok(character) = u16::try_from(u32::from(icon.glyph())) else {
+/// How far to move every icon down from the line top so icons are
+/// centered in a box of `height`. Lucide draws all icons on one grid, so the
+/// offset comes from one reference glyph (the full square) and is the same
+/// for every icon; centering each glyph by its own shape would shift flat
+/// icons (e.g. the outfit mask) off the line. Call it with the icon font
+/// pushed.
+fn icon_centering_offset(height: f32) -> f32 {
+    let Ok(character) = u16::try_from(u32::from(Icon::SQUARE.glyph())) else {
         return 0.0;
     };
     // SAFETY: called on the render thread inside a frame, so the current
@@ -159,6 +161,12 @@ fn icon_centering_offset(icon: Icon, height: f32) -> f32 {
         })
     };
     bounds.map_or(0.0, |(top, bottom)| (height - (bottom - top)) / 2.0 - top)
+}
+
+/// How far the pill reaches above and below the text line: a third of the
+/// line spacing (chips on adjacent lines keep a gap), at least one pixel.
+fn vertical_padding(ui: &Ui) -> f32 {
+    ((ui.text_line_height_with_spacing() - ui.text_line_height()) / 3.0).max(1.0)
 }
 
 /// Radius of a coin dot: a third of the font size.
@@ -194,19 +202,28 @@ pub fn draw_chip(
 ) -> [[f32; 2]; 2] {
     let width = chip_width(ui, chip, theme, context);
     let height = ui.text_line_height();
-    let max = [position[0] + width, position[1] + height];
+    // The pill reaches into the line spacing above and below, so icons
+    // (which fill the whole line height) do not touch its edge.
+    let vertical_padding = vertical_padding(ui);
+    let min = [position[0], position[1] - vertical_padding];
+    let max = [position[0] + width, position[1] + height + vertical_padding];
+    let rounding = (max[1] - min[1]) / 2.0;
     draw_list
-        .add_rect(position, max, theme.surface.hover.to_array())
+        .add_rect(min, max, theme.surface.hover.to_array())
         .filled(true)
-        .rounding(height / 2.0)
+        .rounding(rounding)
         .build();
     if chip.link.is_err() {
         draw_list
-            .add_rect(position, max, theme.status.warning.to_array())
-            .rounding(height / 2.0)
+            .add_rect(min, max, theme.status.warning.to_array())
+            .rounding(rounding)
             .thickness(theme.border.width.max(1.0))
             .build();
     }
+    let icon_offset = {
+        let _icons = FontScope::push(ui, FontRole::Icons);
+        icon_centering_offset(height)
+    };
     let mut x = position[0] + padding(theme);
     for_each_piece(chip, theme, context, |piece| {
         let advance = piece_width(ui, &piece, theme);
@@ -214,7 +231,7 @@ pub fn draw_chip(
             Piece::Icon(icon, color) => {
                 let _icons = FontScope::push(ui, FontRole::Icons);
                 let mut buffer = [0; 4];
-                let y = position[1] + icon_centering_offset(icon, height);
+                let y = position[1] + icon_offset;
                 draw_list.add_text([x, y], color.to_array(), icon.as_str(&mut buffer));
             }
             Piece::Text(text, color) => {
@@ -237,7 +254,7 @@ pub fn draw_chip(
         }
         x += advance;
     });
-    [position, max]
+    [min, max]
 }
 
 /// Shows the tooltip of `chip`: its label (or why it is invalid), the raw
