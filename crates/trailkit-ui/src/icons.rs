@@ -52,8 +52,8 @@ impl Icon {
     pub const MESSAGE_SQUARE: Self = Self('\u{e117}');
     /// `map-pin`: waypoint / point of interest / vista chat link (M75).
     pub const MAP_PIN: Self = Self('\u{e111}');
-    /// `zap`: skill chat link (M75).
-    pub const ZAP: Self = Self('\u{e1b4}');
+    /// `swords`: skill chat link (M75).
+    pub const SWORDS: Self = Self('\u{e2b4}');
     /// `sparkles`: trait chat link (M75).
     pub const SPARKLES: Self = Self('\u{e412}');
     /// `user`: player chat link (M75).
@@ -92,7 +92,7 @@ impl Icon {
         Self::PACKAGE,
         Self::MESSAGE_SQUARE,
         Self::MAP_PIN,
-        Self::ZAP,
+        Self::SWORDS,
         Self::SPARKLES,
         Self::USER,
         Self::SCROLL_TEXT,
