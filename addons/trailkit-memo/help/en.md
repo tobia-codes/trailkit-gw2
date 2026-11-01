@@ -23,7 +23,7 @@ The window shows the note list on the left and the selected note on the right. D
 - **Links** open in your browser (only `http://` and `https://`); hover a link to see where it goes.
 - **Chat links** from the game (`[&…]`, e.g. a waypoint or an item) show as chips with an icon, the kind and the id; coins show their amount. Click a chip to copy its code, then paste it into the game chat. Hover it to see the code. A chip with **!** has a broken code; the tooltip says why. Names (instead of ids) will come with trailkit-core.
 
-Long names are shortened with "…" — hover them to see the full name.
+Long names are shortened with "…" — hover them to see the full name. In a long note the title stays at the top while you scroll.
 
 **Text size:** hold **Ctrl** and turn the mouse wheel over the window to make all text larger or smaller; **Ctrl+0** goes back to the default. The current size shows next to the mouse in percent. memo remembers the size; it builds on the UI font size set in Nexus.
 

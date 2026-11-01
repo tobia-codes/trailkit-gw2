@@ -23,7 +23,7 @@ Das Fenster zeigt links die Notizliste und rechts die ausgewählte Notiz. Ziehe 
 - **Links** öffnen sich im Browser (nur `http://` und `https://`); fahre mit der Maus darüber, um das Ziel zu sehen.
 - **Chat-Links** aus dem Spiel (`[&…]`, z. B. eine Wegmarke oder ein Gegenstand) erscheinen als Chips mit Symbol, Art und ID; Münzen zeigen ihren Betrag. Klicke auf einen Chip, um den Code zu kopieren, und füge ihn dann im Spiel-Chat ein. Fahre mit der Maus darüber, um den Code zu sehen. Ein Chip mit **!** hat einen beschädigten Code; der Tooltip sagt, warum. Namen (statt IDs) kommen mit trailkit-core.
 
-Lange Namen werden mit „…“ gekürzt — fahre mit der Maus darüber, um den ganzen Namen zu sehen.
+Lange Namen werden mit „…“ gekürzt — fahre mit der Maus darüber, um den ganzen Namen zu sehen. In einer langen Notiz bleibt der Titel oben stehen, während du scrollst.
 
 **Textgröße:** Halte **Strg** und drehe das Mausrad über dem Fenster, um den ganzen Text größer oder kleiner zu machen; **Strg+0** stellt die Standardgröße wieder her. Die aktuelle Größe erscheint in Prozent neben der Maus. memo merkt sich die Größe; sie baut auf der UI-Schriftgröße auf, die du in Nexus eingestellt hast.
 

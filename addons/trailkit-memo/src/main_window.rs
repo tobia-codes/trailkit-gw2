@@ -768,10 +768,7 @@ impl MemoWindow {
         if self.editor.is_some() {
             self.draw_editor(ui, language, theme);
         } else {
-            ChildWindow::new("note_body")
-                .size([0.0, 0.0])
-                .draw_background(false)
-                .build(ui, || self.draw_note_body(ui, language, theme));
+            self.draw_note_body(ui, language, theme);
         }
     }
 
@@ -973,7 +970,20 @@ impl MemoWindow {
         if ui.is_window_hovered() && ui.is_mouse_double_clicked(MouseButton::Left) {
             self.actions.push(WindowAction::StartEditing);
         }
+        // Title and separator stay at the top; only the content scrolls, so
+        // its scrollbar starts below the separator (M81).
+        ChildWindow::new("note_body")
+            .size([0.0, 0.0])
+            .draw_background(false)
+            .build(ui, || self.draw_note_content(ui, language, theme));
+    }
 
+    /// Draws the rendered content of the selected note in the scrolling
+    /// region below its title.
+    fn draw_note_content(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+        if ui.is_window_hovered() && ui.is_mouse_double_clicked(MouseButton::Left) {
+            self.actions.push(WindowAction::StartEditing);
+        }
         if self.restore_scroll {
             ui.set_scroll_y(self.ui_state.note_scroll);
             self.restore_scroll = false;
