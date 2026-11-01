@@ -303,7 +303,7 @@ fn editing_with_preview_turns_the_note_list_into_a_drawer_earlier() {
 fn chat_links_show_as_chips_in_the_note_view() {
     let mut document = sample_document();
     if let Some(Node::Note(first)) = document.root.first_mut() {
-        first.body = "## Route\n- Start at [&BDgAAAA=], buy [&AvoJTQAA]\n- Budget: [&AdsnAAA=]\n- Build: [&DQc=]\n- Broken: [&KgAAAAA=]".to_owned();
+        first.body = "## Route\n- Start at [&BDgAAAA=], buy [&AvoJTQAA]\n- Budget: [&AdsnAAA=]\n- Build: [&DQc=]\n- Gear: [&CwEAAAA=] [&BnMVAAA=] [&CgEAAAA=] [&DgEAAAA=]\n- Broken: [&KgAAAAA=]".to_owned();
     }
     let ui_state = selected_first(&document);
     let (mut memo, _worker, _directory) = memo_window(document, ui_state);
