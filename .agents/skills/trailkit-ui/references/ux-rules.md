@@ -131,8 +131,16 @@ Each rule has an id (`area-name`) so reviews can cite it.
 - `lay-one-primary` — At most one primary button per window/dialog;
   secondary actions are visually subordinate; destructive actions use the
   `danger` variant and sit apart from the primary action.
-- `lay-truncation` — Prefer wrapping; when truncating use an ellipsis and
-  show the full text in a tooltip.
+- `lay-responsive` — **Content adapts to the window size, never overflows
+  it** (applies to every addon and window). Rows of controls (toolbars,
+  button rows, chips, filters) wrap onto the next line when the window is too
+  narrow instead of running past the window or screen edge; panels shrink or
+  stack. Nothing may require horizontal scrolling or be clipped by the window
+  border.
+- `lay-truncation` — Text that belongs on one line (a note or group in the
+  note list, a list row, a tab or column label) does not wrap: it is
+  shortened with an ellipsis ("…") to the available width and shows the full
+  text in a tooltip. All other text wraps.
 - `lay-tabular-numbers` — Timers, countdowns, prices and quantities use
   right-aligned, fixed-width digits so they do not jitter while updating.
 - `lay-line-length` — Long text (help, notes view) wraps at a readable width
@@ -154,8 +162,9 @@ Each rule has an id (`area-name`) so reviews can cite it.
   clearly highlighted.
 - `nav-state-preservation` — Windows reopen with their last section, scroll
   position, filters and expanded tree nodes.
-- `nav-overflow-menu` — When actions do not fit, use a "…" overflow menu
-  instead of cramming buttons.
+- `nav-overflow-menu` — Toolbars wrap first (`lay-responsive`); a "…"
+  overflow menu is only for places that must stay a single line (title bar,
+  list row actions) — never cram or clip buttons.
 - `nav-empty-destination` — If a section or feature is unavailable, explain
   why instead of hiding it silently.
 - `nav-search` — Long lists (notes, events, settings) offer a search field at

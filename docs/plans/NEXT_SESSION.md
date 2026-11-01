@@ -1,47 +1,39 @@
 # Next session — handoff
 
-Last updated: 2026-10-31 (end of session 3).
+Last updated: 2026-11-01 (session 4).
 
 ## Where we are
 
-- **Phase 0 (foundation) complete** — workspace, xtask, trailkit-ui, memo
-  skeleton with quick access icon + gameplay auto-hide, CI, git hooks
-  (ROADMAP R28–R61).
-- **Phase 0b (price archive) complete except the first scheduled run** —
-  `tools/trailkit-datagen`, workflows `daily-archive.yml` and
-  `dpf-reminder.yml`, first manual run on GitHub succeeded (release
-  `archive-2026-10`, all 4 data sets complete). Decisions R62–R68,
-  data-pipeline D27–D41, core C14, BACKLOG BL7.
-- Repo is public: <https://github.com/tobia-codes/trailkit-gw2>.
-  **`develop` is the default branch** (R67) → scheduled workflows run from
-  `develop`. `main` = last release (PR #2). PRs #1–#4 merged.
-- Branch protection: `main` PR-only + required checks (Windows job,
-  cargo-deny, branch name), `develop` PR-only; both enforce admins, no force
-  push, no deletion. (Re-create from R9 if it is ever lost.)
-- Rules that changed in session 3:
-  - Commit email `tobiacodes@gmail.com` (R62); history rewritten.
-  - **No AI attribution** in commits or PRs (R68, AGENTS.md rule 1).
-  - Every push / PR merge still needs the user's explicit approval; work
-    happens on `feature/`/`chore/` branches → PR to `develop`.
-- The user converses in German; repo text English.
+- **Phase 0 (foundation) and phase 0b (daily archive) complete.** First
+  scheduled run on 2026-11-01: release `archive-2026-11`, all 4 data sets
+  `complete`. Repo public: <https://github.com/tobia-codes/trailkit-gw2>,
+  `develop` is the default branch (R67); work on `feature/`/`chore/`
+  branches → PR to `develop`; every push / merge needs explicit approval;
+  no AI attribution (R68).
+- **Phase 1 (trailkit-memo standalone) planned** — session 4 settled M16–M28
+  in `docs/plans/addons/trailkit-memo.md` (storage, data model, markdown
+  renderer in `trailkit-ui`, layout, drag & drop, character scope only with
+  core, phase-1 settings, implementation order) and the UX rule
+  `lay-responsive` (all addons: content adapts to the window, toolbars wrap,
+  single-line items truncate with "…" + tooltip).
+- Open PRs: #6 `chore/rustup-toolchain-install` (explicit toolchain install
+  in CI + archive workflow). The decisions of session 4 are on
+  `chore/phase-1-decisions`.
 
 ## ▶ Resume here
 
-1. **Check the first scheduled archive runs** (2026-11-01):
-   `gh run list --workflow daily-archive.yml` — the 00:17 UTC run should have
-   created release `archive-2026-11` with `2026-11-01.*` files; the 06:17 UTC
-   catch-up should be green (it fails only if gaps remain). Look at
-   `2026-11-01.manifest.json` (all data sets `complete`?). If something
-   failed: read the run log, fix on a `bugfix/` branch.
-   Also check that the first DPF reminder issue appears on the 1st (08:00 UTC).
-2. Then **phase 0b is complete** → start **phase 1: trailkit-memo standalone**
-   (no core). Begin with a grill round on what `docs/plans/addons/trailkit-memo.md`
-   (M1–M15) leaves open for implementation — e.g. settings persistence format
-   and location, settings window layout, help window (markdown rendering),
-   note tree data model + drag & drop, storage format of notes, import/export,
-   backups (M11), reset timers (M13, with `jiff`, R66). Phase 1 also builds the
-   shared UI components in `crates/trailkit-ui` and the Nexus options tab (R53).
-3. Next release PR `develop` → `main` will show "out of date" because `main`
+1. **Cron delays:** the 00:17 UTC archive run of 2026-11-01 started at
+   06:14 UTC (~6 h late, GitHub load); the 06:17 catch-up had not run by
+   07:30. Keep watching `gh run list --workflow daily-archive.yml`, especially
+   the first **WvW EU snapshot Fri 2026-11-06 17:23 UTC** (D29 only has
+   ~35 min margin). If it is late, run a grill round on mitigation
+   (earlier/duplicate cron, external `workflow_dispatch` trigger — GDPR!).
+2. Check the DPF reminder issue of 2026-11-01 (08:00 UTC) appeared.
+3. **Phase 1, step 1 (M28): storage & data model** on `feature/memo-storage`
+   — `notes.json`/`settings.json` per M16–M18, M23–M25, R22 (migration,
+   newer-version read-only, atomic writes on the worker thread). Grill the
+   step's open details first, then implement step by step through M28.
+4. Next release PR `develop` → `main` will show "out of date" because `main`
    has the merge commit of PR #2: use "Update branch" (or merge `main` back
    into `develop` via a PR) before merging.
 
@@ -68,11 +60,12 @@ Last updated: 2026-10-31 (end of session 3).
 - Optional: add `. "$HOME/.cargo/env"` to `~/.bashrc` (rustup was installed
   with `--no-modify-path`).
 
-## Recurring checks (2026-10-31)
+## Recurring checks
 
-- GW2 wiki: still behind Cognito login → Wayback workaround stays.
-- C-703/25 P: pending, no hearing date, no AG opinion; DPF in force
-  (checked again at the start of phase 0b).
+- GW2 wiki (2026-10-31): still behind Cognito login → Wayback workaround stays.
+- C-703/25 P (2026-11-01, start of phase 1): still pending, no hearing date
+  or judgment reported; DPF in force. Microsoft intervened for the
+  Commission; noyb asked for repeal (2026-06-30) but has not sued yet.
 
 ## Environment notes
 
