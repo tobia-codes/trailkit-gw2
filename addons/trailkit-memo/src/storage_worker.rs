@@ -3,7 +3,8 @@
 //! The render thread owns the note tree. On every change it sends a copy to
 //! this worker, which waits until no change arrived for the debounce delay,
 //! then writes the file through `trailkit-storage`. At start the worker loads
-//! `notes.json` and `ui_state.json` and hands them back over a channel. While nothing is
+//! `notes.json`, `ui_state.json` and `drafts.json` and hands them back over a
+//! channel. An empty draft list deletes `drafts.json` instead of writing it. While nothing is
 //! pending the worker blocks in `recv()` and uses no CPU (nexus-addon-dev
 //! skill §2). On shutdown every pending save is written before the thread ends.
 //!
@@ -23,7 +24,9 @@ use std::{
 use jiff::Timestamp;
 use trailkit_storage::{DocumentStore, LoadOutcome, ReadOnlyReason, VersionedDocument};
 
-use crate::{note_tree::NotesDocument, settings::Settings, ui_state::UiState};
+use crate::{
+    drafts::DraftsDocument, note_tree::NotesDocument, settings::Settings, ui_state::UiState,
+};
 
 /// Delay after the last change before a document is written (M18).
 pub const SAVE_DEBOUNCE: Duration = Duration::from_secs(2);
@@ -39,6 +42,8 @@ enum WorkerCommand {
     SaveSettings(Settings),
     /// Save this window state once no newer one arrives in time.
     SaveUiState(UiState),
+    /// Save (or, if empty, delete) the drafts once no newer ones arrive in time.
+    SaveDrafts(DraftsDocument),
     /// Write everything pending and end the thread.
     Shutdown,
 }
@@ -68,6 +73,8 @@ pub struct LoadedDocuments {
     pub notes: LoadOutcome<NotesDocument>,
     /// The restored window state (defaults if missing or unusable).
     pub ui_state: UiState,
+    /// Drafts kept from an earlier unload (empty if missing or unusable).
+    pub drafts: DraftsDocument,
 }
 
 /// Which documents the worker may write (from their load outcomes).
@@ -146,6 +153,12 @@ impl StorageSaver {
         self.send(WorkerCommand::SaveUiState(ui_state));
     }
 
+    /// Queues the drafts to be saved (or the file deleted, if there are none)
+    /// after the debounce delay.
+    pub fn save_drafts(&self, drafts: DraftsDocument) {
+        self.send(WorkerCommand::SaveDrafts(drafts));
+    }
+
     /// Sends `command` to the worker, logging if the worker is gone.
     fn send(&self, command: WorkerCommand) {
         if self.commands.send(command).is_err() {
@@ -183,17 +196,26 @@ fn run_worker(
     let ui_state_outcome = store.load::<UiState>(now);
     let ui_state_saving_allowed = ui_state_outcome.allows_saving();
     let ui_state = ui_state_outcome.into_document().unwrap_or_default();
+    let drafts_outcome = store.load::<DraftsDocument>(now);
+    let drafts_saving_allowed = drafts_outcome.allows_saving();
+    let drafts = drafts_outcome.into_document().unwrap_or_default();
     // The render side may already be gone during a quick unload; that is fine.
-    let _ = loaded.send(LoadedDocuments { notes, ui_state });
+    let _ = loaded.send(LoadedDocuments {
+        notes,
+        ui_state,
+        drafts,
+    });
 
     let mut pending_notes: Option<PendingSave<Arc<NotesDocument>>> = None;
     let mut pending_settings: Option<PendingSave<Settings>> = None;
     let mut pending_ui_state: Option<PendingSave<UiState>> = None;
+    let mut pending_drafts: Option<PendingSave<DraftsDocument>> = None;
     loop {
         let next_due = [
             pending_notes.as_ref().map(|pending| pending.due_at),
             pending_settings.as_ref().map(|pending| pending.due_at),
             pending_ui_state.as_ref().map(|pending| pending.due_at),
+            pending_drafts.as_ref().map(|pending| pending.due_at),
         ]
         .into_iter()
         .flatten()
@@ -222,10 +244,17 @@ fn run_worker(
                     due_at: Instant::now() + debounce,
                 });
             }
+            Ok(WorkerCommand::SaveDrafts(drafts)) if drafts_saving_allowed => {
+                pending_drafts = Some(PendingSave {
+                    document: drafts,
+                    due_at: Instant::now() + debounce,
+                });
+            }
             Ok(
                 WorkerCommand::SaveNotes(_)
                 | WorkerCommand::SaveSettings(_)
-                | WorkerCommand::SaveUiState(_),
+                | WorkerCommand::SaveUiState(_)
+                | WorkerCommand::SaveDrafts(_),
             ) => {
                 log::warn!("document is read-only; change not saved");
             }
@@ -233,6 +262,7 @@ fn run_worker(
                 save_pending::<_, NotesDocument>(store, pending_notes.take(), None);
                 save_pending::<_, Settings>(store, pending_settings.take(), None);
                 save_pending::<_, UiState>(store, pending_ui_state.take(), None);
+                save_pending_drafts(store, pending_drafts.take(), None);
                 return;
             }
             Err(RecvTimeoutError::Timeout) => {}
@@ -242,7 +272,30 @@ fn run_worker(
         pending_notes = save_pending::<_, NotesDocument>(store, pending_notes, Some(now));
         pending_settings = save_pending::<_, Settings>(store, pending_settings, Some(now));
         pending_ui_state = save_pending::<_, UiState>(store, pending_ui_state, Some(now));
+        pending_drafts = save_pending_drafts(store, pending_drafts, Some(now));
     }
+}
+
+/// Like [`save_pending`] for the drafts, but deletes `drafts.json` when the
+/// list is empty, so no empty file lingers on disk (M55).
+fn save_pending_drafts(
+    store: &DocumentStore,
+    pending: Option<PendingSave<DraftsDocument>>,
+    now: Option<Instant>,
+) -> Option<PendingSave<DraftsDocument>> {
+    let pending = pending?;
+    if now.is_some_and(|now| pending.due_at > now) {
+        return Some(pending);
+    }
+    let result = if pending.document.drafts.is_empty() {
+        store.delete::<DraftsDocument>()
+    } else {
+        store.save(&pending.document)
+    };
+    if let Err(error) = result {
+        log::error!("cannot write {}.json: {error}", DraftsDocument::FILE_STEM);
+    }
+    None
 }
 
 /// Writes `pending` if it is due at `now` (or unconditionally if `now` is
@@ -301,7 +354,8 @@ mod tests {
 
     use super::*;
     use crate::{
-        note_tree::{Note, NoteKind, TreeNode},
+        drafts::Draft,
+        note_tree::{Note, NoteId, NoteKind, TreeNode},
         settings::QuickAccessIcon,
     };
 
@@ -419,6 +473,44 @@ mod tests {
             .load::<Settings>(Timestamp::now())
             .into_document();
         assert_eq!(saved_settings, Some(settings));
+        Ok(())
+    }
+
+    #[test]
+    fn drafts_are_written_on_shutdown_and_deleted_when_empty()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let directory = tempfile::tempdir()?;
+        let store = DocumentStore::new(directory.path());
+        let spawn = || {
+            StorageWorker::spawn(
+                DocumentStore::new(directory.path()),
+                Duration::from_secs(3600),
+                ALL_ALLOWED,
+            )
+        };
+        let draft = Draft {
+            note: NoteId::new_unique(),
+            title: "Title".to_owned(),
+            body: "Unsaved".to_owned(),
+            saved_at: Timestamp::now(),
+            note_updated_at: Timestamp::now(),
+        };
+
+        let (worker, loaded) = spawn()?;
+        assert!(loaded.recv_timeout(TEST_TIMEOUT)?.drafts.drafts.is_empty());
+        worker.saver().save_drafts(DraftsDocument {
+            drafts: vec![draft.clone()],
+        });
+        drop(worker);
+
+        let (worker, loaded) = spawn()?;
+        assert_eq!(
+            loaded.recv_timeout(TEST_TIMEOUT)?.drafts.drafts,
+            vec![draft]
+        );
+        worker.saver().save_drafts(DraftsDocument::default());
+        drop(worker);
+        assert!(!store.path_of::<DraftsDocument>().exists());
         Ok(())
     }
 

@@ -321,6 +321,7 @@ fn receive_loaded_notes(notes: &mut NotesState) {
         Ok(LoadedDocuments {
             notes: outcome,
             ui_state,
+            ..
         }) => {
             let (document, problem) = document_and_problem(outcome);
             NotesState::Ready(Box::new(MemoWindow::new(
