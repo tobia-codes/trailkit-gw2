@@ -16,6 +16,7 @@ pulldown-cmark.workspace = true
 [target.'cfg(windows)'.dependencies]
 log.workspace = true
 nexus.workspace = true
+windows.workspace = true
 
 # Headless ImGui harness for the integration tests in `tests/` (memo plan M65).
 [target.'cfg(windows)'.dev-dependencies]

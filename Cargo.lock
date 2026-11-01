@@ -1529,6 +1529,7 @@ dependencies = [
  "nexus",
  "pulldown-cmark",
  "trailkit-ui-testing",
+ "windows",
 ]
 
 [[package]]

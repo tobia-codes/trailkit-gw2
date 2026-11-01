@@ -33,6 +33,7 @@ Latin up to Extended-B plus punctuation, the icon font only the icons in
 | `markdown_view` | draws a parsed markdown document with word wrapping; returns task/link clicks and copies chat-link chips | Windows |
 | `chat_link` | finds and decodes GW2 chat codes (`[&…]`) | any |
 | `chat_link_chip` | draws a chat-link chip and its tooltip; texts come from the addon (`ChipContext`) | Windows |
+| `cursor_extent` | measures the mouse cursor (GW2 draws a large one) so `StyleScope` places tooltips right of it | Windows |
 
 ## Usage
 
