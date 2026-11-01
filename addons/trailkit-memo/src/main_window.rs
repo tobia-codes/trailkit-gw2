@@ -10,7 +10,7 @@ use std::{borrow::Cow, path::PathBuf, sync::Arc};
 use jiff::{Timestamp, tz::TimeZone};
 use nexus::imgui::{
     ChildWindow, Condition, Key, MenuItem, MouseButton, StyleColor, StyleVar, TreeNode,
-    TreeNodeFlags, Ui, Window, WindowFlags, WindowFocusedFlags,
+    TreeNodeFlags, Ui, Window, WindowFlags, WindowFocusedFlags, WindowHoveredFlags,
 };
 use trailkit_ui::{
     button::{button_width, draw_primary_button, draw_primary_button_with_size},
@@ -32,7 +32,7 @@ use crate::{
     i18n::{Language, Text, chip_text},
     note_editing::{ActiveFormats, EditSession, FormatCommand, active_formats, format_edit},
     note_tree::{Group, GroupId, NodeId, Note, NoteId, NoteKind, NotesDocument, TreeNode as Node},
-    settings::UnsavedChanges,
+    settings::{Settings, TextScale, UnsavedChanges},
     storage_worker::StorageSaver,
     ui_state::UiState,
 };
@@ -74,6 +74,9 @@ const DRAWER_MAXIMUM_FRACTION: f32 = 0.85;
 
 /// Windows virtual-key code of `B` (Nexus feeds ImGui with virtual-key codes).
 const VIRTUAL_KEY_B: i32 = 0x42;
+
+/// Windows virtual-key code of `0` (Ctrl+0 resets the text size, M79).
+const VIRTUAL_KEY_0: i32 = 0x30;
 
 /// Windows virtual-key code of `I`.
 const VIRTUAL_KEY_I: i32 = 0x49;
@@ -288,8 +291,8 @@ pub struct MemoWindow {
     window_rect: Option<[[f32; 2]; 2]>,
     /// Whether the main window had the focus in the last frame.
     window_focused: bool,
-    /// Whether leaving the editor with changes asks or saves (M57).
-    unsaved_changes: UnsavedChanges,
+    /// The user settings; the window changes the text scale (M57, M79).
+    settings: Settings,
     /// Height of the dialog card measured in the last frame (its content
     /// wraps, so the height is only known after drawing it once).
     dialog_height: Option<f32>,
@@ -327,7 +330,7 @@ impl MemoWindow {
         saver: StorageSaver,
         addon_directory: PathBuf,
         drafts: DraftsDocument,
-        unsaved_changes: UnsavedChanges,
+        settings: Settings,
     ) -> Self {
         let mut drafts = drafts;
         if drafts.prune(Timestamp::now(), |note| document.note(note).is_some()) {
@@ -358,10 +361,41 @@ impl MemoWindow {
             leave_prompt: None,
             window_rect: None,
             window_focused: false,
-            unsaved_changes,
+            settings,
             close_approved: false,
             draft_hint: None,
             dialog_height: None,
+        }
+    }
+
+    /// The text size the window wants (M79).
+    #[must_use]
+    pub fn text_scale(&self) -> TextScale {
+        self.settings.text_scale
+    }
+
+    /// Ctrl+mouse wheel over the window makes the text larger or smaller,
+    /// Ctrl+0 resets it (M79); the change is saved and takes effect when the
+    /// addon resizes the fonts next frame.
+    fn handle_text_scale_keys(&mut self, ui: &Ui) {
+        let io = ui.io();
+        if !io.key_ctrl {
+            return;
+        }
+        let hovered = ui.is_window_hovered_with_flags(
+            WindowHoveredFlags::ROOT_AND_CHILD_WINDOWS
+                | WindowHoveredFlags::ALLOW_WHEN_BLOCKED_BY_ACTIVE_ITEM,
+        );
+        let scale = if hovered && io.mouse_wheel != 0.0 {
+            self.settings.text_scale.stepped(io.mouse_wheel.signum())
+        } else if self.window_focused && ui.is_key_index_pressed(VIRTUAL_KEY_0) {
+            TextScale::DEFAULT
+        } else {
+            return;
+        };
+        if scale != self.settings.text_scale {
+            self.settings.text_scale = scale;
+            self.saver.save_settings(self.settings);
         }
     }
 
@@ -384,7 +418,9 @@ impl MemoWindow {
             self.leave_prompt = None;
             return false;
         }
-        if self.has_unsaved_changes() && self.unsaved_changes == UnsavedChanges::SaveAutomatically {
+        if self.has_unsaved_changes()
+            && self.settings.unsaved_changes == UnsavedChanges::SaveAutomatically
+        {
             self.commit_editor(Timestamp::now());
         }
         if self.has_unsaved_changes() {
@@ -435,6 +471,7 @@ impl MemoWindow {
         self.window_rect = Some([ui.window_pos(), ui.window_size()]);
         self.window_focused =
             ui.is_window_focused_with_flags(WindowFocusedFlags::ROOT_AND_CHILD_WINDOWS);
+        self.handle_text_scale_keys(ui);
         self.draw_problem(ui, language, theme);
 
         if self.document.root.is_empty() {
@@ -936,7 +973,7 @@ impl MemoWindow {
             if self.leave_prompt.is_some() {
                 return;
             }
-            match (editor.session.has_changes(), self.unsaved_changes) {
+            match (editor.session.has_changes(), self.settings.unsaved_changes) {
                 (true, UnsavedChanges::Ask) => {
                     self.leave_prompt = Some(LeaveReason::Action(action.clone()));
                     return;
@@ -1044,7 +1081,9 @@ impl MemoWindow {
             }
             WindowAction::FinishEditing => self.commit_editor(now),
             WindowAction::CancelEditing => {
-                if self.has_unsaved_changes() && self.unsaved_changes == UnsavedChanges::Ask {
+                if self.has_unsaved_changes()
+                    && self.settings.unsaved_changes == UnsavedChanges::Ask
+                {
                     self.leave_prompt = Some(LeaveReason::Cancel);
                 } else {
                     self.editor = None;

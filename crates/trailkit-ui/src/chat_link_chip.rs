@@ -3,7 +3,7 @@
 //! with gold, silver and copper dots, and a warning chip for codes that
 //! cannot be decoded. Used by the markdown view and the editor.
 
-use nexus::imgui::{DrawListMut, Ui};
+use nexus::imgui::{DrawListMut, ImColor32, Ui};
 
 use crate::{
     chat_link::{ChatLink, ChatLinkChip, ChatLinkError, ChatLinkKind, ChipText},
@@ -13,6 +13,10 @@ use crate::{
     icons::Icon,
     theme::Theme,
 };
+
+/// Icon size relative to the text: about the height of capital letters, so
+/// chips do not stand out of the line (memo plan M79).
+const ICON_SCALE: f32 = 0.8;
 
 /// What a chip needs from the addon: its texts and the code copied last.
 #[derive(Clone, Copy)]
@@ -131,7 +135,7 @@ fn piece_width(ui: &Ui, piece: &Piece<'_>, theme: &Theme) -> f32 {
         Piece::Icon(icon, _) => {
             let _icons = FontScope::push(ui, FontRole::Icons);
             let mut buffer = [0; 4];
-            ui.calc_text_size(icon.as_str(&mut buffer))[0] + theme.spacing.extra_small
+            ui.calc_text_size(icon.as_str(&mut buffer))[0] * ICON_SCALE + theme.spacing.extra_small
         }
         Piece::Text(text, _) => ui.calc_text_size(text)[0],
         // A little air before the dot, more after it (before the next amount).
@@ -139,13 +143,13 @@ fn piece_width(ui: &Ui, piece: &Piece<'_>, theme: &Theme) -> f32 {
     }
 }
 
-/// How far to move every icon down from the line top so icons are
-/// centered in a box of `height`. Lucide draws all icons on one grid, so the
-/// offset comes from one reference glyph (the full square) and is the same
-/// for every icon; centering each glyph by its own shape would shift flat
-/// icons (e.g. the outfit mask) off the line. Call it with the icon font
-/// pushed.
-fn icon_centering_offset(height: f32) -> f32 {
+/// How far to move every icon, drawn at `icon_size`, down from the line top
+/// so icons are centered in a box of `height`. Lucide draws all icons on one
+/// grid, so the offset comes from one reference glyph (the full square) and
+/// is the same for every icon; centering each glyph by its own shape would
+/// shift flat icons (e.g. the outfit mask) off the line. Call it with the
+/// icon font pushed.
+fn icon_centering_offset(height: f32, icon_size: f32) -> f32 {
     let Ok(character) = u16::try_from(u32::from(Icon::SQUARE.glyph())) else {
         return 0.0;
     };
@@ -156,7 +160,7 @@ fn icon_centering_offset(height: f32) -> f32 {
         let font = nexus::imgui::sys::igGetFont();
         let glyph = nexus::imgui::sys::ImFont_FindGlyph(font, character);
         glyph.as_ref().map(|glyph| {
-            let scale = nexus::imgui::sys::igGetFontSize() / (*font).FontSize;
+            let scale = icon_size / (*font).FontSize;
             (glyph.Y0 * scale, glyph.Y1 * scale)
         })
     };
@@ -164,15 +168,43 @@ fn icon_centering_offset(height: f32) -> f32 {
 }
 
 /// How far the pill reaches above and below the text: a third of the
-/// leading of running text (chips on adjacent lines keep a gap), at least
-/// one pixel.
+/// leading of running text, so it stays slim and chips on adjacent lines
+/// keep a clear gap; at least one pixel.
 fn vertical_padding(ui: &Ui, theme: &Theme) -> f32 {
-    (theme.typography.leading_for(ui.current_font_size()) * 2.0 / 3.0).max(1.0)
+    (theme.typography.leading_for(ui.current_font_size()) / 3.0).max(1.0)
 }
 
-/// Radius of a coin dot: a third of the font size.
+/// Radius of a coin dot: about the size of a small letter.
 fn dot_radius(ui: &Ui) -> f32 {
-    ui.current_font_size() / 3.0
+    ui.current_font_size() * 0.28
+}
+
+/// Draws `icon` at `position` in `size` pixels with the current (icon) font
+/// into the current window's draw list; ImGui's draw-list API in Rust only
+/// draws text at the font's own size.
+fn draw_scaled_icon(icon: Icon, position: [f32; 2], size: f32, color: Color) {
+    let mut buffer = [0; 4];
+    let text = icon.as_str(&mut buffer);
+    let begin = text.as_ptr().cast::<std::ffi::c_char>();
+    // SAFETY: called on the render thread inside a frame, so the current
+    // window's draw list and the current font are valid; `begin..begin +
+    // len` is the UTF-8 glyph, which ImGui only reads; no clip rectangle.
+    unsafe {
+        nexus::imgui::sys::ImDrawList_AddText_FontPtr(
+            nexus::imgui::sys::igGetWindowDrawList(),
+            nexus::imgui::sys::igGetFont(),
+            size,
+            nexus::imgui::sys::ImVec2 {
+                x: position[0],
+                y: position[1],
+            },
+            ImColor32::from(color.to_array()).to_bits(),
+            begin,
+            begin.add(text.len()),
+            0.0,
+            std::ptr::null(),
+        );
+    }
 }
 
 /// Horizontal padding inside the pill.
@@ -203,14 +235,13 @@ pub fn draw_chip(
 ) -> [[f32; 2]; 2] {
     let width = chip_width(ui, chip, theme, context);
     let height = ui.text_line_height();
-    // The pill reaches into the line spacing above and below, so icons
-    // (which fill the whole line height) do not touch its edge.
+    // The pill reaches a little into the line spacing above and below.
     let vertical_padding = vertical_padding(ui, theme);
     let min = [position[0], position[1] - vertical_padding];
     let max = [position[0] + width, position[1] + height + vertical_padding];
     let rounding = (max[1] - min[1]) / 2.0;
     draw_list
-        .add_rect(min, max, theme.surface.hover.to_array())
+        .add_rect(min, max, theme.surface.hover.with_alpha(0.6).to_array())
         .filled(true)
         .rounding(rounding)
         .build();
@@ -221,9 +252,10 @@ pub fn draw_chip(
             .thickness(theme.border.width.max(1.0))
             .build();
     }
-    let icon_offset = {
+    let (icon_size, icon_offset) = {
         let _icons = FontScope::push(ui, FontRole::Icons);
-        icon_centering_offset(height)
+        let icon_size = (ui.current_font_size() * ICON_SCALE).round();
+        (icon_size, icon_centering_offset(height, icon_size))
     };
     let mut x = position[0] + padding(theme);
     for_each_piece(chip, theme, context, |piece| {
@@ -231,9 +263,7 @@ pub fn draw_chip(
         match piece {
             Piece::Icon(icon, color) => {
                 let _icons = FontScope::push(ui, FontRole::Icons);
-                let mut buffer = [0; 4];
-                let y = position[1] + icon_offset;
-                draw_list.add_text([x, y], color.to_array(), icon.as_str(&mut buffer));
+                draw_scaled_icon(icon, [x, position[1] + icon_offset], icon_size, color);
             }
             Piece::Text(text, color) => {
                 draw_list.add_text([x, position[1]], color.to_array(), text);
