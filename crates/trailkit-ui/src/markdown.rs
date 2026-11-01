@@ -108,6 +108,46 @@ pub fn parse(source: &str) -> MarkdownDocument {
     builder.finish()
 }
 
+/// An inline formatting kind whose source range is reported by
+/// [`inline_ranges`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InlineKind {
+    /// `**…**` or `__…__`.
+    Strong,
+    /// `*…*` or `_…_`.
+    Emphasis,
+    /// `[…](…)`.
+    Link,
+}
+
+/// Where an inline formatting is in the source, including its markers.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct InlineRange {
+    /// The formatting.
+    pub kind: InlineKind,
+    /// The source range, markers included (e.g. all of `**bold**`).
+    pub range: std::ops::Range<usize>,
+}
+
+/// Every bold, italic and link range of `source`, in source order (memo plan
+/// M68, M69): used to toggle formatting off and to show which formatting is
+/// active at the cursor.
+#[must_use]
+pub fn inline_ranges(source: &str) -> Vec<InlineRange> {
+    Parser::new_ext(source, Options::ENABLE_TASKLISTS)
+        .into_offset_iter()
+        .filter_map(|(event, range)| {
+            let kind = match event {
+                Event::Start(Tag::Strong) => InlineKind::Strong,
+                Event::Start(Tag::Emphasis) => InlineKind::Emphasis,
+                Event::Start(Tag::Link { .. }) => InlineKind::Link,
+                _ => return None,
+            };
+            Some(InlineRange { kind, range })
+        })
+        .collect()
+}
+
 /// Returns `source` with the task checkbox at `marker` toggled, or `None` if
 /// the source no longer has a checkbox there (it changed since parsing).
 #[must_use]
@@ -474,6 +514,24 @@ mod tests {
             document.blocks.len(),
             2,
             "a blank line still starts a new block"
+        );
+    }
+
+    #[test]
+    fn inline_ranges_include_their_markers() {
+        let source = "a **b *c* d** [e](https://x)";
+        let ranges = inline_ranges(source);
+        let found: Vec<(InlineKind, &str)> = ranges
+            .iter()
+            .map(|range| (range.kind, &source[range.range.clone()]))
+            .collect();
+        assert_eq!(
+            found,
+            [
+                (InlineKind::Strong, "**b *c* d**"),
+                (InlineKind::Emphasis, "*c*"),
+                (InlineKind::Link, "[e](https://x)")
+            ]
         );
     }
 
