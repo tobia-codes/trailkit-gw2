@@ -3,8 +3,9 @@ name: CI
 
 on:
   pull_request:
+  # PRs into `develop` were already checked; only `main` runs again on push (R70).
   push:
-    branches: [main, develop]
+    branches: [main]
 
 permissions:
   contents: read
@@ -17,8 +18,41 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  changes:
+    name: Detect code changes (R70)
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.detect.outputs.code }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      # Docs-only PRs skip the Windows job: Markdown outside the embedded
+      # help pages (`addons/*/help/`) cannot change any build output.
+      - id: detect
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "$EVENT_NAME" != "pull_request" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          changed=$(git diff --name-only "$BASE_SHA"...HEAD)
+          code_files=$(printf '%s\n' "$changed" | grep -vE '^docs/|\.md$' || true)
+          help_files=$(printf '%s\n' "$changed" | grep -E '^addons/[^/]+/help/' || true)
+          code_files="$code_files$help_files"
+          if [ -n "$code_files" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
   windows:
     name: Windows build, lint & test
+    needs: changes
+    # A skipped job counts as passed for required status checks.
+    if: needs.changes.outputs.code == 'true'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
