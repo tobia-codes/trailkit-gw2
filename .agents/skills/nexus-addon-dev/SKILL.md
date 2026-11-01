@@ -33,6 +33,14 @@ Re-verify when bumping `NEXUS_API_VERSION` or `nexus-rs`.
 - Fonts: `NexusLinkData_t` exposes `Font`, `FontBig`, `FontUI`;
   `Fonts_AddFromFile/Memory` + `Fonts_Resize` exist for custom sizes.
   Font changes rebuild the atlas — never do it per frame.
+  Verified in Nexus' `FontManager.cpp` (2026-11): `Fonts_AddFromMemory`
+  **copies** data and config (embedded bytes are fine); adding an existing
+  identifier only adds a callback (fonts are shared between addons); callbacks
+  get the new `ImFont*` after every atlas rebuild. The atlas only holds Basic
+  Latin, Latin-1, Latin Extended-A/B **plus every character of every
+  registered localization text** — register icon glyphs and the addon's own
+  UI strings as localization texts *before* adding fonts, or they render as
+  `?`. All trailkit addons use `trailkit_ui::font_registry` for this.
 - `NexusLinkData_t.IsGameplay` / `IsMoving` / `IsCameraMoving` tell you if the
   player is in gameplay (hide/skip work during loading screens & cutscenes).
   **Project rule (R56/R61):** windows are not drawn while `IsGameplay` is

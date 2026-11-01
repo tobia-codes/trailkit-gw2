@@ -9,7 +9,7 @@
 //! and the storage worker is shut down (writing pending saves) in `unload`.
 
 use std::{
-    path::Path,
+    path::{Path, PathBuf},
     sync::{
         Mutex, OnceLock,
         atomic::{AtomicBool, AtomicPtr, AtomicU8, Ordering},
@@ -32,13 +32,18 @@ use nexus::{
 };
 
 use trailkit_storage::{BACKUPS_DIRECTORY_NAME, DocumentStore, LoadOutcome, ReadOnlyReason};
-use trailkit_ui::{style_scope::StyleScope, theme::ThemeKind};
+use trailkit_ui::{
+    font_registry::{follow_body_size, font_size_of, register_fonts},
+    style_scope::StyleScope,
+    theme::ThemeKind,
+};
 
 use crate::{
     i18n::{Language, Text},
+    main_window::{MemoWindow, NotesProblem},
     note_tree::NotesDocument,
     settings::{QuickAccessIcon, Settings},
-    storage_worker::{SAVE_DEBOUNCE, SavingAllowed, StorageWorker},
+    storage_worker::{LoadedDocuments, SAVE_DEBOUNCE, SavingAllowed, StorageSaver, StorageWorker},
 };
 
 nexus::export! {
@@ -89,35 +94,28 @@ static STORAGE_WORKER: Mutex<Option<StorageWorker>> = Mutex::new(None);
 /// `try_lock`, so it never waits; `load` and `unload` are the only other users.
 static NOTES: Mutex<NotesState> = Mutex::new(NotesState::Unavailable);
 
+/// Localization key registering memo's UI characters with the font atlas.
+const GLYPHS_KEY: &str = "trailkit.memo.localization.glyphs";
+
 /// Where the render thread's notes currently come from.
 enum NotesState {
-    /// The storage worker is still loading `notes.json`.
-    Loading(Receiver<LoadOutcome<NotesDocument>>),
-    /// The notes are loaded (possibly empty after a problem, see `problem`).
-    Ready {
-        /// The note tree, owned by the render thread (M30).
-        #[expect(dead_code, reason = "shown and edited from phase 1 step 2 on")]
-        document: NotesDocument,
-        /// A loading problem the user must be told about, if any.
-        problem: Option<NotesProblem>,
+    /// The storage worker is still loading.
+    Loading {
+        /// Delivers what the worker loaded, once.
+        loaded: Receiver<LoadedDocuments>,
+        /// Queues saves on the worker.
+        saver: StorageSaver,
+        /// The addon folder.
+        directory: PathBuf,
     },
+    /// The notes are loaded and shown in the main window.
+    Ready(Box<MemoWindow>),
     /// Storage could not be started; details are in the Nexus log.
     Unavailable,
 }
 
-/// A problem with `notes.json` shown in the main window (M31).
-enum NotesProblem {
-    /// The file was unreadable and moved away; memo started empty. Holds the
-    /// new location relative to the addon folder, ready for display.
-    Recovered(String),
-    /// The file is from a newer addon version; nothing is saved.
-    NewerVersion,
-    /// The file cannot be accessed; nothing is saved.
-    Inaccessible,
-}
-
-/// Shared Nexus link data (holds `is_gameplay`), cached at load and cleared at
-/// unload. Null if Nexus did not provide it.
+/// Shared Nexus link data (holds `is_gameplay` and the fonts), cached at load
+/// and cleared at unload. Null if Nexus did not provide it.
 static NEXUS_LINK: AtomicPtr<NexusLink> = AtomicPtr::new(std::ptr::null_mut());
 
 /// Whether the main window is visible. Written by keybind and render callbacks.
@@ -153,6 +151,7 @@ fn load() {
         }
     });
     register_keybind_with_string(KEYBIND_TOGGLE, on_toggle, UNBOUND).revert_on_unload();
+    register_fonts(GLYPHS_KEY, &Text::all_texts());
 
     NEXUS_LINK.store(get_nexus_link().cast_mut(), Ordering::Release);
 
@@ -201,7 +200,7 @@ fn start_storage() -> Settings {
             return *SETTINGS.get_or_init(|| Settings::DEFAULT);
         }
     };
-    let store = DocumentStore::new(directory);
+    let store = DocumentStore::new(directory.clone());
 
     let settings_outcome = store.load::<Settings>(Timestamp::now());
     let saving_allowed = SavingAllowed {
@@ -223,11 +222,16 @@ fn start_storage() -> Settings {
 
     match StorageWorker::spawn(store, SAVE_DEBOUNCE, saving_allowed) {
         Ok((worker, loaded)) => {
+            let saver = worker.saver();
             if let Ok(mut slot) = STORAGE_WORKER.lock() {
                 *slot = Some(worker);
             }
             if let Ok(mut notes) = NOTES.lock() {
-                *notes = NotesState::Loading(loaded);
+                *notes = NotesState::Loading {
+                    loaded,
+                    saver,
+                    directory,
+                };
             }
         }
         Err(error) => {
@@ -279,18 +283,24 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
         return;
     };
     receive_loaded_notes(&mut notes);
+    follow_nexus_font_size();
     let language = Language::from_u8(LANGUAGE.load(Ordering::Relaxed));
     let title = WINDOW_TITLE
         .get()
         .map_or("###trailkit-memo", String::as_str);
 
-    // Theme selection comes with the settings window (phase 1); until then the default theme.
-    let _theme = StyleScope::push(ui, &ThemeKind::default().theme());
+    // Theme selection comes with the settings window (step 8); until then the default theme.
+    let theme = ThemeKind::default().theme();
+    let _theme = StyleScope::push(ui, &theme);
     let mut open = true;
     Window::new(title)
-        .size([320.0, 120.0], Condition::FirstUseEver)
+        .size([640.0, 420.0], Condition::FirstUseEver)
         .opened(&mut open)
-        .build(ui, || draw_window_content(ui, &notes, language));
+        .build(ui, || match &mut *notes {
+            NotesState::Loading { .. } => ui.text(Text::Loading.get(language)),
+            NotesState::Unavailable => ui.text_wrapped(Text::NotesInaccessible.get(language)),
+            NotesState::Ready(window) => window.draw(ui, language, &theme),
+        });
     if !open {
         VISIBLE.store(false, Ordering::Relaxed);
     }
@@ -299,19 +309,53 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
 /// Moves the notes from [`NotesState::Loading`] to [`NotesState::Ready`] once
 /// the storage worker has delivered them. Never blocks.
 fn receive_loaded_notes(notes: &mut NotesState) {
-    let NotesState::Loading(loaded) = notes else {
+    let NotesState::Loading {
+        loaded,
+        saver,
+        directory,
+    } = notes
+    else {
         return;
     };
     *notes = match loaded.try_recv() {
-        Ok(outcome) => ready_state(outcome),
+        Ok(LoadedDocuments {
+            notes: outcome,
+            ui_state,
+        }) => {
+            let (document, problem) = document_and_problem(outcome);
+            NotesState::Ready(Box::new(MemoWindow::new(
+                document,
+                problem,
+                ui_state,
+                saver.clone(),
+                directory.clone(),
+            )))
+        }
         Err(TryRecvError::Empty) => return,
         Err(TryRecvError::Disconnected) => NotesState::Unavailable,
     };
 }
 
-/// Turns the worker's load result into the render thread's notes state.
-fn ready_state(outcome: LoadOutcome<NotesDocument>) -> NotesState {
-    let (document, problem) = match outcome {
+/// Resizes the shared fonts when Nexus' `FontUI` size changes (M35).
+fn follow_nexus_font_size() {
+    let link = NEXUS_LINK.load(Ordering::Acquire);
+    if link.is_null() {
+        return;
+    }
+    // SAFETY: `link` is non-null and points to Nexus' link data, which lives as
+    // long as Nexus (cleared in `unload`). `font_ui` is either null or a font
+    // of the current atlas; `font_size_of` only reads its size.
+    let size = unsafe { font_size_of(std::ptr::addr_of!((*link).font_ui).read_volatile()) };
+    if let Some(size) = size {
+        follow_body_size(size);
+    }
+}
+
+/// Splits the worker's load result into the notes to show and a problem hint.
+fn document_and_problem(
+    outcome: LoadOutcome<NotesDocument>,
+) -> (NotesDocument, Option<NotesProblem>) {
+    match outcome {
         LoadOutcome::Missing => (NotesDocument::default(), None),
         LoadOutcome::Loaded { document, .. } => (document, None),
         LoadOutcome::Recovered { preserved_as, .. } => (
@@ -326,8 +370,7 @@ fn ready_state(outcome: LoadOutcome<NotesDocument>) -> NotesState {
         LoadOutcome::ReadOnly(ReadOnlyReason::Io(_)) => {
             (NotesDocument::default(), Some(NotesProblem::Inaccessible))
         }
-    };
-    NotesState::Ready { document, problem }
+    }
 }
 
 /// Formats a safety copy's path relative to the addon folder
@@ -337,29 +380,4 @@ fn display_path_of_safety_copy(path: &Path) -> String {
         || path.display().to_string(),
         |name| format!("{BACKUPS_DIRECTORY_NAME}/{}", name.to_string_lossy()),
     )
-}
-
-/// Draws the main window's content: a loading line, a problem hint or the
-/// notes (the note list and editor follow in phase 1 steps 2–3).
-fn draw_window_content(ui: &nexus::imgui::Ui, notes: &NotesState, language: Language) {
-    match notes {
-        NotesState::Loading(_) => ui.text(Text::Loading.get(language)),
-        NotesState::Unavailable => ui.text_wrapped(Text::NotesInaccessible.get(language)),
-        NotesState::Ready { problem, .. } => {
-            match problem {
-                Some(NotesProblem::Recovered(shown_path)) => {
-                    ui.text_wrapped(Text::NotesRecovered.get(language));
-                    ui.text_wrapped(shown_path);
-                }
-                Some(NotesProblem::NewerVersion) => {
-                    ui.text_wrapped(Text::NotesNewerVersion.get(language));
-                }
-                Some(NotesProblem::Inaccessible) => {
-                    ui.text_wrapped(Text::NotesInaccessible.get(language));
-                }
-                None => {}
-            }
-            ui.text(Text::Hello.get(language));
-        }
-    }
 }

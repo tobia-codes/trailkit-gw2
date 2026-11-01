@@ -13,6 +13,9 @@ pub mod i18n;
 pub mod note_tree;
 pub mod settings;
 pub mod storage_worker;
+pub mod ui_state;
 
 #[cfg(windows)]
 mod addon;
+#[cfg(windows)]
+mod main_window;

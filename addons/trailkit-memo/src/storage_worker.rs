@@ -3,7 +3,7 @@
 //! The render thread owns the note tree. On every change it sends a copy to
 //! this worker, which waits until no change arrived for the debounce delay,
 //! then writes the file through `trailkit-storage`. At start the worker loads
-//! `notes.json` and hands the result back over a channel. While nothing is
+//! `notes.json` and `ui_state.json` and hands them back over a channel. While nothing is
 //! pending the worker blocks in `recv()` and uses no CPU (nexus-addon-dev
 //! skill §2). On shutdown every pending save is written before the thread ends.
 //!
@@ -23,7 +23,7 @@ use std::{
 use jiff::Timestamp;
 use trailkit_storage::{DocumentStore, LoadOutcome, ReadOnlyReason, VersionedDocument};
 
-use crate::{note_tree::NotesDocument, settings::Settings};
+use crate::{note_tree::NotesDocument, settings::Settings, ui_state::UiState};
 
 /// Delay after the last change before a document is written (M18).
 pub const SAVE_DEBOUNCE: Duration = Duration::from_secs(2);
@@ -37,6 +37,8 @@ enum WorkerCommand {
     SaveNotes(Arc<NotesDocument>),
     /// Save these settings once no newer ones arrive in time.
     SaveSettings(Settings),
+    /// Save this window state once no newer one arrives in time.
+    SaveUiState(UiState),
     /// Write everything pending and end the thread.
     Shutdown,
 }
@@ -49,6 +51,23 @@ pub struct StorageWorker {
     commands: Sender<WorkerCommand>,
     /// The worker thread; `None` once it has been joined.
     thread: Option<JoinHandle<()>>,
+}
+
+/// Cloneable handle for queueing saves, held by the render thread. Sending
+/// never blocks.
+#[derive(Debug, Clone)]
+pub struct StorageSaver {
+    /// Channel to the worker thread.
+    commands: Sender<WorkerCommand>,
+}
+
+/// What the worker loaded at start, delivered once.
+#[derive(Debug)]
+pub struct LoadedDocuments {
+    /// How `notes.json` was loaded.
+    pub notes: LoadOutcome<NotesDocument>,
+    /// The restored window state (defaults if missing or unusable).
+    pub ui_state: UiState,
 }
 
 /// Which documents the worker may write (from their load outcomes).
@@ -69,8 +88,8 @@ struct PendingSave<T> {
 impl StorageWorker {
     /// Starts the worker thread for the files in `store`.
     ///
-    /// The worker first loads `notes.json`; the returned receiver yields that
-    /// [`LoadOutcome`] exactly once. Settings are loaded by the caller (they are
+    /// The worker first loads `notes.json` and `ui_state.json`; the returned
+    /// receiver yields them exactly once as [`LoadedDocuments`]. Settings are loaded by the caller (they are
     /// needed synchronously at addon load), so only whether they may be saved
     /// is passed in. `debounce` is [`SAVE_DEBOUNCE`] outside of tests.
     ///
@@ -81,7 +100,7 @@ impl StorageWorker {
         store: DocumentStore,
         debounce: Duration,
         saving_allowed: SavingAllowed,
-    ) -> io::Result<(Self, Receiver<LoadOutcome<NotesDocument>>)> {
+    ) -> io::Result<(Self, Receiver<LoadedDocuments>)> {
         let (commands, command_receiver) = mpsc::channel();
         let (loaded_sender, loaded) = mpsc::channel();
         let thread = thread::Builder::new()
@@ -102,14 +121,29 @@ impl StorageWorker {
         Ok((worker, loaded))
     }
 
-    /// Queues `document` to be saved after the debounce delay. Never blocks.
+    /// A handle for queueing saves from another thread.
+    #[must_use]
+    pub fn saver(&self) -> StorageSaver {
+        StorageSaver {
+            commands: self.commands.clone(),
+        }
+    }
+}
+
+impl StorageSaver {
+    /// Queues `document` to be saved after the debounce delay.
     pub fn save_notes(&self, document: Arc<NotesDocument>) {
         self.send(WorkerCommand::SaveNotes(document));
     }
 
-    /// Queues `settings` to be saved after the debounce delay. Never blocks.
+    /// Queues `settings` to be saved after the debounce delay.
     pub fn save_settings(&self, settings: Settings) {
         self.send(WorkerCommand::SaveSettings(settings));
+    }
+
+    /// Queues the window state to be saved after the debounce delay.
+    pub fn save_ui_state(&self, ui_state: UiState) {
+        self.send(WorkerCommand::SaveUiState(ui_state));
     }
 
     /// Sends `command` to the worker, logging if the worker is gone.
@@ -140,20 +174,26 @@ fn run_worker(
     debounce: Duration,
     saving_allowed: SavingAllowed,
     commands: &Receiver<WorkerCommand>,
-    loaded: &Sender<LoadOutcome<NotesDocument>>,
+    loaded: &Sender<LoadedDocuments>,
 ) {
-    let outcome = store.load::<NotesDocument>(Timestamp::now());
-    log_load_outcome(&outcome);
-    let notes_saving_allowed = outcome.allows_saving();
+    let now = Timestamp::now();
+    let notes = store.load::<NotesDocument>(now);
+    log_load_outcome(&notes);
+    let notes_saving_allowed = notes.allows_saving();
+    let ui_state_outcome = store.load::<UiState>(now);
+    let ui_state_saving_allowed = ui_state_outcome.allows_saving();
+    let ui_state = ui_state_outcome.into_document().unwrap_or_default();
     // The render side may already be gone during a quick unload; that is fine.
-    let _ = loaded.send(outcome);
+    let _ = loaded.send(LoadedDocuments { notes, ui_state });
 
     let mut pending_notes: Option<PendingSave<Arc<NotesDocument>>> = None;
     let mut pending_settings: Option<PendingSave<Settings>> = None;
+    let mut pending_ui_state: Option<PendingSave<UiState>> = None;
     loop {
         let next_due = [
             pending_notes.as_ref().map(|pending| pending.due_at),
             pending_settings.as_ref().map(|pending| pending.due_at),
+            pending_ui_state.as_ref().map(|pending| pending.due_at),
         ]
         .into_iter()
         .flatten()
@@ -176,12 +216,23 @@ fn run_worker(
                     due_at: Instant::now() + debounce,
                 });
             }
-            Ok(WorkerCommand::SaveNotes(_) | WorkerCommand::SaveSettings(_)) => {
+            Ok(WorkerCommand::SaveUiState(ui_state)) if ui_state_saving_allowed => {
+                pending_ui_state = Some(PendingSave {
+                    document: ui_state,
+                    due_at: Instant::now() + debounce,
+                });
+            }
+            Ok(
+                WorkerCommand::SaveNotes(_)
+                | WorkerCommand::SaveSettings(_)
+                | WorkerCommand::SaveUiState(_),
+            ) => {
                 log::warn!("document is read-only; change not saved");
             }
             Ok(WorkerCommand::Shutdown) | Err(RecvTimeoutError::Disconnected) => {
                 save_pending::<_, NotesDocument>(store, pending_notes.take(), None);
                 save_pending::<_, Settings>(store, pending_settings.take(), None);
+                save_pending::<_, UiState>(store, pending_ui_state.take(), None);
                 return;
             }
             Err(RecvTimeoutError::Timeout) => {}
@@ -190,6 +241,7 @@ fn run_worker(
         let now = Instant::now();
         pending_notes = save_pending::<_, NotesDocument>(store, pending_notes, Some(now));
         pending_settings = save_pending::<_, Settings>(store, pending_settings, Some(now));
+        pending_ui_state = save_pending::<_, UiState>(store, pending_ui_state, Some(now));
     }
 }
 
@@ -289,8 +341,12 @@ mod tests {
         store.save(document.as_ref())?;
 
         let (_worker, loaded) = StorageWorker::spawn(store, TEST_DEBOUNCE, ALL_ALLOWED)?;
-        let outcome = loaded.recv_timeout(TEST_TIMEOUT)?;
-        assert_eq!(outcome.into_document().as_ref(), Some(document.as_ref()));
+        let loaded = loaded.recv_timeout(TEST_TIMEOUT)?;
+        assert_eq!(
+            loaded.notes.into_document().as_ref(),
+            Some(document.as_ref())
+        );
+        assert_eq!(loaded.ui_state, UiState::default());
         Ok(())
     }
 
@@ -305,9 +361,10 @@ mod tests {
         )?;
         loaded.recv_timeout(TEST_TIMEOUT)?;
 
-        worker.save_notes(document_with_note("first"));
+        let saver = worker.saver();
+        saver.save_notes(document_with_note("first"));
         let latest = document_with_note("second");
-        worker.save_notes(Arc::clone(&latest));
+        saver.save_notes(Arc::clone(&latest));
         assert!(
             saved_notes(directory.path()).is_none(),
             "nothing written before the debounce"
@@ -333,15 +390,26 @@ mod tests {
             ALL_ALLOWED,
         )?;
         loaded.recv_timeout(TEST_TIMEOUT)?;
+        let saver = worker.saver();
         let document = document_with_note("unsaved");
-        worker.save_notes(Arc::clone(&document));
+        saver.save_notes(Arc::clone(&document));
         let settings = Settings {
             quick_access_icon: QuickAccessIcon::Hidden,
             ..Settings::DEFAULT
         };
-        worker.save_settings(settings);
+        saver.save_settings(settings);
+        let ui_state = UiState {
+            note_scroll: 42.0,
+            ..UiState::default()
+        };
+        saver.save_ui_state(ui_state);
 
         drop(worker);
+
+        let saved_ui_state = DocumentStore::new(directory.path())
+            .load::<UiState>(Timestamp::now())
+            .into_document();
+        assert_eq!(saved_ui_state, Some(ui_state));
 
         assert_eq!(
             saved_notes(directory.path()).as_ref(),
@@ -365,10 +433,11 @@ mod tests {
             TEST_DEBOUNCE,
             SavingAllowed { settings: false },
         )?;
-        assert!(!loaded.recv_timeout(TEST_TIMEOUT)?.allows_saving());
+        assert!(!loaded.recv_timeout(TEST_TIMEOUT)?.notes.allows_saving());
 
-        worker.save_notes(document_with_note("ignored"));
-        worker.save_settings(Settings::DEFAULT);
+        let saver = worker.saver();
+        saver.save_notes(document_with_note("ignored"));
+        saver.save_settings(Settings::DEFAULT);
         drop(worker);
 
         assert_eq!(fs::read_to_string(store.path_of::<NotesDocument>())?, newer);
