@@ -50,6 +50,8 @@ Each rule has an id (`area-name`) so reviews can cite it.
   do not reliably cover input fields in ImGui 1.80).
 - `overlay-dialog-layout` — A dialog has a heading (Heading3), a short
   question or explanation, and one button row (see `lay-one-primary`).
+  Escape and a click on the dimmed area choose the harmless answer (e.g.
+  "Keep editing"), never one that saves or discards.
 - `overlay-sleep` — Closed windows cost nothing: skip all work for hidden
   windows (no layout, no text formatting).
 - `overlay-click-through` — Purely informational overlays may offer a

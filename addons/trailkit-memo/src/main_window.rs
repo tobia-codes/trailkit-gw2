@@ -442,7 +442,8 @@ impl MemoWindow {
     /// main window is finished: the dialog is its own borderless window
     /// exactly over the main window, so it dims only that window (title bar
     /// included) while the game and other windows stay usable. Clicking the
-    /// main window brings the dialog back to the front. "Discard" sits apart
+    /// main window brings the dialog back to the front; a click on the dimmed
+    /// area keeps editing, like Escape. "Discard" sits apart
     /// from "Keep editing" and the primary "Save" (`lay-one-primary`); Enter
     /// saves, Escape keeps editing.
     pub fn draw_dialog(&mut self, ui: &Ui, language: Language, theme: &Theme) {
@@ -467,7 +468,15 @@ impl MemoWindow {
             )
             .focused(self.window_focused)
             .build(ui, || {
-                answer = draw_unsaved_changes_card(ui, language, theme)
+                answer = draw_unsaved_changes_card(ui, language, theme);
+                // A click on the dimmed area picks the harmless answer
+                // (`overlay-dialog-layout`); the card itself is a child window.
+                if answer.is_none()
+                    && ui.is_window_hovered()
+                    && ui.is_mouse_clicked(MouseButton::Left)
+                {
+                    answer = Some(WindowAction::LeaveCancelled);
+                }
             });
         if let Some(answer) = answer {
             self.apply(&answer, language);
