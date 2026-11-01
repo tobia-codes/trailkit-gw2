@@ -120,6 +120,25 @@ abbreviations are allowed (`id`, `url`, `api`, `http`, `json`, `ui`, `dll`,
 
 Vendored third-party skills keep their upstream names.
 
+## Token economy
+
+Every turn re-reads the whole conversation, so output that enters it stays
+expensive for the rest of the session. Keep it small:
+
+- **Short tool output.** Filter commands (`| tail -n 5`, `grep -E 'error|FAILED|test result'`,
+  `--quiet`/`-q`); push with `git push -q`; watch CI with
+  `gh pr checks --watch | tail -3`. The git hooks already run quietly.
+- **Read narrowly.** Grep for the lines you need or read a range instead of
+  whole files; don't re-read a file you just edited.
+- **Images only when needed.** Look at snapshot PNGs only when a UI test
+  reports a change (`tests/snapshots/failures/`); otherwise trust the test.
+- **Batch work.** One edit/script per logical change, one PR per step; don't
+  repeat large code or plans in chat — link files and decision ids instead.
+- **Concise answers.** Report results and open questions, not the full
+  history.
+- **Fresh sessions.** When a session gets long, update
+  `docs/plans/NEXT_SESSION.md` and continue in a new session.
+
 ## Development environment
 
 - Development happens in **WSL** (Linux). Addons are cross-compiled with
