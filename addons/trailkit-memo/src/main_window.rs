@@ -38,6 +38,9 @@ use crate::{
 
 /// Minimum content width of each pane in average characters (M40).
 const MINIMUM_PANE_CHARACTERS: f32 = 22.0;
+/// Width in characters (of `n`) that editor and preview each keep, so the
+/// splitter between them stays usable (M72).
+const MINIMUM_PREVIEW_SPLIT_CHARACTERS: f32 = 3.0;
 
 /// Largest share of the window the note list drawer may cover, so a strip
 /// of the dimmed note stays visible to click away (M48, `lay-drawer`).
@@ -728,52 +731,45 @@ impl MemoWindow {
                 editor.format(FormatCommand::Italic);
             }
         }
-        // Preview (M60): side by side when two panes fit, otherwise the
-        // button switches between editor and preview.
+        // Preview (M60, M72): editor and preview always stay side by side,
+        // however narrow; the minimum only keeps the splitter usable.
         let available = ui.content_region_avail()[0];
-        let pane_minimum =
-            ui.calc_text_size("n")[0] * MINIMUM_PANE_CHARACTERS + 2.0 * theme.pane.padding;
         let gap = theme.pane.gap;
-        let side_by_side = available >= 2.0 * pane_minimum + gap;
-        let shows_editor = !self.ui_state.preview_visible || side_by_side;
-        let usable = available - gap;
+        let usable = (available - gap).max(0.0);
+        let preview_minimum = (ui.calc_text_size("n")[0] * MINIMUM_PREVIEW_SPLIT_CHARACTERS
+            + 2.0 * theme.pane.padding)
+            .min(usable / 2.0);
         let editor_width = (usable * self.ui_state.clamped_preview_split_fraction())
-            .clamp(pane_minimum, (usable - pane_minimum).max(pane_minimum));
-        if shows_editor {
-            let width = if self.ui_state.preview_visible {
-                editor_width
-            } else {
-                0.0
-            };
-            let response = editor.body.draw(ui, theme, "##body", [width, 0.0]);
-            if response.changed {
-                editor.sync_body();
-            }
-            if response.submitted {
-                self.actions.push(WindowAction::FinishEditing);
-            }
+            .clamp(preview_minimum, usable - preview_minimum);
+        let width = if self.ui_state.preview_visible {
+            editor_width
         } else {
-            editor.body.unfocus();
+            0.0
+        };
+        let response = editor.body.draw(ui, theme, "##body", [width, 0.0]);
+        if response.changed {
+            editor.sync_body();
+        }
+        if response.submitted {
+            self.actions.push(WindowAction::FinishEditing);
         }
         if self.ui_state.preview_visible {
-            if shows_editor {
-                ui.same_line_with_spacing(0.0, 0.0);
-                let splitter = draw_vertical_splitter(
-                    ui,
-                    theme,
-                    "preview_splitter",
-                    editor_width,
-                    (pane_minimum, usable - pane_minimum),
-                    ui.content_region_avail()[1],
-                );
-                if let Some(width) = splitter.left_width {
-                    self.ui_state.preview_split_fraction = width / usable;
-                }
-                if splitter.released {
-                    self.saver.save_ui_state(self.ui_state);
-                }
-                ui.same_line_with_spacing(0.0, 0.0);
+            ui.same_line_with_spacing(0.0, 0.0);
+            let splitter = draw_vertical_splitter(
+                ui,
+                theme,
+                "preview_splitter",
+                editor_width,
+                (preview_minimum, usable - preview_minimum),
+                ui.content_region_avail()[1],
+            );
+            if let Some(width) = splitter.left_width {
+                self.ui_state.preview_split_fraction = width / usable;
             }
+            if splitter.released {
+                self.saver.save_ui_state(self.ui_state);
+            }
+            ui.same_line_with_spacing(0.0, 0.0);
             let preview = editor
                 .preview
                 .get_or_insert_with(|| markdown::parse(&editor.session.body));

@@ -169,6 +169,27 @@ fn editor_with_preview() {
 }
 
 #[test]
+fn narrow_editor_keeps_editor_and_preview_side_by_side() {
+    let document = sample_document();
+    let ui_state = UiState {
+        preview_visible: true,
+        note_list_hidden: true,
+        ..selected_first(&document)
+    };
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    memo.apply(&WindowAction::StartEditing, Language::English);
+    if let Some(editor) = memo.editor.as_mut() {
+        editor.body.unfocus();
+    }
+    assert_window(
+        &mut memo,
+        [280.0, 360.0],
+        ThemeKind::Dark,
+        "memo-editor-preview-narrow",
+    );
+}
+
+#[test]
 fn toolbar_highlights_the_formatting_at_the_cursor() {
     let document = sample_document();
     let ui_state = selected_first(&document);
