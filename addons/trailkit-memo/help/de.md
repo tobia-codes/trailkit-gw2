@@ -4,7 +4,7 @@
 
 ## Fenster öffnen
 
-Klicke auf das **Notiz-Symbol** (Blatt mit Stift) in der Nexus-Schnellzugriffsleiste oder nutze die Tastenbelegung **„Notizen öffnen/schließen“**. Sie ist standardmäßig nicht belegt: unter *Nexus → Optionen → Tastenbelegungen → trailkit-memo* festlegen.
+Klicke auf das **Notiz-Symbol** (Blatt mit Stift) in der Nexus-Schnellzugriffsleiste oder nutze die Tastenbelegung **„Notizen öffnen/schließen“**. Sie ist standardmäßig nicht belegt: unter *Nexus › Optionen › Tastenbelegungen › trailkit-memo* festlegen.
 
 Während Ladebildschirmen, Zwischensequenzen und der Charakterauswahl wird das Fenster ausgeblendet und erscheint danach wieder.
 
@@ -16,7 +16,7 @@ Das Fenster zeigt links die Notizliste und rechts die ausgewählte Notiz. Ziehe 
 - **Schmales Fenster:** Die Notiz füllt das Fenster, und der Menü-Button öffnet die Notizliste darüber. Wähle eine Notiz, klicke auf die abgedunkelte Notiz oder erneut auf den Menü-Button, um die Liste zu schließen.
 
 - **Neue Notiz / neue Gruppe:** die beiden Buttons über der Liste. Der neue Eintrag landet in der ausgewählten Gruppe (bzw. der Gruppe der ausgewählten Notiz), ganz am Ende. Tippe gleich einen Namen ein und drücke Enter.
-- **Umbenennen:** Doppelklick auf einen Eintrag oder Rechtsklick → *Umbenennen*. Enter oder ein Klick daneben übernimmt den Namen, Escape bricht ab.
+- **Umbenennen:** Doppelklick auf einen Eintrag oder Rechtsklick › *Umbenennen*. Enter oder ein Klick daneben übernimmt den Namen, Escape bricht ab.
 - **Gruppen** haben fett gedruckte Namen und zeigen rechts, wie viele Notizen sie enthalten.
 - **Abzeichen** am rechten Ende einer Zeile: **T** kennzeichnet eine tägliche Notiz (Reset um 00:00 UTC), **W** eine wöchentliche (Reset montags um 07:30 UTC). Fahre mit der Maus darüber für Details.
 - **Checkboxen** in einer Notiz kannst du direkt abhaken.

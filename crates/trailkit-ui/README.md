@@ -8,7 +8,12 @@ documentation: the [`trailkit-ui` skill](../../.agents/skills/trailkit-ui/SKILL.
 > needs them (AGENTS.md rule 7, ROADMAP R47).
 
 Third-party assets: `assets/fonts/open-sans/` (SIL Open Font License) and
-`assets/fonts/lucide/` (ISC), each with its `LICENSE`.
+`assets/fonts/lucide/` (ISC), each with its `LICENSE`. The embedded `.ttf`
+files are **subsets** (memo plan M62) generated from the originals in
+`assets/fonts/<font>/source/` with `cargo xtask subset-fonts`: text fonts keep
+Latin up to Extended-B plus punctuation, the icon font only the icons in
+`icons::Icon::ALL`. After adding an icon or a text with new characters, run
+`cargo xtask subset-fonts`; tests fail until the subsets cover them.
 
 ## Contents
 

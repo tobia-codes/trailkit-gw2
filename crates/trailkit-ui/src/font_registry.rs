@@ -34,7 +34,7 @@ use crate::{
 const SHARED_GLYPHS_KEY: &str = "trailkit.shared.localization.glyphs";
 
 /// Typographic characters outside Latin-1 that trailkit texts use.
-const TYPOGRAPHIC_GLYPHS: &str = "•…–—„“”‘’→";
+const TYPOGRAPHIC_GLYPHS: &str = "•…–—„“”‘’›";
 
 /// Language codes the glyph texts are registered for. Nexus collects texts of
 /// every language, one is enough; English is always present.
