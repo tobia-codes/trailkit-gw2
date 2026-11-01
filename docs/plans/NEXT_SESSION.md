@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-01 (end of session 5).
+Last updated: 2026-11-01 (end of session 5, after PR #30).
 
 ## Where we are
 
@@ -15,6 +15,12 @@ Last updated: 2026-11-01 (end of session 5).
   (M13) → drag & drop → search → trash & undo → settings window → export/import
   → backups → help page → **release preparation** (full test, screenshots
   M67, docs).
+- Late session 5 (PRs #26–#30): bold/italic/link toggle off from anywhere
+  inside the span (M68, M71, parsed with `markdown::inline_ranges`), toolbar
+  buttons light up for the formatting at the cursor (M69), ≡ is gold while the
+  note list is visible (M71), roomier unsaved-changes dialog with a border,
+  right-aligned primary and stacked buttons in narrow windows (M70).
+  Snapshot tests are strict now (no differing pixels; CI renders identically).
 - Session 5 also: Open Sans replaces Noto Sans (M62), panes with padding
   (`lay-pane-padding`), drawer + menu button (M48), titles flush left with
   right-aligned badges (M49), bold groups with note count (M50), in-window
@@ -33,6 +39,9 @@ Last updated: 2026-11-01 (end of session 5).
 2. Then reset kinds (M13).
 3. UI tests: `cargo xtask ui-test [--update]`; look at the PNGs in
    `tests/snapshots/` (and `failures/`) before deploying UI changes.
+4. Token economy (user asked): keep tool output short (`| tail`/`grep`, also
+   for `git push` — the pre-push hook prints all tests), look at snapshot
+   PNGs only when they changed, avoid re-reading files.
 
 ## Nexus / ImGui facts learned in session 5 (also in the nexus-addon-dev skill)
 
