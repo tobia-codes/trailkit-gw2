@@ -267,7 +267,7 @@ fn narrow_window_dims_the_edited_note_behind_the_drawer() {
 fn note_list_can_be_dragged_narrower_than_the_note_pane_minimum() {
     let document = sample_document();
     let ui_state = UiState {
-        splitter_fraction: 0.1,
+        note_list_characters: 10.0,
         ..selected_first(&document)
     };
     let (mut memo, _worker, _directory) = memo_window(document, ui_state);

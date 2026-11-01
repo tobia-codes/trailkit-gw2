@@ -553,7 +553,11 @@ impl MemoWindow {
         let gap = theme.pane.gap;
         let usable = available[0] - gap;
         let tree_maximum = (usable - widths.note_minimum).max(widths.tree_minimum);
-        let tree_width = (usable * self.ui_state.clamped_splitter_fraction())
+        // A fixed width (M74): a wider window gives the extra room to the
+        // note; a narrower one squeezes the list only while it lacks space.
+        let character_width = ui.calc_text_size("n")[0];
+        let padding = 2.0 * theme.pane.padding;
+        let tree_width = (self.ui_state.valid_note_list_characters() * character_width + padding)
             .clamp(widths.tree_minimum, tree_maximum);
 
         draw_pane(ui, theme, "tree", [tree_width, 0.0], || {
@@ -570,7 +574,7 @@ impl MemoWindow {
             available[1],
         );
         if let Some(width) = splitter.left_width {
-            self.ui_state.splitter_fraction = width / usable;
+            self.ui_state.note_list_characters = (width - padding) / character_width;
         }
         if splitter.released {
             self.saver.save_ui_state(self.ui_state);

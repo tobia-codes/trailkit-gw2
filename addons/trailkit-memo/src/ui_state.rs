@@ -10,8 +10,9 @@ use trailkit_storage::{SchemaVersion, VersionedDocument};
 
 use crate::note_tree::NodeId;
 
-/// Default share of the window width taken by the note list.
-pub const DEFAULT_SPLITTER_FRACTION: f32 = 0.35;
+/// Default content width of the note list in average characters (`n`),
+/// the regular pane minimum (M40, M74).
+pub const DEFAULT_NOTE_LIST_CHARACTERS: f32 = 22.0;
 
 /// The restorable state of the main window.
 ///
@@ -21,8 +22,10 @@ pub const DEFAULT_SPLITTER_FRACTION: f32 = 0.35;
 pub struct UiState {
     /// The selected note or group.
     pub selected: Option<NodeId>,
-    /// Share of the window width taken by the note list (two-pane layout).
-    pub splitter_fraction: f32,
+    /// Content width of the note list in average characters (two-pane
+    /// layout, M74): a fixed width, so a wider window gives the note the
+    /// extra room; measured in characters so it follows the font size.
+    pub note_list_characters: f32,
     /// Vertical scroll position of the note view.
     pub note_scroll: f32,
     /// Whether the user hid the note list column of the two-pane layout (M48).
@@ -40,7 +43,7 @@ impl Default for UiState {
     fn default() -> Self {
         Self {
             selected: None,
-            splitter_fraction: DEFAULT_SPLITTER_FRACTION,
+            note_list_characters: DEFAULT_NOTE_LIST_CHARACTERS,
             note_scroll: 0.0,
             note_list_hidden: false,
             preview_visible: false,
@@ -55,14 +58,20 @@ impl VersionedDocument for UiState {
 }
 
 impl UiState {
-    /// The splitter fraction, clamped to a usable range (protects against a
-    /// hand-edited or corrupted file).
+    /// The note list width in characters, or the default if the stored value
+    /// is broken (protects against a hand-edited or corrupted file). The
+    /// window clamps it further to the space it has.
     #[must_use]
-    pub fn clamped_splitter_fraction(&self) -> f32 {
-        clamp_fraction(self.splitter_fraction, DEFAULT_SPLITTER_FRACTION)
+    pub fn valid_note_list_characters(&self) -> f32 {
+        if self.note_list_characters.is_finite() && self.note_list_characters > 0.0 {
+            self.note_list_characters
+        } else {
+            DEFAULT_NOTE_LIST_CHARACTERS
+        }
     }
 
-    /// The editor/preview split, clamped like [`Self::clamped_splitter_fraction`].
+    /// The editor/preview split, clamped to a usable range (protects against
+    /// a hand-edited or corrupted file).
     #[must_use]
     pub fn clamped_preview_split_fraction(&self) -> f32 {
         clamp_fraction(self.preview_split_fraction, 0.5)
@@ -86,25 +95,30 @@ mod tests {
     fn missing_fields_use_defaults() -> serde_json::Result<()> {
         let state: UiState = serde_json::from_str(r#"{"note_scroll": 12.5}"#)?;
         assert_eq!(state.selected, None);
-        assert!((state.splitter_fraction - DEFAULT_SPLITTER_FRACTION).abs() < f32::EPSILON);
+        assert!((state.note_list_characters - DEFAULT_NOTE_LIST_CHARACTERS).abs() < f32::EPSILON);
         assert!((state.note_scroll - 12.5).abs() < f32::EPSILON);
         assert!(!state.note_list_hidden);
         Ok(())
     }
 
     #[test]
-    fn splitter_fraction_is_clamped() {
-        let state = UiState {
-            splitter_fraction: 5.0,
-            ..UiState::default()
-        };
-        assert!((state.clamped_splitter_fraction() - 0.9).abs() < f32::EPSILON);
-        let broken = UiState {
-            splitter_fraction: f32::NAN,
-            ..UiState::default()
-        };
-        assert!(
-            (broken.clamped_splitter_fraction() - DEFAULT_SPLITTER_FRACTION).abs() < f32::EPSILON
-        );
+    fn broken_note_list_width_falls_back_to_the_default() {
+        for broken in [f32::NAN, f32::INFINITY, -3.0, 0.0] {
+            let state = UiState {
+                note_list_characters: broken,
+                ..UiState::default()
+            };
+            assert!(
+                (state.valid_note_list_characters() - DEFAULT_NOTE_LIST_CHARACTERS).abs()
+                    < f32::EPSILON
+            );
+        }
+    }
+
+    #[test]
+    fn old_splitter_fraction_is_ignored() -> serde_json::Result<()> {
+        let state: UiState = serde_json::from_str(r#"{"splitter_fraction": 0.35}"#)?;
+        assert!((state.note_list_characters - DEFAULT_NOTE_LIST_CHARACTERS).abs() < f32::EPSILON);
+        Ok(())
     }
 }
