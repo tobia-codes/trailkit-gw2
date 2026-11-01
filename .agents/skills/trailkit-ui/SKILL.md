@@ -78,7 +78,10 @@ Build once, use everywhere. Planned:
   "Get trailkit-core" button)
 - `Tree` with drag & drop (groups / subgroups / items)
 - `ColorTokenEditor`, `KeybindHint`, `EmptyState`, `ErrorState`, `Spinner`
-- Markdown renderer (read-only view)
+- Markdown renderer (read-only view) — **exists**: `markdown` (parser,
+  any platform) + `markdown_view` (ImGui)
+- Shared fonts (Noto Sans regular/bold/italic/bold italic, headings) and
+  Lucide icons — **exist**: `fonts`, `font_registry` (`FontScope`), `icons`
 
 Rule: a component starts life inside one addon. When a second addon needs it,
 move it into `crates/trailkit-ui` (see AGENTS.md "Code sharing").

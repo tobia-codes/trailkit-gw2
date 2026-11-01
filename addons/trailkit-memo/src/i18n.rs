@@ -61,8 +61,6 @@ impl Language {
 pub enum Text {
     /// Title of the main window.
     MainWindowTitle,
-    /// Greeting shown by the phase 0 skeleton window.
-    Hello,
     /// Display name of the open/close keybind in the Nexus keybind list.
     KeybindToggle,
     /// Tooltip of the quick access icon.
@@ -75,17 +73,75 @@ pub enum Text {
     NotesNewerVersion,
     /// `notes.json` exists but cannot be accessed.
     NotesInaccessible,
+    /// Button opening the addon folder in the file explorer.
+    OpenFolder,
+    /// Tooltip of the "new note" button and title of a new note.
+    NewNote,
+    /// Tooltip of the "new group" button, empty-state button and title of a new group.
+    NewGroup,
+    /// Context menu entry to rename a note or group.
+    Rename,
+    /// Empty state headline when there are no notes.
+    NoNotesYet,
+    /// Primary empty-state button.
+    CreateFirstNote,
+    /// Back button of the single-pane layout.
+    Back,
+    /// Shown instead of an empty note's content.
+    EmptyNote,
+    /// Shown in the note pane when no note is selected.
+    SelectNote,
+    /// Letter on the badge of daily reset notes.
+    DailyBadge,
+    /// Letter on the badge of weekly reset notes.
+    WeeklyBadge,
+    /// Tooltip of the daily badge.
+    DailyTooltip,
+    /// Tooltip of the weekly badge.
+    WeeklyTooltip,
 }
 
 impl Text {
+    /// Every string, for registering their characters with Nexus' font atlas.
+    pub const ALL: [Self; 20] = [
+        Self::MainWindowTitle,
+        Self::KeybindToggle,
+        Self::QuickAccessTooltip,
+        Self::Loading,
+        Self::NotesRecovered,
+        Self::NotesNewerVersion,
+        Self::NotesInaccessible,
+        Self::OpenFolder,
+        Self::NewNote,
+        Self::NewGroup,
+        Self::Rename,
+        Self::NoNotesYet,
+        Self::CreateFirstNote,
+        Self::Back,
+        Self::EmptyNote,
+        Self::SelectNote,
+        Self::DailyBadge,
+        Self::WeeklyBadge,
+        Self::DailyTooltip,
+        Self::WeeklyTooltip,
+    ];
+
+    /// All strings in all languages concatenated, so Nexus puts every
+    /// character they use into the font atlas (nexus-addon-dev skill §1).
+    #[must_use]
+    pub fn all_texts() -> String {
+        Self::ALL
+            .iter()
+            .flat_map(|text| Language::ALL.map(|language| text.get(language)))
+            .collect()
+    }
+
     /// Returns the translation of this string in `language`.
     #[must_use]
     pub const fn get(self, language: Language) -> &'static str {
         match (self, language) {
             (Self::MainWindowTitle, Language::English) => "Notes",
             (Self::MainWindowTitle, Language::German) => "Notizen",
-            (Self::Hello, Language::English) => "Hello from trailkit-memo!",
-            (Self::Hello, Language::German) => "Hallo von trailkit-memo!",
             (Self::KeybindToggle, Language::English) => "Open/close notes",
             (Self::KeybindToggle, Language::German) => "Notizen öffnen/schließen",
             (Self::QuickAccessTooltip, Language::English) => "Notes",
@@ -109,6 +165,37 @@ impl Text {
             }
             (Self::NotesInaccessible, Language::German) => {
                 "Deine Notizen konnten nicht gelesen werden, daher werden Änderungen nicht gespeichert. Details stehen im Nexus-Log."
+            }
+            (Self::OpenFolder, Language::English) => "Open folder",
+            (Self::OpenFolder, Language::German) => "Ordner öffnen",
+            (Self::NewNote, Language::English) => "New note",
+            (Self::NewNote, Language::German) => "Neue Notiz",
+            (Self::NewGroup, Language::English) => "New group",
+            (Self::NewGroup, Language::German) => "Neue Gruppe",
+            (Self::Rename, Language::English) => "Rename",
+            (Self::Rename, Language::German) => "Umbenennen",
+            (Self::NoNotesYet, Language::English) => "No notes yet",
+            (Self::NoNotesYet, Language::German) => "Noch keine Notizen",
+            (Self::CreateFirstNote, Language::English) => "Create your first note",
+            (Self::CreateFirstNote, Language::German) => "Erste Notiz anlegen",
+            (Self::Back, Language::English) => "Back",
+            (Self::Back, Language::German) => "Zurück",
+            (Self::EmptyNote, Language::English) => "This note is empty.",
+            (Self::EmptyNote, Language::German) => "Diese Notiz ist leer.",
+            (Self::SelectNote, Language::English) => "Select a note in the list.",
+            (Self::SelectNote, Language::German) => "Wähle eine Notiz in der Liste aus.",
+            (Self::DailyBadge, Language::English) => "D",
+            (Self::DailyBadge, Language::German) => "T",
+            (Self::WeeklyBadge, Language::English | Language::German) => "W",
+            (Self::DailyTooltip, Language::English) => "Daily note — resets at 00:00 UTC",
+            (Self::DailyTooltip, Language::German) => {
+                "Tägliche Notiz – setzt sich um 00:00 UTC zurück"
+            }
+            (Self::WeeklyTooltip, Language::English) => {
+                "Weekly note — resets on Mondays at 07:30 UTC"
+            }
+            (Self::WeeklyTooltip, Language::German) => {
+                "Wöchentliche Notiz – setzt sich montags um 07:30 UTC zurück"
             }
         }
     }
@@ -135,6 +222,17 @@ mod tests {
     fn unsupported_or_missing_language_falls_back_to_english() {
         assert_eq!(Language::resolve(None, Some("fr")), Language::English);
         assert_eq!(Language::resolve(None, None), Language::English);
+    }
+
+    #[test]
+    fn every_text_is_translated_and_registered() {
+        let all = Text::all_texts();
+        for text in Text::ALL {
+            for language in Language::ALL {
+                assert!(!text.get(language).is_empty(), "{text:?} {language:?}");
+                assert!(all.contains(text.get(language)));
+            }
+        }
     }
 
     #[test]
