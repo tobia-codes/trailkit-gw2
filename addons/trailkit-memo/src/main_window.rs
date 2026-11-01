@@ -644,8 +644,9 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut TreeContext<'_>) {
     }
 
     let row_start = ui.cursor_screen_pos();
-    let title_offset = title_offset(ui, context);
-    let row_width = ui.content_region_avail()[0] - title_offset;
+    let title_offset = group_title_offset(ui, context);
+    let title_end = row_content_end(ui, context);
+    let row_width = title_end - (row_start[0] + title_offset);
     let label = if is_renaming {
         Cow::Borrowed("")
     } else {
@@ -665,21 +666,32 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut TreeContext<'_>) {
     }
     if is_renaming {
         ui.same_line_with_spacing(0.0, 0.0);
-        draw_rename_input(ui, row_start, row_start[0] + title_offset, context);
+        draw_rename_input(
+            ui,
+            row_start,
+            [row_start[0] + title_offset, title_end],
+            context,
+        );
     }
     if let Some(_token) = token {
         draw_nodes(ui, &group.children, context);
     }
 }
 
-/// Horizontal offset of a row title from the row start. ImGui puts the title
-/// of a tree node after the arrow (font size plus twice the horizontal frame
-/// padding); note titles use the same offset, so titles on one level align.
-fn title_offset(ui: &Ui, context: &TreeContext<'_>) -> f32 {
+/// Horizontal offset of a group title from the row start: ImGui puts it
+/// after the arrow (font size plus twice the horizontal frame padding).
+fn group_title_offset(ui: &Ui, context: &TreeContext<'_>) -> f32 {
     ui.current_font_size() + 2.0 * context.frame_padding[0]
 }
 
-/// Draws one note row: the badge in the arrow slot (M45) and the title.
+/// Screen x where row content (title, badges) ends: the row's right edge
+/// minus the horizontal frame padding, mirroring the inset on the left.
+fn row_content_end(ui: &Ui, context: &TreeContext<'_>) -> f32 {
+    ui.window_content_region_max()[0] + ui.window_pos()[0] - context.frame_padding[0]
+}
+
+/// Draws one note row (M49): the title flush left, a reset badge at the
+/// right edge.
 fn draw_note_row(ui: &Ui, note: &Note, context: &mut TreeContext<'_>) {
     let _id = ui.push_id(note.id.imgui_id());
     let node = NodeId::Note(note.id);
@@ -704,18 +716,20 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut TreeContext<'_>) {
         .as_ref()
         .is_some_and(|rename| rename.node == node);
 
-    // Notes never have an arrow, so the badge column sits in its slot.
-    let arrow_center_x = row_start[0] + context.frame_padding[0] + ui.current_font_size() / 2.0;
-    draw_badge(ui, note.kind, [arrow_center_x, row_start[1]], context);
-    let title_x = row_start[0] + title_offset(ui, context);
+    // Notes have no arrow: the title starts where a group's arrow does.
+    let title_x = row_start[0] + context.frame_padding[0];
+    let content_end = row_content_end(ui, context);
+    let title_end = match draw_badge(ui, note.kind, [content_end, row_start[1]], context) {
+        Some(badge_start) => badge_start - context.theme.spacing.small,
+        None => content_end,
+    };
     ui.same_line_with_spacing(0.0, 0.0);
     ui.set_cursor_screen_pos([title_x, row_start[1]]);
     if is_renaming {
-        draw_rename_input(ui, row_start, title_x, context);
+        draw_rename_input(ui, row_start, [title_x, title_end], context);
         return;
     }
-    let row_end = ui.window_content_region_max()[0] + ui.window_pos()[0];
-    let label = truncate_to_width(ui, &note.title, row_end - ui.cursor_screen_pos()[0]);
+    let label = truncate_to_width(ui, &note.title, title_end - title_x);
     ui.text(&label);
     // Interaction belongs to the whole row (the tree node item).
     if is_row_hovered {
@@ -774,9 +788,16 @@ fn draw_context_menu(ui: &Ui, node: NodeId, context: &mut TreeContext<'_>) {
 ///
 /// Inline editing in lists (`lay-inline-edit`): the input has no background
 /// of its own, so the row keeps one uniform color; a focus border frames the
-/// whole row starting at `row_start`. The input text sits at `title_x`, where
-/// the title was drawn before renaming.
-fn draw_rename_input(ui: &Ui, row_start: [f32; 2], title_x: f32, context: &mut TreeContext<'_>) {
+/// whole row starting at `row_start`. The input text spans `title_span`
+/// (start and end x), where the title was drawn before renaming, so badges
+/// next to it stay visible.
+fn draw_rename_input(
+    ui: &Ui,
+    row_start: [f32; 2],
+    title_span: [f32; 2],
+    context: &mut TreeContext<'_>,
+) {
+    let [title_x, title_end] = title_span;
     let Some(rename) = context.rename.as_mut() else {
         return;
     };
@@ -807,7 +828,7 @@ fn draw_rename_input(ui: &Ui, row_start: [f32; 2], title_x: f32, context: &mut T
         ui.set_keyboard_focus_here();
         rename.focused = true;
     }
-    ui.set_next_item_width(-1.0);
+    ui.set_next_item_width((title_end - title_x + 2.0 * padding_x).max(1.0));
     let entered = ui
         .input_text("##rename", &mut rename.buffer)
         .auto_select_all(true)
@@ -825,25 +846,25 @@ fn draw_rename_input(ui: &Ui, row_start: [f32; 2], title_x: f32, context: &mut T
     }
 }
 
-/// Draws the reset badge of a note row (M45): an outlined rounded box with a
-/// letter for reset notes, nothing for normal notes. The badge is centered
-/// horizontally on `anchor[0]` and vertically in the row starting at
-/// `anchor[1]` (one frame tall).
-fn draw_badge(ui: &Ui, kind: NoteKind, anchor: [f32; 2], context: &TreeContext<'_>) {
+/// Draws the reset badge of a note row (M45, M49): an outlined rounded box
+/// with a letter for reset notes, nothing for normal notes. The badge ends at
+/// `anchor[0]` and is vertically centered in the row starting at `anchor[1]`
+/// (one frame tall). Returns the badge's left edge, or `None` if no badge
+/// was drawn.
+fn draw_badge(ui: &Ui, kind: NoteKind, anchor: [f32; 2], context: &TreeContext<'_>) -> Option<f32> {
     let (language, theme) = (context.language, context.theme);
+    let (letter, tooltip) = match kind {
+        NoteKind::Normal => return None,
+        NoteKind::DailyReset { .. } => (Text::DailyBadge, Text::DailyTooltip),
+        NoteKind::WeeklyReset { .. } => (Text::WeeklyBadge, Text::WeeklyTooltip),
+    };
     let line_height = ui.text_line_height();
     let padding = theme.spacing.extra_small;
     let width = ui.calc_text_size("W")[0] + 2.0 * padding;
     let start = [
-        anchor[0] - width / 2.0,
+        anchor[0] - width,
         anchor[1] + ((ui.frame_height() - line_height) / 2.0).max(0.0),
     ];
-
-    let (letter, tooltip) = match kind {
-        NoteKind::Normal => return,
-        NoteKind::DailyReset { .. } => (Text::DailyBadge, Text::DailyTooltip),
-        NoteKind::WeeklyReset { .. } => (Text::WeeklyBadge, Text::WeeklyTooltip),
-    };
     let letter = letter.get(language);
     let color = theme.accent.base.to_array();
     // Lucide style (`lay-icons`): outline only, round corners, stroke ≈ 2/24 of the size.
@@ -867,6 +888,7 @@ fn draw_badge(ui: &Ui, kind: NoteKind, anchor: [f32; 2], context: &TreeContext<'
     if ui.is_mouse_hovering_rect(start, max) {
         ui.tooltip_text(tooltip.get(language));
     }
+    Some(start[0])
 }
 
 /// Draws the empty state (M42): headline, primary and secondary button.

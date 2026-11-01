@@ -30,7 +30,7 @@ appears when you point at it).
   end. Type a name right away and press Enter.
 - **Rename:** double-click an entry, or right-click → *Rename*. Enter or
   clicking elsewhere keeps the new name, Escape cancels.
-- **Badges:** **D** marks a daily note (reset at 00:00 UTC), **W** a weekly
+- **Badges** at the right end of a row: **D** marks a daily note (reset at 00:00 UTC), **W** a weekly
   note (reset on Mondays at 07:30 UTC). Hover a badge for details.
 - **Checkboxes** in a note can be ticked directly.
 - **Links** open in your browser (only `http://` and `https://`); hover a

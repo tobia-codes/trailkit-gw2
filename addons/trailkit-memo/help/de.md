@@ -34,7 +34,7 @@ Darüberfahren erscheint eine Linie).
 - **Umbenennen:** Doppelklick auf einen Eintrag oder Rechtsklick →
   *Umbenennen*. Enter oder ein Klick daneben übernimmt den Namen, Escape
   bricht ab.
-- **Abzeichen:** **T** kennzeichnet eine tägliche Notiz (Reset um 00:00 UTC),
+- **Abzeichen** am rechten Ende einer Zeile: **T** kennzeichnet eine tägliche Notiz (Reset um 00:00 UTC),
   **W** eine wöchentliche (Reset montags um 07:30 UTC). Fahre mit der Maus
   darüber für Details.
 - **Checkboxen** in einer Notiz kannst du direkt abhaken.

@@ -99,7 +99,10 @@ move it into `crates/trailkit-ui` (see AGENTS.md "Code sharing").
   non-obvious options, changes apply live (no "Apply" button) except
   destructive/import actions.
 - Lists: consistent row height, hover highlight, selected state, context menu
-  on right-click with the same actions as visible buttons.
+  on right-click with the same actions as visible buttons. Item names start
+  flush left; per-item icons and badges sit right-aligned at the row end
+  (the name is truncated before them); only structural controls such as a
+  group's expand arrow stay on the left.
 - Drag & drop: show a drop indicator line between items and a highlight on
   groups; Escape cancels.
 - Text: sentence case for labels, title case never; no trailing colons on
