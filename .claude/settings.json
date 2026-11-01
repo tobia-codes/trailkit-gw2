@@ -1,8 +1,6 @@
 {
   "permissions": {
     "ask": [
-      "Bash(git push:*)",
-      "Bash(git push)",
       "Bash(gh release create:*)",
       "Bash(gh repo create:*)"
     ]
