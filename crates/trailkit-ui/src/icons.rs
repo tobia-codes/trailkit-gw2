@@ -19,8 +19,8 @@ impl Icon {
     pub const MENU: Self = Self('\u{e115}');
     /// `square`: unchecked task.
     pub const SQUARE: Self = Self('\u{e167}');
-    /// `square-check-big`: checked task.
-    pub const SQUARE_CHECK: Self = Self('\u{e16a}');
+    /// `square-check`: checked task (tick inside the box, M64).
+    pub const SQUARE_CHECK: Self = Self('\u{e559}');
     /// `triangle-alert`: warning or error hint.
     pub const TRIANGLE_ALERT: Self = Self('\u{e193}');
     /// `folder-open`: open a folder in the file explorer.
@@ -41,9 +41,11 @@ impl Icon {
     pub const LINK: Self = Self('\u{e102}');
     /// `calendar-clock`: insert an event reference.
     pub const CALENDAR_CLOCK: Self = Self('\u{e304}');
+    /// `eye`: show or hide the preview (M60).
+    pub const EYE: Self = Self('\u{e0ba}');
 
     /// Every icon above; keep in sync when adding one.
-    pub const ALL: [Self; 15] = [
+    pub const ALL: [Self; 16] = [
         Self::FILE_PLUS,
         Self::FOLDER_PLUS,
         Self::MENU,
@@ -59,6 +61,7 @@ impl Icon {
         Self::LIST_TODO,
         Self::LINK,
         Self::CALENDAR_CLOCK,
+        Self::EYE,
     ];
 
     /// The glyph as a character of the icon font.

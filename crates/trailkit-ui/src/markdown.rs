@@ -178,8 +178,9 @@ impl Builder {
             Event::Text(text) | Event::Code(text) | Event::Html(text) | Event::InlineHtml(text) => {
                 self.push_text(&text);
             }
-            Event::SoftBreak => self.push_text(" "),
-            Event::HardBreak => self.push_text("\n"),
+            // A single line break shows as one, like the user typed it (memo
+            // plan M63); blank lines still separate paragraphs.
+            Event::SoftBreak | Event::HardBreak => self.push_text("\n"),
             Event::Rule => {
                 self.flush();
                 self.blocks.push(Block::Rule);
@@ -360,7 +361,7 @@ mod tests {
                 },
                 Block::Paragraph {
                     depth: 0,
-                    spans: vec![plain("Some text more")]
+                    spans: vec![plain("Some text"), plain("\n"), plain("more")]
                 },
                 Block::Rule,
             ]
@@ -460,6 +461,20 @@ mod tests {
             panic!("expected a paragraph");
         };
         assert_eq!(spans.iter().filter(|span| span.is_line_break()).count(), 1);
+    }
+
+    #[test]
+    fn single_line_breaks_are_kept() {
+        let document = parse("- [ ] task\nasd\nasda\n\nnext");
+        let Some(Block::ListItem { spans, .. }) = document.blocks.first() else {
+            panic!("expected a list item");
+        };
+        assert_eq!(spans.iter().filter(|span| span.is_line_break()).count(), 2);
+        assert_eq!(
+            document.blocks.len(),
+            2,
+            "a blank line still starts a new block"
+        );
     }
 
     #[test]

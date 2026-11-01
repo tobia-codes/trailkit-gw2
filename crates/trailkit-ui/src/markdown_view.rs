@@ -56,6 +56,16 @@ pub fn draw_markdown(
         .max(average_character_width);
     let right = origin_x + width;
     let indent = theme.list.indent;
+    // The marker column must fit the widest marker (a task box) plus a gap,
+    // whatever the font size; otherwise the text touches the checkbox.
+    let marker_column = {
+        let _icons = FontScope::push(ui, FontRole::Icons);
+        let mut buffer = [0; 4];
+        ui.calc_text_size(Icon::SQUARE.as_str(&mut buffer))[0]
+    }
+    .max(ui.calc_text_size("00.")[0])
+        + theme.spacing.extra_small;
+    let marker_column = marker_column.max(indent);
 
     let mut action = None;
     for (index, block) in document.blocks.iter().enumerate() {
@@ -87,9 +97,9 @@ pub fn draw_markdown(
                 spans,
             } => {
                 let left = origin_x + f32::from(depth.saturating_sub(1)) * indent;
-                let marker_click = draw_list_marker(ui, *marker, left, indent, theme);
+                let marker_click = draw_list_marker(ui, *marker, left, marker_column, theme);
                 let bounds = LineBounds {
-                    left: left + indent,
+                    left: left + marker_column,
                     right,
                 };
                 let text_click = draw_spans(ui, spans, None, bounds, theme);

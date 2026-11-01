@@ -15,6 +15,7 @@
 //! (AGENTS.md rule 7, ROADMAP R47).
 
 pub mod color;
+pub mod editor;
 pub mod fonts;
 pub mod icons;
 pub mod markdown;
@@ -30,5 +31,7 @@ pub mod markdown_view;
 pub mod pane;
 #[cfg(windows)]
 pub mod separator;
+#[cfg(windows)]
+pub mod splitter;
 #[cfg(windows)]
 pub mod style_scope;

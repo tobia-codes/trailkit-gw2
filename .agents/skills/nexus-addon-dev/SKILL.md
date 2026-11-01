@@ -62,6 +62,14 @@ Re-verify when bumping `NEXUS_API_VERSION` or `nexus-rs`.
   check never fires), so always register. A window that must ask before
   closing (unsaved changes) notices the cleared flag in its render callback,
   shows itself again and asks (memo M54). Deregister in `unload`.
+- **Keyboard routing (verified 2026-11-01):** Nexus passes key presses
+  (arrows, Backspace, Enter, …) to ImGui instead of the game only while a
+  real ImGui text input is active (`io.WantTextInput`); typed characters
+  always reach ImGui. `CaptureKeyboardFromApp` is not enough. A custom text
+  widget keeps an invisible ImGui text input active while focused
+  (`trailkit_ui::editor::view`, "keyboard sink"), reads
+  `InputQueueCharacters` before that input consumes them, and writes the
+  clipboard after it.
 - ImGui is **1.80**: no `BeginDisabled` (draw disabled items in
   `text.disabled` and ignore clicks), no line wrapping in multiline inputs,
   and Escape in an active input reverts it to its content at activation.
@@ -147,6 +155,8 @@ Project contract (to be finalized in `docs/plans/addons/trailkit-core.md`):
 - **Help page** per addon (window/tab "Help"), content in both languages,
   generated from `addons/<name>/help/{en,de}.md`. Any change to user-visible
   behavior must update the help page in the same change.
+  Write one paragraph or list item per source line: single line breaks are
+  shown as line breaks (memo M63).
 - **Missing dependency guidance**: if a feature needs data the user disabled
   in core (or core is not installed), the feature is greyed out and shows an
   inline hint explaining *what* to enable *where*, with a button that opens
