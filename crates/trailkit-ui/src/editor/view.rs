@@ -2,12 +2,18 @@
 //! highlighted text with selection and cursor, and turns mouse and keyboard
 //! input into buffer operations (Windows only).
 //!
-//! While the editor has the focus it asks ImGui to keep the keyboard
-//! (`CaptureKeyboardFromApp`), so Nexus does not pass the keys on to the
-//! game. The layout is rebuilt only when the text, the width or the font
+//! While the editor has the focus it keeps an invisible ImGui text input
+//! active (the "keyboard sink"): Nexus passes key presses such as arrows,
+//! Backspace or Enter to ImGui instead of the game only while a real ImGui
+//! text input is active (verified in game 2026-11-01). The editor reads the
+//! typed characters before the sink consumes them, and writes the clipboard
+//! after it. The layout is rebuilt only when the text, the width or the font
 //! size changes; only visible lines are drawn.
 
-use nexus::imgui::{ChildWindow, Key, MouseButton, MouseCursor, StyleColor, StyleVar, Ui};
+use nexus::imgui::{
+    ChildWindow, InputTextCallbackHandler, InputTextMultilineCallback, Key, MouseButton,
+    MouseCursor, StyleColor, StyleVar, TextCallbackData, Ui,
+};
 
 use super::{
     buffer::{Direction, Step, TextBuffer},
@@ -60,6 +66,20 @@ pub struct TextEditor {
     blink_start: f64,
     /// Whether the view should scroll to the cursor next frame.
     scroll_to_cursor: bool,
+    /// Buffer of the invisible keyboard sink input; emptied every frame.
+    sink: String,
+    /// Whether the keyboard sink was active in the last frame.
+    sink_was_active: bool,
+}
+
+/// Empties the keyboard sink every frame, so its text never grows.
+struct ClearSink;
+
+impl InputTextCallbackHandler for ClearSink {
+    /// Clears the sink's text while it is active.
+    fn on_always(&mut self, mut data: TextCallbackData) {
+        data.clear();
+    }
 }
 
 impl TextEditor {
@@ -75,6 +95,8 @@ impl TextEditor {
             dragging: false,
             blink_start: 0.0,
             scroll_to_cursor: true,
+            sink: String::new(),
+            sink_was_active: false,
         }
     }
 
@@ -105,6 +127,7 @@ impl TextEditor {
     pub fn unfocus(&mut self) {
         self.focused = false;
         self.dragging = false;
+        self.sink_was_active = false;
     }
 
     /// Replaces `range` with `replacement` as one undo step and selects
@@ -136,10 +159,12 @@ impl TextEditor {
         };
 
         if self.focused {
-            self.handle_keyboard(ui, &mut response);
-            // Keep the keys away from the game while typing.
-            // SAFETY: plain ImGui call on the render thread inside a frame.
-            unsafe { nexus::imgui::sys::igCaptureKeyboardFromApp(true) };
+            // Read the typed characters before the sink consumes them.
+            let typed = ui.io().peek_input_characters();
+            self.draw_keyboard_sink(ui);
+            self.handle_keyboard(ui, &typed, &mut response);
+        } else {
+            self.sink_was_active = false;
         }
 
         let width = ui.content_region_avail()[0].max(1.0);
@@ -189,6 +214,22 @@ impl TextEditor {
             visible_height,
         );
         response
+    }
+
+    /// Keeps an invisible 1×1 ImGui text input active while the editor is
+    /// focused, so Nexus routes key presses to ImGui, not to the game.
+    fn draw_keyboard_sink(&mut self, ui: &Ui) {
+        let start = ui.cursor_pos();
+        let _invisible = ui.push_style_var(StyleVar::Alpha(0.0));
+        if !self.sink_was_active {
+            ui.set_keyboard_focus_here();
+        }
+        ui.input_text_multiline("##keyboard_sink", &mut self.sink, [1.0, 1.0])
+            .callback(InputTextMultilineCallback::ALWAYS, ClearSink)
+            .build();
+        self.sink_was_active = ui.is_item_active();
+        self.sink.clear();
+        ui.set_cursor_pos(start);
     }
 
     /// Rebuilds the layout if the text, width or font size changed.
@@ -351,7 +392,7 @@ impl TextEditor {
     }
 
     /// Handles typing, navigation, editing shortcuts and the clipboard.
-    fn handle_keyboard(&mut self, ui: &Ui, response: &mut EditorResponse) {
+    fn handle_keyboard(&mut self, ui: &Ui, typed: &str, response: &mut EditorResponse) {
         let io = ui.io();
         let control = io.key_ctrl;
         let shift = io.key_shift;
@@ -421,7 +462,6 @@ impl TextEditor {
         self.handle_vertical_keys(ui, control, shift);
 
         if !control {
-            let typed = io.peek_input_characters();
             let printable: String = typed
                 .chars()
                 .filter(|character| !character.is_control())
