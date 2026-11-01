@@ -209,11 +209,13 @@ pub enum Text {
     DailyTooltip,
     /// Tooltip of the weekly badge.
     WeeklyTooltip,
+    /// Label of the text size shown while changing it (M80).
+    TextSize,
 }
 
 impl Text {
     /// Every string, for registering their characters with Nexus' font atlas.
-    pub const ALL: [Self; 43] = [
+    pub const ALL: [Self; 44] = [
         Self::MainWindowTitle,
         Self::KeybindToggle,
         Self::QuickAccessTooltip,
@@ -257,6 +259,7 @@ impl Text {
         Self::WeeklyBadge,
         Self::DailyTooltip,
         Self::WeeklyTooltip,
+        Self::TextSize,
     ];
 
     /// All strings in all languages concatenated, so Nexus puts every
@@ -269,7 +272,7 @@ impl Text {
             .iter()
             .flat_map(|text| Language::ALL.map(|language| text.get(language)))
             .chain(chip_texts)
-            .chain([CHIP_DETAIL_CHARACTERS])
+            .chain([CHIP_DETAIL_CHARACTERS, PERCENT_CHARACTERS])
             .collect()
     }
 
@@ -388,7 +391,26 @@ impl Text {
             (Self::WeeklyTooltip, Language::German) => {
                 "Wöchentliche Notiz – setzt sich montags um 07:30 UTC zurück"
             }
+            (Self::TextSize, Language::English) => "Text size",
+            (Self::TextSize, Language::German) => "Textgröße",
         }
+    }
+}
+
+/// Characters of [`label_with_percent`] besides the label and the digits.
+const PERCENT_CHARACTERS: &str = ":.,% ";
+
+/// `label` and a percentage in the conventions of `language`, e.g.
+/// "Text size: 112.5%" or "Textgröße: 112,5 %" (M80).
+#[must_use]
+pub fn label_with_percent(label: &str, percent: f32, language: Language) -> String {
+    let mut number = format!("{percent:.1}");
+    if number.ends_with(".0") {
+        number.truncate(number.len() - 2);
+    }
+    match language {
+        Language::English => format!("{label}: {number}%"),
+        Language::German => format!("{label}: {} %", number.replace('.', ",")),
     }
 }
 
@@ -457,5 +479,17 @@ mod tests {
             assert_eq!(Language::from_code(language.code()), Some(language));
             assert_eq!(Language::from_u8(language as u8), language);
         }
+    }
+
+    #[test]
+    fn percentages_follow_the_language() {
+        assert_eq!(
+            label_with_percent("Text size", 112.5, Language::English),
+            "Text size: 112.5%"
+        );
+        assert_eq!(
+            label_with_percent("Textgröße", 125.0, Language::German),
+            "Textgröße: 125 %"
+        );
     }
 }
