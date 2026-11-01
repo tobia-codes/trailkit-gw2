@@ -22,7 +22,9 @@ use jiff::Timestamp;
 use nexus::{
     AddonFlags, UpdateProvider,
     data_link::{NexusLink, get_nexus_link},
-    gui::{RenderType, register_render, render},
+    gui::{
+        RenderType, deregister_close_on_escape, register_close_on_escape, register_render, render,
+    },
     imgui::{Condition, Window},
     keybind::{keybind_handler, register_keybind_with_string},
     localization::{set_translation, translate},
@@ -144,7 +146,16 @@ fn load() {
 
     let language = Language::resolve(None, detect_nexus_language().as_deref());
     LANGUAGE.store(language as u8, Ordering::Relaxed);
-    WINDOW_TITLE.get_or_init(|| format!("{}###trailkit-memo", Text::MainWindowTitle.get(language)));
+    let window_title = WINDOW_TITLE
+        .get_or_init(|| format!("{}###trailkit-memo", Text::MainWindowTitle.get(language)));
+    // Escape closes the window (`overlay-escape`). Nexus handles the key
+    // before ImGui sees it and clears the flag; with unsaved changes the
+    // render callback reopens the window and asks instead (M54).
+    // SAFETY: `VISIBLE` is a static, so the pointer stays valid for the whole
+    // time Nexus may use it; the registration is removed in `unload` before
+    // the DLL goes away. `AtomicBool` has the same in-memory representation
+    // as `bool`, and Nexus only stores `false` into it (a single-byte write).
+    register_close_on_escape(window_title, unsafe { &mut *VISIBLE.as_ptr() });
 
     for language in Language::ALL {
         set_translation(
@@ -188,6 +199,9 @@ fn load() {
 /// writes all pending saves before returning.
 fn unload() {
     log::info!("unloading");
+    if let Some(window_title) = WINDOW_TITLE.get() {
+        deregister_close_on_escape(window_title);
+    }
     NEXUS_LINK.store(std::ptr::null_mut(), Ordering::Release);
     // Unsaved edits become a draft; the worker writes it while shutting down (M54).
     if let Ok(mut notes) = NOTES.lock()

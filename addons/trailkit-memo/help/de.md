@@ -62,8 +62,8 @@ trailkit-core.
   verworfen werden sollen. (Mit `"unsaved_changes": "save_automatically"`
   in `settings.json` wird ohne Nachfrage übernommen; ein Schalter folgt im
   Einstellungsfenster.)
-- **Escape** verlässt zuerst das Textfeld, ein zweites Escape schließt das
-  Fenster.
+- **Escape** schließt das Fenster; bei ungespeicherten Änderungen fragt memo
+  vorher nach.
 - Wird das Spiel oder das Addon beim Bearbeiten beendet, bleiben deine
   Änderungen als Entwurf erhalten. Beim nächsten Öffnen der Notiz wählst du
   **Wiederherstellen** zum Weitermachen oder **Verwerfen**. Entwürfe werden
