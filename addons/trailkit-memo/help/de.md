@@ -26,7 +26,7 @@ Lange Namen werden mit „…“ gekürzt — fahre mit der Maus darüber, um de
 
 ## Eine Notiz bearbeiten
 
-Klicke auf den **Stift** oben rechts in einer Notiz oder doppelklicke die Notiz. Du bearbeitest Titel und Text in Markdown; die Buttons über dem Text fügen Überschriften, **Fett**, *Kursiv*, Aufzählungen, Checkboxen und Links ein (auch **Strg+B** und **Strg+I**); ein erneuter Klick entfernt die Formatierung wieder. Die Buttons der Formatierung an der Cursorposition leuchten auf. Der Event-Button benötigt trailkit-core.
+Klicke auf den **Stift** oben rechts in einer Notiz oder doppelklicke die Notiz. Du bearbeitest Titel und Text in Markdown; die Buttons über dem Text fügen Überschriften, **Fett**, *Kursiv*, Aufzählungen, Checkboxen und Links ein (auch **Strg+B** und **Strg+I**); ein erneuter Klick entfernt die Formatierung wieder (auch Links). Die Buttons der Formatierung an der Cursorposition leuchten auf. Der Event-Button benötigt trailkit-core.
 
 - Der **Augen**-Button zeigt eine Vorschau der formatierten Notiz neben dem Text (im schmalen Fenster wechselt er zwischen Text und Vorschau); ziehe den Spalt dazwischen, um die Breiten zu ändern. memo merkt sich beides.
 - **Fertig** (oder **Strg+Enter**) übernimmt deine Änderungen, **Abbrechen** verwirft sie — memo fragt vorher nach, wenn du etwas geändert hast.

@@ -6,7 +6,7 @@ only** — it is never compiled into an addon DLL.
 | Module | Content | Platform |
 |--------|---------|----------|
 | `raster` | CPU rasterizer for ImGui draw data (textured, vertex-colored triangles, top-left fill rule, straight-alpha blending) | any |
-| `snapshot` | `assert_snapshot` — compares an image with `tests/snapshots/<name>.png` (tolerance: 3/255 per channel, 0.05 % of pixels); writes `tests/snapshots/failures/<name>.actual.png` + `.diff.png` on failure | any |
+| `snapshot` | `assert_snapshot` — compares an image with `tests/snapshots/<name>.png` (tolerance: 3/255 per channel, no differing pixels); writes `tests/snapshots/failures/<name>.actual.png` + `.diff.png` on failure | any |
 | `harness` | `UiHarness` — headless ImGui context with the real trailkit fonts (installed for `FontScope`), Nexus-like key map, simulated mouse/keyboard input per frame, rendering to images | Windows |
 
 ## Usage

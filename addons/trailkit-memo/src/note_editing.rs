@@ -134,6 +134,23 @@ pub fn format_edit(text: &str, selection: Range<usize>, command: FormatCommand) 
         FormatCommand::BulletList => toggle_line_prefix(text, start..end, "- "),
         FormatCommand::Checkbox => toggle_line_prefix(text, start..end, "- [ ] "),
         FormatCommand::Link => {
+            // Inside an existing link: remove the link syntax, keep the label (M71).
+            if let Some(link) = innermost_range(text, &(start..end), InlineKind::Link)
+                && let Some(label_end) = text[link.clone()]
+                    .find("](")
+                    .map(|index| link.start + index)
+            {
+                let link_start = link.start;
+                let label = &text[link_start + 1..label_end];
+                let shift = |position: usize| {
+                    position.saturating_sub(link_start + 1).min(label.len()) + link_start
+                };
+                return TextEdit {
+                    range: link,
+                    replacement: label.to_owned(),
+                    selection: shift(start)..shift(end),
+                };
+            }
             let label = &text[start..end];
             let replacement = format!("[{label}]({LINK_URL_PLACEHOLDER})");
             let selection = if label.is_empty() {
@@ -422,6 +439,15 @@ mod tests {
         );
         let (unwrapped, _) = run("a *b c* d", 4..4, FormatCommand::Italic);
         assert_eq!(unwrapped, "a b c d");
+    }
+
+    #[test]
+    fn link_toggles_off_inside_a_link() {
+        let text = "see [the wiki](https://wiki.guildwars2.com) now";
+        let cursor = text.find("wiki").unwrap_or(0) + 1;
+        let (unlinked, selection) = run(text, cursor..cursor, FormatCommand::Link);
+        assert_eq!(unlinked, "see the wiki now");
+        assert_eq!(&unlinked[..selection.start], "see the w");
     }
 
     #[test]
