@@ -47,9 +47,6 @@ const VIRTUAL_KEY_B: i32 = 0x42;
 /// Windows virtual-key code of `I`.
 const VIRTUAL_KEY_I: i32 = 0x49;
 
-/// ImGui popup id of the unsaved changes dialog (M54).
-const UNSAVED_CHANGES_POPUP: &str = "##trailkit-memo-unsaved";
-
 /// A problem with `notes.json` shown above the notes (M31).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NotesProblem {
@@ -268,8 +265,6 @@ pub struct MemoWindow {
     editor: Option<Editor>,
     /// A pending answer of the unsaved changes dialog (M54).
     leave_prompt: Option<LeaveReason>,
-    /// Whether the dialog of `leave_prompt` was already opened.
-    leave_prompt_opened: bool,
     /// Set once closing the window is allowed; read by the addon glue.
     close_approved: bool,
     /// Cached draft hint label (note, language, text), so it is not
@@ -331,7 +326,6 @@ impl MemoWindow {
             drafts,
             editor: None,
             leave_prompt: None,
-            leave_prompt_opened: false,
             close_approved: false,
             draft_hint: None,
         }
@@ -386,6 +380,8 @@ impl MemoWindow {
     /// Draws the window content and applies what the user did.
     pub fn draw(&mut self, ui: &Ui, language: Language, theme: &Theme) {
         self.actions.clear();
+        let content_start = ui.cursor_screen_pos();
+        let content_size = ui.content_region_avail();
         // Escape closes the window (`overlay-escape`) unless it was meant for
         // a text input (ImGui used it there to leave the input) or a dialog.
         if ui.is_key_pressed(Key::Escape)
@@ -418,7 +414,7 @@ impl MemoWindow {
             }
         }
 
-        self.draw_leave_prompt(ui, language, theme);
+        self.draw_leave_prompt(ui, language, theme, content_start, content_size);
 
         let actions = std::mem::take(&mut self.actions);
         for action in &actions {
@@ -427,45 +423,90 @@ impl MemoWindow {
         self.actions = actions;
     }
 
-    /// Draws the unsaved changes dialog while an answer is pending (M54):
-    /// "Discard" sits apart from "Keep editing" and the primary "Save"
-    /// (`lay-one-primary`); Escape keeps editing.
-    fn draw_leave_prompt(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+    /// Draws the unsaved changes dialog while an answer is pending (M54,
+    /// `overlay-dialog-scope`): only this window's content (from
+    /// `area_start`, `area_size`) is dimmed and blocked, never the game or
+    /// other windows. "Discard" sits apart from "Keep editing" and the
+    /// primary "Save" (`lay-one-primary`); Enter saves, Escape keeps editing.
+    fn draw_leave_prompt(
+        &mut self,
+        ui: &Ui,
+        language: Language,
+        theme: &Theme,
+        area_start: [f32; 2],
+        area_size: [f32; 2],
+    ) {
         if self.leave_prompt.is_none() {
             return;
         }
-        if !self.leave_prompt_opened {
-            ui.open_popup(UNSAVED_CHANGES_POPUP);
-            self.leave_prompt_opened = true;
-        }
+        ui.set_cursor_screen_pos(area_start);
+        let scrim_color =
+            ui.push_style_color(StyleColor::ChildBg, theme.surface.modal_overlay.to_array());
+        let scrim = ChildWindow::new("dialog_scrim")
+            .size(area_size)
+            .scrollable(false)
+            .scroll_bar(false)
+            .begin(ui);
+        scrim_color.pop();
+        let Some(_scrim) = scrim else {
+            return;
+        };
+
+        let title = Text::UnsavedChangesTitle.get(language);
+        let question = Text::UnsavedChangesQuestion.get(language);
+        let discard = Text::DiscardChanges.get(language);
+        let keep_editing = Text::KeepEditing.get(language);
+        let save = Text::KeepChanges.get(language);
+        let spacing = ui.clone_style().item_spacing;
+        let padding = theme.pane.padding;
+        let buttons_width = button_width(ui, discard)
+            + theme.spacing.extra_large
+            + button_width(ui, keep_editing)
+            + spacing[0]
+            + button_width(ui, save);
+        let content_width = buttons_width
+            .max(ui.calc_text_size(question)[0])
+            .min(area_size[0] - 2.0 * padding - 2.0 * theme.spacing.medium)
+            .max(1.0);
+        let question_height = ui.calc_text_size_with_opts(question, false, content_width)[1];
+        let height = 2.0 * padding
+            + ui.text_line_height_with_spacing()
+            + question_height
+            + spacing[1]
+            + theme.spacing.small
+            + ui.frame_height();
+        let size = [content_width + 2.0 * padding, height];
+        ui.set_cursor_pos([
+            ((area_size[0] - size[0]) / 2.0).max(0.0),
+            ((area_size[1] - size[1]) / 2.0).max(0.0),
+        ]);
         let actions = &mut self.actions;
-        ui.popup_modal(UNSAVED_CHANGES_POPUP)
-            .title_bar(false)
-            .always_auto_resize(true)
-            .build(ui, || {
-                {
-                    let _bold = FontScope::push(ui, FontRole::BodyBold);
-                    ui.text(Text::UnsavedChangesTitle.get(language));
-                }
-                ui.text(Text::UnsavedChangesQuestion.get(language));
-                ui.dummy([0.0, theme.spacing.small]);
-                let mut answer = None;
-                if ui.button(Text::DiscardChanges.get(language)) {
-                    answer = Some(WindowAction::LeaveDiscarding);
-                }
-                ui.same_line_with_spacing(0.0, theme.spacing.extra_large);
-                if ui.button(Text::KeepEditing.get(language)) || ui.is_key_pressed(Key::Escape) {
-                    answer = Some(WindowAction::LeaveCancelled);
-                }
-                ui.same_line();
-                if draw_primary_button(ui, theme, Text::KeepChanges.get(language)) {
-                    answer = Some(WindowAction::LeaveSaving);
-                }
-                if let Some(answer) = answer {
-                    actions.push(answer);
-                    ui.close_current_popup();
-                }
-            });
+        draw_pane(ui, theme, "dialog", size, || {
+            {
+                let _bold = FontScope::push(ui, FontRole::BodyBold);
+                ui.text(title);
+            }
+            {
+                let _wrap = ui.push_text_wrap_pos_with_pos(ui.cursor_pos()[0] + content_width);
+                ui.text_wrapped(question);
+            }
+            ui.dummy([0.0, theme.spacing.small]);
+            let mut answer = None;
+            if ui.button(discard) {
+                answer = Some(WindowAction::LeaveDiscarding);
+            }
+            ui.same_line_with_spacing(0.0, theme.spacing.extra_large);
+            if ui.button(keep_editing) || ui.is_key_pressed(Key::Escape) {
+                answer = Some(WindowAction::LeaveCancelled);
+            }
+            ui.same_line();
+            if draw_primary_button(ui, theme, save) || ui.is_key_pressed(Key::Enter) {
+                answer = Some(WindowAction::LeaveSaving);
+            }
+            if let Some(answer) = answer {
+                actions.push(answer);
+            }
+        });
     }
 
     /// The selected note, if a note (not a group) is selected.
@@ -666,6 +707,9 @@ impl MemoWindow {
     fn draw_editor(&mut self, ui: &Ui, language: Language, theme: &Theme) {
         draw_format_toolbar(ui, language, theme, &mut self.actions);
         draw_separator(ui, theme);
+        // While the unsaved changes dialog is shown, typing must not change
+        // what the dialog asks about.
+        let is_dialog_open = self.leave_prompt.is_some();
         let Some(editor) = self.editor.as_mut() else {
             return;
         };
@@ -680,6 +724,7 @@ impl MemoWindow {
             ui.set_next_item_width(-f32::MIN_POSITIVE);
             ui.input_text("##title", &mut editor.session.title)
                 .hint(Text::TitleHint.get(language))
+                .read_only(is_dialog_open)
                 .build();
         }
         editor.title_was_active = ui.is_item_active();
@@ -711,6 +756,7 @@ impl MemoWindow {
             &mut editor.session.body,
             [-f32::MIN_POSITIVE, -f32::MIN_POSITIVE],
         )
+        .read_only(is_dialog_open)
         .callback(InputTextMultilineCallback::ALWAYS, callback)
         .build();
         editor.body_was_active = ui.is_item_active();
@@ -925,7 +971,6 @@ impl MemoWindow {
                 }
             }
             WindowAction::LeaveSaving | WindowAction::LeaveDiscarding => {
-                self.leave_prompt_opened = false;
                 let Some(reason) = self.leave_prompt.take() else {
                     return;
                 };
@@ -940,10 +985,7 @@ impl MemoWindow {
                     LeaveReason::Cancel => {}
                 }
             }
-            WindowAction::LeaveCancelled => {
-                self.leave_prompt = None;
-                self.leave_prompt_opened = false;
-            }
+            WindowAction::LeaveCancelled => self.leave_prompt = None,
             WindowAction::RequestClose => {
                 if self.request_close() {
                     self.close_approved = true;
