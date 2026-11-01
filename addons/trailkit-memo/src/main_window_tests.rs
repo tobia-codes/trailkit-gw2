@@ -226,3 +226,18 @@ fn unsaved_changes_dialog_stacks_buttons_in_a_narrow_window() {
         "memo-unsaved-dialog-narrow",
     );
 }
+
+#[test]
+fn narrow_window_dims_the_edited_note_behind_the_drawer() {
+    let document = sample_document();
+    let ui_state = selected_first(&document);
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    memo.apply(&WindowAction::StartEditing, Language::English);
+    memo.drawer_open = true;
+    assert_window(
+        &mut memo,
+        [360.0, 420.0],
+        ThemeKind::Dark,
+        "memo-narrow-drawer-editing",
+    );
+}

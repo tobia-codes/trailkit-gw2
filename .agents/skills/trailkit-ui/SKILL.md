@@ -109,6 +109,10 @@ move it into `crates/trailkit-ui` (see AGENTS.md "Code sharing").
   section headers.
 - Every window remembers position/size; Escape closes (register via
   `GUI_RegisterCloseOnEscape`).
+- Overlays inside a window (scrims): ImGui renders a child window's
+  *background* into the parent's draw list, i.e. below every sibling child
+  drawn earlier. Never dim with `ChildBg`; draw the dimming rectangle into
+  the overlay child's own draw list (see memo `draw_drawer`).
 
 ## 5. Review checklist
 

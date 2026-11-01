@@ -566,19 +566,28 @@ impl MemoWindow {
         pane_minimum: f32,
     ) {
         ui.set_cursor_screen_pos(start);
-        // The scrim dims the note and takes its clicks; ImGui reads the
-        // background color in `BeginChild`, so it is popped right after.
-        let scrim_color =
-            ui.push_style_color(StyleColor::ChildBg, theme.surface.modal_overlay.to_array());
-        let scrim = ChildWindow::new("drawer_scrim")
+        // The scrim takes the clicks on the note. ImGui renders a child's
+        // background into the parent's draw list, below the note pane drawn
+        // before, so the dimming is a rectangle in the scrim's own list.
+        let Some(_scrim) = ChildWindow::new("drawer_scrim")
             .size(size)
             .scrollable(false)
             .scroll_bar(false)
-            .begin(ui);
-        scrim_color.pop();
-        let Some(_scrim) = scrim else {
+            .draw_background(false)
+            .begin(ui)
+        else {
             return;
         };
+        let scrim_start = ui.window_pos();
+        let scrim_end = [scrim_start[0] + size[0], scrim_start[1] + size[1]];
+        ui.get_window_draw_list()
+            .add_rect(
+                scrim_start,
+                scrim_end,
+                theme.surface.modal_overlay.to_array(),
+            )
+            .filled(true)
+            .build();
         let width = pane_minimum.min(size[0] * DRAWER_MAXIMUM_FRACTION);
         draw_pane(ui, theme, "drawer", [width, 0.0], || {
             self.draw_tree_pane(ui, language, theme, Some(Text::HideNoteList));
