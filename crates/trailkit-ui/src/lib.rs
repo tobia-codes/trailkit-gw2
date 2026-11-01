@@ -29,6 +29,8 @@ pub mod button;
 #[cfg(windows)]
 pub mod chat_link_chip;
 #[cfg(windows)]
+pub mod cursor_extent;
+#[cfg(windows)]
 pub mod font_registry;
 #[cfg(windows)]
 pub mod markdown_view;

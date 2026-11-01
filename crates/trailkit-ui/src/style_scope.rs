@@ -8,7 +8,11 @@
 
 use nexus::imgui::{ColorStackToken, StyleColor, StyleStackToken, StyleVar, Ui};
 
-use crate::{color::Color, theme::Theme};
+use crate::{
+    color::Color,
+    cursor_extent::{cursor_extent, tooltip_cursor_scale},
+    theme::Theme,
+};
 
 /// Reads one color token from a theme.
 type ColorToken = fn(&Theme) -> Color;
@@ -97,6 +101,44 @@ pub struct StyleScope<'ui> {
     _colors: [ColorStackToken<'ui>; COLOR_SLOTS.len()],
     /// Pushed style variables; each token pops one variable when dropped.
     _style_vars: [StyleStackToken<'ui>; STYLE_VARS.len()],
+    /// Tooltips start right of the game's (large) cursor (memo plan M84).
+    _tooltip_offset: TooltipOffset,
+}
+
+/// Sets `style.MouseCursorScale` (no ImGui stack exists for it) so tooltips
+/// start right of the real cursor, and restores the previous value on drop.
+/// The scale only moves tooltips: Nexus addons never let ImGui draw the
+/// cursor itself.
+struct TooltipOffset {
+    /// The value to restore.
+    previous: f32,
+}
+
+impl TooltipOffset {
+    /// Applies the scale for the current cursor.
+    fn push() -> Self {
+        let scale = tooltip_cursor_scale(cursor_extent());
+        // SAFETY: called on the render thread inside a frame, so the style
+        // of the current ImGui context is valid and nothing else touches it
+        // concurrently.
+        let previous = unsafe {
+            let style = &mut *nexus::imgui::sys::igGetStyle();
+            let previous = style.MouseCursorScale;
+            style.MouseCursorScale = scale;
+            previous
+        };
+        Self { previous }
+    }
+}
+
+impl Drop for TooltipOffset {
+    /// Restores the previous scale.
+    fn drop(&mut self) {
+        // SAFETY: as in `push`; still on the render thread in the same frame.
+        unsafe {
+            (*nexus::imgui::sys::igGetStyle()).MouseCursorScale = self.previous;
+        }
+    }
 }
 
 impl<'ui> StyleScope<'ui> {
@@ -106,6 +148,7 @@ impl<'ui> StyleScope<'ui> {
             _colors: COLOR_SLOTS
                 .map(|(slot, token)| ui.push_style_color(slot, token(theme).to_array())),
             _style_vars: STYLE_VARS.map(|style_var| ui.push_style_var(style_var(theme))),
+            _tooltip_offset: TooltipOffset::push(),
         }
     }
 }

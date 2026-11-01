@@ -27,6 +27,8 @@ serde_json = "1.0.154"
 uuid = { version = "1.29.0", features = ["v7", "serde"] }
 thiserror = "2.0.21"
 tempfile = "3.27.0"
+# Win32 calls (cursor size for tooltips, memo plan M84); same version as nexus-rs uses.
+windows = { version = "0.62.2", features = ["Win32_UI_WindowsAndMessaging", "Win32_Graphics_Gdi"] }
 # Markdown view (memo plan M19).
 pulldown-cmark = { version = "0.13.6", default-features = false }
 
