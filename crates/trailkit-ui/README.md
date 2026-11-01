@@ -7,7 +7,7 @@ documentation: the [`trailkit-ui` skill](../../.agents/skills/trailkit-ui/SKILL.
 > the markdown view. Other components move in here once a second addon
 > needs them (AGENTS.md rule 7, ROADMAP R47).
 
-Third-party assets: `assets/fonts/noto-sans/` (SIL Open Font License) and
+Third-party assets: `assets/fonts/open-sans/` (SIL Open Font License) and
 `assets/fonts/lucide/` (ISC), each with its `LICENSE`.
 
 ## Contents
@@ -16,7 +16,7 @@ Third-party assets: `assets/fonts/noto-sans/` (SIL Open Font License) and
 |--------|---------|----------|
 | `color` | `Color` (RGBA) + WCAG contrast ratio | any |
 | `theme` | `Theme` tokens, built-in `Theme::DARK` (default) / `Theme::LIGHT`, `ThemeKind` | any |
-| `fonts` | shared font roles (body, bold, italic, headings, icons), embedded Noto Sans + Lucide | any |
+| `fonts` | shared font roles (body, bold, italic, headings, icons), embedded Open Sans + Lucide | any |
 | `icons` | Lucide icon glyphs used by trailkit (add new ones here) | any |
 | `markdown` | markdown → blocks and styled spans; task toggling; `http(s)`-only links | any |
 | `button` | `draw_primary_button` (accent, `lay-one-primary`), `button_width` | Windows |
