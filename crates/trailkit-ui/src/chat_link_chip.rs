@@ -163,10 +163,11 @@ fn icon_centering_offset(height: f32) -> f32 {
     bounds.map_or(0.0, |(top, bottom)| (height - (bottom - top)) / 2.0 - top)
 }
 
-/// How far the pill reaches above and below the text line: a third of the
-/// line spacing (chips on adjacent lines keep a gap), at least one pixel.
-fn vertical_padding(ui: &Ui) -> f32 {
-    ((ui.text_line_height_with_spacing() - ui.text_line_height()) / 3.0).max(1.0)
+/// How far the pill reaches above and below the text: a third of the
+/// leading of running text (chips on adjacent lines keep a gap), at least
+/// one pixel.
+fn vertical_padding(ui: &Ui, theme: &Theme) -> f32 {
+    (theme.typography.leading_for(ui.current_font_size()) * 2.0 / 3.0).max(1.0)
 }
 
 /// Radius of a coin dot: a third of the font size.
@@ -204,7 +205,7 @@ pub fn draw_chip(
     let height = ui.text_line_height();
     // The pill reaches into the line spacing above and below, so icons
     // (which fill the whole line height) do not touch its edge.
-    let vertical_padding = vertical_padding(ui);
+    let vertical_padding = vertical_padding(ui, theme);
     let min = [position[0], position[1] - vertical_padding];
     let max = [position[0] + width, position[1] + height + vertical_padding];
     let rounding = (max[1] - min[1]) / 2.0;

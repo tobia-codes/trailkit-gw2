@@ -162,8 +162,10 @@ fn draw_list_marker(
     marker_width: f32,
     theme: &Theme,
 ) -> Option<MarkdownAction> {
-    let line_start = ui.cursor_screen_pos();
-    ui.set_cursor_screen_pos([left, line_start[1]]);
+    // The marker sits on the text of the first line (see `draw_spans`).
+    let line_top = ui.cursor_screen_pos()[1];
+    let text_top = line_top + theme.typography.leading_for(ui.current_font_size());
+    ui.set_cursor_screen_pos([left, text_top]);
     let action = match marker {
         ListMarker::Bullet => {
             ui.text("•");
@@ -192,7 +194,7 @@ fn draw_list_marker(
                 ui.text_colored(color.to_array(), glyph);
                 size
             };
-            ui.set_cursor_screen_pos([left, line_start[1]]);
+            ui.set_cursor_screen_pos([left, text_top]);
             let clicked = ui.invisible_button("task", [size[0].max(1.0), size[1].max(1.0)]);
             if ui.is_item_hovered() {
                 ui.set_mouse_cursor(Some(MouseCursor::Hand));
@@ -201,7 +203,7 @@ fn draw_list_marker(
         }
     };
     // Text continues on the same line, right of the marker column.
-    ui.set_cursor_screen_pos([left + marker_width, line_start[1]]);
+    ui.set_cursor_screen_pos([left + marker_width, line_top]);
     action
 }
 
@@ -217,12 +219,18 @@ fn draw_spans(
     theme: &Theme,
     chips: ChipContext<'_>,
 ) -> Option<MarkdownAction> {
-    let line_height = {
+    // Lines are `typography.line_height` apart; `y` is the text top, below
+    // the leading of the line.
+    let (line_height, leading) = {
         let _font = FontScope::push(ui, heading.unwrap_or(FontRole::Body));
-        ui.text_line_height_with_spacing()
+        let font_size = ui.current_font_size();
+        (
+            theme.typography.line_height_for(font_size),
+            theme.typography.leading_for(font_size),
+        )
     };
     let mut x = bounds.left;
-    let mut y = ui.cursor_screen_pos()[1];
+    let mut y = ui.cursor_screen_pos()[1] + leading;
     let mut action = None;
 
     for (index, span) in spans.iter().enumerate() {
@@ -273,7 +281,7 @@ fn draw_spans(
             }
         }
     }
-    ui.set_cursor_screen_pos([bounds.left, y + line_height]);
+    ui.set_cursor_screen_pos([bounds.left, y - leading + line_height]);
     action
 }
 

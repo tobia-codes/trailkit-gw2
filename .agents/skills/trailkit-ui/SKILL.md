@@ -50,7 +50,7 @@ in the crate, document here):
 | Lists | `list.item_spacing`, `list.indent` |
 | Panes | `pane.padding` 8 (inner padding), `pane.gap` 8 (space between panes) — see `lay-pane-padding` |
 | Shape | `radius` = 0 (user-overridable, default 0) |
-| Typography | `font.size.small`, `font.size.body`, `font.size.heading` |
+| Typography | `font.size.small`, `font.size.body`, `font.size.heading`, `font.line_height` (running text: 1.5 × font size, text centered in its line; markdown view and editor) |
 
 - **Built-in themes:** `Dark` (default) and `Light`. Both are full token sets.
   Values: `crates/trailkit-ui/src/theme.rs` (palette R51: anthracite surfaces,
