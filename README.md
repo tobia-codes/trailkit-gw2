@@ -11,6 +11,7 @@ a Rust backend server is planned for later).
 | Path | Content |
 |------|---------|
 | `addons/` | Nexus addons (`trailkit-memo`: phase 0 skeleton) |
+| `crates/trailkit-storage/` | Shared persistence: versioned, crash-safe JSON files with safety copies |
 | `crates/trailkit-ui/` | Shared design system: theme tokens, ImGui style scope |
 | `.githooks/` | Versioned git hooks (`cargo xtask install-hooks`) |
 | `xtask/` | Task runner: `cargo xtask deploy`, `cargo xtask sync-versions` |

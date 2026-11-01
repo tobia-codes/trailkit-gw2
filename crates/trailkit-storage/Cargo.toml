@@ -1,0 +1,23 @@
+[package]
+name = "trailkit-storage"
+version = "0.0.0"
+description = "Versioned, crash-safe JSON persistence with safety copies for trailkit Nexus addons"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+jiff.workspace = true
+log.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true
