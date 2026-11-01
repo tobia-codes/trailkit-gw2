@@ -13,6 +13,9 @@
 //! (AGENTS.md rule 7, ROADMAP R47).
 
 pub mod color;
+pub mod fonts;
+pub mod icons;
+pub mod markdown;
 pub mod theme;
 
 #[cfg(windows)]

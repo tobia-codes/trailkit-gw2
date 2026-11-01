@@ -9,6 +9,9 @@ repository.workspace = true
 authors.workspace = true
 publish = false
 
+[dependencies]
+pulldown-cmark.workspace = true
+
 # ImGui comes through nexus-rs (same imgui version as the host addon); Windows only (ROADMAP R39).
 [target.'cfg(windows)'.dependencies]
 nexus.workspace = true
