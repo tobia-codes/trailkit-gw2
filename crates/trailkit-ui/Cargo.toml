@@ -14,6 +14,7 @@ pulldown-cmark.workspace = true
 
 # ImGui comes through nexus-rs (same imgui version as the host addon); Windows only (ROADMAP R39).
 [target.'cfg(windows)'.dependencies]
+log.workspace = true
 nexus.workspace = true
 
 [lints]

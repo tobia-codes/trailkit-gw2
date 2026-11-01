@@ -1275,6 +1275,7 @@ dependencies = [
 name = "trailkit-ui"
 version = "0.0.0"
 dependencies = [
+ "log",
  "nexus",
  "pulldown-cmark",
 ]
