@@ -185,9 +185,12 @@ impl TextEditor {
         let padding = theme.spacing.small;
         let _colors = ui.push_style_color(StyleColor::ChildBg, theme.surface.input.to_array());
         let _padding = ui.push_style_var(StyleVar::WindowPadding([padding, padding]));
+        // `movable(false)`: dragging to select text must not move the whole
+        // window (ImGui moves windows when dragging where no item is).
         let Some(_child) = ChildWindow::new(id)
             .size(size)
             .always_use_window_padding(true)
+            .movable(false)
             .begin(ui)
         else {
             return response;
