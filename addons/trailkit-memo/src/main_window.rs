@@ -9,7 +9,8 @@ use std::{borrow::Cow, path::PathBuf, sync::Arc};
 
 use jiff::Timestamp;
 use nexus::imgui::{
-    Condition, Key, MenuItem, MouseButton, MouseCursor, StyleColor, TreeNode, TreeNodeFlags, Ui,
+    Condition, Key, MenuItem, MouseButton, MouseCursor, StyleColor, StyleVar, TreeNode,
+    TreeNodeFlags, Ui,
 };
 use trailkit_ui::{
     font_registry::FontScope,
@@ -127,6 +128,9 @@ struct TreeContext<'state> {
     language: Language,
     /// Active theme.
     theme: &'state Theme,
+    /// ImGui frame padding; rows use it so they are as tall as the rename
+    /// input and titles line up with the input text.
+    frame_padding: [f32; 2],
 }
 
 impl MemoWindow {
@@ -292,6 +296,7 @@ impl MemoWindow {
             actions: &mut self.actions,
             language,
             theme,
+            frame_padding: ui.clone_style().frame_padding,
         };
         draw_nodes(ui, &self.document.root, &mut context);
     }
@@ -535,12 +540,18 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut TreeContext<'_>) {
         .rename
         .as_ref()
         .is_some_and(|rename| rename.node == node);
-    let mut flags = TreeNodeFlags::OPEN_ON_ARROW | TreeNodeFlags::SPAN_AVAIL_WIDTH;
+    let mut flags = TreeNodeFlags::OPEN_ON_ARROW
+        | TreeNodeFlags::SPAN_AVAIL_WIDTH
+        | TreeNodeFlags::FRAME_PADDING;
     if context.selected == Some(node) {
         flags |= TreeNodeFlags::SELECTED;
     }
 
-    let row_width = ui.content_region_avail()[0] - ui.frame_height();
+    // ImGui puts the title of a tree node after the arrow: font size plus
+    // twice the horizontal frame padding.
+    let row_start = ui.cursor_screen_pos();
+    let title_offset = ui.current_font_size() + 2.0 * context.frame_padding[0];
+    let row_width = ui.content_region_avail()[0] - title_offset;
     let label = if is_renaming {
         Cow::Borrowed("")
     } else {
@@ -560,7 +571,7 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut TreeContext<'_>) {
     }
     if is_renaming {
         ui.same_line_with_spacing(0.0, 0.0);
-        draw_rename_input(ui, context);
+        draw_rename_input(ui, row_start[0] + title_offset, context);
     }
     if let Some(_token) = token {
         draw_nodes(ui, &group.children, context);
@@ -571,8 +582,10 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut TreeContext<'_>) {
 fn draw_note_row(ui: &Ui, note: &Note, context: &mut TreeContext<'_>) {
     let _id = ui.push_id(note.id.imgui_id());
     let node = NodeId::Note(note.id);
-    let mut flags =
-        TreeNodeFlags::LEAF | TreeNodeFlags::NO_TREE_PUSH_ON_OPEN | TreeNodeFlags::SPAN_AVAIL_WIDTH;
+    let mut flags = TreeNodeFlags::LEAF
+        | TreeNodeFlags::NO_TREE_PUSH_ON_OPEN
+        | TreeNodeFlags::SPAN_AVAIL_WIDTH
+        | TreeNodeFlags::FRAME_PADDING;
     if context.selected == Some(node) {
         flags |= TreeNodeFlags::SELECTED;
     }
@@ -591,7 +604,7 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut TreeContext<'_>) {
     draw_badge(ui, note.kind, context.language, context.theme);
     ui.same_line_with_spacing(0.0, 0.0);
     if is_renaming {
-        draw_rename_input(ui, context);
+        draw_rename_input(ui, ui.cursor_screen_pos()[0], context);
         return;
     }
     let row_end = ui.window_content_region_max()[0] + ui.window_pos()[0];
@@ -599,7 +612,7 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut TreeContext<'_>) {
     ui.text(&label);
     // Interaction belongs to the whole row (the tree node item).
     let row_min = row_start;
-    let row_max = [row_end, ui.item_rect_max()[1]];
+    let row_max = [row_end, row_start[1] + ui.frame_height()];
     if ui.is_mouse_hovering_rect(row_min, row_max) && ui.is_window_hovered() {
         handle_hovered_row(ui, node, &note.title, &label, context);
     }
@@ -653,10 +666,20 @@ fn draw_context_menu(ui: &Ui, node: NodeId, context: &mut TreeContext<'_>) {
 }
 
 /// Draws the inline rename input and records commit or cancel (M44).
-fn draw_rename_input(ui: &Ui, context: &mut TreeContext<'_>) {
+///
+/// The input is exactly as tall as a row and starts so that its text sits at
+/// `title_x`, where the title was drawn before renaming.
+fn draw_rename_input(ui: &Ui, title_x: f32, context: &mut TreeContext<'_>) {
     let Some(rename) = context.rename.as_mut() else {
         return;
     };
+    let padding_x = context.theme.spacing.extra_small;
+    let _padding = ui.push_style_var(StyleVar::FramePadding([
+        padding_x,
+        context.frame_padding[1],
+    ]));
+    let row_top = ui.cursor_screen_pos()[1];
+    ui.set_cursor_screen_pos([title_x - padding_x, row_top]);
     if !rename.focused {
         ui.set_keyboard_focus_here();
         rename.focused = true;
@@ -685,8 +708,13 @@ fn draw_badge(ui: &Ui, kind: NoteKind, language: Language, theme: &Theme) {
     let line_height = ui.text_line_height();
     let padding = theme.spacing.extra_small;
     let width = ui.calc_text_size("W")[0] + 2.0 * padding;
-    let start = ui.cursor_screen_pos();
+    let cursor = ui.cursor_screen_pos();
     ui.dummy([width + padding, line_height]);
+    // Vertically centered in the row, which is one frame tall.
+    let start = [
+        cursor[0],
+        cursor[1] + ((ui.frame_height() - line_height) / 2.0).max(0.0),
+    ];
 
     let (letter, tooltip) = match kind {
         NoteKind::Normal => return,
