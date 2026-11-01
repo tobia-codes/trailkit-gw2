@@ -223,7 +223,7 @@ impl Theme {
             hover: Color::from_rgb_hex(0x353A42),
             active: Color::from_rgb_hex(0x40464F),
             popup: Color::from_rgb_hex(0x202327),
-            modal_overlay: Color::from_rgba_hex(0x0000_0099),
+            modal_overlay: Color::from_rgba_hex(0x0000_00B3),
         },
         text: TextColors {
             primary: Color::from_rgb_hex(0xE8E9EB),
@@ -271,7 +271,7 @@ impl Theme {
             hover: Color::from_rgb_hex(0xE6E8EC),
             active: Color::from_rgb_hex(0xD6DAE0),
             popup: Color::from_rgb_hex(0xFFFFFF),
-            modal_overlay: Color::from_rgba_hex(0x0000_0059),
+            modal_overlay: Color::from_rgba_hex(0x0000_0080),
         },
         text: TextColors {
             primary: Color::from_rgb_hex(0x1B1D21),

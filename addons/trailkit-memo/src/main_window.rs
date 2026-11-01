@@ -13,7 +13,7 @@ use nexus::imgui::{
     TreeNodeFlags, Ui, Window, WindowFlags, WindowFocusedFlags,
 };
 use trailkit_ui::{
-    button::{button_width, draw_primary_button},
+    button::{button_width, draw_primary_button, draw_primary_button_with_size},
     editor::view::TextEditor,
     font_registry::FontScope,
     fonts::FontRole,
@@ -259,6 +259,9 @@ pub struct MemoWindow {
     window_focused: bool,
     /// Whether leaving the editor with changes asks or saves (M57).
     unsaved_changes: UnsavedChanges,
+    /// Height of the dialog card measured in the last frame (its content
+    /// wraps, so the height is only known after drawing it once).
+    dialog_height: Option<f32>,
     /// Set once closing the window is allowed; read by the addon glue.
     close_approved: bool,
     /// Cached draft hint label (note, language, text), so it is not
@@ -326,6 +329,7 @@ impl MemoWindow {
             unsaved_changes,
             close_approved: false,
             draft_hint: None,
+            dialog_height: None,
         }
     }
 
@@ -431,6 +435,7 @@ impl MemoWindow {
     /// saves, Escape keeps editing.
     pub fn draw_dialog(&mut self, ui: &Ui, language: Language, theme: &Theme) {
         if self.leave_prompt.is_none() {
+            self.dialog_height = None;
             return;
         }
         let Some(window_rect) = self.window_rect else {
@@ -451,10 +456,16 @@ impl MemoWindow {
             )
             .focused(self.window_focused)
             .build(ui, || {
-                answer = draw_unsaved_changes_card(ui, language, theme);
+                let card = draw_unsaved_changes_card(ui, language, theme, self.dialog_height);
+                self.dialog_height = Some(card.height);
+                answer = card.answer;
                 // A click on the dimmed area picks the harmless answer
-                // (`overlay-dialog-layout`); the card itself is a child window.
+                // (`overlay-dialog-layout`).
+                let mouse = ui.io().mouse_pos;
+                let on_card = (card.min[0]..=card.max[0]).contains(&mouse[0])
+                    && (card.min[1]..=card.max[1]).contains(&mouse[1]);
                 if answer.is_none()
+                    && !on_card
                     && ui.is_window_hovered()
                     && ui.is_mouse_clicked(MouseButton::Left)
                 {
@@ -1061,68 +1072,128 @@ fn find_title(nodes: &[Node], id: NodeId) -> Option<&str> {
     })
 }
 
+/// Where the dialog card was drawn and what the user chose.
+struct DialogCard {
+    /// Top-left corner (screen).
+    min: [f32; 2],
+    /// Bottom-right corner (screen).
+    max: [f32; 2],
+    /// The measured height, for centering in the next frame.
+    height: f32,
+    /// The chosen answer, if any.
+    answer: Option<WindowAction>,
+}
+
+/// Minimum content width of a dialog card in average characters.
+const DIALOG_MINIMUM_CHARACTERS: f32 = 28.0;
+
+/// Largest share of the window a dialog card may take.
+const DIALOG_MAXIMUM_FRACTION: f32 = 0.9;
+
 /// Draws the card of the unsaved changes dialog centered in the current
-/// window and returns the chosen answer, if any (M54, M56).
-fn draw_unsaved_changes_card(ui: &Ui, language: Language, theme: &Theme) -> Option<WindowAction> {
+/// window (M54, M56, M70, `overlay-dialog-layout`): `bg.panel` with a
+/// `border` frame and `space.lg` padding; heading, wrapped question, then
+/// "Discard" on the left and "Keep editing" plus the primary "Save" on the
+/// right, stacked full width (Save, Keep editing, Discard) when they do not
+/// fit. `last_height` is the card height measured in the previous frame.
+/// Enter saves, Escape keeps editing.
+fn draw_unsaved_changes_card(
+    ui: &Ui,
+    language: Language,
+    theme: &Theme,
+    last_height: Option<f32>,
+) -> DialogCard {
     let title = Text::UnsavedChangesTitle.get(language);
     let question = Text::UnsavedChangesQuestion.get(language);
     let discard = Text::DiscardChanges.get(language);
     let keep_editing = Text::KeepEditing.get(language);
     let save = Text::KeepChanges.get(language);
-    let available = ui.content_region_avail();
     let spacing = ui.clone_style().item_spacing;
-    let padding = theme.pane.padding;
-    let buttons_width = button_width(ui, discard)
+    let padding = theme.spacing.large;
+    let window_position = ui.window_pos();
+    let window_size = ui.window_size();
+    let row_width = button_width(ui, discard)
         + theme.spacing.extra_large
         + button_width(ui, keep_editing)
         + spacing[0]
         + button_width(ui, save);
-    let content_width = buttons_width
+    let maximum_content = (window_size[0] * DIALOG_MAXIMUM_FRACTION - 2.0 * padding).max(1.0);
+    let content_width = row_width
         .max(ui.calc_text_size(question)[0])
-        .min(available[0] - 2.0 * padding)
-        .max(1.0);
-    let question_height = ui.calc_text_size_with_opts(question, false, content_width)[1];
-    let title_height = {
+        .max(ui.calc_text_size("n")[0] * DIALOG_MINIMUM_CHARACTERS)
+        .min(maximum_content);
+    let stacked = row_width > content_width;
+    let width = content_width + 2.0 * padding;
+    let height = last_height.unwrap_or(window_size[1] / 3.0);
+    let min = [
+        window_position[0] + ((window_size[0] - width) / 2.0).max(0.0),
+        window_position[1] + ((window_size[1] - height) / 2.0).max(0.0),
+    ];
+    let max = [min[0] + width, min[1] + height];
+    let draw_list = ui.get_window_draw_list();
+    draw_list
+        .add_rect(min, max, theme.surface.panel.to_array())
+        .filled(true)
+        .build();
+    draw_list
+        .add_rect(min, max, theme.border.color.to_array())
+        .thickness(theme.border.width.max(1.0))
+        .build();
+    let left = min[0] + padding;
+    ui.set_cursor_screen_pos([left, min[1] + padding]);
+    {
         let _heading = FontScope::push(ui, FontRole::Heading3);
-        ui.text_line_height()
-    };
-    // Heading, question, gap and button row, each followed by item spacing.
-    let height = 2.0 * padding
-        + title_height
-        + question_height
-        + theme.spacing.small
-        + ui.frame_height()
-        + 3.0 * spacing[1];
-    let size = [content_width + 2.0 * padding, height];
-    let start = ui.cursor_pos();
-    ui.set_cursor_pos([
-        start[0] + ((available[0] - size[0]) / 2.0).max(0.0),
-        start[1] + ((available[1] - size[1]) / 2.0).max(0.0),
-    ]);
+        ui.text(title);
+    }
+    {
+        let _wrap = ui.push_text_wrap_pos_with_pos(left - window_position[0] + content_width);
+        ui.text_wrapped(question);
+    }
+    ui.dummy([0.0, theme.spacing.small]);
     let mut answer = None;
-    draw_pane(ui, theme, "card", size, || {
-        {
-            let _heading = FontScope::push(ui, FontRole::Heading3);
-            ui.text(title);
+    if stacked {
+        let full = [content_width, 0.0];
+        ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
+        if draw_primary_button_with_size(ui, theme, save, full) {
+            answer = Some(WindowAction::LeaveSaving);
         }
-        {
-            let _wrap = ui.push_text_wrap_pos_with_pos(ui.cursor_pos()[0] + content_width);
-            ui.text_wrapped(question);
+        ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
+        if ui.button_with_size(keep_editing, full) {
+            answer = Some(WindowAction::LeaveCancelled);
         }
         ui.dummy([0.0, theme.spacing.small]);
+        ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
+        if ui.button_with_size(discard, full) {
+            answer = Some(WindowAction::LeaveDiscarding);
+        }
+    } else {
+        ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
         if ui.button(discard) {
             answer = Some(WindowAction::LeaveDiscarding);
         }
-        ui.same_line_with_spacing(0.0, theme.spacing.extra_large);
-        if ui.button(keep_editing) || ui.is_key_pressed(Key::Escape) {
+        let right_group = button_width(ui, keep_editing) + spacing[0] + button_width(ui, save);
+        ui.same_line_with_pos(left + content_width - right_group - window_position[0]);
+        if ui.button(keep_editing) {
             answer = Some(WindowAction::LeaveCancelled);
         }
         ui.same_line();
-        if draw_primary_button(ui, theme, save) || ui.is_key_pressed(Key::Enter) {
+        if draw_primary_button(ui, theme, save) {
             answer = Some(WindowAction::LeaveSaving);
         }
-    });
-    answer
+    }
+    if ui.is_key_pressed(Key::Escape) {
+        answer = Some(WindowAction::LeaveCancelled);
+    } else if ui.is_key_pressed(Key::Enter) {
+        answer = Some(WindowAction::LeaveSaving);
+    }
+    // The last item adds item spacing below itself; the card ends there plus padding.
+    let measured = ui.cursor_screen_pos()[1] - spacing[1] - min[1] + padding;
+    DialogCard {
+        min,
+        max,
+        height: measured,
+        answer,
+    }
 }
 
 /// Draws a flat icon button: no background, highlighted only on hover, with
