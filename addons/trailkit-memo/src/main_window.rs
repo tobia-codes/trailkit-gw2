@@ -38,9 +38,22 @@ use crate::{
 
 /// Minimum content width of each pane in average characters (M40).
 const MINIMUM_PANE_CHARACTERS: f32 = 22.0;
+/// Minimum content width of the note list in average characters (M73): the
+/// user may drag it narrower than the other panes.
+const MINIMUM_TREE_CHARACTERS: f32 = 10.0;
 /// Width in characters (of `n`) that editor and preview each keep, so the
 /// splitter between them stays usable (M72).
 const MINIMUM_PREVIEW_SPLIT_CHARACTERS: f32 = 3.0;
+
+/// Minimum widths of the two-pane layout in pixels (M40, M73).
+#[derive(Debug, Clone, Copy)]
+struct PaneWidths {
+    /// Narrowest the note list may be dragged.
+    tree_minimum: f32,
+    /// Room the note pane needs: two panes while editor and preview are
+    /// side by side, one otherwise.
+    note_minimum: f32,
+}
 
 /// Largest share of the window the note list drawer may cover, so a strip
 /// of the dimmed note stays visible to click away (M48, `lay-drawer`).
@@ -402,12 +415,24 @@ impl MemoWindow {
         if self.document.root.is_empty() {
             draw_empty_state(ui, language, theme, &mut self.actions);
         } else {
-            let pane_minimum =
-                ui.calc_text_size("n")[0] * MINIMUM_PANE_CHARACTERS + 2.0 * theme.pane.padding;
+            let character_width = ui.calc_text_size("n")[0];
+            let pane_minimum = character_width * MINIMUM_PANE_CHARACTERS + 2.0 * theme.pane.padding;
+            let widths = PaneWidths {
+                tree_minimum: character_width * MINIMUM_TREE_CHARACTERS + 2.0 * theme.pane.padding,
+                // Editor and preview side by side need room for two panes
+                // (M73), so the note list turns into a drawer earlier.
+                note_minimum: if self.editor.is_some() && self.ui_state.preview_visible {
+                    2.0 * pane_minimum + theme.pane.gap
+                } else {
+                    pane_minimum
+                },
+            };
             let available = ui.content_region_avail();
-            self.is_narrow = available[0] < 2.0 * pane_minimum + theme.pane.gap;
+            // The drawer threshold keeps the regular pane minimum for the
+            // list; only dragging the splitter may make it narrower (M73).
+            self.is_narrow = available[0] < pane_minimum + theme.pane.gap + widths.note_minimum;
             if !self.is_narrow && !self.ui_state.note_list_hidden {
-                self.draw_two_panes(ui, language, theme, pane_minimum);
+                self.draw_two_panes(ui, language, theme, widths);
             } else {
                 let area_start = ui.cursor_screen_pos();
                 draw_pane(ui, theme, "note", [0.0, 0.0], || {
@@ -523,12 +548,13 @@ impl MemoWindow {
     /// Draws tree and note as two panes with a draggable splitter in the gap
     /// between them (M21). The splitter shows an accent line only while it
     /// is hovered or dragged.
-    fn draw_two_panes(&mut self, ui: &Ui, language: Language, theme: &Theme, pane_minimum: f32) {
+    fn draw_two_panes(&mut self, ui: &Ui, language: Language, theme: &Theme, widths: PaneWidths) {
         let available = ui.content_region_avail();
         let gap = theme.pane.gap;
         let usable = available[0] - gap;
+        let tree_maximum = (usable - widths.note_minimum).max(widths.tree_minimum);
         let tree_width = (usable * self.ui_state.clamped_splitter_fraction())
-            .clamp(pane_minimum, usable - pane_minimum);
+            .clamp(widths.tree_minimum, tree_maximum);
 
         draw_pane(ui, theme, "tree", [tree_width, 0.0], || {
             self.draw_tree_pane(ui, language, theme, None);
@@ -540,7 +566,7 @@ impl MemoWindow {
             theme,
             "splitter",
             tree_width,
-            (pane_minimum, usable - pane_minimum),
+            (widths.tree_minimum, tree_maximum),
             available[1],
         );
         if let Some(width) = splitter.left_width {

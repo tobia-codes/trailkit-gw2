@@ -262,3 +262,39 @@ fn narrow_window_dims_the_edited_note_behind_the_drawer() {
         "memo-narrow-drawer-editing",
     );
 }
+
+#[test]
+fn note_list_can_be_dragged_narrower_than_the_note_pane_minimum() {
+    let document = sample_document();
+    let ui_state = UiState {
+        splitter_fraction: 0.1,
+        ..selected_first(&document)
+    };
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    assert_window(
+        &mut memo,
+        [640.0, 360.0],
+        ThemeKind::Dark,
+        "memo-narrow-note-list",
+    );
+}
+
+#[test]
+fn editing_with_preview_turns_the_note_list_into_a_drawer_earlier() {
+    let document = sample_document();
+    let ui_state = UiState {
+        preview_visible: true,
+        ..selected_first(&document)
+    };
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    memo.apply(&WindowAction::StartEditing, Language::English);
+    if let Some(editor) = memo.editor.as_mut() {
+        editor.body.unfocus();
+    }
+    assert_window(
+        &mut memo,
+        [600.0, 360.0],
+        ThemeKind::Dark,
+        "memo-editor-preview-hides-note-list",
+    );
+}
