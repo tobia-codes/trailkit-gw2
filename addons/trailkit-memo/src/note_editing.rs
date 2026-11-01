@@ -127,8 +127,8 @@ pub fn format_edit(text: &str, selection: Range<usize>, command: FormatCommand) 
     let start = floor_char_boundary(text, selection.start.min(selection.end));
     let end = floor_char_boundary(text, selection.start.max(selection.end));
     match command {
-        FormatCommand::Bold => wrap_selection(text, start..end, "**"),
-        FormatCommand::Italic => wrap_selection(text, start..end, "*"),
+        FormatCommand::Bold => toggle_emphasis(text, start..end, Emphasis::Bold),
+        FormatCommand::Italic => toggle_emphasis(text, start..end, Emphasis::Italic),
         FormatCommand::Heading => toggle_line_prefix(text, start..end, "## "),
         FormatCommand::BulletList => toggle_line_prefix(text, start..end, "- "),
         FormatCommand::Checkbox => toggle_line_prefix(text, start..end, "- [ ] "),
@@ -151,10 +151,72 @@ pub fn format_edit(text: &str, selection: Range<usize>, command: FormatCommand) 
     }
 }
 
-/// Puts `marker` before and after `selection`; the selection stays on the
-/// wrapped text (or the cursor lands between the markers).
-fn wrap_selection(text: &str, selection: Range<usize>, marker: &str) -> TextEdit {
+/// Bold (`**`) or italic (`*`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Emphasis {
+    /// `**…**`.
+    Bold,
+    /// `*…*`.
+    Italic,
+}
+
+impl Emphasis {
+    /// The marker written on both sides.
+    const fn marker(self) -> &'static str {
+        match self {
+            Self::Bold => "**",
+            Self::Italic => "*",
+        }
+    }
+
+    /// Whether `before` (stars directly left) and `after` (stars directly
+    /// right) contain this emphasis: bold needs two stars on each side,
+    /// italic an odd number (`*x*` or `***x***`), so italic never eats half
+    /// of a bold marker.
+    const fn is_applied(self, before: usize, after: usize) -> bool {
+        match self {
+            Self::Bold => before >= 2 && after >= 2,
+            Self::Italic => before % 2 == 1 && after % 2 == 1,
+        }
+    }
+}
+
+/// Toggles bold or italic around `selection` (M53, M68): removes the markers
+/// if they already surround the selection or the cursor, or if the selection
+/// itself starts and ends with them; otherwise wraps the selection (or puts
+/// the cursor between new markers). The selection stays on the text.
+fn toggle_emphasis(text: &str, selection: Range<usize>, emphasis: Emphasis) -> TextEdit {
+    let marker = emphasis.marker();
+    let stars_before = text[..selection.start]
+        .bytes()
+        .rev()
+        .take_while(|byte| *byte == b'*')
+        .count();
+    let stars_after = text[selection.end..]
+        .bytes()
+        .take_while(|byte| *byte == b'*')
+        .count();
     let inner = &text[selection.clone()];
+    if emphasis.is_applied(stars_before, stars_after) {
+        // Remove the innermost markers on both sides.
+        let start = selection.start - marker.len();
+        let end = selection.end + marker.len();
+        return TextEdit {
+            range: start..end,
+            replacement: inner.to_owned(),
+            selection: start..start + inner.len(),
+        };
+    }
+    let inner_before = inner.bytes().take_while(|byte| *byte == b'*').count();
+    let inner_after = inner.bytes().rev().take_while(|byte| *byte == b'*').count();
+    if inner.len() > 2 * marker.len() && emphasis.is_applied(inner_before, inner_after) {
+        let unwrapped = &inner[marker.len()..inner.len() - marker.len()];
+        return TextEdit {
+            range: selection.clone(),
+            replacement: unwrapped.to_owned(),
+            selection: selection.start..selection.start + unwrapped.len(),
+        };
+    }
     let inner_start = selection.start + marker.len();
     TextEdit {
         range: selection.clone(),
@@ -217,6 +279,41 @@ mod tests {
         assert_eq!(
             run("ab", 1..1, FormatCommand::Italic),
             ("a**b".to_owned(), 2..2)
+        );
+    }
+
+    #[test]
+    fn bold_and_italic_toggle_off_again() {
+        // Cursor between empty markers (the reported case).
+        assert_eq!(
+            run("sdasd****", 7..7, FormatCommand::Bold),
+            ("sdasd".to_owned(), 5..5)
+        );
+        // Selection inside markers, and selection including them.
+        assert_eq!(
+            run("a **b** c", 4..5, FormatCommand::Bold),
+            ("a b c".to_owned(), 2..3)
+        );
+        assert_eq!(
+            run("a **b** c", 2..7, FormatCommand::Bold),
+            ("a b c".to_owned(), 2..3)
+        );
+        assert_eq!(
+            run("*x*", 1..2, FormatCommand::Italic),
+            ("x".to_owned(), 0..1)
+        );
+        // Italic does not take half of a bold marker; it adds its own.
+        assert_eq!(
+            run("**x**", 2..3, FormatCommand::Italic),
+            ("***x***".to_owned(), 3..4)
+        );
+        assert_eq!(
+            run("***x***", 3..4, FormatCommand::Italic),
+            ("**x**".to_owned(), 2..3)
+        );
+        assert_eq!(
+            run("***x***", 3..4, FormatCommand::Bold),
+            ("*x*".to_owned(), 1..2)
         );
     }
 
