@@ -44,6 +44,31 @@ fn is_editor_hovered(ui: &Ui) -> bool {
     )
 }
 
+/// The width of `text` in the current font, exactly as ImGui draws it.
+/// `Ui::calc_text_size` rounds every result up to a whole pixel, which adds
+/// up when characters are measured one by one and moves the cursor away
+/// from the text.
+fn unrounded_width(text: &str) -> f32 {
+    let mut size = nexus::imgui::sys::ImVec2 { x: 0.0, y: 0.0 };
+    let begin = text.as_ptr().cast::<std::ffi::c_char>();
+    // SAFETY: called on the render thread inside a frame, so the current
+    // font is valid; `begin..begin + len` is the UTF-8 text, which ImGui
+    // only reads; the remaining-text output pointer may be null.
+    unsafe {
+        nexus::imgui::sys::ImFont_CalcTextSizeA(
+            &raw mut size,
+            nexus::imgui::sys::igGetFont(),
+            nexus::imgui::sys::igGetFontSize(),
+            f32::MAX,
+            0.0,
+            begin,
+            begin.add(text.len()),
+            std::ptr::null_mut(),
+        );
+    }
+    size.x
+}
+
 /// The layout of a specific text revision, width and font size.
 #[derive(Debug)]
 struct CachedLayout {
@@ -80,6 +105,8 @@ pub struct TextEditor {
     sink: String,
     /// Whether the keyboard sink was active in the last frame.
     sink_was_active: bool,
+    /// TEMPORARY diagnostics: last logged focus state.
+    logged_focus: bool,
 }
 
 /// Empties the keyboard sink every frame, so its text never grows.
@@ -107,6 +134,7 @@ impl TextEditor {
             scroll_to_cursor: true,
             sink: String::new(),
             sink_was_active: false,
+            logged_focus: false,
         }
     }
 
@@ -168,9 +196,18 @@ impl TextEditor {
             return response;
         };
 
+        if self.focused != self.logged_focus {
+            // TEMPORARY diagnostics for the keyboard routing (remove before merge).
+            log::info!("editor focused: {}", self.focused);
+            self.logged_focus = self.focused;
+        }
         if self.focused {
             // Read the typed characters before the sink consumes them.
             let typed = ui.io().peek_input_characters();
+            if !typed.is_empty() {
+                // TEMPORARY diagnostics for the keyboard routing (remove before merge).
+                log::info!("editor received {} characters", typed.chars().count());
+            }
             self.draw_keyboard_sink(ui);
             self.handle_keyboard(ui, &typed, &mut response);
         } else {
@@ -230,14 +267,26 @@ impl TextEditor {
     /// focused, so Nexus routes key presses to ImGui, not to the game.
     fn draw_keyboard_sink(&mut self, ui: &Ui) {
         let start = ui.cursor_pos();
-        let _invisible = ui.push_style_var(StyleVar::Alpha(0.0));
+        // Not 0.0: ImGui 1.80 skips all items of a window begun with alpha 0,
+        // and a multiline input is a child window. The smallest positive
+        // alpha still rounds to fully transparent colors.
+        let _invisible = ui.push_style_var(StyleVar::Alpha(f32::MIN_POSITIVE));
         if !self.sink_was_active {
             ui.set_keyboard_focus_here();
         }
         ui.input_text_multiline("##keyboard_sink", &mut self.sink, [1.0, 1.0])
             .callback(InputTextMultilineCallback::ALWAYS, ClearSink)
             .build();
-        self.sink_was_active = ui.is_item_active();
+        let sink_active = ui.is_item_active();
+        if sink_active != self.sink_was_active {
+            // TEMPORARY diagnostics for the keyboard routing (remove before merge).
+            log::info!(
+                "editor sink active: {sink_active}, want_text_input: {}, want_capture_keyboard: {}",
+                ui.io().want_text_input,
+                ui.io().want_capture_keyboard
+            );
+        }
+        self.sink_was_active = sink_active;
         self.sink.clear();
         ui.set_cursor_pos(start);
     }
@@ -255,9 +304,9 @@ impl TextEditor {
         let layout = Layout::build(self.buffer.text(), width, |character, style| {
             if style == SpanStyle::Strong {
                 let _bold = FontScope::push(ui, FontRole::BodyBold);
-                ui.calc_text_size(character)[0]
+                unrounded_width(character)
             } else {
-                ui.calc_text_size(character)[0]
+                unrounded_width(character)
             }
         });
         self.layout = Some(CachedLayout {

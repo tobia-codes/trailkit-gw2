@@ -155,6 +155,8 @@ Project contract (to be finalized in `docs/plans/addons/trailkit-core.md`):
 - **Help page** per addon (window/tab "Help"), content in both languages,
   generated from `addons/<name>/help/{en,de}.md`. Any change to user-visible
   behavior must update the help page in the same change.
+  Write one paragraph or list item per source line: single line breaks are
+  shown as line breaks (memo M63).
 - **Missing dependency guidance**: if a feature needs data the user disabled
   in core (or core is not installed), the feature is greyed out and shows an
   inline hint explaining *what* to enable *where*, with a button that opens
