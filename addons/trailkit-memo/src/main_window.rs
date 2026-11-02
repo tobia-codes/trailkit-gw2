@@ -943,7 +943,8 @@ impl MemoWindow {
     /// Ends a press or drag on the note list when the left button is
     /// released: a press without drag selects the row, a drag moves the
     /// node to its drop target (M106–M111). While dragging, the title floats
-    /// next to the cursor, with a ban icon over an impossible target (M109).
+    /// next to the cursor with a gold border, red with a ban icon over an
+    /// impossible target (M109, M116).
     fn finish_drag(&mut self, ui: &Ui, theme: &Theme) {
         let Some(drag) = &mut self.drag else {
             return;
@@ -969,6 +970,14 @@ impl MemoWindow {
         // is only valid for this one.
         drag.target = None;
         drag.check = MoveCheck::Unchanged;
+        // A gold border ties the label to the drop line; red over an
+        // impossible target (M116).
+        let border = if is_impossible {
+            theme.status.danger
+        } else {
+            theme.accent.base
+        };
+        let _border = ui.push_style_color(StyleColor::Border, border.to_array());
         ui.tooltip(|| {
             let _danger = is_impossible
                 .then(|| ui.push_style_color(StyleColor::Text, theme.status.danger.to_array()));
