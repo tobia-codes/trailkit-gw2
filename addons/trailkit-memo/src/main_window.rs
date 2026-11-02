@@ -36,7 +36,10 @@ use crate::{
     drafts::{Draft, DraftsDocument},
     i18n::{Language, Text, chip_text, format_local_time, label_with_percent, reset_countdown},
     note_editing::{ActiveFormats, EditSession, FormatCommand, active_formats, format_edit},
-    note_tree::{Group, GroupId, NodeId, Note, NoteId, NoteKind, NotesDocument, TreeNode as Node},
+    note_tree::{
+        Group, GroupId, InsertionPoint, NodeId, Note, NoteId, NoteKind, NotesDocument,
+        TreeNode as Node,
+    },
     reset_schedule::{ResetPeriod, next_reset_of_any_period},
     settings::{Settings, TextScale, UnsavedChanges},
     storage_worker::StorageSaver,
@@ -129,10 +132,10 @@ enum WindowAction {
     CommitRename,
     /// Leave rename mode without changes.
     CancelRename,
-    /// Create a note.
-    NewNote,
-    /// Create a group.
-    NewGroup,
+    /// Create a note at a point, or by the selection for `None` (M43, M96).
+    NewNote(Option<InsertionPoint>),
+    /// Create a group at a point, or by the selection for `None`.
+    NewGroup(Option<InsertionPoint>),
     /// The menu button: hide/show the note list column, or open/close the
     /// drawer in a narrow window (M48).
     ToggleNoteList,
@@ -172,7 +175,7 @@ impl WindowAction {
     fn leaves_editor_of(&self, note: NoteId) -> bool {
         match self {
             Self::Select(node) => *node != NodeId::Note(note),
-            Self::NewNote | Self::NewGroup => true,
+            Self::NewNote(_) | Self::NewGroup(_) => true,
             _ => false,
         }
     }
@@ -807,6 +810,18 @@ impl MemoWindow {
             frame_padding: ui.clone_style().frame_padding,
         };
         draw_nodes(ui, &self.document.root, &mut context);
+        // Right-click on an empty spot of the list (M96): create at the end
+        // of the root level.
+        if ui.is_window_hovered()
+            && !ui.is_any_item_hovered()
+            && ui.is_mouse_clicked(MouseButton::Right)
+        {
+            ui.open_popup("list_context");
+        }
+        let actions = &mut self.actions;
+        ui.popup("list_context", || {
+            draw_create_menu_items(ui, language, InsertionPoint::End(None), actions);
+        });
     }
 
     /// Draws the note pane: the note toolbar with the menu button (M48),
@@ -1145,24 +1160,24 @@ impl MemoWindow {
                 }
             }
             WindowAction::CancelRename => self.rename = None,
-            WindowAction::NewNote => {
-                let parent = self.document.insertion_parent(self.ui_state.selected);
+            WindowAction::NewNote(point) => {
+                let point = self.insertion_point(*point);
                 let note = Note::new(
                     Text::NewNote.get(language).to_owned(),
                     NoteKind::Normal,
                     now,
                 );
                 let id = NodeId::Note(note.id);
-                self.document.append(parent, Node::Note(note));
+                self.document.insert(point, Node::Note(note));
                 self.select(id);
                 self.start_rename_of_new(id, Text::NewNote.get(language));
                 self.save_notes();
             }
-            WindowAction::NewGroup => {
-                let parent = self.document.insertion_parent(self.ui_state.selected);
+            WindowAction::NewGroup(point) => {
+                let point = self.insertion_point(*point);
                 let group = Group::new(Text::NewGroup.get(language).to_owned());
                 let id = NodeId::Group(group.id);
-                self.document.append(parent, Node::Group(group));
+                self.document.insert(point, Node::Group(group));
                 self.select(id);
                 self.start_rename_of_new(id, Text::NewGroup.get(language));
                 self.save_notes();
@@ -1305,6 +1320,14 @@ impl MemoWindow {
         if matches!(node, NodeId::Note(_)) {
             self.drawer_open = false;
         }
+    }
+
+    /// Resolves where a new entry goes: `point` from a context menu (M96),
+    /// or for the toolbar buttons the end of the selected group (M43).
+    fn insertion_point(&self, point: Option<InsertionPoint>) -> InsertionPoint {
+        point.unwrap_or_else(|| {
+            InsertionPoint::End(self.document.insertion_parent(self.ui_state.selected))
+        })
     }
 
     /// Puts a just-created note or group into rename mode (M43).
@@ -1669,8 +1692,12 @@ fn draw_toolbar(
         ui.same_line();
     }
     let buttons = [
-        (Icon::FILE_PLUS, Text::NewNote, WindowAction::NewNote),
-        (Icon::FOLDER_PLUS, Text::NewGroup, WindowAction::NewGroup),
+        (Icon::FILE_PLUS, Text::NewNote, WindowAction::NewNote(None)),
+        (
+            Icon::FOLDER_PLUS,
+            Text::NewGroup,
+            WindowAction::NewGroup(None),
+        ),
     ];
     for (index, (icon, tooltip, action)) in buttons.into_iter().enumerate() {
         if index > 0 {
@@ -1888,7 +1915,30 @@ fn draw_context_menu(ui: &Ui, node: NodeId, kind: Option<NoteKind>, context: &mu
                 }
             });
         }
+        ui.separator();
+        // New entries go into a group, or right below a note (M96).
+        let point = match node {
+            NodeId::Group(group) => InsertionPoint::End(Some(group)),
+            NodeId::Note(_) => InsertionPoint::After(node),
+        };
+        draw_create_menu_items(ui, language, point, context.actions);
     });
+}
+
+/// Draws "New note" and "New group" menu items that create at `point`
+/// (M96); the new entry is renamed right away (M43).
+fn draw_create_menu_items(
+    ui: &Ui,
+    language: Language,
+    point: InsertionPoint,
+    actions: &mut Vec<WindowAction>,
+) {
+    if MenuItem::new(Text::NewNote.get(language)).build(ui) {
+        actions.push(WindowAction::NewNote(Some(point)));
+    }
+    if MenuItem::new(Text::NewGroup.get(language)).build(ui) {
+        actions.push(WindowAction::NewGroup(Some(point)));
+    }
 }
 
 /// Continues the toolbar line at its right end for `width` of items,
@@ -2136,7 +2186,7 @@ fn draw_empty_state(ui: &Ui, language: Language, theme: &Theme, actions: &mut Ve
     };
     indent_to_center(ui, row_width, available[0]);
     if draw_primary_button(ui, theme, primary) {
-        actions.push(WindowAction::NewNote);
+        actions.push(WindowAction::NewNote(None));
     }
     if fits_one_row {
         ui.same_line_with_spacing(0.0, spacing);
@@ -2144,7 +2194,7 @@ fn draw_empty_state(ui: &Ui, language: Language, theme: &Theme, actions: &mut Ve
         indent_to_center(ui, secondary_width, available[0]);
     }
     if draw_button(ui, secondary) {
-        actions.push(WindowAction::NewGroup);
+        actions.push(WindowAction::NewGroup(None));
     }
 }
 

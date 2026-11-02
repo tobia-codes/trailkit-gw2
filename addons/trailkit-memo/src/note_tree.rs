@@ -95,6 +95,15 @@ pub enum NoteKind {
     },
 }
 
+/// Where a new note or group goes in the tree (M43, M96).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InsertionPoint {
+    /// At the end of a group's children, or of the root level for `None`.
+    End(Option<GroupId>),
+    /// Right after a note or group, in the same parent.
+    After(NodeId),
+}
+
 /// A markdown note.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Note {
@@ -320,6 +329,19 @@ impl NotesDocument {
         }
     }
 
+    /// Inserts `node` at `point`. A group or sibling that no longer exists
+    /// falls back to the end of the root level; a parent group is expanded.
+    pub fn insert(&mut self, point: InsertionPoint, node: TreeNode) {
+        match point {
+            InsertionPoint::End(parent) => self.append(parent, node),
+            InsertionPoint::After(sibling) => {
+                if let Err(node) = insert_after(&mut self.root, sibling, node) {
+                    self.root.push(node);
+                }
+            }
+        }
+    }
+
     /// Renames a note or group; an empty or blank title keeps the old one
     /// (M44). Returns whether anything changed. `now` updates a note's
     /// `updated_at`.
@@ -392,6 +414,29 @@ impl NotesDocument {
         });
         changed
     }
+}
+
+/// Inserts `node` right after `sibling` in whichever list of `nodes` (or
+/// their descendants) holds it; hands `node` back if `sibling` is missing.
+fn insert_after(
+    nodes: &mut Vec<TreeNode>,
+    sibling: NodeId,
+    node: TreeNode,
+) -> Result<(), TreeNode> {
+    if let Some(index) = nodes.iter().position(|candidate| candidate.id() == sibling) {
+        nodes.insert(index + 1, node);
+        return Ok(());
+    }
+    let mut node = node;
+    for candidate in nodes.iter_mut() {
+        if let TreeNode::Group(group) = candidate {
+            match insert_after(&mut group.children, sibling, node) {
+                Ok(()) => return Ok(()),
+                Err(returned) => node = returned,
+            }
+        }
+    }
+    Err(node)
 }
 
 /// Calls `visit` for every note in `nodes`, nested ones included.
@@ -549,6 +594,36 @@ mod tests {
             Some("- [x] boss\n")
         );
         assert!(!document.apply_due_resets(next_week, |_| false));
+    }
+
+    #[test]
+    fn insert_after_a_nested_note_and_fall_back_to_the_root() {
+        let mut document = sample_document();
+        let weekly = note_id(&document, "Weekly clears").expect("sample note");
+        let new = Note::new("New".to_owned(), NoteKind::Normal, noon());
+        let new_id = new.id;
+        document.insert(
+            InsertionPoint::After(NodeId::Note(weekly)),
+            TreeNode::Note(new),
+        );
+        let Some(TreeNode::Group(group)) = document.root.get(1) else {
+            panic!("the sample has a group second");
+        };
+        assert_eq!(
+            group.children.get(1).map(TreeNode::id),
+            Some(NodeId::Note(new_id))
+        );
+
+        let orphan = Note::new("Orphan".to_owned(), NoteKind::Normal, noon());
+        let orphan_id = orphan.id;
+        document.insert(
+            InsertionPoint::After(NodeId::Note(NoteId::new_unique())),
+            TreeNode::Note(orphan),
+        );
+        assert_eq!(
+            document.root.last().map(TreeNode::id),
+            Some(NodeId::Note(orphan_id))
+        );
     }
 
     #[test]
