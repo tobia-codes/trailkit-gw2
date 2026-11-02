@@ -211,6 +211,10 @@ pub enum Text {
     TextSize,
     /// Context menu submenu and dropdown tooltip for the note kind (M86).
     ResetType,
+    /// Context menu submenu that moves a note or group (M112).
+    MoveTo,
+    /// "Move to" target: the root level of the note list (M112).
+    TopLevel,
     /// Note kind option: no reset.
     KindNormal,
     /// Note kind option: daily reset.
@@ -221,7 +225,7 @@ pub enum Text {
 
 impl Text {
     /// Every string, for registering their characters with Nexus' font atlas.
-    pub const ALL: [Self; 47] = [
+    pub const ALL: [Self; 49] = [
         Self::MainWindowTitle,
         Self::KeybindToggle,
         Self::QuickAccessTooltip,
@@ -266,6 +270,8 @@ impl Text {
         Self::WeeklyBadge,
         Self::TextSize,
         Self::ResetType,
+        Self::MoveTo,
+        Self::TopLevel,
         Self::KindNormal,
         Self::KindDaily,
         Self::KindWeekly,
@@ -400,6 +406,10 @@ impl Text {
             (Self::TextSize, Language::German) => "Textgröße",
             (Self::ResetType, Language::English) => "Reset type",
             (Self::ResetType, Language::German) => "Reset-Art",
+            (Self::MoveTo, Language::English) => "Move to",
+            (Self::MoveTo, Language::German) => "Verschieben nach",
+            (Self::TopLevel, Language::English) => "Top level",
+            (Self::TopLevel, Language::German) => "Oberste Ebene",
             (Self::KindNormal, Language::English | Language::German) => "Normal",
             (Self::KindDaily, Language::English) => "Daily reset",
             (Self::KindDaily, Language::German) => "Täglicher Reset",
