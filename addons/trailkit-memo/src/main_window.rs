@@ -148,7 +148,7 @@ enum WindowAction {
     OpenFolder,
     /// Start editing the selected note (M51).
     StartEditing,
-    /// Commit the edit ("Done", Ctrl+Enter).
+    /// Commit the edit ("Save", Ctrl+Enter).
     FinishEditing,
     /// Leave the editor without saving; asks first if something changed.
     CancelEditing,
@@ -841,7 +841,7 @@ impl MemoWindow {
             self.actions.push(WindowAction::ToggleNoteList);
         }
         // One toolbar for the whole note (M94): formatting while editing,
-        // kind and countdown, and the edit or Cancel/Done buttons at the end;
+        // kind and countdown, and the edit or Cancel/Save buttons at the end;
         // it wraps in narrow panes (`lay-responsive`).
         if let Some(editor) = self.editor.as_mut() {
             let active = editor.active_formats();
@@ -880,23 +880,23 @@ impl MemoWindow {
     }
 
     /// Draws the right end of the note toolbar (M51): the edit button while
-    /// viewing, "Cancel" and the primary "Done" while editing.
+    /// viewing, "Cancel" and the primary "Save" while editing.
     fn draw_note_toolbar_end(&mut self, ui: &Ui, language: Language, theme: &Theme) {
         let spacing = ui.clone_style().item_spacing[0];
         if self.editor.is_some() {
             let cancel = Text::Cancel.get(language);
-            let done = Text::Done.get(language);
-            let width = button_width(ui, cancel) + spacing + button_width(ui, done);
+            let save = Text::Save.get(language);
+            let width = button_width(ui, cancel) + spacing + button_width(ui, save);
             move_to_toolbar_end(ui, width);
             if draw_button(ui, cancel) {
                 self.actions.push(WindowAction::CancelEditing);
             }
             ui.same_line();
-            if draw_primary_button(ui, theme, done) {
+            if draw_primary_button(ui, theme, save) {
                 self.actions.push(WindowAction::FinishEditing);
             }
             if ui.is_item_hovered() {
-                ui.tooltip_text(Text::DoneTooltip.get(language));
+                ui.tooltip_text(Text::SaveTooltip.get(language));
             }
         } else if self.selected_note().is_some() {
             let width = {
@@ -944,7 +944,7 @@ impl MemoWindow {
         if is_dialog_open {
             editor.body.unfocus();
         }
-        // Ctrl+S works like "Done" from title and text (M93).
+        // Ctrl+S works like "Save" from title and text (M93).
         if !is_dialog_open
             && (editor.body.is_focused() || editor.title_was_active)
             && ui.io().key_ctrl
@@ -1546,9 +1546,14 @@ fn draw_format_toolbar(
     let preview_visible = state.preview_visible;
     let buttons = [
         (
-            Icon::HEADING,
-            Text::FormatHeading,
-            Some(FormatCommand::Heading),
+            Icon::HEADING_1,
+            Text::FormatHeading1,
+            Some(FormatCommand::Heading1),
+        ),
+        (
+            Icon::HEADING_2,
+            Text::FormatHeading2,
+            Some(FormatCommand::Heading2),
         ),
         (Icon::BOLD, Text::FormatBold, Some(FormatCommand::Bold)),
         (

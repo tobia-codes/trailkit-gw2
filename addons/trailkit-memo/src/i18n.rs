@@ -156,15 +156,17 @@ pub enum Text {
     /// Tooltip of the edit button (M51).
     EditNote,
     /// Button committing an edit (M51).
-    Done,
-    /// Tooltip of the "Done" button with its shortcut (M51).
-    DoneTooltip,
+    Save,
+    /// Tooltip of the "Save" button with its shortcuts (M51, M100).
+    SaveTooltip,
     /// Button cancelling an edit (M51).
     Cancel,
     /// Placeholder of the title input (M51).
     TitleHint,
-    /// Tooltip of the heading button (M53).
-    FormatHeading,
+    /// Tooltip of the heading 1 button (M100).
+    FormatHeading1,
+    /// Tooltip of the heading 2 button (M100).
+    FormatHeading2,
     /// Tooltip of the bold button (M53).
     FormatBold,
     /// Tooltip of the italic button (M53).
@@ -219,7 +221,7 @@ pub enum Text {
 
 impl Text {
     /// Every string, for registering their characters with Nexus' font atlas.
-    pub const ALL: [Self; 46] = [
+    pub const ALL: [Self; 47] = [
         Self::MainWindowTitle,
         Self::KeybindToggle,
         Self::QuickAccessTooltip,
@@ -236,11 +238,12 @@ impl Text {
         Self::ShowNoteList,
         Self::HideNoteList,
         Self::EditNote,
-        Self::Done,
-        Self::DoneTooltip,
+        Self::Save,
+        Self::SaveTooltip,
         Self::Cancel,
         Self::TitleHint,
-        Self::FormatHeading,
+        Self::FormatHeading1,
+        Self::FormatHeading2,
         Self::FormatBold,
         Self::FormatItalic,
         Self::FormatBulletList,
@@ -334,16 +337,18 @@ impl Text {
             (Self::HideNoteList, Language::German) => "Notizliste ausblenden",
             (Self::EditNote, Language::English) => "Edit note",
             (Self::EditNote, Language::German) => "Notiz bearbeiten",
-            (Self::Done, Language::English) => "Done",
-            (Self::Done, Language::German) => "Fertig",
-            (Self::DoneTooltip, Language::English) => "Save changes (Ctrl+Enter, Ctrl+S)",
-            (Self::DoneTooltip, Language::German) => "Änderungen übernehmen (Strg+Enter, Strg+S)",
+            (Self::Save, Language::English) => "Save",
+            (Self::Save, Language::German) => "Speichern",
+            (Self::SaveTooltip, Language::English) => "Save changes (Ctrl+Enter, Ctrl+S)",
+            (Self::SaveTooltip, Language::German) => "Änderungen speichern (Strg+Enter, Strg+S)",
             (Self::Cancel, Language::English) => "Cancel",
             (Self::Cancel, Language::German) => "Abbrechen",
             (Self::TitleHint, Language::English) => "Title",
             (Self::TitleHint, Language::German) => "Titel",
-            (Self::FormatHeading, Language::English) => "Heading",
-            (Self::FormatHeading, Language::German) => "Überschrift",
+            (Self::FormatHeading1, Language::English) => "Heading 1",
+            (Self::FormatHeading1, Language::German) => "Überschrift 1",
+            (Self::FormatHeading2, Language::English) => "Heading 2",
+            (Self::FormatHeading2, Language::German) => "Überschrift 2",
             (Self::FormatBold, Language::English) => "Bold (Ctrl+B)",
             (Self::FormatBold, Language::German) => "Fett (Strg+B)",
             (Self::FormatItalic, Language::English) => "Italic (Ctrl+I)",

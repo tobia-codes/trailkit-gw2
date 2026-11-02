@@ -38,11 +38,11 @@ Long names are shortened with "…" — hover them to see the full name. In a lo
 
 ## Editing a note
 
-Click the **pencil** at the top right of a note, or double-click the note. You edit the title and the text in markdown; the buttons in the bar above insert headings, **bold**, *italic*, lists, checkboxes and links (also **Ctrl+B** and **Ctrl+I**); clicking a button again removes the formatting (also links). Buttons of the formatting at the cursor light up. The event button needs trailkit-core.
+Click the **pencil** at the top right of a note, or double-click the note. You edit the title and the text in markdown; the buttons in the bar above insert headings (H1, H2 — clicking the other level switches it, the same level removes it), **bold**, *italic*, lists, checkboxes and links (also **Ctrl+B** and **Ctrl+I**); clicking a button again removes the formatting (also links). Buttons of the formatting at the cursor light up. The event button needs trailkit-core.
 
 - **Chat links:** paste a code (`[&…]`) into the text and it becomes a chip. The cursor jumps over a chip and Backspace deletes it whole; to change it, delete it and paste the new code.
 - The **eye** button shows a preview of the formatted note next to the text; drag the gap between them to change the widths. memo remembers both.
-- **Done** (or **Ctrl+Enter** / **Ctrl+S**) saves your changes, **Cancel** throws them away — memo asks first if you changed something.
+- **Save** (or **Ctrl+Enter** / **Ctrl+S**) saves your changes, **Cancel** throws them away — memo asks first if you changed something.
 - If you choose another note, create one or close the window while you have unsaved changes, memo asks whether to save or discard them. (Set `"unsaved_changes": "save_automatically"` in `settings.json` to save without asking; a switch follows in the settings window.)
 - **Escape** closes the window; with unsaved changes memo asks first.
 - If the game or the addon closes while you are editing, your changes are kept as a draft. Next time you open the note, choose **Restore** to continue or **Discard** to drop them. Drafts are deleted automatically after 30 days.
