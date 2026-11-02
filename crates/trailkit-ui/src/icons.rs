@@ -72,10 +72,12 @@ impl Icon {
     pub const TROPHY: Self = Self('\u{e373}');
     /// `chevron-down`: opens a dropdown (memo M87).
     pub const CHEVRON_DOWN: Self = Self('\u{e06d}');
-    /// `check`: marks the chosen option of a dropdown (memo M87).
+    /// `check`: marks the chosen option of a dropdown or menu (memo M87, M99).
     pub const CHECK: Self = Self('\u{e06c}');
+    /// `chevron-right`: a menu entry that opens a submenu (memo M99).
+    pub const CHEVRON_RIGHT: Self = Self('\u{e06f}');
     /// Every icon above; keep in sync when adding one.
-    pub const ALL: [Self; 31] = [
+    pub const ALL: [Self; 32] = [
         Self::FILE_PLUS,
         Self::FOLDER_PLUS,
         Self::MENU,
@@ -107,6 +109,7 @@ impl Icon {
         Self::TROPHY,
         Self::CHEVRON_DOWN,
         Self::CHECK,
+        Self::CHEVRON_RIGHT,
     ];
 
     /// The glyph as a character of the icon font.

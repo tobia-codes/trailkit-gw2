@@ -26,6 +26,7 @@ use trailkit_ui::{
     icons::Icon,
     markdown::{self, MarkdownDocument},
     markdown_view::{MarkdownAction, draw_markdown, open_web_link},
+    menu::{begin_submenu, draw_menu_item},
     pane::draw_pane,
     separator::draw_separator,
     splitter::draw_vertical_splitter,
@@ -1892,34 +1893,22 @@ fn handle_hovered_row(
 
 /// Draws the context menu of a row if it is open (must run every frame).
 fn draw_context_menu(ui: &Ui, node: NodeId, kind: Option<NoteKind>, context: &mut TreeContext<'_>) {
-    let language = context.language;
+    let (language, theme) = (context.language, context.theme);
     ui.popup("context", || {
         if MenuItem::new(Text::Rename.get(language)).build(ui) {
             context.actions.push(WindowAction::StartRename(node));
         }
         // Notes get the reset type submenu with the current kind checked
         // (M86); groups have no kind.
-        if let (NodeId::Note(note), Some(kind)) = (node, kind) {
-            // ImGui lets a submenu overlap its parent by `ItemInnerSpacing.x`;
-            // with 0 it starts at the parent's right edge (M98). Only
-            // `BeginMenu` reads it, so the items keep the regular spacing.
-            let submenu = {
-                let spacing = ui.clone_style().item_inner_spacing;
-                let _flush = ui.push_style_var(StyleVar::ItemInnerSpacing([0.0, spacing[1]]));
-                ui.begin_menu(Text::ResetType.get(language))
-            };
-            if let Some(_submenu) = submenu {
-                for (period, text) in KIND_OPTIONS {
-                    let is_current = kind.period() == period;
-                    if MenuItem::new(text.get(language))
-                        .selected(is_current)
-                        .build(ui)
-                        && !is_current
-                    {
-                        context
-                            .actions
-                            .push(WindowAction::SetResetPeriod(note, period));
-                    }
+        if let (NodeId::Note(note), Some(kind)) = (node, kind)
+            && let Some(_submenu) = begin_submenu(ui, theme, Text::ResetType.get(language))
+        {
+            for (period, text) in KIND_OPTIONS {
+                let is_current = kind.period() == period;
+                if draw_menu_item(ui, theme, text.get(language), is_current) && !is_current {
+                    context
+                        .actions
+                        .push(WindowAction::SetResetPeriod(note, period));
                 }
             }
         }
