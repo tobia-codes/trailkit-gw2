@@ -205,10 +205,6 @@ pub enum Text {
     DailyBadge,
     /// Letter on the badge of weekly reset notes.
     WeeklyBadge,
-    /// Tooltip of the daily badge.
-    DailyTooltip,
-    /// Tooltip of the weekly badge.
-    WeeklyTooltip,
     /// Label of the text size shown while changing it (M80).
     TextSize,
     /// Context menu submenu and dropdown tooltip for the note kind (M86).
@@ -219,13 +215,11 @@ pub enum Text {
     KindDaily,
     /// Note kind option: weekly reset.
     KindWeekly,
-    /// Label before the time of the next reset in the badge tooltip (M91).
-    NextReset,
 }
 
 impl Text {
     /// Every string, for registering their characters with Nexus' font atlas.
-    pub const ALL: [Self; 49] = [
+    pub const ALL: [Self; 46] = [
         Self::MainWindowTitle,
         Self::KeybindToggle,
         Self::QuickAccessTooltip,
@@ -267,14 +261,11 @@ impl Text {
         Self::SelectNote,
         Self::DailyBadge,
         Self::WeeklyBadge,
-        Self::DailyTooltip,
-        Self::WeeklyTooltip,
         Self::TextSize,
         Self::ResetType,
         Self::KindNormal,
         Self::KindDaily,
         Self::KindWeekly,
-        Self::NextReset,
     ];
 
     /// All strings in all languages concatenated, so Nexus puts every
@@ -400,16 +391,6 @@ impl Text {
             (Self::DailyBadge, Language::English) => "D",
             (Self::DailyBadge, Language::German) => "T",
             (Self::WeeklyBadge, Language::English | Language::German) => "W",
-            (Self::DailyTooltip, Language::English) => "Daily note — resets at 00:00 UTC",
-            (Self::DailyTooltip, Language::German) => {
-                "Tägliche Notiz – setzt sich um 00:00 UTC zurück"
-            }
-            (Self::WeeklyTooltip, Language::English) => {
-                "Weekly note — resets on Mondays at 07:30 UTC"
-            }
-            (Self::WeeklyTooltip, Language::German) => {
-                "Wöchentliche Notiz – setzt sich montags um 07:30 UTC zurück"
-            }
             (Self::TextSize, Language::English) => "Text size",
             (Self::TextSize, Language::German) => "Textgröße",
             (Self::ResetType, Language::English) => "Reset type",
@@ -419,8 +400,6 @@ impl Text {
             (Self::KindDaily, Language::German) => "Täglicher Reset",
             (Self::KindWeekly, Language::English) => "Weekly reset",
             (Self::KindWeekly, Language::German) => "Wöchentlicher Reset",
-            (Self::NextReset, Language::English) => "Next reset",
-            (Self::NextReset, Language::German) => "Nächster Reset",
         }
     }
 }
