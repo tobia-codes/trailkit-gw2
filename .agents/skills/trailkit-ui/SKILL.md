@@ -46,6 +46,7 @@ in the crate, document here):
 | Accent | `accent`, `accent.hover`, `accent.active` |
 | Status | `success`, `warning`, `danger`, `info` |
 | Border | `border` (inputs, dropdowns), `border.focus`, `border.subtle` (windows, panes, popups, dialogs; ~6 % white / ~10 % black), `border.width` |
+| Reset | `reset.daily` (gold), `reset.weekly` (muted violet): reset note badges and kind chip (memo M104; text colors, contrast-tested) |
 | Coin | `coin.gold`, `coin.silver`, `coin.copper` (coin amounts in chat-link chips; graphics, not text) |
 | Event | `event.default`, `event.highlight`, `event.active`, `event.upcoming`, `event.custom` (per category overrides allowed) |
 | Spacing | `space.xs` 4, `space.sm` 8, `space.md` 12, `space.lg` 16, `space.xl` 24 (px at 100 %) |
@@ -93,8 +94,8 @@ Build once, use everywhere. Planned:
   view and the editor, where a chip is one atomic unit (memo M75)
 - Dropdown (select box) — **exists**: `dropdown::draw_dropdown` (themed
   field with chevron, popup list, check mark on the chosen option; fixed
-  width of the widest option; memo M87; `DropdownVariant::Chip` for a
-  compact chip next to a title, M102). Never ImGui's plain combo
+  width of the widest option; memo M87; `DropdownVariant::Chip { tint }` for
+  a compact chip next to a title, optionally tinted, M102/M104). Never ImGui's plain combo
 - Menu entries — **exist**: `menu::draw_menu_item` (check mark = Lucide
   `check` in accent) and `menu::begin_submenu` (Lucide `chevron-right`,
   flush beside the parent); never ImGui's own check mark/arrow (memo M99)

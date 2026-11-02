@@ -18,6 +18,7 @@ use trailkit_ui::{
         draw_primary_button_with_size,
     },
     chat_link_chip::ChipContext,
+    color::Color,
     dropdown::{DropdownVariant, draw_dropdown, dropdown_height, dropdown_width},
     editor::view::TextEditor,
     font_registry::FontScope,
@@ -1970,6 +1971,14 @@ fn move_to_toolbar_end(ui: &Ui, width: f32) {
     ui.set_cursor_screen_pos([right_edge - width, y]);
 }
 
+/// The color of a reset kind (M104): badge and kind chip share it.
+fn reset_color(theme: &Theme, period: ResetPeriod) -> Color {
+    match period {
+        ResetPeriod::Daily => theme.reset.daily,
+        ResetPeriod::Weekly => theme.reset.weekly,
+    }
+}
+
 /// Draws the note title with the kind chip right behind it (M102), centered
 /// on the title's capitals; the chip moves below a title that leaves no room.
 /// Pushes a chosen kind as an action.
@@ -1982,8 +1991,11 @@ fn draw_title_with_kind(
     actions: &mut Vec<WindowAction>,
 ) {
     let labels = KIND_OPTIONS.map(|(_, text)| text.get(language));
-    let chip_width = dropdown_width(ui, theme, DropdownVariant::Chip, &labels);
-    let chip_height = dropdown_height(ui, theme, DropdownVariant::Chip);
+    let chip = DropdownVariant::Chip {
+        tint: kind.period().map(|period| reset_color(theme, period)),
+    };
+    let chip_width = dropdown_width(ui, theme, chip, &labels);
+    let chip_height = dropdown_height(ui, theme, chip);
     let gap = theme.spacing.medium;
     let available = ui.content_region_avail()[0];
     let [left, top] = ui.cursor_screen_pos();
@@ -2011,7 +2023,7 @@ fn draw_title_with_kind(
     if let Some(index) = draw_dropdown(
         ui,
         theme,
-        DropdownVariant::Chip,
+        chip,
         "kind",
         Text::ResetType.get(language),
         &labels,
@@ -2116,7 +2128,10 @@ fn draw_badge(ui: &Ui, kind: NoteKind, anchor: [f32; 2], context: &TreeContext<'
         anchor[1] + ((ui.frame_height() - line_height) / 2.0).max(0.0),
     ];
     let letter = letter.get(language);
-    let color = theme.accent.base.to_array();
+    let color = kind
+        .period()
+        .map_or(theme.accent.base, |period| reset_color(theme, period))
+        .to_array();
     // Lucide style (`lay-icons`): outline only, round corners, stroke ≈ 2/24 of the size.
     let stroke = (line_height / 12.0).max(1.0);
     let max = [start[0] + width, start[1] + line_height];

@@ -46,6 +46,8 @@ pub struct Theme {
     pub event: EventColors,
     /// Coin colors of chat-link chips (memo plan M75).
     pub coin: CoinColors,
+    /// Colors of the reset note kinds (`reset.*`, memo plan M104).
+    pub reset: ResetColors,
     /// Spacing scale (`space.*`).
     pub spacing: Spacing,
     /// List metrics (`list.*`).
@@ -128,6 +130,17 @@ pub struct BorderTokens {
     pub subtle: Color,
     /// `border.width`: border thickness in pixels.
     pub width: f32,
+}
+
+/// Colors of the reset note kinds: badge and kind chip share them (memo
+/// plan M104). Text colors, so they keep ≥ 4.5:1 contrast.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ResetColors {
+    /// `reset.daily`: daily reset notes (gold, like the accent).
+    pub daily: Color,
+    /// `reset.weekly`: weekly reset notes (muted violet, apart from the
+    /// gold accent and the blue links).
+    pub weekly: Color,
 }
 
 /// Gold, silver and copper, as the game colors coin amounts.
@@ -285,6 +298,10 @@ impl Theme {
             subtle: Color::from_rgb_hex(0xFFFFFF).with_alpha(0.06),
             width: 1.0,
         },
+        reset: ResetColors {
+            daily: Color::from_rgb_hex(0xD9A441),
+            weekly: Color::from_rgb_hex(0xB39DDB),
+        },
         coin: CoinColors {
             gold: Color::from_rgba_hex(0xE8C1_4AFF),
             silver: Color::from_rgba_hex(0xC4C8_CEFF),
@@ -339,6 +356,10 @@ impl Theme {
             // About 10 % black over the light surfaces.
             subtle: Color::from_rgb_hex(0x000000).with_alpha(0.10),
             width: 1.0,
+        },
+        reset: ResetColors {
+            daily: Color::from_rgb_hex(0x8C5E0A),
+            weekly: Color::from_rgb_hex(0x6A4FB0),
         },
         coin: CoinColors {
             gold: Color::from_rgba_hex(0xA67C_00FF),
@@ -402,6 +423,8 @@ mod tests {
                 ("warning", theme.status.warning),
                 ("danger", theme.status.danger),
                 ("info", theme.status.info),
+                ("reset.daily", theme.reset.daily),
+                ("reset.weekly", theme.reset.weekly),
             ];
             for (background_name, background) in backgrounds {
                 for (text_name, text) in texts {
