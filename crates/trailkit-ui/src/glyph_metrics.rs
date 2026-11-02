@@ -19,6 +19,27 @@ pub fn glyph_bounds(character: char) -> Option<(f32, f32)> {
     }
 }
 
+/// The ink box `[left, top, right, bottom]` of `character` in the current
+/// font at the current size, relative to the pen position at the line top;
+/// `None` if unknown. Centers single letters exactly (memo M105), where the
+/// advance width would add uneven side bearings.
+pub fn glyph_ink_box(character: char) -> Option<[f32; 4]> {
+    let character = u16::try_from(u32::from(character)).ok()?;
+    // SAFETY: as in `glyph_bounds`: render thread, valid current font,
+    // `ImFont_FindGlyph` only reads it.
+    unsafe {
+        let font = nexus::imgui::sys::igGetFont();
+        let glyph = nexus::imgui::sys::ImFont_FindGlyph(font, character).as_ref()?;
+        let scale = nexus::imgui::sys::igGetFontSize() / (*font).FontSize;
+        Some([
+            glyph.X0 * scale,
+            glyph.Y0 * scale,
+            glyph.X1 * scale,
+            glyph.Y1 * scale,
+        ])
+    }
+}
+
 /// The middle of the capital letters below the line top in the current font,
 /// e.g. to center a button label; `None` if the font cannot tell.
 #[must_use]

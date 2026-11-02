@@ -13,13 +13,17 @@ use crate::{
 };
 
 /// How a dropdown looks.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum DropdownVariant {
     /// A form field: input background, regular frame padding, primary text.
     Field,
     /// A compact chip next to a title (memo M102): no background, slim
-    /// padding, secondary text, a border only.
-    Chip,
+    /// padding, a border only; text, chevron and border in `tint`, or in the
+    /// secondary text and border colors without one (memo M104).
+    Chip {
+        /// The chip's color, e.g. the color of the chosen reset kind.
+        tint: Option<Color>,
+    },
 }
 
 impl DropdownVariant {
@@ -27,7 +31,7 @@ impl DropdownVariant {
     fn push_padding<'ui>(self, ui: &'ui Ui, theme: &Theme) -> Option<StyleStackToken<'ui>> {
         match self {
             Self::Field => None,
-            Self::Chip => Some(ui.push_style_var(StyleVar::FramePadding([
+            Self::Chip { .. } => Some(ui.push_style_var(StyleVar::FramePadding([
                 theme.spacing.small,
                 (theme.spacing.extra_small / 2.0).round(),
             ]))),
@@ -75,10 +79,16 @@ pub fn draw_dropdown(
     let style = ui.clone_style();
     let (background, text) = match variant {
         DropdownVariant::Field => (theme.surface.input.to_array(), theme.text.primary),
-        DropdownVariant::Chip => ([0.0; 4], theme.text.secondary),
+        DropdownVariant::Chip { tint } => ([0.0; 4], tint.unwrap_or(theme.text.secondary)),
     };
     let _id = ui.push_id(id);
     let popup_id = "##options";
+    // A tinted chip uses its color everywhere, also while open (memo M104):
+    // border, check mark, text and chevron.
+    let tint = match variant {
+        DropdownVariant::Chip { tint } => tint,
+        DropdownVariant::Field => None,
+    };
 
     let clicked = {
         let _colors = [
@@ -143,7 +153,7 @@ pub fn draw_dropdown(
                     Icon::CHECK,
                     row_max[0] - icon_width(ui),
                     [row_min[1], row_max[1]],
-                    packed(theme.accent.base),
+                    packed(tint.unwrap_or(theme.accent.base)),
                 );
             }
         }
@@ -151,11 +161,11 @@ pub fn draw_dropdown(
     if is_hovered && !is_open {
         ui.tooltip_text(tooltip);
     }
-    let border = if is_open {
+    let border = tint.unwrap_or(if is_open {
         theme.border.focus
     } else {
         theme.border.color
-    };
+    });
     draw_border(min, max, border, theme.border.width.max(1.0), theme.radius);
     if let Some(label) = options.get(selected) {
         draw_label(
@@ -170,7 +180,7 @@ pub fn draw_dropdown(
         Icon::CHEVRON_DOWN,
         max[0] - style.frame_padding[0] - icon_width(ui),
         [min[1], max[1]],
-        packed(theme.text.secondary),
+        packed(tint.unwrap_or(theme.text.secondary)),
     );
     picked.filter(|&index| index != selected)
 }

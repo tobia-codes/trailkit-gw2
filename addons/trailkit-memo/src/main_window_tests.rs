@@ -405,7 +405,10 @@ fn kind_dropdown_lists_the_kinds_and_changes_the_note() {
     let daily_row = [400.0, 152.0];
     harness.frame(&at(daily_row, false), &mut draw_light);
     harness.frame(&at(daily_row, true), &mut draw_light);
-    harness.settle(2, &at(daily_row, false), &mut draw_light);
+    harness.frame(&at(daily_row, false), &mut draw_light);
+    let image = harness.settle(2, &at([300.0, 300.0], false), &mut draw_light);
+    // The chip takes the color of the daily badge (M104).
+    assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-daily-chip-light", &image);
     let kind = memo.document.note(note).map(|note| note.kind.period());
     assert_eq!(kind, Some(Some(ResetPeriod::Daily)));
 }
