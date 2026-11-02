@@ -154,7 +154,8 @@ Each rule has an id (`area-name`) so reviews can cite it.
   inside a window or pane use `trailkit_ui::separator::draw_separator`, which
   ends at the padding (ImGui's `Separator` spans the full width).
 - `lay-hierarchy` — Hierarchy through size, weight, spacing and contrast,
-  not through color alone or decoration. Radius stays 0.
+  not through color alone or decoration. One small radius (4 px) and a
+  faint outline (`border.subtle`) for all surfaces, nothing more.
 - `lay-one-primary` — At most one primary button per window/dialog;
   secondary actions are visually subordinate; destructive actions use the
   `danger` variant and sit apart from the primary action.
