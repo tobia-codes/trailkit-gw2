@@ -1915,13 +1915,16 @@ fn draw_context_menu(ui: &Ui, node: NodeId, kind: Option<NoteKind>, context: &mu
                 }
             });
         }
-        ui.separator();
-        // New entries go into a group, or right below a note (M96).
-        let point = match node {
-            NodeId::Group(group) => InsertionPoint::End(Some(group)),
-            NodeId::Note(_) => InsertionPoint::After(node),
-        };
-        draw_create_menu_items(ui, language, point, context.actions);
+        // Only groups offer creating, into themselves (M96, M97).
+        if let NodeId::Group(group) = node {
+            ui.separator();
+            draw_create_menu_items(
+                ui,
+                language,
+                InsertionPoint::End(Some(group)),
+                context.actions,
+            );
+        }
     });
 }
 
