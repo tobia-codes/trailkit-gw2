@@ -18,10 +18,11 @@ use trailkit_ui::{
         draw_primary_button_with_size,
     },
     chat_link_chip::ChipContext,
-    dropdown::{draw_dropdown, dropdown_width},
+    dropdown::draw_dropdown,
     editor::view::TextEditor,
     font_registry::FontScope,
     fonts::FontRole,
+    glyph_metrics::capital_middle,
     icons::Icon,
     markdown::{self, MarkdownDocument},
     markdown_view::{MarkdownAction, draw_markdown, open_web_link},
@@ -50,10 +51,6 @@ const MINIMUM_TREE_CHARACTERS: f32 = 10.0;
 /// Width in characters (of `n`) that editor and preview each keep, so the
 /// splitter between them stays usable (M72).
 const MINIMUM_PREVIEW_SPLIT_CHARACTERS: f32 = 3.0;
-
-/// Width in characters (of `n`) the note title keeps before the kind
-/// dropdown wraps below it (M87, `lay-responsive`).
-const MINIMUM_TITLE_CHARACTERS: f32 = 12.0;
 
 /// The note kinds in menu and dropdown order with their labels (M86).
 const KIND_OPTIONS: [(Option<ResetPeriod>, Text); 3] = [
@@ -103,6 +100,9 @@ const VIRTUAL_KEY_0: i32 = 0x30;
 
 /// Windows virtual-key code of `I`.
 const VIRTUAL_KEY_I: i32 = 0x49;
+
+/// Windows virtual-key code of `S` (Ctrl+S finishes editing, M93).
+const VIRTUAL_KEY_S: i32 = 0x53;
 
 /// A problem with `notes.json` shown above the notes (M31).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -350,23 +350,6 @@ struct CountdownLine {
     language: Language,
     /// The formatted line.
     text: String,
-}
-
-/// Where the parts of the note title row go (M87).
-#[derive(Debug, Clone, Copy)]
-struct TitleRow {
-    /// Screen x where the row starts.
-    left: f32,
-    /// Screen y of the row's top.
-    top: f32,
-    /// Width left for the title (input).
-    title_width: f32,
-    /// Width of the kind dropdown.
-    dropdown_width: f32,
-    /// Whether the dropdown sits right of the title or wraps below it.
-    is_dropdown_beside: bool,
-    /// Height of the dropdown (a body-font frame).
-    dropdown_height: f32,
 }
 
 /// Everything the tree drawing functions need besides the nodes.
@@ -919,38 +902,39 @@ impl MemoWindow {
 
         let title_backup =
             (escape_pressed && editor.title_was_active).then(|| editor.session.title.clone());
-        let row = title_row_layout(ui, language);
-        let title_height = {
+        {
             let _heading = FontScope::push(ui, FontRole::Heading1);
-            ui.set_next_item_width(row.title_width);
+            ui.set_next_item_width(-f32::MIN_POSITIVE);
             ui.input_text("##title", &mut editor.session.title)
                 .hint(Text::TitleHint.get(language))
                 .read_only(is_dialog_open)
                 .build();
-            ui.frame_height()
-        };
+        }
         editor.title_was_active = ui.is_item_active();
         if ui.is_item_deactivated()
             && let Some(title) = title_backup
         {
             editor.session.title = title;
         }
-        draw_kind_dropdown(
+        draw_kind_row(
             ui,
             language,
             theme,
-            row,
-            title_height,
             (note, kind),
+            &mut self.countdown,
             &mut self.actions,
         );
-        if let Some(period) = kind.period() {
-            let text = countdown_text(&mut self.countdown, period, Timestamp::now(), language);
-            ui.text_colored(theme.text.secondary.to_array(), text);
-        }
 
         if is_dialog_open {
             editor.body.unfocus();
+        }
+        // Ctrl+S works like "Done" from title and text (M93).
+        if !is_dialog_open
+            && (editor.body.is_focused() || editor.title_was_active)
+            && ui.io().key_ctrl
+            && ui.is_key_index_pressed(VIRTUAL_KEY_S)
+        {
+            self.actions.push(WindowAction::FinishEditing);
         }
         if editor.body.is_focused() && ui.io().key_ctrl {
             if ui.is_key_index_pressed(VIRTUAL_KEY_B) {
@@ -1060,34 +1044,18 @@ impl MemoWindow {
             );
         }
 
-        let row = title_row_layout(ui, language);
-        let title_height = {
+        {
             let _heading = FontScope::push(ui, FontRole::Heading1);
-            let height = ui.text_line_height();
-            ui.set_cursor_screen_pos([
-                row.left,
-                row.top + ((row.dropdown_height - height) / 2.0).max(0.0),
-            ]);
-            let label = truncate_to_width(ui, &note.title, row.title_width);
-            ui.text(&label);
-            if label != note.title && ui.is_item_hovered() {
-                ui.tooltip_text(&note.title);
-            }
-            height
-        };
-        draw_kind_dropdown(
+            ui.text_wrapped(&note.title);
+        }
+        draw_kind_row(
             ui,
             language,
             theme,
-            row,
-            title_height,
             (note.id, note.kind),
+            &mut self.countdown,
             &mut self.actions,
         );
-        if let Some(period) = note.kind.period() {
-            let text = countdown_text(&mut self.countdown, period, Timestamp::now(), language);
-            ui.text_colored(theme.text.secondary.to_array(), text);
-        }
         draw_separator(ui, theme);
         if ui.is_window_hovered() && ui.is_mouse_double_clicked(MouseButton::Left) {
             self.actions.push(WindowAction::StartEditing);
@@ -1926,56 +1894,24 @@ fn draw_context_menu(ui: &Ui, node: NodeId, kind: Option<NoteKind>, context: &mu
     });
 }
 
-/// Measures the note title row (M87): the kind dropdown sits right of the
-/// title, or wraps below it when the title would get narrower than
-/// [`MINIMUM_TITLE_CHARACTERS`] (`lay-responsive`). Call with the body font.
-fn title_row_layout(ui: &Ui, language: Language) -> TitleRow {
-    let labels = KIND_OPTIONS.map(|(_, text)| text.get(language));
-    let dropdown_width = dropdown_width(ui, &labels);
-    let available = ui.content_region_avail()[0];
-    let spacing = ui.clone_style().item_spacing[0];
-    let minimum_title = ui.calc_text_size("n")[0] * MINIMUM_TITLE_CHARACTERS;
-    let is_dropdown_beside = available >= minimum_title + spacing + dropdown_width;
-    let [left, top] = ui.cursor_screen_pos();
-    TitleRow {
-        left,
-        top,
-        title_width: if is_dropdown_beside {
-            available - spacing - dropdown_width
-        } else {
-            available
-        },
-        dropdown_width,
-        is_dropdown_beside,
-        dropdown_height: ui.frame_height(),
-    }
-}
-
-/// Draws the kind dropdown of `note` (M86, M87) after its title, which is
-/// `title_height` tall: right-aligned and vertically centered beside it, or
-/// on its own line, and pushes the chosen kind as an action.
-fn draw_kind_dropdown(
+/// Draws the kind row under the note title (M92): the kind dropdown on the
+/// left (M86) and, for reset notes, the countdown to the next reset next to
+/// it (M91), centered on the dropdown label. Pushes a chosen kind as an
+/// action.
+fn draw_kind_row(
     ui: &Ui,
     language: Language,
     theme: &Theme,
-    row: TitleRow,
-    title_height: f32,
     (note, kind): (NoteId, NoteKind),
+    countdown: &mut Option<CountdownLine>,
     actions: &mut Vec<WindowAction>,
 ) {
-    if row.is_dropdown_beside {
-        ui.same_line_with_pos(ui.window_content_region_max()[0] - row.dropdown_width);
-        let x = ui.cursor_screen_pos()[0];
-        ui.set_cursor_screen_pos([
-            x,
-            row.top + ((title_height - row.dropdown_height) / 2.0).max(0.0),
-        ]);
-    }
     let labels = KIND_OPTIONS.map(|(_, text)| text.get(language));
     let selected = KIND_OPTIONS
         .iter()
         .position(|(period, _)| *period == kind.period())
         .unwrap_or(0);
+    let left = ui.cursor_screen_pos()[0];
     if let Some(index) = draw_dropdown(
         ui,
         theme,
@@ -1987,15 +1923,19 @@ fn draw_kind_dropdown(
     {
         actions.push(WindowAction::SetResetPeriod(note, *period));
     }
-    if row.is_dropdown_beside {
-        // Continue below the taller of title and dropdown, not below the
-        // centered dropdown.
-        let spacing = ui.clone_style().item_spacing[1];
-        ui.set_cursor_screen_pos([
-            row.left,
-            row.top + title_height.max(row.dropdown_height) + spacing,
-        ]);
-    }
+    let Some(period) = kind.period() else {
+        return;
+    };
+    let [top, bottom] = [ui.item_rect_min()[1], ui.item_rect_max()[1]];
+    ui.same_line_with_spacing(0.0, theme.spacing.medium);
+    let text = countdown_text(countdown, period, Timestamp::now(), language);
+    let middle = capital_middle().unwrap_or(ui.text_line_height() / 2.0);
+    let x = ui.cursor_screen_pos()[0];
+    ui.set_cursor_screen_pos([x, ((top + bottom) / 2.0 - middle).round()]);
+    ui.text_colored(theme.text.secondary.to_array(), text);
+    // Continue below the dropdown, not below the shifted text.
+    let spacing = ui.clone_style().item_spacing[1];
+    ui.set_cursor_screen_pos([left, bottom + spacing]);
 }
 
 /// The countdown line to the next `period` reset at `now` (M91), formatted
@@ -2115,10 +2055,13 @@ fn draw_badge(ui: &Ui, kind: NoteKind, anchor: [f32; 2], context: &TreeContext<'
         .thickness(stroke)
         .build();
     let letter_size = ui.calc_text_size(letter);
+    // Center by the capital letter, not the line box: Open Sans sits low in
+    // it (M85).
+    let middle = capital_middle().unwrap_or(letter_size[1] / 2.0);
     draw_list.add_text(
         [
             start[0] + (width - letter_size[0]) / 2.0,
-            start[1] + (line_height - letter_size[1]) / 2.0,
+            (start[1] + line_height / 2.0 - middle).round(),
         ],
         color,
         letter,

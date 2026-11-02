@@ -22,7 +22,7 @@ Das Fenster zeigt links die Notizliste und rechts die ausgewählte Notiz. Ziehe 
 
 ## Tägliche und wöchentliche Notizen
 
-Wähle die Art einer Notiz im Feld neben ihrem Titel (*Normal*, *Täglicher Reset*, *Wöchentlicher Reset*) oder per Rechtsklick in der Liste › *Reset-Art*. Beim täglichen bzw. wöchentlichen Reset des Spiels werden alle Häkchen in so einer Notiz entfernt – praktisch für Dailies und wöchentliche Raids. Unter dem Titel siehst du, wie lange es bis zum nächsten Reset dauert.
+Wähle die Art einer Notiz im Feld unter ihrem Titel (*Normal*, *Täglicher Reset*, *Wöchentlicher Reset*) oder per Rechtsklick in der Liste › *Reset-Art*. Beim täglichen bzw. wöchentlichen Reset des Spiels werden alle Häkchen in so einer Notiz entfernt – praktisch für Dailies und wöchentliche Raids. Daneben siehst du, wie lange es bis zum nächsten Reset dauert.
 
 - Stellst du eine Notiz auf täglich oder wöchentlich um, bleiben ihre Häkchen bis zum nächsten Reset.
 - War das Spiel zum Reset geschlossen, setzt memo die Notiz beim nächsten Öffnen des Fensters zurück – einmal, egal wie viele Resets du verpasst hast.
@@ -41,7 +41,7 @@ Klicke auf den **Stift** oben rechts in einer Notiz oder doppelklicke die Notiz.
 
 - **Chat-Links:** Füge einen Code (`[&…]`) in den Text ein, und er wird zum Chip. Der Cursor springt über einen Chip, und die Rücktaste löscht ihn ganz; um ihn zu ändern, lösche ihn und füge den neuen Code ein.
 - Der **Augen**-Button zeigt eine Vorschau der formatierten Notiz neben dem Text; ziehe den Spalt dazwischen, um die Breiten zu ändern. memo merkt sich beides.
-- **Fertig** (oder **Strg+Enter**) übernimmt deine Änderungen, **Abbrechen** verwirft sie — memo fragt vorher nach, wenn du etwas geändert hast.
+- **Fertig** (oder **Strg+Enter** / **Strg+S**) übernimmt deine Änderungen, **Abbrechen** verwirft sie — memo fragt vorher nach, wenn du etwas geändert hast.
 - Wählst du eine andere Notiz, legst eine neue an oder schließt das Fenster, während Änderungen offen sind, fragt memo, ob sie übernommen oder verworfen werden sollen. (Mit `"unsaved_changes": "save_automatically"` in `settings.json` wird ohne Nachfrage übernommen; ein Schalter folgt im Einstellungsfenster.)
 - **Escape** schließt das Fenster; bei ungespeicherten Änderungen fragt memo vorher nach.
 - Wird das Spiel oder das Addon beim Bearbeiten beendet, bleiben deine Änderungen als Entwurf erhalten. Beim nächsten Öffnen der Notiz wählst du **Wiederherstellen** zum Weitermachen oder **Verwerfen**. Entwürfe werden nach 30 Tagen automatisch gelöscht.
