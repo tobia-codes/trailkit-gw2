@@ -3,9 +3,10 @@
 Notes addon for Guild Wars 2, loaded by [Raidcore Nexus](https://raidcore.gg/Nexus).
 Plan: [`docs/plans/addons/trailkit-memo.md`](../../docs/plans/addons/trailkit-memo.md).
 
-> **Status:** phase 1, step 2 — note list (tree) and rendered note view;
-> notes and groups can be created and renamed, checkboxes ticked. Editing
-> the note content follows in step 3 (memo plan M28).
+> **Status:** phase 1, step 4 — note list (tree), rendered note view, own
+> editor with preview and chat-link chips, daily/weekly reset notes (kind
+> dropdown, countdown, automatic unticking). Drag & drop follows next
+> (memo plan M28).
 
 ## Build
 
@@ -33,6 +34,7 @@ cargo xtask ui-test           # window snapshots (tests/snapshots/) via the head
 | `src/i18n.rs` | languages + typed UI strings (en/de) |
 | `src/settings.rs` | typed user settings + visibility rules, persisted as `settings.json` |
 | `src/note_tree.rs` | note tree data model (notes, groups, trash), persisted as `notes.json` |
+| `src/reset_schedule.rs` | daily (00:00 UTC) and weekly (Monday 07:30 UTC) reset times (M13, M90) |
 | `src/storage_worker.rs` | worker thread that loads notes and saves notes/settings/window state debounced (M18, M30) |
 | `src/ui_state.rs` | restorable window state, persisted as `ui_state.json` (M39) |
 | `src/main_window.rs` | main window: tree, note view, empty state, rename (Windows only) |

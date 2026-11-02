@@ -1,6 +1,6 @@
 # trailkit-memo
 
-> Pre-release — notes can be created, renamed, viewed and edited.
+> Pre-release — notes can be created, renamed, viewed and edited, and reset daily or weekly.
 
 ## Opening the window
 
@@ -18,7 +18,15 @@ The window shows the note list on the left and the selected note on the right. D
 - **New note / new group:** the two buttons above the list. The new entry goes into the selected group (or the group of the selected note), at the end. Type a name right away and press Enter.
 - **Rename:** double-click an entry, or right-click › *Rename*. Enter or clicking elsewhere keeps the new name, Escape cancels.
 - **Groups** have bold names and show how many notes they contain on the right.
-- **Badges** at the right end of a row: **D** marks a daily note (reset at 00:00 UTC), **W** a weekly note (reset on Mondays at 07:30 UTC). Hover a badge for details.
+- **Badges** at the right end of a row: **D** marks a daily note (reset at 00:00 UTC), **W** a weekly note (reset on Mondays at 07:30 UTC). Hover a badge to see when the next reset happens in your local time.
+
+## Daily and weekly notes
+
+Choose the kind of a note in the box next to its title (*Normal*, *Daily reset*, *Weekly reset*), or right-click it in the list › *Reset type*. At the game's daily or weekly reset all checkboxes in such a note are unticked again — handy for dailies and weekly clears. Below the title you see how long it is until the next reset.
+
+- A note you switch to daily or weekly keeps its ticks until the next reset.
+- If the game was closed at reset time, memo resets the note the next time you open the window — once, however many resets you missed.
+- While you edit a note (or it has a draft), its reset waits until you save or discard; your text is never changed under your hands.
 - **Checkboxes** in a note can be ticked directly.
 - **Links** open in your browser (only `http://` and `https://`); hover a link to see where it goes.
 - **Chat links** from the game (`[&…]`, e.g. a waypoint or an item) show as chips with an icon, the kind and the id; coins show their amount. Click a chip to copy its code, then paste it into the game chat. Hover it to see the code. A chip with **!** has a broken code; the tooltip says why. Names (instead of ids) will come with trailkit-core.

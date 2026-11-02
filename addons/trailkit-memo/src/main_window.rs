@@ -7,7 +7,7 @@
 
 use std::{borrow::Cow, path::PathBuf, sync::Arc};
 
-use jiff::{Timestamp, tz::TimeZone};
+use jiff::Timestamp;
 use nexus::imgui::{
     ChildWindow, Condition, Key, MenuItem, MouseButton, StyleColor, StyleVar, TreeNode,
     TreeNodeFlags, Ui, Window, WindowFlags, WindowFocusedFlags, WindowHoveredFlags,
@@ -18,6 +18,7 @@ use trailkit_ui::{
         draw_primary_button_with_size,
     },
     chat_link_chip::ChipContext,
+    dropdown::{draw_dropdown, dropdown_width},
     editor::view::TextEditor,
     font_registry::FontScope,
     fonts::FontRole,
@@ -32,9 +33,10 @@ use trailkit_ui::{
 
 use crate::{
     drafts::{Draft, DraftsDocument},
-    i18n::{Language, Text, chip_text, label_with_percent},
+    i18n::{Language, Text, chip_text, format_local_time, label_with_percent, reset_countdown},
     note_editing::{ActiveFormats, EditSession, FormatCommand, active_formats, format_edit},
     note_tree::{Group, GroupId, NodeId, Note, NoteId, NoteKind, NotesDocument, TreeNode as Node},
+    reset_schedule::{ResetPeriod, next_reset_of_any_period},
     settings::{Settings, TextScale, UnsavedChanges},
     storage_worker::StorageSaver,
     ui_state::UiState,
@@ -48,6 +50,17 @@ const MINIMUM_TREE_CHARACTERS: f32 = 10.0;
 /// Width in characters (of `n`) that editor and preview each keep, so the
 /// splitter between them stays usable (M72).
 const MINIMUM_PREVIEW_SPLIT_CHARACTERS: f32 = 3.0;
+
+/// Width in characters (of `n`) the note title keeps before the kind
+/// dropdown wraps below it (M87, `lay-responsive`).
+const MINIMUM_TITLE_CHARACTERS: f32 = 12.0;
+
+/// The note kinds in menu and dropdown order with their labels (M86).
+const KIND_OPTIONS: [(Option<ResetPeriod>, Text); 3] = [
+    (None, Text::KindNormal),
+    (Some(ResetPeriod::Daily), Text::KindDaily),
+    (Some(ResetPeriod::Weekly), Text::KindWeekly),
+];
 
 /// How long the text size waits after the last Ctrl+mouse wheel step before
 /// the fonts are rebuilt (M80): rebuilding on every step flickers.
@@ -135,6 +148,8 @@ enum WindowAction {
     FinishEditing,
     /// Leave the editor without saving; asks first if something changed.
     CancelEditing,
+    /// Change a note's reset period (`None` = normal note, M86).
+    SetResetPeriod(NoteId, Option<ResetPeriod>),
     /// Apply a formatting button to the editor (M53).
     Format(FormatCommand),
     /// Show or hide the editor preview (M60).
@@ -317,6 +332,41 @@ pub struct MemoWindow {
     /// Cached draft hint label (note, language, text), so it is not
     /// formatted every frame.
     draft_hint: Option<(NoteId, Language, String)>,
+    /// When reset notes must be checked next (M90); `None` checks at once,
+    /// e.g. after an action that may have unblocked a waiting reset (M89).
+    next_reset_check: Option<Timestamp>,
+    /// Cached countdown line of the shown reset note (M91).
+    countdown: Option<CountdownLine>,
+}
+
+/// The formatted time to the next reset, rebuilt only when the minute,
+/// period or language changes (M91).
+struct CountdownLine {
+    /// The reset period it counts down to.
+    period: ResetPeriod,
+    /// Whole minutes left, rounded up.
+    minutes: i64,
+    /// The language it is formatted in.
+    language: Language,
+    /// The formatted line.
+    text: String,
+}
+
+/// Where the parts of the note title row go (M87).
+#[derive(Debug, Clone, Copy)]
+struct TitleRow {
+    /// Screen x where the row starts.
+    left: f32,
+    /// Screen y of the row's top.
+    top: f32,
+    /// Width left for the title (input).
+    title_width: f32,
+    /// Width of the kind dropdown.
+    dropdown_width: f32,
+    /// Whether the dropdown sits right of the title or wraps below it.
+    is_dropdown_beside: bool,
+    /// Height of the dropdown (a body-font frame).
+    dropdown_height: f32,
 }
 
 /// Everything the tree drawing functions need besides the nodes.
@@ -383,6 +433,8 @@ impl MemoWindow {
             close_approved: false,
             draft_hint: None,
             dialog_height: None,
+            next_reset_check: None,
+            countdown: None,
         }
     }
 
@@ -513,6 +565,7 @@ impl MemoWindow {
         self.window_rect = Some([ui.window_pos(), ui.window_size()]);
         self.window_focused =
             ui.is_window_focused_with_flags(WindowFocusedFlags::ROOT_AND_CHILD_WINDOWS);
+        self.apply_due_resets(Timestamp::now());
         self.handle_text_scale_keys(ui);
         self.update_text_scale(ui, language);
         self.draw_problem(ui, language, theme);
@@ -554,7 +607,29 @@ impl MemoWindow {
         for action in &actions {
             self.apply(action, language);
         }
+        // Finishing an edit or discarding a draft may unblock a waiting
+        // reset (M89); a kind change may make one due. Check next frame.
+        if !actions.is_empty() {
+            self.next_reset_check = None;
+        }
         self.actions = actions;
+    }
+
+    /// Applies due resets (M88–M90) once a reset time has passed; notes in
+    /// the editor or with a draft wait (M89). Cheap on every other frame.
+    fn apply_due_resets(&mut self, now: Timestamp) {
+        if self.next_reset_check.is_some_and(|check| now < check) {
+            return;
+        }
+        let edited = self.editor.as_ref().map(|editor| editor.session.note);
+        let drafts = &self.drafts;
+        let changed = self.document.apply_due_resets(now, |note| {
+            Some(note) == edited || drafts.get(note).is_some()
+        });
+        if changed {
+            self.save_notes();
+        }
+        self.next_reset_check = Some(next_reset_of_any_period(now));
     }
 
     /// Draws the unsaved changes dialog while an answer is pending (M54,
@@ -833,25 +908,45 @@ impl MemoWindow {
         let Some(editor) = self.editor.as_mut() else {
             return;
         };
+        let note = editor.session.note;
+        let kind = self
+            .document
+            .note(note)
+            .map_or(NoteKind::Normal, |note| note.kind);
         // ImGui reverts an input to its content at activation when Escape is
         // pressed; keep the typed text instead (only copied on that frame).
         let escape_pressed = ui.is_key_pressed(Key::Escape);
 
         let title_backup =
             (escape_pressed && editor.title_was_active).then(|| editor.session.title.clone());
-        {
+        let row = title_row_layout(ui, language);
+        let title_height = {
             let _heading = FontScope::push(ui, FontRole::Heading1);
-            ui.set_next_item_width(-f32::MIN_POSITIVE);
+            ui.set_next_item_width(row.title_width);
             ui.input_text("##title", &mut editor.session.title)
                 .hint(Text::TitleHint.get(language))
                 .read_only(is_dialog_open)
                 .build();
-        }
+            ui.frame_height()
+        };
         editor.title_was_active = ui.is_item_active();
         if ui.is_item_deactivated()
             && let Some(title) = title_backup
         {
             editor.session.title = title;
+        }
+        draw_kind_dropdown(
+            ui,
+            language,
+            theme,
+            row,
+            title_height,
+            (note, kind),
+            &mut self.actions,
+        );
+        if let Some(period) = kind.period() {
+            let text = countdown_text(&mut self.countdown, period, Timestamp::now(), language);
+            ui.text_colored(theme.text.secondary.to_array(), text);
         }
 
         if is_dialog_open {
@@ -965,9 +1060,33 @@ impl MemoWindow {
             );
         }
 
-        {
+        let row = title_row_layout(ui, language);
+        let title_height = {
             let _heading = FontScope::push(ui, FontRole::Heading1);
-            ui.text_wrapped(&note.title);
+            let height = ui.text_line_height();
+            ui.set_cursor_screen_pos([
+                row.left,
+                row.top + ((row.dropdown_height - height) / 2.0).max(0.0),
+            ]);
+            let label = truncate_to_width(ui, &note.title, row.title_width);
+            ui.text(&label);
+            if label != note.title && ui.is_item_hovered() {
+                ui.tooltip_text(&note.title);
+            }
+            height
+        };
+        draw_kind_dropdown(
+            ui,
+            language,
+            theme,
+            row,
+            title_height,
+            (note.id, note.kind),
+            &mut self.actions,
+        );
+        if let Some(period) = note.kind.period() {
+            let text = countdown_text(&mut self.countdown, period, Timestamp::now(), language);
+            ui.text_colored(theme.text.secondary.to_array(), text);
         }
         draw_separator(ui, theme);
         if ui.is_window_hovered() && ui.is_mouse_double_clicked(MouseButton::Left) {
@@ -1133,6 +1252,11 @@ impl MemoWindow {
                 }
             }
             WindowAction::FinishEditing => self.commit_editor(now),
+            WindowAction::SetResetPeriod(note, period) => {
+                if self.document.set_reset_period(*note, *period, now) {
+                    self.save_notes();
+                }
+            }
             WindowAction::CancelEditing => {
                 if self.has_unsaved_changes()
                     && self.settings.unsaved_changes == UnsavedChanges::Ask
@@ -1532,14 +1656,7 @@ fn draw_draft_hint(
         *note == draft.note && *cached_language == language
     });
     if !is_cached {
-        let pattern = match language {
-            Language::German => "%d.%m.%Y, %H:%M",
-            Language::English => "%Y-%m-%d %H:%M",
-        };
-        let time = draft
-            .saved_at
-            .to_zoned(TimeZone::system())
-            .strftime(pattern);
+        let time = format_local_time(draft.saved_at, language);
         *cache = Some((
             draft.note,
             language,
@@ -1741,7 +1858,7 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut TreeContext<'_>) {
     if is_row_hovered {
         handle_hovered_row(ui, node, &note.title, &label, context);
     }
-    draw_context_menu(ui, node, context);
+    draw_context_menu(ui, node, Some(note.kind), context);
 }
 
 /// Click, double-click, context menu and tooltip of the last drawn tree row.
@@ -1755,7 +1872,7 @@ fn handle_row_interaction(
     if ui.is_item_hovered() {
         handle_hovered_row(ui, node, title, label, context);
     }
-    draw_context_menu(ui, node, context);
+    draw_context_menu(ui, node, None, context);
 }
 
 /// Handles a hovered row: selection, rename on double-click, context menu,
@@ -1782,12 +1899,127 @@ fn handle_hovered_row(
 }
 
 /// Draws the context menu of a row if it is open (must run every frame).
-fn draw_context_menu(ui: &Ui, node: NodeId, context: &mut TreeContext<'_>) {
+fn draw_context_menu(ui: &Ui, node: NodeId, kind: Option<NoteKind>, context: &mut TreeContext<'_>) {
+    let language = context.language;
     ui.popup("context", || {
-        if MenuItem::new(Text::Rename.get(context.language)).build(ui) {
+        if MenuItem::new(Text::Rename.get(language)).build(ui) {
             context.actions.push(WindowAction::StartRename(node));
         }
+        // Notes get the reset type submenu with the current kind checked
+        // (M86); groups have no kind.
+        if let (NodeId::Note(note), Some(kind)) = (node, kind) {
+            ui.menu(Text::ResetType.get(language), || {
+                for (period, text) in KIND_OPTIONS {
+                    let is_current = kind.period() == period;
+                    if MenuItem::new(text.get(language))
+                        .selected(is_current)
+                        .build(ui)
+                        && !is_current
+                    {
+                        context
+                            .actions
+                            .push(WindowAction::SetResetPeriod(note, period));
+                    }
+                }
+            });
+        }
     });
+}
+
+/// Measures the note title row (M87): the kind dropdown sits right of the
+/// title, or wraps below it when the title would get narrower than
+/// [`MINIMUM_TITLE_CHARACTERS`] (`lay-responsive`). Call with the body font.
+fn title_row_layout(ui: &Ui, language: Language) -> TitleRow {
+    let labels = KIND_OPTIONS.map(|(_, text)| text.get(language));
+    let dropdown_width = dropdown_width(ui, &labels);
+    let available = ui.content_region_avail()[0];
+    let spacing = ui.clone_style().item_spacing[0];
+    let minimum_title = ui.calc_text_size("n")[0] * MINIMUM_TITLE_CHARACTERS;
+    let is_dropdown_beside = available >= minimum_title + spacing + dropdown_width;
+    let [left, top] = ui.cursor_screen_pos();
+    TitleRow {
+        left,
+        top,
+        title_width: if is_dropdown_beside {
+            available - spacing - dropdown_width
+        } else {
+            available
+        },
+        dropdown_width,
+        is_dropdown_beside,
+        dropdown_height: ui.frame_height(),
+    }
+}
+
+/// Draws the kind dropdown of `note` (M86, M87) after its title, which is
+/// `title_height` tall: right-aligned and vertically centered beside it, or
+/// on its own line, and pushes the chosen kind as an action.
+fn draw_kind_dropdown(
+    ui: &Ui,
+    language: Language,
+    theme: &Theme,
+    row: TitleRow,
+    title_height: f32,
+    (note, kind): (NoteId, NoteKind),
+    actions: &mut Vec<WindowAction>,
+) {
+    if row.is_dropdown_beside {
+        ui.same_line_with_pos(ui.window_content_region_max()[0] - row.dropdown_width);
+        let x = ui.cursor_screen_pos()[0];
+        ui.set_cursor_screen_pos([
+            x,
+            row.top + ((title_height - row.dropdown_height) / 2.0).max(0.0),
+        ]);
+    }
+    let labels = KIND_OPTIONS.map(|(_, text)| text.get(language));
+    let selected = KIND_OPTIONS
+        .iter()
+        .position(|(period, _)| *period == kind.period())
+        .unwrap_or(0);
+    if let Some(index) = draw_dropdown(
+        ui,
+        theme,
+        "kind",
+        Text::ResetType.get(language),
+        &labels,
+        selected,
+    ) && let Some((period, _)) = KIND_OPTIONS.get(index)
+    {
+        actions.push(WindowAction::SetResetPeriod(note, *period));
+    }
+    if row.is_dropdown_beside {
+        // Continue below the taller of title and dropdown, not below the
+        // centered dropdown.
+        let spacing = ui.clone_style().item_spacing[1];
+        ui.set_cursor_screen_pos([
+            row.left,
+            row.top + title_height.max(row.dropdown_height) + spacing,
+        ]);
+    }
+}
+
+/// The countdown line to the next `period` reset at `now` (M91), formatted
+/// again only when the minute or language changes.
+fn countdown_text(
+    cache: &mut Option<CountdownLine>,
+    period: ResetPeriod,
+    now: Timestamp,
+    language: Language,
+) -> &str {
+    let seconds = period.next_reset(now).as_second() - now.as_second();
+    let minutes = (seconds + 59) / 60;
+    let is_current = cache.as_ref().is_some_and(|line| {
+        line.period == period && line.minutes == minutes && line.language == language
+    });
+    if !is_current {
+        *cache = Some(CountdownLine {
+            period,
+            minutes,
+            language,
+            text: reset_countdown(minutes, language),
+        });
+    }
+    cache.as_ref().map_or("", |line| line.text.as_str())
 }
 
 /// Draws the inline rename input and records commit or cancel (M44).
@@ -1892,7 +2124,20 @@ fn draw_badge(ui: &Ui, kind: NoteKind, anchor: [f32; 2], context: &TreeContext<'
         letter,
     );
     if ui.is_mouse_hovering_rect(start, max) {
-        ui.tooltip_text(tooltip.get(language));
+        // Formatted only while hovered (M91).
+        let next = kind
+            .period()
+            .map(|period| period.next_reset(Timestamp::now()));
+        ui.tooltip(|| {
+            ui.text(tooltip.get(language));
+            if let Some(next) = next {
+                ui.text(format!(
+                    "{}: {}",
+                    Text::NextReset.get(language),
+                    format_local_time(next, language)
+                ));
+            }
+        });
     }
     Some(start[0])
 }

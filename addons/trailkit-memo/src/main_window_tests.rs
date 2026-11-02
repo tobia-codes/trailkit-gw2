@@ -374,3 +374,38 @@ fn note_title_stays_at_the_top_while_the_content_scrolls() {
         "memo-scrolled-note",
     );
 }
+
+#[test]
+fn kind_dropdown_lists_the_kinds_and_changes_the_note() {
+    let document = sample_document();
+    let ui_state = selected_first(&document);
+    let Some(NodeId::Note(note)) = ui_state.selected else {
+        panic!("the sample has a root note");
+    };
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    let size = [640.0, 360.0];
+    let mut harness = UiHarness::new(size);
+    let at = |position: [f32; 2], down: bool| FrameInput {
+        mouse_position: position,
+        left_button_down: down,
+        ..FrameInput::default()
+    };
+    let field = [560.0, 97.0];
+    let mut draw_light = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Light);
+    harness.settle(2, &at(field, false), &mut draw_light);
+    harness.frame(&at(field, true), &mut draw_light);
+    harness.frame(&at(field, false), &mut draw_light);
+    let image = harness.settle(3, &at([300.0, 300.0], false), &mut draw_light);
+    assert_snapshot(
+        env!("CARGO_MANIFEST_DIR"),
+        "memo-kind-dropdown-light",
+        &image,
+    );
+
+    let daily_row = [560.0, 150.0];
+    harness.frame(&at(daily_row, false), &mut draw_light);
+    harness.frame(&at(daily_row, true), &mut draw_light);
+    harness.settle(2, &at(daily_row, false), &mut draw_light);
+    let kind = memo.document.note(note).map(|note| note.kind.period());
+    assert_eq!(kind, Some(Some(ResetPeriod::Daily)));
+}

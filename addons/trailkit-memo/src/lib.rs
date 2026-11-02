@@ -13,6 +13,7 @@ pub mod drafts;
 pub mod i18n;
 pub mod note_editing;
 pub mod note_tree;
+pub mod reset_schedule;
 pub mod settings;
 pub mod storage_worker;
 pub mod ui_state;

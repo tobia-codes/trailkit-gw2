@@ -1,6 +1,6 @@
 # trailkit-memo
 
-> Vorab-Version — Notizen lassen sich anlegen, umbenennen, ansehen und bearbeiten.
+> Vorab-Version — Notizen lassen sich anlegen, umbenennen, ansehen, bearbeiten und täglich oder wöchentlich zurücksetzen.
 
 ## Fenster öffnen
 
@@ -18,7 +18,15 @@ Das Fenster zeigt links die Notizliste und rechts die ausgewählte Notiz. Ziehe 
 - **Neue Notiz / neue Gruppe:** die beiden Buttons über der Liste. Der neue Eintrag landet in der ausgewählten Gruppe (bzw. der Gruppe der ausgewählten Notiz), ganz am Ende. Tippe gleich einen Namen ein und drücke Enter.
 - **Umbenennen:** Doppelklick auf einen Eintrag oder Rechtsklick › *Umbenennen*. Enter oder ein Klick daneben übernimmt den Namen, Escape bricht ab.
 - **Gruppen** haben fett gedruckte Namen und zeigen rechts, wie viele Notizen sie enthalten.
-- **Abzeichen** am rechten Ende einer Zeile: **T** kennzeichnet eine tägliche Notiz (Reset um 00:00 UTC), **W** eine wöchentliche (Reset montags um 07:30 UTC). Fahre mit der Maus darüber für Details.
+- **Abzeichen** am rechten Ende einer Zeile: **T** kennzeichnet eine tägliche Notiz (Reset um 00:00 UTC), **W** eine wöchentliche (Reset montags um 07:30 UTC). Fahre mit der Maus darüber, um den nächsten Reset in deiner Ortszeit zu sehen.
+
+## Tägliche und wöchentliche Notizen
+
+Wähle die Art einer Notiz im Feld neben ihrem Titel (*Normal*, *Täglicher Reset*, *Wöchentlicher Reset*) oder per Rechtsklick in der Liste › *Reset-Art*. Beim täglichen bzw. wöchentlichen Reset des Spiels werden alle Häkchen in so einer Notiz entfernt – praktisch für Dailies und wöchentliche Raids. Unter dem Titel siehst du, wie lange es bis zum nächsten Reset dauert.
+
+- Stellst du eine Notiz auf täglich oder wöchentlich um, bleiben ihre Häkchen bis zum nächsten Reset.
+- War das Spiel zum Reset geschlossen, setzt memo die Notiz beim nächsten Öffnen des Fensters zurück – einmal, egal wie viele Resets du verpasst hast.
+- Während du eine Notiz bearbeitest (oder es einen Entwurf gibt), wartet ihr Reset, bis du speicherst oder verwirfst; dein Text wird nie unter deinen Händen geändert.
 - **Checkboxen** in einer Notiz kannst du direkt abhaken.
 - **Links** öffnen sich im Browser (nur `http://` und `https://`); fahre mit der Maus darüber, um das Ziel zu sehen.
 - **Chat-Links** aus dem Spiel (`[&…]`, z. B. eine Wegmarke oder ein Gegenstand) erscheinen als Chips mit Symbol, Art und ID; Münzen zeigen ihren Betrag. Klicke auf einen Chip, um den Code zu kopieren, und füge ihn dann im Spiel-Chat ein. Fahre mit der Maus darüber, um den Code zu sehen. Ein Chip mit **!** hat einen beschädigten Code; der Tooltip sagt, warum. Namen (statt IDs) kommen mit trailkit-core.
