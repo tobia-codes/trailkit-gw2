@@ -70,8 +70,12 @@ impl Icon {
     pub const HAMMER: Self = Self('\u{e0ec}');
     /// `trophy`: achievement chat link (M75).
     pub const TROPHY: Self = Self('\u{e373}');
+    /// `chevron-down`: opens a dropdown (memo M87).
+    pub const CHEVRON_DOWN: Self = Self('\u{e06d}');
+    /// `check`: marks the chosen option of a dropdown (memo M87).
+    pub const CHECK: Self = Self('\u{e06c}');
     /// Every icon above; keep in sync when adding one.
-    pub const ALL: [Self; 29] = [
+    pub const ALL: [Self; 31] = [
         Self::FILE_PLUS,
         Self::FOLDER_PLUS,
         Self::MENU,
@@ -101,6 +105,8 @@ impl Icon {
         Self::CASTLE,
         Self::HAMMER,
         Self::TROPHY,
+        Self::CHEVRON_DOWN,
+        Self::CHECK,
     ];
 
     /// The glyph as a character of the icon font.

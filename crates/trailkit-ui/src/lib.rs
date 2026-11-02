@@ -31,6 +31,8 @@ pub mod chat_link_chip;
 #[cfg(windows)]
 pub mod cursor_extent;
 #[cfg(windows)]
+pub mod dropdown;
+#[cfg(windows)]
 pub mod font_registry;
 #[cfg(windows)]
 pub mod glyph_metrics;

@@ -30,31 +30,34 @@ pub fn draw_button_with_size(ui: &Ui, label: &str, size: [f32; 2]) -> bool {
     let _id = ui.push_id(label);
     let clicked = ui.button_with_size("##button", size);
     let [min, max] = [ui.item_rect_min(), ui.item_rect_max()];
-    let middle = capital_middle().unwrap_or(text_size[1] / 2.0);
-    let position = [
-        min[0] + ((max[0] - min[0] - text_size[0]) / 2.0).max(padding[0]),
-        ((min[1] + max[1]) / 2.0 - middle).round(),
-    ];
+    let x = min[0] + ((max[0] - min[0] - text_size[0]) / 2.0).max(padding[0]);
     let color = ImColor32::from(ui.style_color(StyleColor::Text)).to_bits();
+    draw_label(label, x, [min[1], max[1]], color);
+    clicked
+}
+
+/// Draws `label` starting at `x`, vertically centered by its capital letters
+/// between `top` and `bottom` (memo plan M85), in the current font and
+/// `color` (packed `ImColor32` bits). Works while a caller holds the window's
+/// `DrawListMut` (imgui-rs allows only one at a time, e.g. in a dialog card).
+pub(crate) fn draw_label(label: &str, x: f32, [top, bottom]: [f32; 2], color: u32) {
+    // SAFETY: only reads ImGui's current font size on the render thread.
+    let line_height = unsafe { nexus::imgui::sys::igGetFontSize() };
+    let middle = capital_middle().unwrap_or(line_height / 2.0);
+    let y = ((top + bottom) / 2.0 - middle).round();
     let begin = label.as_ptr().cast::<std::ffi::c_char>();
-    // The raw call works while a caller holds the window's `DrawListMut`
-    // (imgui-rs allows only one at a time, e.g. in a dialog card).
     // SAFETY: called on the render thread inside a frame, so the current
     // window's draw list is valid; `begin..begin + len` is the UTF-8 label,
     // which ImGui only reads.
     unsafe {
         nexus::imgui::sys::ImDrawList_AddText_Vec2(
             nexus::imgui::sys::igGetWindowDrawList(),
-            nexus::imgui::sys::ImVec2 {
-                x: position[0],
-                y: position[1],
-            },
+            nexus::imgui::sys::ImVec2 { x, y },
             color,
             begin,
             begin.add(label.len()),
         );
     }
-    clicked
 }
 
 /// Draws a primary button (accent background, `text.on_accent` label) and

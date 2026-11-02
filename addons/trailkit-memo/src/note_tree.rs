@@ -9,7 +9,10 @@
 use jiff::Timestamp;
 use serde::{Deserialize, Serialize};
 use trailkit_storage::{SchemaVersion, VersionedDocument};
+use trailkit_ui::markdown::uncheck_all_tasks;
 use uuid::Uuid;
+
+use crate::reset_schedule::ResetPeriod;
 
 /// Stable unique id of a note (UUID v7, time-ordered).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -106,7 +109,8 @@ pub struct Note {
     pub kind: NoteKind,
     /// When the note was created.
     pub created_at: Timestamp,
-    /// When the note's title, content or kind was last changed.
+    /// When the note's title or content was last changed by the user; kind
+    /// changes and resets do not count (M86, M88).
     pub updated_at: Timestamp,
 }
 
@@ -158,6 +162,48 @@ pub struct NotesDocument {
 impl VersionedDocument for NotesDocument {
     const FILE_STEM: &'static str = "notes";
     const CURRENT_SCHEMA_VERSION: SchemaVersion = SchemaVersion::FIRST;
+}
+
+impl NoteKind {
+    /// A note kind with `period` (`None` = normal note) whose reset state
+    /// starts at `now`, so checks made before `now` stay until the next
+    /// reset (M90).
+    #[must_use]
+    pub const fn with_period(period: Option<ResetPeriod>, now: Timestamp) -> Self {
+        match period {
+            None => Self::Normal,
+            Some(ResetPeriod::Daily) => Self::DailyReset {
+                last_reset_applied_at: now,
+            },
+            Some(ResetPeriod::Weekly) => Self::WeeklyReset {
+                last_reset_applied_at: now,
+            },
+        }
+    }
+
+    /// The reset period, or `None` for a normal note.
+    #[must_use]
+    pub const fn period(self) -> Option<ResetPeriod> {
+        match self {
+            Self::Normal => None,
+            Self::DailyReset { .. } => Some(ResetPeriod::Daily),
+            Self::WeeklyReset { .. } => Some(ResetPeriod::Weekly),
+        }
+    }
+
+    /// The reset state, or `None` for a normal note.
+    #[must_use]
+    pub const fn last_reset_applied_at(self) -> Option<Timestamp> {
+        match self {
+            Self::Normal => None,
+            Self::DailyReset {
+                last_reset_applied_at,
+            }
+            | Self::WeeklyReset {
+                last_reset_applied_at,
+            } => Some(last_reset_applied_at),
+        }
+    }
 }
 
 impl Note {
@@ -300,6 +346,62 @@ impl NotesDocument {
             }),
         }
     }
+
+    /// Changes the reset period of note `id` (`None` = normal note, M86).
+    /// A new reset period starts at `now` (M90); `updated_at` stays. Returns
+    /// whether anything changed.
+    pub fn set_reset_period(
+        &mut self,
+        id: NoteId,
+        period: Option<ResetPeriod>,
+        now: Timestamp,
+    ) -> bool {
+        self.note_mut(id).is_some_and(|note| {
+            if note.kind.period() == period {
+                return false;
+            }
+            note.kind = NoteKind::with_period(period, now);
+            true
+        })
+    }
+
+    /// Applies every due reset at `now` (M88–M90): unchecks all tasks of a
+    /// reset note whose reset passed and records `now` as its reset state.
+    /// Notes for which `is_being_edited` is true wait (M89). `updated_at`
+    /// stays. Returns whether anything changed and must be saved.
+    pub fn apply_due_resets(
+        &mut self,
+        now: Timestamp,
+        is_being_edited: impl Fn(NoteId) -> bool,
+    ) -> bool {
+        let mut changed = false;
+        for_each_note_mut(&mut self.root, &mut |note| {
+            let (Some(period), Some(last_reset_applied_at)) =
+                (note.kind.period(), note.kind.last_reset_applied_at())
+            else {
+                return;
+            };
+            if !period.is_due(last_reset_applied_at, now) || is_being_edited(note.id) {
+                return;
+            }
+            if let Some(body) = uncheck_all_tasks(&note.body) {
+                note.body = body;
+            }
+            note.kind = NoteKind::with_period(Some(period), now);
+            changed = true;
+        });
+        changed
+    }
+}
+
+/// Calls `visit` for every note in `nodes`, nested ones included.
+fn for_each_note_mut(nodes: &mut [TreeNode], visit: &mut impl FnMut(&mut Note)) {
+    for node in nodes {
+        match node {
+            TreeNode::Note(note) => visit(note),
+            TreeNode::Group(group) => for_each_note_mut(&mut group.children, visit),
+        }
+    }
 }
 
 /// Searches `nodes` recursively for the note `id`.
@@ -388,6 +490,65 @@ mod tests {
                 former_index: 0,
             }],
         }
+    }
+
+    /// The id of the first note titled `title` in the root or first group.
+    fn note_id(document: &NotesDocument, title: &str) -> Option<NoteId> {
+        let mut found = None;
+        let mut copy = document.clone();
+        for_each_note_mut(&mut copy.root, &mut |note| {
+            if note.title == title && found.is_none() {
+                found = Some(note.id);
+            }
+        });
+        found
+    }
+
+    #[test]
+    fn kind_change_starts_a_new_period_and_keeps_updated_at() {
+        let mut document = sample_document();
+        let id = note_id(&document, "Ideas").expect("sample note");
+        let later = "2026-11-01T18:00:00Z".parse().unwrap_or_default();
+        assert!(document.set_reset_period(id, Some(ResetPeriod::Daily), later));
+        assert!(!document.set_reset_period(id, Some(ResetPeriod::Daily), later));
+        let note = document.note(id).expect("sample note");
+        assert_eq!(note.kind.last_reset_applied_at(), Some(later));
+        assert_eq!(note.updated_at, noon());
+        assert!(document.set_reset_period(id, None, later));
+        assert_eq!(
+            document.note(id).map(|note| note.kind),
+            Some(NoteKind::Normal)
+        );
+    }
+
+    #[test]
+    fn due_resets_uncheck_tasks_except_while_editing() {
+        let mut document = sample_document();
+        let weekly = note_id(&document, "Weekly clears").expect("sample note");
+        let ideas = note_id(&document, "Ideas").expect("sample note");
+        for id in [weekly, ideas] {
+            if let Some(note) = document.note_mut(id) {
+                "- [x] boss\n".clone_into(&mut note.body);
+            }
+        }
+        let next_week = "2026-11-02T08:00:00Z".parse().unwrap_or_default();
+        assert!(!document.apply_due_resets(next_week, |id| id == weekly));
+        assert_eq!(
+            document.note(weekly).map(|note| note.body.as_str()),
+            Some("- [x] boss\n")
+        );
+
+        assert!(document.apply_due_resets(next_week, |_| false));
+        let note = document.note(weekly).expect("sample note");
+        assert_eq!(note.body, "- [ ] boss\n");
+        assert_eq!(note.kind.last_reset_applied_at(), Some(next_week));
+        assert_eq!(note.updated_at, noon());
+        // Normal notes are never reset; a second run finds nothing due.
+        assert_eq!(
+            document.note(ideas).map(|note| note.body.as_str()),
+            Some("- [x] boss\n")
+        );
+        assert!(!document.apply_due_resets(next_week, |_| false));
     }
 
     #[test]
