@@ -390,7 +390,7 @@ fn kind_dropdown_lists_the_kinds_and_changes_the_note() {
         left_button_down: down,
         ..FrameInput::default()
     };
-    let field = [330.0, 56.0];
+    let field = [400.0, 98.0];
     let mut draw_light = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Light);
     harness.settle(2, &at(field, false), &mut draw_light);
     harness.frame(&at(field, true), &mut draw_light);
@@ -402,7 +402,7 @@ fn kind_dropdown_lists_the_kinds_and_changes_the_note() {
         &image,
     );
 
-    let daily_row = [330.0, 113.0];
+    let daily_row = [400.0, 152.0];
     harness.frame(&at(daily_row, false), &mut draw_light);
     harness.frame(&at(daily_row, true), &mut draw_light);
     harness.settle(2, &at(daily_row, false), &mut draw_light);

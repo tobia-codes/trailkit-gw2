@@ -12,8 +12,8 @@ The window hides during loading screens, cutscenes and character select and reap
 
 The window shows the note list on the left and the selected note on the right. Drag the gap between both sides to change their widths (a line appears when you point at it). The note list keeps its width when you resize the window; the note gets the extra room.
 
-- **Menu button** (three lines, top left of the note): hides the note list so the note gets the full width; click it again to show the list. memo remembers your choice.
-- **Narrow window:** the note fills the window and the menu button opens the note list over it. Choose a note, click the dimmed note or the menu button again to close the list. While you edit with the preview open, memo switches earlier, so text and preview keep their room.
+- **Sidebar button** (panel icon, top left of the note): hides the note list so the note gets the full width; click it again to show the list. memo remembers your choice.
+- **Narrow window:** the note fills the window and the sidebar button opens the note list over it. Choose a note, click the dimmed note or the sidebar button again to close the list. While you edit with the preview open, memo switches earlier, so text and preview keep their room.
 
 - **New note / new group:** the two buttons above the list. The new entry goes into the selected group (or the group of the selected note), at the end. Type a name right away and press Enter.
 - **Right-click** a group or an empty spot of the list for the same actions: on a group the new entry goes into it, on an empty spot at the end of the list.
@@ -23,7 +23,7 @@ The window shows the note list on the left and the selected note on the right. D
 
 ## Daily and weekly notes
 
-Choose the kind of a note in the box in the bar above it (*Normal*, *Daily reset*, *Weekly reset*), or right-click it in the list › *Reset type*. At the game's daily or weekly reset all checkboxes in such a note are unticked again — handy for dailies and weekly clears. Next to that box you see how long it is until the next reset.
+Choose the kind of a note in the box next to its title (*Normal*, *Daily reset*, *Weekly reset*), or right-click it in the list › *Reset type*. At the game's daily or weekly reset all checkboxes in such a note are unticked again — handy for dailies and weekly clears. Hover the badge in the list to see how long it is until the next reset.
 
 - A note you switch to daily or weekly keeps its ticks until the next reset.
 - If the game was closed at reset time, memo resets the note the next time you open the window — once, however many resets you missed.
@@ -38,7 +38,7 @@ Long names are shortened with "…" — hover them to see the full name. In a lo
 
 ## Editing a note
 
-Click the **pencil** at the top right of a note, or double-click the note. You edit the title and the text in markdown; the buttons in the bar above insert headings (H1, H2 — clicking the other level switches it, the same level removes it), **bold**, *italic*, lists, checkboxes and links (also **Ctrl+B** and **Ctrl+I**); clicking a button again removes the formatting (also links). Buttons of the formatting at the cursor light up. The event button needs trailkit-core.
+Click the **pencil** at the top right of a note, or double-click the note. You edit the title and the text in markdown; the buttons in the bar above (in groups, like in Word) insert headings (H1, H2 — clicking the other level switches it, the same level removes it), **bold**, *italic*, lists, checkboxes and links (also **Ctrl+B** and **Ctrl+I**); clicking a button again removes the formatting (also links). Buttons of the formatting at the cursor light up. The event button needs trailkit-core.
 
 - **Chat links:** paste a code (`[&…]`) into the text and it becomes a chip. The cursor jumps over a chip and Backspace deletes it whole; to change it, delete it and paste the new code.
 - The **eye** button shows a preview of the formatted note next to the text; drag the gap between them to change the widths. memo remembers both.
