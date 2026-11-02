@@ -83,6 +83,12 @@ pub fn draw_dropdown(
     };
     let _id = ui.push_id(id);
     let popup_id = "##options";
+    // A tinted chip uses its color everywhere, also while open (memo M104):
+    // border, check mark, text and chevron.
+    let tint = match variant {
+        DropdownVariant::Chip { tint } => tint,
+        DropdownVariant::Field => None,
+    };
 
     let clicked = {
         let _colors = [
@@ -147,7 +153,7 @@ pub fn draw_dropdown(
                     Icon::CHECK,
                     row_max[0] - icon_width(ui),
                     [row_min[1], row_max[1]],
-                    packed(theme.accent.base),
+                    packed(tint.unwrap_or(theme.accent.base)),
                 );
             }
         }
@@ -155,15 +161,11 @@ pub fn draw_dropdown(
     if is_hovered && !is_open {
         ui.tooltip_text(tooltip);
     }
-    let tint = match variant {
-        DropdownVariant::Chip { tint } => tint,
-        DropdownVariant::Field => None,
-    };
-    let border = if is_open {
+    let border = tint.unwrap_or(if is_open {
         theme.border.focus
     } else {
-        tint.unwrap_or(theme.border.color)
-    };
+        theme.border.color
+    });
     draw_border(min, max, border, theme.border.width.max(1.0), theme.radius);
     if let Some(label) = options.get(selected) {
         draw_label(
