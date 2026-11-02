@@ -18,7 +18,7 @@ use trailkit_ui::{
         draw_primary_button_with_size,
     },
     chat_link_chip::ChipContext,
-    dropdown::{draw_dropdown, dropdown_width},
+    dropdown::{DropdownVariant, draw_dropdown, dropdown_height, dropdown_width},
     editor::view::TextEditor,
     font_registry::FontScope,
     fonts::FontRole,
@@ -339,21 +339,6 @@ pub struct MemoWindow {
     /// When reset notes must be checked next (M90); `None` checks at once,
     /// e.g. after an action that may have unblocked a waiting reset (M89).
     next_reset_check: Option<Timestamp>,
-    /// Cached countdown line of the shown reset note (M91).
-    countdown: Option<CountdownLine>,
-}
-
-/// The formatted time to the next reset, rebuilt only when the minute,
-/// period or language changes (M91).
-struct CountdownLine {
-    /// The reset period it counts down to.
-    period: ResetPeriod,
-    /// Whole minutes left, rounded up.
-    minutes: i64,
-    /// The language it is formatted in.
-    language: Language,
-    /// The formatted line.
-    text: String,
 }
 
 /// Everything the tree drawing functions need besides the nodes.
@@ -421,7 +406,6 @@ impl MemoWindow {
             draft_hint: None,
             dialog_height: None,
             next_reset_check: None,
-            countdown: None,
         }
     }
 
@@ -837,9 +821,9 @@ impl MemoWindow {
         ) {
             self.actions.push(WindowAction::ToggleNoteList);
         }
-        // One toolbar for the whole note (M94): formatting while editing,
-        // kind and countdown, and the edit or Cancel/Save buttons at the end;
-        // it wraps in narrow panes (`lay-responsive`).
+        // One toolbar for the note (M94, M102): the formatting groups while
+        // editing and the edit or Cancel/Save buttons at the end; it wraps in
+        // narrow panes (`lay-responsive`).
         if let Some(editor) = self.editor.as_mut() {
             let active = editor.active_formats();
             draw_format_toolbar(
@@ -850,20 +834,6 @@ impl MemoWindow {
                     active,
                     preview_visible: self.ui_state.preview_visible,
                 },
-                &mut self.actions,
-            );
-        }
-        let shown_note = match &self.editor {
-            Some(editor) => self.document.note(editor.session.note),
-            None => self.selected_note(),
-        };
-        if let Some(note) = shown_note.map(|note| (note.id, note.kind)) {
-            draw_kind_controls(
-                ui,
-                language,
-                theme,
-                note,
-                &mut self.countdown,
                 &mut self.actions,
             );
         }
@@ -1057,10 +1027,14 @@ impl MemoWindow {
             );
         }
 
-        {
-            let _heading = FontScope::push(ui, FontRole::Heading1);
-            ui.text_wrapped(&note.title);
-        }
+        draw_title_with_kind(
+            ui,
+            language,
+            theme,
+            &note.title,
+            (note.id, note.kind),
+            &mut self.actions,
+        );
         draw_separator(ui, theme);
         if ui.is_window_hovered() && ui.is_mouse_double_clicked(MouseButton::Left) {
             self.actions.push(WindowAction::StartEditing);
@@ -1540,19 +1514,14 @@ fn note_list_icon(tooltip: Text) -> Icon {
     }
 }
 
-/// Draws the formatting buttons of the editor (M53), wrapping onto a new
-/// line when the pane is too narrow (`lay-responsive`). The event button is
-/// disabled without trailkit-core (`form-disabled-why`); buttons whose
-/// formatting applies at the cursor are drawn in the accent color (M69).
-fn draw_format_toolbar(
-    ui: &Ui,
-    language: Language,
-    theme: &Theme,
-    state: ToolbarState,
-    actions: &mut Vec<WindowAction>,
-) {
-    let preview_visible = state.preview_visible;
-    let buttons = [
+/// One formatting button: icon, tooltip and command (`None` = disabled).
+type FormatButton = (Icon, Text, Option<FormatCommand>);
+
+/// The formatting buttons in groups, like Word's ribbon (M53, M100, M102):
+/// headings, emphasis, lists, inserts. The event insert is disabled until
+/// trailkit-core exists.
+const FORMAT_GROUPS: [&[FormatButton]; 4] = [
+    &[
         (
             Icon::HEADING_1,
             Text::FormatHeading1,
@@ -1563,12 +1532,16 @@ fn draw_format_toolbar(
             Text::FormatHeading2,
             Some(FormatCommand::Heading2),
         ),
+    ],
+    &[
         (Icon::BOLD, Text::FormatBold, Some(FormatCommand::Bold)),
         (
             Icon::ITALIC,
             Text::FormatItalic,
             Some(FormatCommand::Italic),
         ),
+    ],
+    &[
         (
             Icon::LIST,
             Text::FormatBulletList,
@@ -1579,58 +1552,93 @@ fn draw_format_toolbar(
             Text::FormatCheckbox,
             Some(FormatCommand::Checkbox),
         ),
+    ],
+    &[
         (Icon::LINK, Text::FormatLink, Some(FormatCommand::Link)),
         (Icon::CALENDAR_CLOCK, Text::InsertEventRequiresCore, None),
-    ];
+    ],
+];
+
+/// The width of an icon button showing `icon`.
+fn icon_button_width(ui: &Ui, icon: Icon) -> f32 {
+    let _icons = FontScope::push(ui, FontRole::Icons);
+    let mut buffer = [0; 4];
+    button_width(ui, icon.as_str(&mut buffer))
+}
+
+/// Starts a toolbar group of `width` on the current line, after a thin
+/// vertical separator (M102); in a narrow pane the group moves to a new line
+/// instead, without a separator (`lay-responsive`).
+fn begin_toolbar_group(ui: &Ui, theme: &Theme, width: f32) {
+    let gap = theme.spacing.small;
+    let height = ui.item_rect_size()[1];
     let right_edge = ui.window_content_region_max()[0] + ui.window_pos()[0];
-    for (index, (icon, tooltip, command)) in buttons.into_iter().enumerate() {
-        let width = {
-            let _icons = FontScope::push(ui, FontRole::Icons);
-            let mut buffer = [0; 4];
-            button_width(ui, icon.as_str(&mut buffer))
-        };
-        // The first button continues the toolbar after the menu button,
-        // set apart as its own group.
-        let spacing = if index == 0 {
-            theme.spacing.extra_large
-        } else {
-            -1.0
-        };
-        ui.same_line_with_spacing(0.0, spacing);
-        if ui.cursor_screen_pos()[0] + width > right_edge {
-            ui.new_line();
-        }
-        let _id = ui.push_id(i32::try_from(index).unwrap_or_default());
-        // ImGui 1.80 has no disabled items: a disabled button is drawn in
-        // `text.disabled` and its clicks are ignored.
-        // Disabled (no command): `text.disabled`; active at the cursor
-        // (M69): the accent color, like the preview toggle.
-        let icon_color = match command {
-            None => Some(theme.text.disabled),
-            Some(command) if state.active.is_active(command) => Some(theme.accent.base),
-            Some(_) => None,
-        };
-        let _icon_color =
-            icon_color.map(|color| ui.push_style_color(StyleColor::Text, color.to_array()));
-        if draw_icon_button(ui, theme, icon, tooltip.get(language))
-            && let Some(command) = command
-        {
-            actions.push(WindowAction::Format(command));
+    ui.same_line_with_spacing(0.0, gap);
+    let [x, y] = ui.cursor_screen_pos();
+    if x + 1.0 + gap + width > right_edge {
+        ui.new_line();
+        return;
+    }
+    let inset = (height * 0.2).round();
+    ui.get_window_draw_list()
+        .add_line(
+            [x + 0.5, y + inset],
+            [x + 0.5, y + height - inset],
+            theme.border.color.to_array(),
+        )
+        .thickness(1.0)
+        .build();
+    ui.dummy([1.0, height]);
+    ui.same_line_with_spacing(0.0, gap);
+}
+
+/// Draws the formatting buttons of the editor in groups with separators
+/// (M53, M102), then the preview toggle. Buttons of the formatting at the
+/// cursor are drawn in the accent color (M69); the disabled event button in
+/// `text.disabled`.
+fn draw_format_toolbar(
+    ui: &Ui,
+    language: Language,
+    theme: &Theme,
+    state: ToolbarState,
+    actions: &mut Vec<WindowAction>,
+) {
+    let spacing = ui.clone_style().item_spacing[0];
+    let mut id = 0;
+    for group in FORMAT_GROUPS {
+        let width = group
+            .iter()
+            .map(|(icon, _, _)| icon_button_width(ui, *icon))
+            .sum::<f32>()
+            + spacing * (group.len().saturating_sub(1)) as f32;
+        begin_toolbar_group(ui, theme, width);
+        for (index, (icon, tooltip, command)) in group.iter().enumerate() {
+            if index > 0 {
+                ui.same_line();
+            }
+            id += 1;
+            let _id = ui.push_id(id);
+            // ImGui 1.80 has no disabled items: a disabled button is drawn in
+            // `text.disabled` and its clicks are ignored.
+            let icon_color = match command {
+                None => Some(theme.text.disabled),
+                Some(command) if state.active.is_active(*command) => Some(theme.accent.base),
+                Some(_) => None,
+            };
+            let _icon_color =
+                icon_color.map(|color| ui.push_style_color(StyleColor::Text, color.to_array()));
+            if draw_icon_button(ui, theme, *icon, tooltip.get(language))
+                && let Some(command) = command
+            {
+                actions.push(WindowAction::Format(*command));
+            }
         }
     }
 
-    // The preview toggle sits apart from the formatting buttons; its icon is
-    // drawn in the accent color while the preview is visible.
-    let width = {
-        let _icons = FontScope::push(ui, FontRole::Icons);
-        let mut buffer = [0; 4];
-        button_width(ui, Icon::EYE.as_str(&mut buffer))
-    };
-    ui.same_line_with_spacing(0.0, theme.spacing.extra_large);
-    if ui.cursor_screen_pos()[0] + width > right_edge {
-        ui.new_line();
-    }
-    let (tooltip, _selected) = if preview_visible {
+    // The preview toggle is its own group; its icon is drawn in the accent
+    // color while the preview is visible.
+    begin_toolbar_group(ui, theme, icon_button_width(ui, Icon::EYE));
+    let (tooltip, _selected) = if state.preview_visible {
         (
             Text::HidePreview,
             Some(ui.push_style_color(StyleColor::Text, theme.accent.base.to_array())),
@@ -1960,38 +1968,48 @@ fn move_to_toolbar_end(ui: &Ui, width: f32) {
     ui.set_cursor_screen_pos([right_edge - width, y]);
 }
 
-/// Draws the kind controls in the note toolbar (M94): the kind dropdown
-/// (M86) and, for reset notes, the countdown to the next reset next to it
-/// (M91), centered on the dropdown label; wraps as one group. Pushes a
-/// chosen kind as an action.
-fn draw_kind_controls(
+/// Draws the note title with the kind chip right behind it (M102), centered
+/// on the title's capitals; the chip moves below a title that leaves no room.
+/// Pushes a chosen kind as an action.
+fn draw_title_with_kind(
     ui: &Ui,
     language: Language,
     theme: &Theme,
+    title: &str,
     (note, kind): (NoteId, NoteKind),
-    countdown: &mut Option<CountdownLine>,
     actions: &mut Vec<WindowAction>,
 ) {
     let labels = KIND_OPTIONS.map(|(_, text)| text.get(language));
+    let chip_width = dropdown_width(ui, theme, DropdownVariant::Chip, &labels);
+    let chip_height = dropdown_height(ui, theme, DropdownVariant::Chip);
+    let gap = theme.spacing.medium;
+    let available = ui.content_region_avail()[0];
+    let [left, top] = ui.cursor_screen_pos();
+    let (title_height, title_middle, is_beside) = {
+        let _heading = FontScope::push(ui, FontRole::Heading1);
+        let height = ui.text_line_height();
+        let middle = capital_middle().unwrap_or(height / 2.0);
+        let is_beside = ui.calc_text_size(title)[0] + gap + chip_width <= available;
+        if is_beside {
+            ui.text(title);
+        } else {
+            ui.text_wrapped(title);
+        }
+        (height, middle, is_beside)
+    };
+    if is_beside {
+        ui.same_line_with_spacing(0.0, gap);
+        let x = ui.cursor_screen_pos()[0];
+        ui.set_cursor_screen_pos([x, (top + title_middle - chip_height / 2.0).round()]);
+    }
     let selected = KIND_OPTIONS
         .iter()
         .position(|(period, _)| *period == kind.period())
         .unwrap_or(0);
-    let text = kind
-        .period()
-        .map(|period| countdown_text(countdown, period, Timestamp::now(), language));
-    let text_width = text.map_or(0.0, |text| {
-        theme.spacing.medium + ui.calc_text_size(text)[0]
-    });
-    let width = dropdown_width(ui, &labels) + text_width;
-    let right_edge = ui.window_content_region_max()[0] + ui.window_pos()[0];
-    ui.same_line_with_spacing(0.0, theme.spacing.extra_large);
-    if ui.cursor_screen_pos()[0] + width > right_edge {
-        ui.new_line();
-    }
     if let Some(index) = draw_dropdown(
         ui,
         theme,
+        DropdownVariant::Chip,
         "kind",
         Text::ResetType.get(language),
         &labels,
@@ -2000,48 +2018,17 @@ fn draw_kind_controls(
     {
         actions.push(WindowAction::SetResetPeriod(note, *period));
     }
-    let Some(text) = text else {
-        return;
-    };
-    let [top, bottom] = [ui.item_rect_min()[1], ui.item_rect_max()[1]];
-    ui.same_line_with_spacing(0.0, theme.spacing.medium);
-    let x = ui.cursor_screen_pos()[0];
-    let middle = capital_middle().unwrap_or(ui.text_line_height() / 2.0);
-    ui.get_window_draw_list().add_text(
-        [x, ((top + bottom) / 2.0 - middle).round()],
-        theme.text.secondary.to_array(),
-        text,
-    );
-    ui.dummy([ui.calc_text_size(text)[0], bottom - top]);
+    if is_beside {
+        // Continue below the title, not below the centered chip.
+        let spacing = ui.clone_style().item_spacing[1];
+        ui.set_cursor_screen_pos([left, top + title_height + spacing]);
+    }
 }
 
 /// Whole minutes from `now` to the next `period` reset, rounded up (M91).
 fn minutes_until_next_reset(period: ResetPeriod, now: Timestamp) -> i64 {
     let seconds = period.next_reset(now).as_second() - now.as_second();
     (seconds + 59) / 60
-}
-
-/// The countdown line to the next `period` reset at `now` (M91), formatted
-/// again only when the minute or language changes.
-fn countdown_text(
-    cache: &mut Option<CountdownLine>,
-    period: ResetPeriod,
-    now: Timestamp,
-    language: Language,
-) -> &str {
-    let minutes = minutes_until_next_reset(period, now);
-    let is_current = cache.as_ref().is_some_and(|line| {
-        line.period == period && line.minutes == minutes && line.language == language
-    });
-    if !is_current {
-        *cache = Some(CountdownLine {
-            period,
-            minutes,
-            language,
-            text: reset_countdown(minutes, language),
-        });
-    }
-    cache.as_ref().map_or("", |line| line.text.as_str())
 }
 
 /// Draws the inline rename input and records commit or cancel (M44).

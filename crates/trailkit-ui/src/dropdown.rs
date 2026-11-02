@@ -5,24 +5,56 @@
 //! that opens a popup list below it. The field has the width of its widest
 //! option, so it does not jump when the choice changes.
 
-use nexus::imgui::{ImColor32, Selectable, StyleColor, Ui};
+use nexus::imgui::{ImColor32, Selectable, StyleColor, StyleStackToken, StyleVar, Ui};
 
 use crate::{
     button::draw_label, color::Color, font_registry::FontScope, fonts::FontRole, icons::Icon,
     theme::Theme,
 };
 
+/// How a dropdown looks.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DropdownVariant {
+    /// A form field: input background, regular frame padding, primary text.
+    Field,
+    /// A compact chip next to a title (memo M102): no background, slim
+    /// padding, secondary text, a border only.
+    Chip,
+}
+
+impl DropdownVariant {
+    /// Pushes the frame padding of this variant; pop by dropping the token.
+    fn push_padding<'ui>(self, ui: &'ui Ui, theme: &Theme) -> Option<StyleStackToken<'ui>> {
+        match self {
+            Self::Field => None,
+            Self::Chip => Some(ui.push_style_var(StyleVar::FramePadding([
+                theme.spacing.small,
+                (theme.spacing.extra_small / 2.0).round(),
+            ]))),
+        }
+    }
+}
+
 /// The width of a dropdown with `options`: the widest option plus padding,
 /// a gap and the chevron, e.g. to right-align it or to decide whether it
 /// fits next to something else.
 #[must_use]
-pub fn dropdown_width(ui: &Ui, options: &[&str]) -> f32 {
+pub fn dropdown_width(ui: &Ui, theme: &Theme, variant: DropdownVariant, options: &[&str]) -> f32 {
+    let _padding = variant.push_padding(ui, theme);
     let style = ui.clone_style();
     let widest = options
         .iter()
         .map(|option| ui.calc_text_size(option)[0])
         .fold(0.0, f32::max);
     widest + 2.0 * style.frame_padding[0] + style.item_spacing[0] + icon_width(ui)
+}
+
+/// The height of a dropdown of `variant` in the current font, e.g. to center
+/// it next to a title.
+#[must_use]
+pub fn dropdown_height(ui: &Ui, theme: &Theme, variant: DropdownVariant) -> f32 {
+    let _padding = variant.push_padding(ui, theme);
+    ui.frame_height()
 }
 
 /// Draws a dropdown showing `options[selected]` and returns the index the
@@ -32,24 +64,32 @@ pub fn dropdown_width(ui: &Ui, options: &[&str]) -> f32 {
 pub fn draw_dropdown(
     ui: &Ui,
     theme: &Theme,
+    variant: DropdownVariant,
     id: &str,
     tooltip: &str,
     options: &[&str],
     selected: usize,
 ) -> Option<usize> {
-    let width = dropdown_width(ui, options);
+    let width = dropdown_width(ui, theme, variant, options);
+    let padding = variant.push_padding(ui, theme);
     let style = ui.clone_style();
+    let (background, text) = match variant {
+        DropdownVariant::Field => (theme.surface.input.to_array(), theme.text.primary),
+        DropdownVariant::Chip => ([0.0; 4], theme.text.secondary),
+    };
     let _id = ui.push_id(id);
     let popup_id = "##options";
 
     let clicked = {
         let _colors = [
-            ui.push_style_color(StyleColor::Button, theme.surface.input.to_array()),
+            ui.push_style_color(StyleColor::Button, background),
             ui.push_style_color(StyleColor::ButtonHovered, theme.surface.hover.to_array()),
             ui.push_style_color(StyleColor::ButtonActive, theme.surface.active.to_array()),
         ];
         ui.button_with_size("##field", [width, ui.frame_height()])
     };
+    // The popup keeps the regular padding.
+    drop(padding);
     let is_hovered = ui.is_item_hovered();
     let [min, max] = [ui.item_rect_min(), ui.item_rect_max()];
     if clicked {
@@ -122,7 +162,7 @@ pub fn draw_dropdown(
             label,
             min[0] + style.frame_padding[0],
             [min[1], max[1]],
-            packed(theme.text.primary),
+            packed(text),
         );
     }
     draw_icon(

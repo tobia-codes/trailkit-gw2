@@ -26,7 +26,7 @@ Latin up to Extended-B plus punctuation, the icon font only the icons in
 | `markdown` | markdown → blocks and styled spans; task toggling; `http(s)`-only links | any |
 | `button` | `draw_button` (label centered by its capitals, M85), `draw_primary_button` (accent, `lay-one-primary`), `button_width` | Windows |
 | `menu` | `draw_menu_item` (Lucide check mark), `begin_submenu` (Lucide chevron, opens flush beside the parent, M98/M99) | Windows |
-| `dropdown` | `draw_dropdown` (themed select box, popup list with check mark, M87), `dropdown_width` | Windows |
+| `dropdown` | `draw_dropdown` (themed select box, popup list with check mark, M87; variants `Field` and compact `Chip`, M102), `dropdown_width`, `dropdown_height` | Windows |
 | `pane` | `draw_pane` — a content region on `bg.panel` with `pane.padding` on every side (`lay-pane-padding`) | Windows |
 | `splitter` | `draw_vertical_splitter` — resizable gap between two panes (accent line on hover/drag) | Windows |
 | `separator` | `draw_separator` — horizontal line that ends at the window/pane padding | Windows |

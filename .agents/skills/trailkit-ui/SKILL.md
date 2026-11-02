@@ -91,7 +91,8 @@ Build once, use everywhere. Planned:
   view and the editor, where a chip is one atomic unit (memo M75)
 - Dropdown (select box) — **exists**: `dropdown::draw_dropdown` (themed
   field with chevron, popup list, check mark on the chosen option; fixed
-  width of the widest option; memo M87). Never ImGui's plain combo
+  width of the widest option; memo M87; `DropdownVariant::Chip` for a
+  compact chip next to a title, M102). Never ImGui's plain combo
 - Menu entries — **exist**: `menu::draw_menu_item` (check mark = Lucide
   `check` in accent) and `menu::begin_submenu` (Lucide `chevron-right`,
   flush beside the parent); never ImGui's own check mark/arrow (memo M99)

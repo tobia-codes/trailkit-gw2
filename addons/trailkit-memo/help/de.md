@@ -23,7 +23,7 @@ Das Fenster zeigt links die Notizliste und rechts die ausgewählte Notiz. Ziehe 
 
 ## Tägliche und wöchentliche Notizen
 
-Wähle die Art einer Notiz im Feld in der Leiste darüber (*Normal*, *Täglicher Reset*, *Wöchentlicher Reset*) oder per Rechtsklick in der Liste › *Reset-Art*. Beim täglichen bzw. wöchentlichen Reset des Spiels werden alle Häkchen in so einer Notiz entfernt – praktisch für Dailies und wöchentliche Raids. Daneben siehst du, wie lange es bis zum nächsten Reset dauert.
+Wähle die Art einer Notiz im Feld neben ihrem Titel (*Normal*, *Täglicher Reset*, *Wöchentlicher Reset*) oder per Rechtsklick in der Liste › *Reset-Art*. Beim täglichen bzw. wöchentlichen Reset des Spiels werden alle Häkchen in so einer Notiz entfernt – praktisch für Dailies und wöchentliche Raids. Fahre mit der Maus über das Abzeichen in der Liste, um zu sehen, wie lange es bis zum nächsten Reset dauert.
 
 - Stellst du eine Notiz auf täglich oder wöchentlich um, bleiben ihre Häkchen bis zum nächsten Reset.
 - War das Spiel zum Reset geschlossen, setzt memo die Notiz beim nächsten Öffnen des Fensters zurück – einmal, egal wie viele Resets du verpasst hast.
@@ -38,7 +38,7 @@ Lange Namen werden mit „…“ gekürzt — fahre mit der Maus darüber, um de
 
 ## Eine Notiz bearbeiten
 
-Klicke auf den **Stift** oben rechts in einer Notiz oder doppelklicke die Notiz. Du bearbeitest Titel und Text in Markdown; die Buttons in der Leiste darüber fügen Überschriften (H1, H2 – ein Klick auf die andere Ebene wechselt sie, auf dieselbe entfernt sie), **Fett**, *Kursiv*, Aufzählungen, Checkboxen und Links ein (auch **Strg+B** und **Strg+I**); ein erneuter Klick entfernt die Formatierung wieder (auch Links). Die Buttons der Formatierung an der Cursorposition leuchten auf. Der Event-Button benötigt trailkit-core.
+Klicke auf den **Stift** oben rechts in einer Notiz oder doppelklicke die Notiz. Du bearbeitest Titel und Text in Markdown; die Buttons in der Leiste darüber (in Gruppen wie in Word) fügen Überschriften (H1, H2 – ein Klick auf die andere Ebene wechselt sie, auf dieselbe entfernt sie), **Fett**, *Kursiv*, Aufzählungen, Checkboxen und Links ein (auch **Strg+B** und **Strg+I**); ein erneuter Klick entfernt die Formatierung wieder (auch Links). Die Buttons der Formatierung an der Cursorposition leuchten auf. Der Event-Button benötigt trailkit-core.
 
 - **Chat-Links:** Füge einen Code (`[&…]`) in den Text ein, und er wird zum Chip. Der Cursor springt über einen Chip, und die Rücktaste löscht ihn ganz; um ihn zu ändern, lösche ihn und füge den neuen Code ein.
 - Der **Augen**-Button zeigt eine Vorschau der formatierten Notiz neben dem Text; ziehe den Spalt dazwischen, um die Breiten zu ändern. memo merkt sich beides.
