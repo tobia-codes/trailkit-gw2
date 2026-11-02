@@ -22,7 +22,7 @@ The window shows the note list on the left and the selected note on the right. D
 
 ## Daily and weekly notes
 
-Choose the kind of a note in the box below its title (*Normal*, *Daily reset*, *Weekly reset*), or right-click it in the list › *Reset type*. At the game's daily or weekly reset all checkboxes in such a note are unticked again — handy for dailies and weekly clears. Next to that box you see how long it is until the next reset.
+Choose the kind of a note in the box in the bar above it (*Normal*, *Daily reset*, *Weekly reset*), or right-click it in the list › *Reset type*. At the game's daily or weekly reset all checkboxes in such a note are unticked again — handy for dailies and weekly clears. Next to that box you see how long it is until the next reset.
 
 - A note you switch to daily or weekly keeps its ticks until the next reset.
 - If the game was closed at reset time, memo resets the note the next time you open the window — once, however many resets you missed.
@@ -37,7 +37,7 @@ Long names are shortened with "…" — hover them to see the full name. In a lo
 
 ## Editing a note
 
-Click the **pencil** at the top right of a note, or double-click the note. You edit the title and the text in markdown; the buttons above the text insert headings, **bold**, *italic*, lists, checkboxes and links (also **Ctrl+B** and **Ctrl+I**); clicking a button again removes the formatting (also links). Buttons of the formatting at the cursor light up. The event button needs trailkit-core.
+Click the **pencil** at the top right of a note, or double-click the note. You edit the title and the text in markdown; the buttons in the bar above insert headings, **bold**, *italic*, lists, checkboxes and links (also **Ctrl+B** and **Ctrl+I**); clicking a button again removes the formatting (also links). Buttons of the formatting at the cursor light up. The event button needs trailkit-core.
 
 - **Chat links:** paste a code (`[&…]`) into the text and it becomes a chip. The cursor jumps over a chip and Backspace deletes it whole; to change it, delete it and paste the new code.
 - The **eye** button shows a preview of the formatted note next to the text; drag the gap between them to change the widths. memo remembers both.

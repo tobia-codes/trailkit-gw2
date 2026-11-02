@@ -18,7 +18,7 @@ use trailkit_ui::{
         draw_primary_button_with_size,
     },
     chat_link_chip::ChipContext,
-    dropdown::draw_dropdown,
+    dropdown::{draw_dropdown, dropdown_width},
     editor::view::TextEditor,
     font_registry::FontScope,
     fonts::FontRole,
@@ -824,6 +824,36 @@ impl MemoWindow {
         ) {
             self.actions.push(WindowAction::ToggleNoteList);
         }
+        // One toolbar for the whole note (M94): formatting while editing,
+        // kind and countdown, and the edit or Cancel/Done buttons at the end;
+        // it wraps in narrow panes (`lay-responsive`).
+        if let Some(editor) = self.editor.as_mut() {
+            let active = editor.active_formats();
+            draw_format_toolbar(
+                ui,
+                language,
+                theme,
+                ToolbarState {
+                    active,
+                    preview_visible: self.ui_state.preview_visible,
+                },
+                &mut self.actions,
+            );
+        }
+        let shown_note = match &self.editor {
+            Some(editor) => self.document.note(editor.session.note),
+            None => self.selected_note(),
+        };
+        if let Some(note) = shown_note.map(|note| (note.id, note.kind)) {
+            draw_kind_controls(
+                ui,
+                language,
+                theme,
+                note,
+                &mut self.countdown,
+                &mut self.actions,
+            );
+        }
         self.draw_note_toolbar_end(ui, language, theme);
         draw_separator(ui, theme);
         if self.editor.is_some() {
@@ -836,13 +866,12 @@ impl MemoWindow {
     /// Draws the right end of the note toolbar (M51): the edit button while
     /// viewing, "Cancel" and the primary "Done" while editing.
     fn draw_note_toolbar_end(&mut self, ui: &Ui, language: Language, theme: &Theme) {
-        let right_edge = ui.window_content_region_max()[0];
         let spacing = ui.clone_style().item_spacing[0];
         if self.editor.is_some() {
             let cancel = Text::Cancel.get(language);
             let done = Text::Done.get(language);
             let width = button_width(ui, cancel) + spacing + button_width(ui, done);
-            ui.same_line_with_pos(right_edge - width);
+            move_to_toolbar_end(ui, width);
             if draw_button(ui, cancel) {
                 self.actions.push(WindowAction::CancelEditing);
             }
@@ -859,7 +888,7 @@ impl MemoWindow {
                 let mut buffer = [0; 4];
                 button_width(ui, Icon::PENCIL.as_str(&mut buffer))
             };
-            ui.same_line_with_pos(right_edge - width);
+            move_to_toolbar_end(ui, width);
             if draw_icon_button(ui, theme, Icon::PENCIL, Text::EditNote.get(language)) {
                 self.actions.push(WindowAction::StartEditing);
             }
@@ -869,33 +898,12 @@ impl MemoWindow {
     /// Draws the editor (M51–M53): formatting toolbar, title input and the
     /// markdown body input filling the rest of the pane.
     fn draw_editor(&mut self, ui: &Ui, language: Language, theme: &Theme) {
-        let active = self
-            .editor
-            .as_mut()
-            .map(Editor::active_formats)
-            .unwrap_or_default();
-        draw_format_toolbar(
-            ui,
-            language,
-            theme,
-            ToolbarState {
-                active,
-                preview_visible: self.ui_state.preview_visible,
-            },
-            &mut self.actions,
-        );
-        draw_separator(ui, theme);
         // While the unsaved changes dialog is shown, typing must not change
         // what the dialog asks about.
         let is_dialog_open = self.leave_prompt.is_some();
         let Some(editor) = self.editor.as_mut() else {
             return;
         };
-        let note = editor.session.note;
-        let kind = self
-            .document
-            .note(note)
-            .map_or(NoteKind::Normal, |note| note.kind);
         // ImGui reverts an input to its content at activation when Escape is
         // pressed; keep the typed text instead (only copied on that frame).
         let escape_pressed = ui.is_key_pressed(Key::Escape);
@@ -916,14 +924,6 @@ impl MemoWindow {
         {
             editor.session.title = title;
         }
-        draw_kind_row(
-            ui,
-            language,
-            theme,
-            (note, kind),
-            &mut self.countdown,
-            &mut self.actions,
-        );
 
         if is_dialog_open {
             editor.body.unfocus();
@@ -1048,14 +1048,6 @@ impl MemoWindow {
             let _heading = FontScope::push(ui, FontRole::Heading1);
             ui.text_wrapped(&note.title);
         }
-        draw_kind_row(
-            ui,
-            language,
-            theme,
-            (note.id, note.kind),
-            &mut self.countdown,
-            &mut self.actions,
-        );
         draw_separator(ui, theme);
         if ui.is_window_hovered() && ui.is_mouse_double_clicked(MouseButton::Left) {
             self.actions.push(WindowAction::StartEditing);
@@ -1560,11 +1552,16 @@ fn draw_format_toolbar(
             let mut buffer = [0; 4];
             button_width(ui, icon.as_str(&mut buffer))
         };
-        if index > 0 {
-            ui.same_line();
-            if ui.cursor_screen_pos()[0] + width > right_edge {
-                ui.new_line();
-            }
+        // The first button continues the toolbar after the menu button,
+        // set apart as its own group.
+        let spacing = if index == 0 {
+            theme.spacing.extra_large
+        } else {
+            -1.0
+        };
+        ui.same_line_with_spacing(0.0, spacing);
+        if ui.cursor_screen_pos()[0] + width > right_edge {
+            ui.new_line();
         }
         let _id = ui.push_id(i32::try_from(index).unwrap_or_default());
         // ImGui 1.80 has no disabled items: a disabled button is drawn in
@@ -1894,11 +1891,23 @@ fn draw_context_menu(ui: &Ui, node: NodeId, kind: Option<NoteKind>, context: &mu
     });
 }
 
-/// Draws the kind row under the note title (M92): the kind dropdown on the
-/// left (M86) and, for reset notes, the countdown to the next reset next to
-/// it (M91), centered on the dropdown label. Pushes a chosen kind as an
-/// action.
-fn draw_kind_row(
+/// Continues the toolbar line at its right end for `width` of items,
+/// wrapping onto a new line when they do not fit (`lay-responsive`).
+fn move_to_toolbar_end(ui: &Ui, width: f32) {
+    let right_edge = ui.window_content_region_max()[0] + ui.window_pos()[0];
+    ui.same_line();
+    if ui.cursor_screen_pos()[0] + width > right_edge {
+        ui.new_line();
+    }
+    let y = ui.cursor_screen_pos()[1];
+    ui.set_cursor_screen_pos([right_edge - width, y]);
+}
+
+/// Draws the kind controls in the note toolbar (M94): the kind dropdown
+/// (M86) and, for reset notes, the countdown to the next reset next to it
+/// (M91), centered on the dropdown label; wraps as one group. Pushes a
+/// chosen kind as an action.
+fn draw_kind_controls(
     ui: &Ui,
     language: Language,
     theme: &Theme,
@@ -1911,7 +1920,18 @@ fn draw_kind_row(
         .iter()
         .position(|(period, _)| *period == kind.period())
         .unwrap_or(0);
-    let left = ui.cursor_screen_pos()[0];
+    let text = kind
+        .period()
+        .map(|period| countdown_text(countdown, period, Timestamp::now(), language));
+    let text_width = text.map_or(0.0, |text| {
+        theme.spacing.medium + ui.calc_text_size(text)[0]
+    });
+    let width = dropdown_width(ui, &labels) + text_width;
+    let right_edge = ui.window_content_region_max()[0] + ui.window_pos()[0];
+    ui.same_line_with_spacing(0.0, theme.spacing.extra_large);
+    if ui.cursor_screen_pos()[0] + width > right_edge {
+        ui.new_line();
+    }
     if let Some(index) = draw_dropdown(
         ui,
         theme,
@@ -1923,19 +1943,19 @@ fn draw_kind_row(
     {
         actions.push(WindowAction::SetResetPeriod(note, *period));
     }
-    let Some(period) = kind.period() else {
+    let Some(text) = text else {
         return;
     };
     let [top, bottom] = [ui.item_rect_min()[1], ui.item_rect_max()[1]];
     ui.same_line_with_spacing(0.0, theme.spacing.medium);
-    let text = countdown_text(countdown, period, Timestamp::now(), language);
-    let middle = capital_middle().unwrap_or(ui.text_line_height() / 2.0);
     let x = ui.cursor_screen_pos()[0];
-    ui.set_cursor_screen_pos([x, ((top + bottom) / 2.0 - middle).round()]);
-    ui.text_colored(theme.text.secondary.to_array(), text);
-    // Continue below the dropdown, not below the shifted text.
-    let spacing = ui.clone_style().item_spacing[1];
-    ui.set_cursor_screen_pos([left, bottom + spacing]);
+    let middle = capital_middle().unwrap_or(ui.text_line_height() / 2.0);
+    ui.get_window_draw_list().add_text(
+        [x, ((top + bottom) / 2.0 - middle).round()],
+        theme.text.secondary.to_array(),
+        text,
+    );
+    ui.dummy([ui.calc_text_size(text)[0], bottom - top]);
 }
 
 /// The countdown line to the next `period` reset at `now` (M91), formatted
