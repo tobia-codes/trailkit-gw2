@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-01 (end of session 6, after PR #50).
+Last updated: 2026-11-02 (end of session 7, after PR #61).
 
 ## Where we are
 
@@ -11,12 +11,30 @@ Last updated: 2026-11-01 (end of session 6, after PR #50).
   and tested in game by the user. Decisions M16–M85 in
   `docs/plans/addons/trailkit-memo.md`.
 - Order from here (M28 as amended by M58, M62, M65):
-  ~~visual & interaction tests (M65)~~ (done, PR #21) → ~~font subsetting
-  (M62)~~ (done, PR #25: release DLL 2.1 MB) → ~~3c chat-link chips~~
-  (done, PRs #39–#47) → reset kinds
-  (M13) → drag & drop → search → trash & undo → settings window → export/import
+  ~~visual & interaction tests~~ → ~~font subsetting~~ → ~~3c chips~~ →
+  ~~reset kinds (M13, M86–M105)~~ → **drag & drop (grilling in progress)**
+  → search → trash & undo (delete, M12) → settings window → export/import
   → backups → help page → **release preparation** (full test, screenshots
   M67, docs).
+- Session 7 (PRs #52–#61), all deployed and checked in game by the user:
+  - Reset kinds: `reset_schedule` (daily 00:00 UTC, weekly Mon 07:30 UTC),
+    due resets untick all tasks on open/while open, wait for edited notes
+    and drafts (M88–M90); kind via chip dropdown right behind the note
+    title (view mode only, M102) or right-click › Reset type; countdown
+    only in the badge tooltip (M95); colors `reset.daily` gold /
+    `reset.weekly` violet for badge and chip (M104); bold, filled,
+    ink-centered badges (M105).
+  - Editor: one toolbar `[◧] | H1 H2 | B I | lists | link event | 👁 …
+    Cancel Save` with group separators (M94, M100, M102); Save/Speichern
+    instead of Done (M100); Ctrl+S = Save (M93).
+  - Note list toggle = sidebar icon `panel-left-close/open` (M101).
+  - Right-click: groups and empty list area offer New note/New group
+    (M96, M97); submenus open flush and use Lucide check/chevron
+    (`trailkit_ui::menu`, M98, M99).
+  - All addons: radius 4 px and `border.subtle` outline (6 % white dark /
+    10 % black light) for windows, panes, popups, dialogs (M103).
+  - trailkit-ui gained `dropdown` (`Field`, `Chip { tint }`), `menu`,
+    `glyph_ink_box`; harness `right_button_down`.
 - Late session 5 (PRs #26–#30): bold/italic/link toggle off from anywhere
   inside the span (M68, M71, parsed with `markdown::inline_ranges`), toolbar
   buttons light up for the formatting at the cursor (M69), ≡ is gold while the
@@ -53,15 +71,41 @@ Last updated: 2026-11-01 (end of session 6, after PR #50).
 
 ## ▶ Resume here
 
-1. **Quick in-game check of the last fixes** (user had not seen them yet):
-   button labels centered (M85, "Done"/"Cancel" at 112.5 %). The user
-   confirmed: tooltips (M84), keyboard in long notes (M83), chips.
-2. Then **grill reset kinds (M13)** — next phase-1 step.
-3. UI tests: `cargo xtask ui-test [--update]`; look at the PNGs in
-   `tests/snapshots/` (and `failures/`) before deploying UI changes.
-4. Token economy (user asked): keep tool output short (`| tail`/`grep`, also
-   for `git push` — the pre-push hook prints all tests), look at snapshot
-   PNGs only when they changed, avoid re-reading files.
+1. **Drag & drop grilling, round 1 is asked but not answered yet.** Settled
+   before: M22 (notes and groups; upper/lower edge = before/after, on a
+   group = into; "Move to…" in the context menu) and the trailkit-ui
+   skill §4 (drop line, group highlight, Escape cancels). Open questions
+   with recommendations (re-ask them):
+   - Q25 drag starts after ~6 px; origin row faded, floating title label → yes
+   - Q26 zones: note = upper/lower half; group = top/bottom quarter
+     before/after, middle = into (row highlighted) → yes
+   - Q27 drop into a collapsed group appends and expands it; hovering
+     ~0.7 s over a collapsed group expands it early → yes
+   - Q28 a group cannot go into itself/its descendants: no indicator,
+     drop does nothing → yes
+   - Q29 drop below the last entry = end of root level; auto-scroll near
+     the list's top/bottom edge → yes
+   - Q30 "Move to…" submenu: "Top level" + all groups as an indented flat
+     list, current place checked, invalid targets omitted, moves to the
+     end → yes
+   - Q31 Alt+↑/↓ keyboard move → no for v1, to BACKLOG
+   Reusable already: `NotesDocument::insert(InsertionPoint::{End, After})`.
+2. UI tests: `cargo xtask ui-test [--update]`; look at PNGs only when they
+   change. Pixel checks of snapshots: decode PNGs with a small Python
+   script (no PIL installed) — worked well for badge centering.
+3. Token economy (user asked): short tool output, no re-reading.
+4. Deploy after every UI change (`cargo xtask deploy trailkit-memo`); when
+   several PRs are open, build the next step **on top of the open PR
+   branch** — a deploy from `develop` once dropped unmerged changes.
+
+## Facts learned in session 7
+
+- ImGui submenus overlap their parent by `ItemInnerSpacing.x` (read in
+  `BeginMenu`); `trailkit_ui::menu::begin_submenu` sets it to 0.
+- A `Selectable`/button click fires on release over the item: UI tests
+  must release on the item before moving the mouse away.
+- Python heredoc edits: never `open(p,'w')` and read the same file in one
+  expression (it truncated `main_window.rs` once; restored from git).
 
 ## Facts learned in session 6 (also in the skills)
 
@@ -119,7 +163,7 @@ Last updated: 2026-11-01 (end of session 6, after PR #50).
 ## Recurring checks
 
 - GW2 wiki (2026-10-31): still behind Cognito login → Wayback workaround stays.
-- C-703/25 P (checked 2026-11-01, start of phase 1): still pending, no
+- C-703/25 P (checked 2026-11-02, session 7): still pending, no
   hearing date or judgment reported; DPF in force. Microsoft intervened for the
   Commission; noyb asked for repeal (2026-06-30) but has not sued yet.
 - DPF reminder workflow: the 2026-11-01 08:00 cron was silently skipped by
