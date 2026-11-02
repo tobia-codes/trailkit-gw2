@@ -18,7 +18,7 @@ Das Fenster zeigt links die Notizliste und rechts die ausgewählte Notiz. Ziehe 
 - **Neue Notiz / neue Gruppe:** die beiden Buttons über der Liste. Der neue Eintrag landet in der ausgewählten Gruppe (bzw. der Gruppe der ausgewählten Notiz), ganz am Ende. Tippe gleich einen Namen ein und drücke Enter.
 - **Umbenennen:** Doppelklick auf einen Eintrag oder Rechtsklick › *Umbenennen*. Enter oder ein Klick daneben übernimmt den Namen, Escape bricht ab.
 - **Gruppen** haben fett gedruckte Namen und zeigen rechts, wie viele Notizen sie enthalten.
-- **Abzeichen** am rechten Ende einer Zeile: **T** kennzeichnet eine tägliche Notiz (Reset um 00:00 UTC), **W** eine wöchentliche (Reset montags um 07:30 UTC). Fahre mit der Maus darüber, um den nächsten Reset in deiner Ortszeit zu sehen.
+- **Abzeichen** am rechten Ende einer Zeile: **T** kennzeichnet eine tägliche Notiz (Reset um 00:00 UTC), **W** eine wöchentliche (Reset montags um 07:30 UTC). Fahre mit der Maus darüber, um zu sehen, wie lange es bis zum nächsten Reset dauert.
 
 ## Tägliche und wöchentliche Notizen
 

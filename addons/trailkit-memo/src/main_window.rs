@@ -1958,6 +1958,12 @@ fn draw_kind_controls(
     ui.dummy([ui.calc_text_size(text)[0], bottom - top]);
 }
 
+/// Whole minutes from `now` to the next `period` reset, rounded up (M91).
+fn minutes_until_next_reset(period: ResetPeriod, now: Timestamp) -> i64 {
+    let seconds = period.next_reset(now).as_second() - now.as_second();
+    (seconds + 59) / 60
+}
+
 /// The countdown line to the next `period` reset at `now` (M91), formatted
 /// again only when the minute or language changes.
 fn countdown_text(
@@ -1966,8 +1972,7 @@ fn countdown_text(
     now: Timestamp,
     language: Language,
 ) -> &str {
-    let seconds = period.next_reset(now).as_second() - now.as_second();
-    let minutes = (seconds + 59) / 60;
+    let minutes = minutes_until_next_reset(period, now);
     let is_current = cache.as_ref().is_some_and(|line| {
         line.period == period && line.minutes == minutes && line.language == language
     });
@@ -2053,8 +2058,8 @@ fn draw_badge(ui: &Ui, kind: NoteKind, anchor: [f32; 2], context: &TreeContext<'
     let (language, theme) = (context.language, context.theme);
     let (letter, tooltip) = match kind {
         NoteKind::Normal => return None,
-        NoteKind::DailyReset { .. } => (Text::DailyBadge, Text::DailyTooltip),
-        NoteKind::WeeklyReset { .. } => (Text::WeeklyBadge, Text::WeeklyTooltip),
+        NoteKind::DailyReset { .. } => (Text::DailyBadge, Text::KindDaily),
+        NoteKind::WeeklyReset { .. } => (Text::WeeklyBadge, Text::KindWeekly),
     };
     let line_height = ui.text_line_height();
     let padding = theme.spacing.extra_small;
@@ -2087,18 +2092,15 @@ fn draw_badge(ui: &Ui, kind: NoteKind, anchor: [f32; 2], context: &TreeContext<'
         letter,
     );
     if ui.is_mouse_hovering_rect(start, max) {
-        // Formatted only while hovered (M91).
-        let next = kind
-            .period()
-            .map(|period| period.next_reset(Timestamp::now()));
+        // The same kind and countdown as the note toolbar (M95), formatted
+        // only while hovered.
+        let countdown = kind.period().map(|period| {
+            reset_countdown(minutes_until_next_reset(period, Timestamp::now()), language)
+        });
         ui.tooltip(|| {
             ui.text(tooltip.get(language));
-            if let Some(next) = next {
-                ui.text(format!(
-                    "{}: {}",
-                    Text::NextReset.get(language),
-                    format_local_time(next, language)
-                ));
+            if let Some(countdown) = &countdown {
+                ui.text(countdown);
             }
         });
     }
