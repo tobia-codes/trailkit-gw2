@@ -56,8 +56,8 @@ impl TextScale {
     pub const MINIMUM: f32 = 0.75;
     /// The largest scale.
     pub const MAXIMUM: f32 = 2.0;
-    /// One Ctrl+mouse wheel step.
-    pub const STEP: f32 = 0.125;
+    /// One Ctrl+mouse wheel step: 1 px at Nexus' default 16 px (M117).
+    pub const STEP: f32 = 0.0625;
 
     /// The factor, clamped to the allowed range (the default if the stored
     /// value is broken).
@@ -175,9 +175,9 @@ mod tests {
 
     #[test]
     fn text_scale_steps_and_clamps() {
-        assert!((TextScale::DEFAULT.stepped(1.0).factor() - 1.25).abs() < f32::EPSILON);
+        assert!((TextScale::DEFAULT.stepped(1.0).factor() - 1.1875).abs() < f32::EPSILON);
         assert!(
-            (TextScale::DEFAULT.stepped(-20.0).factor() - TextScale::MINIMUM).abs() < f32::EPSILON
+            (TextScale::DEFAULT.stepped(-40.0).factor() - TextScale::MINIMUM).abs() < f32::EPSILON
         );
         assert!((TextScale(f32::NAN).factor() - 1.125).abs() < f32::EPSILON);
         assert!((TextScale(9.0).factor() - TextScale::MAXIMUM).abs() < f32::EPSILON);

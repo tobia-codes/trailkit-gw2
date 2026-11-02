@@ -119,8 +119,10 @@ move it into `crates/trailkit-ui` (see AGENTS.md "Code sharing").
   flush left; per-item icons and badges sit right-aligned at the row end
   (the name is truncated before them); only structural controls such as a
   group's expand arrow stay on the left.
-- Drag & drop: show a drop indicator line between items and a highlight on
-  groups; Escape cancels.
+- Drag & drop: show a drop indicator line (`accent`) between items and a
+  highlight on groups; the dragged item's title floats next to the cursor
+  in a label with an `accent` border (`danger` plus Lucide `ban` over an
+  impossible target, memo M109/M116); Escape cancels.
 - Text: sentence case for labels, title case never; no trailing colons on
   section headers.
 - Every window remembers position/size; Escape closes (register via
