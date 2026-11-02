@@ -83,8 +83,11 @@ impl EditSession {
 /// A formatting button of the editor toolbar (M53).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FormatCommand {
-    /// `## ` at the start of the line (toggles).
-    Heading,
+    /// `# ` at the start of the line; replaces another heading level, and
+    /// toggles off on a level 1 heading (M100, like Word's heading styles).
+    Heading1,
+    /// `## ` at the start of the line, like [`Self::Heading1`].
+    Heading2,
     /// `**…**` around the selection.
     Bold,
     /// `*…*` around the selection.
@@ -130,7 +133,8 @@ pub fn format_edit(text: &str, selection: Range<usize>, command: FormatCommand) 
     match command {
         FormatCommand::Bold => toggle_emphasis(text, start..end, Emphasis::Bold),
         FormatCommand::Italic => toggle_emphasis(text, start..end, Emphasis::Italic),
-        FormatCommand::Heading => toggle_line_prefix(text, start..end, "## "),
+        FormatCommand::Heading1 => set_heading_level(text, start, 1),
+        FormatCommand::Heading2 => set_heading_level(text, start, 2),
         FormatCommand::BulletList => toggle_line_prefix(text, start..end, "- "),
         FormatCommand::Checkbox => toggle_line_prefix(text, start..end, "- [ ] "),
         FormatCommand::Link => {
@@ -286,8 +290,8 @@ fn innermost_range(text: &str, selection: &Range<usize>, kind: InlineKind) -> Op
 /// toolbar buttons (M69), like in a word processor.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct ActiveFormats {
-    /// The line is a heading.
-    pub heading: bool,
+    /// The heading level of the line (1–6), if it is a heading.
+    pub heading_level: Option<usize>,
     /// Inside bold text.
     pub bold: bool,
     /// Inside italic text.
@@ -305,7 +309,8 @@ impl ActiveFormats {
     #[must_use]
     pub const fn is_active(self, command: FormatCommand) -> bool {
         match command {
-            FormatCommand::Heading => self.heading,
+            FormatCommand::Heading1 => matches!(self.heading_level, Some(1)),
+            FormatCommand::Heading2 => matches!(self.heading_level, Some(2)),
             FormatCommand::Bold => self.bold,
             FormatCommand::Italic => self.italic,
             FormatCommand::BulletList => self.bullet_list,
@@ -322,18 +327,49 @@ pub fn active_formats(text: &str, selection: Range<usize>) -> ActiveFormats {
     let end = floor_char_boundary(text, selection.start.max(selection.end));
     let line_start = text[..start].rfind('\n').map_or(0, |index| index + 1);
     let line = text[line_start..].lines().next().unwrap_or("").trim_start();
-    let hashes = line.bytes().take_while(|byte| *byte == b'#').count();
     let checkbox = ["- [ ] ", "- [x] ", "- [X] "]
         .iter()
         .any(|prefix| line.starts_with(prefix));
     let selection = start..end;
     ActiveFormats {
-        heading: (1..=6).contains(&hashes) && line[hashes..].starts_with(' '),
+        heading_level: heading_level(line),
         bold: innermost_range(text, &selection, InlineKind::Strong).is_some(),
         italic: innermost_range(text, &selection, InlineKind::Emphasis).is_some(),
         bullet_list: !checkbox && (line.starts_with("- ") || line.starts_with("* ")),
         checkbox,
         link: innermost_range(text, &selection, InlineKind::Link).is_some(),
+    }
+}
+
+/// The heading level (1–6) of a line starting with `#`… and a space.
+fn heading_level(line: &str) -> Option<usize> {
+    let hashes = line.bytes().take_while(|byte| *byte == b'#').count();
+    ((1..=6).contains(&hashes) && line[hashes..].starts_with(' ')).then_some(hashes)
+}
+
+/// Makes the line containing `cursor` a heading of `level` (M100): an
+/// existing heading prefix is replaced, and the same level is removed
+/// (toggle). The cursor stays on the same character.
+fn set_heading_level(text: &str, cursor: usize, level: usize) -> TextEdit {
+    let line_start = text[..cursor].rfind('\n').map_or(0, |index| index + 1);
+    let line = &text[line_start..];
+    let current = heading_level(line);
+    // The old prefix including its space, e.g. `## `.
+    let old_length = current.map_or(0, |current| current + 1);
+    let replacement = if current == Some(level) {
+        String::new()
+    } else {
+        format!("{} ", "#".repeat(level))
+    };
+    let new_cursor = if cursor < line_start + old_length {
+        line_start + replacement.len()
+    } else {
+        cursor - old_length + replacement.len()
+    };
+    TextEdit {
+        range: line_start..line_start + old_length,
+        replacement,
+        selection: new_cursor..new_cursor,
     }
 }
 
@@ -457,7 +493,8 @@ mod tests {
             let position = text.find(needle).unwrap_or(0) + 1;
             active_formats(text, position..position)
         };
-        assert!(at("Title").heading);
+        assert_eq!(at("Title").heading_level, Some(2));
+        assert!(at("Title").is_active(FormatCommand::Heading2));
         let both = at("both");
         assert!(both.bold && both.italic && both.checkbox && !both.bullet_list);
         assert!(at("link").link);
@@ -474,10 +511,18 @@ mod tests {
         let (removed, selection) = run(&with_prefix, selection, FormatCommand::Checkbox);
         assert_eq!(removed, text);
         assert_eq!(selection, 8..8);
+    }
+
+    #[test]
+    fn heading_levels_replace_each_other_and_toggle_off() {
         assert_eq!(
-            run("", 0..0, FormatCommand::Heading),
+            run("", 0..0, FormatCommand::Heading2),
             ("## ".to_owned(), 3..3)
         );
+        let (level_one, selection) = run("## Raids", 5..5, FormatCommand::Heading1);
+        assert_eq!((level_one.as_str(), selection.clone()), ("# Raids", 4..4));
+        let (plain, selection) = run(&level_one, selection, FormatCommand::Heading1);
+        assert_eq!((plain.as_str(), selection), ("Raids", 2..2));
     }
 
     #[test]
