@@ -45,7 +45,7 @@ in the crate, document here):
 | Text | `text.primary`, `text.secondary`, `text.disabled`, `text.link`, `text.on_accent` |
 | Accent | `accent`, `accent.hover`, `accent.active` |
 | Status | `success`, `warning`, `danger`, `info` |
-| Border | `border` (inputs, dropdowns), `border.focus`, `border.subtle` (windows, panes, popups, dialogs; ~8 % white / ~10 % black), `border.width` |
+| Border | `border` (inputs, dropdowns), `border.focus`, `border.subtle` (windows, panes, popups, dialogs; ~12 % white / ~10 % black), `border.width` |
 | Coin | `coin.gold`, `coin.silver`, `coin.copper` (coin amounts in chat-link chips; graphics, not text) |
 | Event | `event.default`, `event.highlight`, `event.active`, `event.upcoming`, `event.custom` (per category overrides allowed) |
 | Spacing | `space.xs` 4, `space.sm` 8, `space.md` 12, `space.lg` 16, `space.xl` 24 (px at 100 %) |
