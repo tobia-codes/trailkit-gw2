@@ -52,7 +52,7 @@ pub struct Theme {
     pub list: ListMetrics,
     /// Pane metrics (`pane.*`).
     pub pane: PaneMetrics,
-    /// Corner radius (`radius`, default 0 — flat and square).
+    /// Corner radius (`radius`, default 4 — slightly rounded, memo M103).
     pub radius: f32,
     /// Font sizes (`font.size.*`).
     pub typography: Typography,
@@ -123,6 +123,9 @@ pub struct BorderTokens {
     pub color: Color,
     /// `border.focus`: focused element border.
     pub focus: Color,
+    /// `border.subtle`: the faint outline of windows, panes, popups and
+    /// dialogs (memo M103).
+    pub subtle: Color,
     /// `border.width`: border thickness in pixels.
     pub width: f32,
 }
@@ -278,6 +281,8 @@ impl Theme {
         border: BorderTokens {
             color: Color::from_rgb_hex(0x3A3F47),
             focus: Color::from_rgb_hex(0xD9A441),
+            // About 8 % white over the dark surfaces.
+            subtle: Color::from_rgb_hex(0xFFFFFF).with_alpha(0.08),
             width: 1.0,
         },
         coin: CoinColors {
@@ -295,7 +300,7 @@ impl Theme {
         spacing: SPACING,
         list: LIST_METRICS,
         pane: PANE_METRICS,
-        radius: 0.0,
+        radius: 4.0,
         typography: TYPOGRAPHY,
     };
 
@@ -331,6 +336,8 @@ impl Theme {
         border: BorderTokens {
             color: Color::from_rgb_hex(0xC9CED6),
             focus: Color::from_rgb_hex(0x8C5E0A),
+            // About 10 % black over the light surfaces.
+            subtle: Color::from_rgb_hex(0x000000).with_alpha(0.10),
             width: 1.0,
         },
         coin: CoinColors {
@@ -348,7 +355,7 @@ impl Theme {
         spacing: SPACING,
         list: LIST_METRICS,
         pane: PANE_METRICS,
-        radius: 0.0,
+        radius: 4.0,
         typography: TYPOGRAPHY,
     };
 }
@@ -422,9 +429,9 @@ mod tests {
     }
 
     #[test]
-    fn built_in_themes_are_square() {
+    fn built_in_themes_are_slightly_rounded() {
         for kind in ThemeKind::ALL {
-            assert_eq!(kind.theme().radius, 0.0);
+            assert_eq!(kind.theme().radius, 4.0);
         }
     }
 

@@ -1402,10 +1402,12 @@ fn draw_unsaved_changes_card(
     draw_list
         .add_rect(min, max, theme.surface.panel.to_array())
         .filled(true)
+        .rounding(theme.radius)
         .build();
     draw_list
-        .add_rect(min, max, theme.border.color.to_array())
+        .add_rect(min, max, theme.border.subtle.to_array())
         .thickness(theme.border.width.max(1.0))
+        .rounding(theme.radius)
         .build();
     let left = min[0] + padding;
     ui.set_cursor_screen_pos([left, min[1] + padding]);
@@ -2057,6 +2059,7 @@ fn draw_rename_input(
             theme.border.focus.to_array(),
         )
         .thickness(theme.border.width.max(1.0))
+        .rounding(theme.radius)
         .build();
 
     let padding_x = theme.spacing.extra_small;

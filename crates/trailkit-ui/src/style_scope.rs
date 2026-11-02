@@ -24,7 +24,7 @@ const COLOR_SLOTS: [(StyleColor, ColorToken); 44] = [
     (StyleColor::WindowBg, |theme| theme.surface.window),
     (StyleColor::ChildBg, |theme| theme.surface.panel),
     (StyleColor::PopupBg, |theme| theme.surface.popup),
-    (StyleColor::Border, |theme| theme.border.color),
+    (StyleColor::Border, |theme| theme.border.subtle),
     (StyleColor::BorderShadow, |_| Color::TRANSPARENT),
     (StyleColor::FrameBg, |theme| theme.surface.input),
     (StyleColor::FrameBgHovered, |theme| theme.surface.hover),

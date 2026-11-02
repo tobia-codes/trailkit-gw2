@@ -16,8 +16,10 @@ generic web/mobile UI guidelines (touch targets, breakpoints, CSS, …) here.
 
 1. **Consistency over novelty** — same component, same look, same place, in
    every addon.
-2. **Modern, flat, square** — `border radius = 0` everywhere (windows, frames,
-   buttons, popups, scrollbars, tabs). Clear hierarchy through spacing,
+2. **Modern, flat, slightly rounded** — one `radius` of 4 px everywhere
+   (windows, panes, frames, buttons, popups, scrollbars, tabs, dialogs);
+   windows, panes, popups and dialogs get a faint 1 px `border.subtle`
+   outline (memo M103, all addons). Clear hierarchy through spacing,
    typography and color, not decoration.
 3. **Clarity** — every control has a visible label; icons always have a
    tooltip; destructive actions ask for confirmation; unsaved changes warn
@@ -43,13 +45,13 @@ in the crate, document here):
 | Text | `text.primary`, `text.secondary`, `text.disabled`, `text.link`, `text.on_accent` |
 | Accent | `accent`, `accent.hover`, `accent.active` |
 | Status | `success`, `warning`, `danger`, `info` |
-| Border | `border`, `border.focus`, `border.width` |
+| Border | `border` (inputs, dropdowns), `border.focus`, `border.subtle` (windows, panes, popups, dialogs; ~8 % white / ~10 % black), `border.width` |
 | Coin | `coin.gold`, `coin.silver`, `coin.copper` (coin amounts in chat-link chips; graphics, not text) |
 | Event | `event.default`, `event.highlight`, `event.active`, `event.upcoming`, `event.custom` (per category overrides allowed) |
 | Spacing | `space.xs` 4, `space.sm` 8, `space.md` 12, `space.lg` 16, `space.xl` 24 (px at 100 %) |
 | Lists | `list.item_spacing`, `list.indent` |
 | Panes | `pane.padding` 8 (inner padding), `pane.gap` 8 (space between panes) — see `lay-pane-padding` |
-| Shape | `radius` = 0 (user-overridable, default 0) |
+| Shape | `radius` = 4 (user-overridable; custom-drawn frames use it too) |
 | Typography | `font.size.small`, `font.size.body`, `font.size.heading`, `font.line_height` (running text: 1.5 × font size, text centered in its line; markdown view and editor) |
 
 - **Built-in themes:** `Dark` (default) and `Light`. Both are full token sets.

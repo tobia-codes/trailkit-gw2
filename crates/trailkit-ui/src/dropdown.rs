@@ -156,7 +156,7 @@ pub fn draw_dropdown(
     } else {
         theme.border.color
     };
-    draw_border(min, max, border, theme.border.width.max(1.0));
+    draw_border(min, max, border, theme.border.width.max(1.0), theme.radius);
     if let Some(label) = options.get(selected) {
         draw_label(
             label,
@@ -223,7 +223,7 @@ pub(crate) fn draw_icon_into(
 }
 
 /// Draws a rectangle outline from `min` to `max` (the field's border).
-fn draw_border(min: [f32; 2], max: [f32; 2], color: Color, thickness: f32) {
+fn draw_border(min: [f32; 2], max: [f32; 2], color: Color, thickness: f32, rounding: f32) {
     // SAFETY: called on the render thread inside a frame, so the current
     // window's draw list is valid; the call only adds a rectangle.
     unsafe {
@@ -238,8 +238,8 @@ fn draw_border(min: [f32; 2], max: [f32; 2], color: Color, thickness: f32) {
                 y: max[1],
             },
             packed(color),
-            0.0,
-            0,
+            rounding,
+            nexus::imgui::sys::ImDrawCornerFlags_All as i32,
             thickness,
         );
     }

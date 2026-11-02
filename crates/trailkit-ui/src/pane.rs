@@ -32,6 +32,8 @@ pub fn draw_pane<R>(
     let token = ChildWindow::new(id)
         .size(size)
         .always_use_window_padding(true)
+        // The faint `border.subtle` outline with rounded corners (memo M103).
+        .border(true)
         .begin(ui);
     padding.pop();
     token.map(|_pane| content())
