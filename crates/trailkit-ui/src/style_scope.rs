@@ -115,9 +115,10 @@ struct TooltipOffset {
 }
 
 impl TooltipOffset {
-    /// Applies the scale for the current cursor.
-    fn push() -> Self {
-        let scale = tooltip_cursor_scale(cursor_extent());
+    /// Applies the scale for a cursor of `extent` (`None` = unknown, the
+    /// default offset).
+    fn push(extent: Option<[f32; 2]>) -> Self {
+        let scale = tooltip_cursor_scale(extent);
         // SAFETY: called on the render thread inside a frame, so the style
         // of the current ImGui context is valid and nothing else touches it
         // concurrently.
@@ -142,13 +143,22 @@ impl Drop for TooltipOffset {
 }
 
 impl<'ui> StyleScope<'ui> {
-    /// Pushes all colors and style variables of `theme` onto ImGui's stacks.
+    /// Pushes all colors and style variables of `theme` onto ImGui's stacks;
+    /// tooltips start right of the real cursor (M84).
     pub fn push(ui: &'ui Ui, theme: &Theme) -> Self {
+        Self::push_with_cursor_extent(ui, theme, cursor_extent())
+    }
+
+    /// Like [`Self::push`], but tooltips are placed for a cursor of `extent`
+    /// (`None` = the default offset) instead of the real one. Snapshot tests
+    /// pass `None`: the real cursor differs between machines and runs, which
+    /// moved tooltips in CI.
+    pub fn push_with_cursor_extent(ui: &'ui Ui, theme: &Theme, extent: Option<[f32; 2]>) -> Self {
         Self {
             _colors: COLOR_SLOTS
                 .map(|(slot, token)| ui.push_style_color(slot, token(theme).to_array())),
             _style_vars: STYLE_VARS.map(|style_var| ui.push_style_var(style_var(theme))),
-            _tooltip_offset: TooltipOffset::push(),
+            _tooltip_offset: TooltipOffset::push(extent),
         }
     }
 }

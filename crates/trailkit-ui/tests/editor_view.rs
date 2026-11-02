@@ -43,7 +43,7 @@ fn chip_text(text: ChipText) -> &'static str {
 /// window position.
 fn draw(ui: &Ui, editor: &mut TextEditor, theme: ThemeKind) -> [f32; 2] {
     let theme = theme.theme();
-    let _style = StyleScope::push(ui, &theme);
+    let _style = StyleScope::push_with_cursor_extent(ui, &theme, None);
     let mut position = [0.0; 2];
     Window::new("editor")
         .position([0.0, 0.0], Condition::FirstUseEver)

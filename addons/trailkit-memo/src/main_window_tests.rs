@@ -84,7 +84,7 @@ fn memo_window(
 /// Draws `memo` like the addon does: theme, window, then its dialog.
 fn draw(ui: &Ui, memo: &mut MemoWindow, size: [f32; 2], theme: ThemeKind) {
     let theme = theme.theme();
-    let _style = StyleScope::push(ui, &theme);
+    let _style = StyleScope::push_with_cursor_extent(ui, &theme, None);
     Window::new("Notes###memo")
         .position([0.0, 0.0], Condition::Always)
         .size(size, Condition::Always)
