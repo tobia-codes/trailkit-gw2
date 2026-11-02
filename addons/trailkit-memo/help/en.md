@@ -18,6 +18,8 @@ The window shows the note list on the left and the selected note on the right. D
 - **New note / new group:** the two buttons above the list. The new entry goes into the selected group (or the group of the selected note), at the end. Type a name right away and press Enter.
 - **Right-click** a group or an empty spot of the list for the same actions: on a group the new entry goes into it, on an empty spot at the end of the list.
 - **Rename:** double-click an entry, or right-click › *Rename*. Enter or clicking elsewhere keeps the new name, Escape cancels.
+- **Reorder:** drag a note or group to a new place. A line shows where it lands; on the lower half of an open group it becomes the group's first entry, below the last entry it goes to the end of the list. Drop on the middle of a closed group to put it at its end; rest there a moment and the group opens. A red "no entry" sign means it cannot go there (a group cannot go into itself). Near the top or bottom edge the list scrolls. Escape cancels.
+- **Move to:** right-click › *Move to* › *Top level* or a group moves the entry to the end of it, without dragging.
 - **Groups** have bold names and show how many notes they contain on the right.
 - **Badges** at the right end of a row: **D** marks a daily note (reset at 00:00 UTC), **W** a weekly note (reset on Mondays at 07:30 UTC). Hover a badge to see how long it is until the next reset.
 

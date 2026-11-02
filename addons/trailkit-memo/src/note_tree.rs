@@ -95,13 +95,41 @@ pub enum NoteKind {
     },
 }
 
-/// Where a new note or group goes in the tree (M43, M96).
+/// Where a new or moved note or group goes in the tree (M43, M96,
+/// M106–M112).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InsertionPoint {
     /// At the end of a group's children, or of the root level for `None`.
     End(Option<GroupId>),
+    /// At the first position of a group's children (M107).
+    Start(GroupId),
+    /// Right before a note or group, in the same parent.
+    Before(NodeId),
     /// Right after a note or group, in the same parent.
     After(NodeId),
+}
+
+/// Whether a note or group can be moved to an [`InsertionPoint`]
+/// (M109, M110).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MoveCheck {
+    /// The move changes the node's place.
+    Changes,
+    /// The point is the node's current place; moving changes nothing.
+    Unchanged,
+    /// The move is impossible: a group into itself or one of its
+    /// descendants, or the node or the point no longer exists.
+    Impossible,
+}
+
+/// A place in the tree: the parent (`None` = root level) and the index in
+/// its children.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Place {
+    /// The parent group, or `None` for the root level.
+    parent: Option<GroupId>,
+    /// The position in the parent's children.
+    index: usize,
 }
 
 /// A markdown note.
@@ -291,6 +319,12 @@ impl NotesDocument {
         find_note_mut(&mut self.root, id)
     }
 
+    /// Finds a group anywhere in the tree.
+    #[must_use]
+    pub fn group(&self, id: GroupId) -> Option<&Group> {
+        find_group(&self.root, id)
+    }
+
     /// Finds a group anywhere in the tree for changing it.
     pub fn group_mut(&mut self, id: GroupId) -> Option<&mut Group> {
         find_group_mut(&mut self.root, id)
@@ -332,13 +366,138 @@ impl NotesDocument {
     /// Inserts `node` at `point`. A group or sibling that no longer exists
     /// falls back to the end of the root level; a parent group is expanded.
     pub fn insert(&mut self, point: InsertionPoint, node: TreeNode) {
-        match point {
-            InsertionPoint::End(parent) => self.append(parent, node),
-            InsertionPoint::After(sibling) => {
-                if let Err(node) = insert_after(&mut self.root, sibling, node) {
-                    self.root.push(node);
-                }
+        let result = match point {
+            InsertionPoint::End(parent) => {
+                self.append(parent, node);
+                Ok(())
             }
+            InsertionPoint::Start(parent) => match self.group_mut(parent) {
+                Some(group) => {
+                    group.expanded = true;
+                    group.children.insert(0, node);
+                    Ok(())
+                }
+                None => Err(node),
+            },
+            InsertionPoint::Before(sibling) => insert_next_to(&mut self.root, sibling, 0, node),
+            InsertionPoint::After(sibling) => insert_next_to(&mut self.root, sibling, 1, node),
+        };
+        if let Err(node) = result {
+            self.root.push(node);
+        }
+    }
+
+    /// The parent of `node`: `Some(None)` = root level, `Some(Some(group))`
+    /// = inside `group`, `None` = not in the tree.
+    #[must_use]
+    pub fn parent(&self, node: NodeId) -> Option<Option<GroupId>> {
+        parent_of(&self.root, node)
+    }
+
+    /// Checks whether `node` can be moved to `point` (M109, M110).
+    #[must_use]
+    pub fn check_move(&self, node: NodeId, point: InsertionPoint) -> MoveCheck {
+        let (Some(current), Some(target)) = (self.place_of(node), self.resolve(point)) else {
+            return MoveCheck::Impossible;
+        };
+        if let NodeId::Group(moved) = node
+            && self.is_within(target.parent, moved)
+        {
+            return MoveCheck::Impossible;
+        }
+        let is_same_place = target.parent == current.parent
+            && (target.index == current.index || target.index == current.index + 1);
+        if is_same_place {
+            MoveCheck::Unchanged
+        } else {
+            MoveCheck::Changes
+        }
+    }
+
+    /// Moves `node` with all its children to `point` (M106–M112); the
+    /// target group is expanded. Returns whether anything changed; an
+    /// unchanged or impossible move ([`Self::check_move`]) does nothing.
+    pub fn move_node(&mut self, node: NodeId, point: InsertionPoint) -> bool {
+        if self.check_move(node, point) != MoveCheck::Changes {
+            return false;
+        }
+        let (Some(current), Some(target)) = (self.place_of(node), self.resolve(point)) else {
+            return false;
+        };
+        let Some(source) = self.children_mut(current.parent) else {
+            return false;
+        };
+        let moved = source.remove(current.index);
+        // Removing the node shifts later siblings in the same list up.
+        let index = if target.parent == current.parent && target.index > current.index {
+            target.index - 1
+        } else {
+            target.index
+        };
+        if let Some(parent) = target.parent.and_then(|parent| self.group_mut(parent)) {
+            parent.expanded = true;
+        }
+        match self.children_mut(target.parent) {
+            Some(children) => children.insert(index.min(children.len()), moved),
+            None => self.root.push(moved),
+        }
+        true
+    }
+
+    /// The place of `node` in the tree, or `None` if it does not exist.
+    fn place_of(&self, node: NodeId) -> Option<Place> {
+        place_in(&self.root, None, node)
+    }
+
+    /// The place `point` stands for, or `None` if its group or sibling no
+    /// longer exists.
+    fn resolve(&self, point: InsertionPoint) -> Option<Place> {
+        match point {
+            InsertionPoint::End(parent) => Some(Place {
+                parent,
+                index: self.children(parent)?.len(),
+            }),
+            InsertionPoint::Start(parent) => {
+                self.group(parent)?;
+                Some(Place {
+                    parent: Some(parent),
+                    index: 0,
+                })
+            }
+            InsertionPoint::Before(sibling) => self.place_of(sibling),
+            InsertionPoint::After(sibling) => self.place_of(sibling).map(|place| Place {
+                index: place.index + 1,
+                ..place
+            }),
+        }
+    }
+
+    /// Whether `group` is `ancestor` or nested somewhere inside it; the root
+    /// level (`None`) is inside no group.
+    fn is_within(&self, group: Option<GroupId>, ancestor: GroupId) -> bool {
+        let Some(group) = group else {
+            return false;
+        };
+        group == ancestor
+            || self.group(ancestor).is_some_and(|ancestor| {
+                parent_of(&ancestor.children, NodeId::Group(group)).is_some()
+            })
+    }
+
+    /// The children of `parent`, or the root level for `None`.
+    fn children(&self, parent: Option<GroupId>) -> Option<&[TreeNode]> {
+        match parent {
+            None => Some(&self.root),
+            Some(parent) => self.group(parent).map(|group| group.children.as_slice()),
+        }
+    }
+
+    /// The children of `parent` for changing them, or the root level for
+    /// `None`.
+    fn children_mut(&mut self, parent: Option<GroupId>) -> Option<&mut Vec<TreeNode>> {
+        match parent {
+            None => Some(&mut self.root),
+            Some(parent) => self.group_mut(parent).map(|group| &mut group.children),
         }
     }
 
@@ -416,21 +575,23 @@ impl NotesDocument {
     }
 }
 
-/// Inserts `node` right after `sibling` in whichever list of `nodes` (or
-/// their descendants) holds it; hands `node` back if `sibling` is missing.
-fn insert_after(
+/// Inserts `node` next to `sibling` (`offset` 0 = before, 1 = after) in
+/// whichever list of `nodes` (or their descendants) holds it; hands `node`
+/// back if `sibling` is missing.
+fn insert_next_to(
     nodes: &mut Vec<TreeNode>,
     sibling: NodeId,
+    offset: usize,
     node: TreeNode,
 ) -> Result<(), TreeNode> {
     if let Some(index) = nodes.iter().position(|candidate| candidate.id() == sibling) {
-        nodes.insert(index + 1, node);
+        nodes.insert(index + offset, node);
         return Ok(());
     }
     let mut node = node;
     for candidate in nodes.iter_mut() {
         if let TreeNode::Group(group) = candidate {
-            match insert_after(&mut group.children, sibling, node) {
+            match insert_next_to(&mut group.children, sibling, offset, node) {
                 Ok(()) => return Ok(()),
                 Err(returned) => node = returned,
             }
@@ -464,6 +625,27 @@ fn find_note_mut(nodes: &mut [TreeNode], id: NoteId) -> Option<&mut Note> {
         TreeNode::Note(note) if note.id == id => Some(note),
         TreeNode::Note(_) => None,
         TreeNode::Group(group) => find_note_mut(&mut group.children, id),
+    })
+}
+
+/// Searches `nodes` recursively for the group `id`.
+fn find_group(nodes: &[TreeNode], id: GroupId) -> Option<&Group> {
+    nodes.iter().find_map(|node| match node {
+        TreeNode::Note(_) => None,
+        TreeNode::Group(group) if group.id == id => Some(group),
+        TreeNode::Group(group) => find_group(&group.children, id),
+    })
+}
+
+/// Finds the place of `id` in `nodes` (the children of `parent`) or their
+/// descendants.
+fn place_in(nodes: &[TreeNode], parent: Option<GroupId>, id: NodeId) -> Option<Place> {
+    if let Some(index) = nodes.iter().position(|node| node.id() == id) {
+        return Some(Place { parent, index });
+    }
+    nodes.iter().find_map(|node| match node {
+        TreeNode::Note(_) => None,
+        TreeNode::Group(group) => place_in(&group.children, Some(group.id), id),
     })
 }
 
@@ -777,5 +959,134 @@ mod tests {
         assert_eq!(value["type"], "group");
         assert_eq!(serde_json::from_value::<NodeId>(value)?, id);
         Ok(())
+    }
+
+    /// The tree `A G1[B G2[C]] D` with G2 collapsed, plus the ids of
+    /// G1, G2, A, B and C.
+    fn move_document() -> (NotesDocument, [GroupId; 2], [NoteId; 3]) {
+        let note = |title: &str| Note::new(title.to_owned(), NoteKind::Normal, noon());
+        let (a, b, c, d) = (note("A"), note("B"), note("C"), note("D"));
+        let ids = [a.id, b.id, c.id];
+        let mut inner = Group::new("G2".to_owned());
+        inner.expanded = false;
+        inner.children.push(TreeNode::Note(c));
+        let mut outer = Group::new("G1".to_owned());
+        outer.children.push(TreeNode::Note(b));
+        let groups = [outer.id, inner.id];
+        outer.children.push(TreeNode::Group(inner));
+        let document = NotesDocument {
+            root: vec![TreeNode::Note(a), TreeNode::Group(outer), TreeNode::Note(d)],
+            trash: Vec::new(),
+        };
+        (document, groups, ids)
+    }
+
+    /// The tree as text, e.g. `A G1[B G2[C]] D`; a collapsed group is
+    /// marked with `-`.
+    fn outline(nodes: &[TreeNode]) -> String {
+        nodes
+            .iter()
+            .map(|node| match node {
+                TreeNode::Note(note) => note.title.clone(),
+                TreeNode::Group(group) => format!(
+                    "{}{}[{}]",
+                    group.title,
+                    if group.expanded { "" } else { "-" },
+                    outline(&group.children)
+                ),
+            })
+            .collect::<Vec<_>>()
+            .join(" ")
+    }
+
+    #[test]
+    fn moves_notes_to_every_kind_of_point() {
+        let (mut document, [outer, inner], [a, b, c]) = move_document();
+        let [a, b, c] = [a, b, c].map(NodeId::Note);
+        assert!(document.move_node(a, InsertionPoint::After(b)));
+        assert_eq!(outline(&document.root), "G1[B A G2-[C]] D");
+        assert!(document.move_node(a, InsertionPoint::Start(outer)));
+        assert_eq!(outline(&document.root), "G1[A B G2-[C]] D");
+        assert!(document.move_node(c, InsertionPoint::End(None)));
+        assert_eq!(outline(&document.root), "G1[A B G2-[]] D C");
+        assert!(document.move_node(b, InsertionPoint::End(Some(inner))));
+        assert_eq!(outline(&document.root), "G1[A G2[B]] D C");
+        assert!(document.move_node(c, InsertionPoint::Before(NodeId::Group(outer))));
+        assert_eq!(outline(&document.root), "C G1[A G2[B]] D");
+    }
+
+    #[test]
+    fn moving_down_in_the_same_list_accounts_for_the_removed_node() {
+        let (mut document, _, [a, ..]) = move_document();
+        let d = document.root[2].id();
+        assert!(document.move_node(NodeId::Note(a), InsertionPoint::After(d)));
+        assert_eq!(outline(&document.root), "G1[B G2-[C]] D A");
+    }
+
+    #[test]
+    fn a_group_moves_with_its_children() {
+        let (mut document, [_, inner], [a, ..]) = move_document();
+        assert!(document.move_node(
+            NodeId::Group(inner),
+            InsertionPoint::Before(NodeId::Note(a))
+        ));
+        assert_eq!(outline(&document.root), "G2-[C] A G1[B] D");
+    }
+
+    #[test]
+    fn checks_impossible_and_unchanged_moves() {
+        let (mut document, [outer, inner], [a, b, c]) = move_document();
+        let outer_node = NodeId::Group(outer);
+        // A group cannot go into itself or one of its descendants (M109).
+        for point in [
+            InsertionPoint::Start(outer),
+            InsertionPoint::End(Some(inner)),
+            InsertionPoint::After(NodeId::Note(b)),
+            InsertionPoint::Before(NodeId::Note(c)),
+        ] {
+            assert_eq!(
+                document.check_move(outer_node, point),
+                MoveCheck::Impossible
+            );
+        }
+        // Next to its own place changes nothing (M110).
+        for point in [
+            InsertionPoint::Before(outer_node),
+            InsertionPoint::After(outer_node),
+            InsertionPoint::After(NodeId::Note(a)),
+            InsertionPoint::Before(document.root[2].id()),
+        ] {
+            assert_eq!(document.check_move(outer_node, point), MoveCheck::Unchanged);
+        }
+        assert_eq!(
+            document.check_move(NodeId::Note(b), InsertionPoint::Start(outer)),
+            MoveCheck::Unchanged
+        );
+        assert_eq!(
+            document.check_move(NodeId::Note(c), InsertionPoint::End(Some(inner))),
+            MoveCheck::Unchanged
+        );
+        let before = document.clone();
+        assert!(!document.move_node(outer_node, InsertionPoint::End(Some(inner))));
+        assert!(!document.move_node(outer_node, InsertionPoint::After(NodeId::Note(a))));
+        assert_eq!(document, before);
+        assert_eq!(
+            document.check_move(
+                NodeId::Note(NoteId::new_unique()),
+                InsertionPoint::End(None)
+            ),
+            MoveCheck::Impossible
+        );
+    }
+
+    #[test]
+    fn insert_before_and_at_the_start() {
+        let (mut document, [outer, _], [_, b, _]) = move_document();
+        let note =
+            |title: &str| TreeNode::Note(Note::new(title.to_owned(), NoteKind::Normal, noon()));
+        document.insert(InsertionPoint::Before(NodeId::Note(b)), note("X"));
+        document.insert(InsertionPoint::Start(outer), note("Y"));
+        document.insert(InsertionPoint::Start(GroupId::new_unique()), note("Z"));
+        assert_eq!(outline(&document.root), "A G1[Y X B G2-[C]] D Z");
     }
 }

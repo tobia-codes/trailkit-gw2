@@ -39,14 +39,25 @@ use crate::{
     i18n::{Language, Text, chip_text, format_local_time, label_with_percent, reset_countdown},
     note_editing::{ActiveFormats, EditSession, FormatCommand, active_formats, format_edit},
     note_tree::{
-        Group, GroupId, InsertionPoint, NodeId, Note, NoteId, NoteKind, NotesDocument,
+        Group, GroupId, InsertionPoint, MoveCheck, NodeId, Note, NoteId, NoteKind, NotesDocument,
         TreeNode as Node,
     },
     reset_schedule::{ResetPeriod, next_reset_of_any_period},
     settings::{Settings, TextScale, UnsavedChanges},
     storage_worker::StorageSaver,
+    tree_drag::{
+        DRAG_THRESHOLD, DropIndicator, DropTarget, EXPAND_DELAY_SECONDS, RowKind, RowRect,
+        resolve_drop,
+    },
     ui_state::UiState,
 };
+
+/// Opacity of the dragged row and its children while dragging (M106).
+const DRAGGED_ROW_ALPHA: f32 = 0.4;
+
+/// Auto-scroll speed while dragging near the list's edge, in rows per
+/// second at the very edge (M111).
+const DRAG_SCROLL_ROWS_PER_SECOND: f32 = 12.0;
 
 /// Minimum content width of each pane in average characters (M40).
 const MINIMUM_PANE_CHARACTERS: f32 = 22.0;
@@ -153,6 +164,9 @@ enum WindowAction {
     FinishEditing,
     /// Leave the editor without saving; asks first if something changed.
     CancelEditing,
+    /// Move a note or group with its children (drag & drop, "Move to",
+    /// M106–M112).
+    Move(NodeId, InsertionPoint),
     /// Change a note's reset period (`None` = normal note, M86).
     SetResetPeriod(NoteId, Option<ResetPeriod>),
     /// Apply a formatting button to the editor (M53).
@@ -272,6 +286,26 @@ struct RenameState {
     focused: bool,
 }
 
+/// A press on a note list row that may become a drag (M106).
+#[derive(Debug)]
+struct TreeDrag {
+    /// The pressed note or group.
+    node: NodeId,
+    /// Mouse position of the press.
+    pressed_at: [f32; 2],
+    /// Whether the mouse moved far enough to drag; until then a release
+    /// selects the row.
+    is_dragging: bool,
+    /// Where a drop would go in this frame, if the mouse is over the list.
+    target: Option<DropTarget>,
+    /// Whether the move to `target` is possible, changes nothing or changes
+    /// the tree.
+    check: MoveCheck,
+    /// The collapsed group hovered in its middle and since when (ImGui
+    /// time); it expands after [`EXPAND_DELAY_SECONDS`] (M108).
+    collapsed_hover: Option<(GroupId, f64)>,
+}
+
 /// The parsed markdown of the shown note, re-parsed only when it changes.
 #[derive(Debug)]
 struct ParsedNote {
@@ -340,12 +374,24 @@ pub struct MemoWindow {
     /// When reset notes must be checked next (M90); `None` checks at once,
     /// e.g. after an action that may have unblocked a waiting reset (M89).
     next_reset_check: Option<Timestamp>,
+    /// A press on a list row, possibly a drag (M106).
+    drag: Option<TreeDrag>,
+    /// Rectangles of the list rows drawn in this frame; reused every frame.
+    tree_rows: Vec<RowRect>,
 }
 
 /// Everything the tree drawing functions need besides the nodes.
 struct TreeContext<'state> {
+    /// The whole tree ("Move to" lists its groups, M112).
+    document: &'state NotesDocument,
     /// The selected note or group.
     selected: Option<NodeId>,
+    /// The note or group being dragged; it is drawn faded (M106).
+    dragged: Option<NodeId>,
+    /// The row pressed with the left button in this frame.
+    pressed: Option<NodeId>,
+    /// Collects the rectangle of every drawn row.
+    rows: &'state mut Vec<RowRect>,
     /// Inline rename in progress.
     rename: &'state mut Option<RenameState>,
     /// Collected actions.
@@ -407,6 +453,8 @@ impl MemoWindow {
             draft_hint: None,
             dialog_height: None,
             next_reset_check: None,
+            drag: None,
+            tree_rows: Vec::new(),
         }
     }
 
@@ -478,6 +526,11 @@ impl MemoWindow {
     /// changes dialog opens and [`Self::take_close_approval`] reports the
     /// answer later (M54).
     pub fn request_close(&mut self) -> bool {
+        // Escape while dragging cancels the drag (trailkit-ui skill §4).
+        if self.drag.as_ref().is_some_and(|drag| drag.is_dragging) {
+            self.drag = None;
+            return false;
+        }
         // Escape (sent by Nexus as a close request) while the dialog is shown
         // picks the harmless answer (`overlay-dialog-layout`).
         if self.leave_prompt.is_some() {
@@ -575,6 +628,7 @@ impl MemoWindow {
             }
         }
 
+        self.finish_drag(ui, theme);
         let actions = std::mem::take(&mut self.actions);
         for action in &actions {
             self.apply(action, language);
@@ -787,15 +841,36 @@ impl MemoWindow {
     /// menu button (drawer only, so it closes where it opened).
     fn draw_tree_pane(&mut self, ui: &Ui, language: Language, theme: &Theme, menu: Option<Text>) {
         draw_toolbar(ui, language, theme, menu, &mut self.actions);
+        self.tree_rows.clear();
+        let style = ui.clone_style();
         let mut context = TreeContext {
+            document: &self.document,
             selected: self.ui_state.selected,
+            dragged: self
+                .drag
+                .as_ref()
+                .filter(|drag| drag.is_dragging)
+                .map(|drag| drag.node),
+            pressed: None,
+            rows: &mut self.tree_rows,
             rename: &mut self.rename,
             actions: &mut self.actions,
             language,
             theme,
-            frame_padding: ui.clone_style().frame_padding,
+            frame_padding: style.frame_padding,
         };
         draw_nodes(ui, &self.document.root, &mut context);
+        if let Some(node) = context.pressed {
+            self.drag = Some(TreeDrag {
+                node,
+                pressed_at: ui.io().mouse_pos,
+                is_dragging: false,
+                target: None,
+                check: MoveCheck::Unchanged,
+                collapsed_hover: None,
+            });
+        }
+        self.track_drag(ui, theme, style.indent_spacing);
         // Right-click on an empty spot of the list (M96): create at the end
         // of the root level.
         if ui.is_window_hovered()
@@ -807,6 +882,103 @@ impl MemoWindow {
         let actions = &mut self.actions;
         ui.popup("list_context", || {
             draw_create_menu_items(ui, language, InsertionPoint::End(None), actions);
+        });
+    }
+
+    /// Follows a drag over the note list (M106–M111): starts it once the
+    /// mouse moved [`DRAG_THRESHOLD`], finds the drop target, draws the drop
+    /// line or group highlight, expands a collapsed group after a rest and
+    /// scrolls near the list's edges. Runs inside the list's window after
+    /// its rows; `indent` is the width of one tree level.
+    fn track_drag(&mut self, ui: &Ui, theme: &Theme, indent: f32) {
+        let Some(drag) = &mut self.drag else {
+            return;
+        };
+        let mouse = ui.io().mouse_pos;
+        if !drag.is_dragging {
+            let moved = [mouse[0] - drag.pressed_at[0], mouse[1] - drag.pressed_at[1]];
+            if !ui.is_mouse_down(MouseButton::Left) || moved[0].hypot(moved[1]) < DRAG_THRESHOLD {
+                return;
+            }
+            drag.is_dragging = true;
+        }
+        // The pressed row stays the active item while dragging.
+        let is_over_list =
+            ui.is_window_hovered_with_flags(WindowHoveredFlags::ALLOW_WHEN_BLOCKED_BY_ACTIVE_ITEM);
+        drag.target = is_over_list
+            .then(|| resolve_drop(&self.tree_rows, mouse[1], indent))
+            .flatten();
+        drag.check = drag.target.map_or(MoveCheck::Unchanged, |target| {
+            self.document.check_move(drag.node, target.point)
+        });
+        if !is_over_list {
+            drag.collapsed_hover = None;
+            return;
+        }
+
+        // A collapsed group expands after the drag rested on it (M108).
+        let collapsed_group = drag
+            .target
+            .and_then(|target| target.collapsed_group)
+            .filter(|_| drag.check != MoveCheck::Impossible);
+        drag.collapsed_hover = match (collapsed_group, drag.collapsed_hover) {
+            (Some(group), Some((hovered, since))) if hovered == group => {
+                if ui.time() - since >= EXPAND_DELAY_SECONDS {
+                    self.actions.push(WindowAction::SetExpanded(group, true));
+                }
+                Some((hovered, since))
+            }
+            (Some(group), _) => Some((group, ui.time())),
+            (None, _) => None,
+        };
+
+        if drag.check == MoveCheck::Changes
+            && let Some(target) = drag.target
+        {
+            draw_drop_indicator(ui, theme, target.indicator);
+        }
+        scroll_near_edges(ui, theme);
+    }
+
+    /// Ends a press or drag on the note list when the left button is
+    /// released: a press without drag selects the row, a drag moves the
+    /// node to its drop target (M106–M111). While dragging, the title floats
+    /// next to the cursor, with a ban icon over an impossible target (M109).
+    fn finish_drag(&mut self, ui: &Ui, theme: &Theme) {
+        let Some(drag) = &mut self.drag else {
+            return;
+        };
+        if !ui.is_mouse_down(MouseButton::Left) {
+            if !drag.is_dragging {
+                self.actions.push(WindowAction::Select(drag.node));
+            } else if drag.check == MoveCheck::Changes
+                && let Some(target) = drag.target
+            {
+                self.actions
+                    .push(WindowAction::Move(drag.node, target.point));
+            }
+            self.drag = None;
+            return;
+        }
+        if !drag.is_dragging {
+            return;
+        }
+        let title = find_title(&self.document.root, drag.node).unwrap_or_default();
+        let is_impossible = drag.target.is_some() && drag.check == MoveCheck::Impossible;
+        // The list may not be drawn next frame (drawer closed); its target
+        // is only valid for this one.
+        drag.target = None;
+        drag.check = MoveCheck::Unchanged;
+        ui.tooltip(|| {
+            let _danger = is_impossible
+                .then(|| ui.push_style_color(StyleColor::Text, theme.status.danger.to_array()));
+            if is_impossible {
+                let _icons = FontScope::push(ui, FontRole::Icons);
+                let mut buffer = [0; 4];
+                ui.text(Icon::BAN.as_str(&mut buffer));
+                ui.same_line_with_spacing(0.0, theme.spacing.small);
+            }
+            ui.text(title);
         });
     }
 
@@ -1109,6 +1281,11 @@ impl MemoWindow {
                     && group.expanded != *expanded
                 {
                     group.expanded = *expanded;
+                    self.save_notes();
+                }
+            }
+            WindowAction::Move(node, point) => {
+                if self.document.move_node(*node, *point) {
                     self.save_notes();
                 }
             }
@@ -1741,6 +1918,9 @@ fn draw_toolbar(
 /// Draws `nodes` and, recursively, the children of expanded groups.
 fn draw_nodes(ui: &Ui, nodes: &[Node], context: &mut TreeContext<'_>) {
     for node in nodes {
+        // The dragged row and its children are faded (M106).
+        let _faded = (context.dragged == Some(node.id()))
+            .then(|| ui.push_style_var(StyleVar::Alpha(DRAGGED_ROW_ALPHA)));
         match node {
             Node::Group(group) => draw_group(ui, group, context),
             Node::Note(note) => draw_note_row(ui, note, context),
@@ -1785,6 +1965,12 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut TreeContext<'_>) {
             .push(ui);
         (label, token)
     };
+    let kind = if group.expanded {
+        RowKind::ExpandedGroup(group.id)
+    } else {
+        RowKind::CollapsedGroup(group.id)
+    };
+    record_row(ui, node, kind, context);
     ui.get_window_draw_list().add_text(
         [count_x, row_start[1] + context.frame_padding[1]],
         context.theme.text.secondary.to_array(),
@@ -1842,6 +2028,7 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut TreeContext<'_>) {
         .flags(flags)
         .push(ui);
     let row_start = ui.item_rect_min();
+    record_row(ui, node, RowKind::Note, context);
     // Ask the tree node itself: it spans the whole row, and once a click
     // makes it the active item, `is_window_hovered` would report false.
     let is_row_hovered = ui.is_item_hovered();
@@ -1901,7 +2088,9 @@ fn handle_hovered_row(
     if ui.is_mouse_double_clicked(MouseButton::Left) {
         context.actions.push(WindowAction::StartRename(node));
     } else if ui.is_mouse_clicked(MouseButton::Left) && !ui.is_item_toggled_open() {
-        context.actions.push(WindowAction::Select(node));
+        // Selects on release unless it becomes a drag (M106), so dragging a
+        // note keeps the drawer open (M113).
+        context.pressed = Some(node);
     }
     if ui.is_mouse_clicked(MouseButton::Right) {
         context.actions.push(WindowAction::Select(node));
@@ -1930,6 +2119,9 @@ fn draw_context_menu(ui: &Ui, node: NodeId, kind: Option<NoteKind>, context: &mu
                 }
             }
         }
+        if let Some(_submenu) = begin_submenu(ui, theme, Text::MoveTo.get(language)) {
+            draw_move_targets(ui, node, context);
+        }
         // Only groups offer creating, into themselves (M96, M97).
         if let NodeId::Group(group) = node {
             ui.separator();
@@ -1941,6 +2133,110 @@ fn draw_context_menu(ui: &Ui, node: NodeId, kind: Option<NoteKind>, context: &mu
             );
         }
     });
+}
+
+/// Draws the "Move to" submenu items (M112): "Top level" and every group as
+/// an indented flat list; the current place is checked, the moved group
+/// and its descendants are left out. A choice moves to the end.
+fn draw_move_targets(ui: &Ui, node: NodeId, context: &mut TreeContext<'_>) {
+    let (theme, language) = (context.theme, context.language);
+    let current = context.document.parent(node).flatten();
+    if draw_menu_item(ui, theme, Text::TopLevel.get(language), current.is_none())
+        && current.is_some()
+    {
+        context
+            .actions
+            .push(WindowAction::Move(node, InsertionPoint::End(None)));
+    }
+    draw_move_target_groups(ui, &context.document.root, node, current, context);
+}
+
+/// Draws one "Move to" item per group in `nodes`, nested groups indented
+/// below their parent (M112); skips the moved group `node` with its
+/// descendants. `current` is the moved node's parent.
+fn draw_move_target_groups(
+    ui: &Ui,
+    nodes: &[Node],
+    node: NodeId,
+    current: Option<GroupId>,
+    context: &mut TreeContext<'_>,
+) {
+    let indent = context.theme.list.indent;
+    for child in nodes {
+        let Node::Group(group) = child else {
+            continue;
+        };
+        if NodeId::Group(group.id) == node {
+            continue;
+        }
+        let _id = ui.push_id(group.id.imgui_id());
+        ui.indent_by(indent);
+        let is_current = current == Some(group.id);
+        if draw_menu_item(ui, context.theme, &group.title, is_current) && !is_current {
+            context.actions.push(WindowAction::Move(
+                node,
+                InsertionPoint::End(Some(group.id)),
+            ));
+        }
+        draw_move_target_groups(ui, &group.children, node, current, context);
+        ui.unindent_by(indent);
+    }
+}
+
+/// Records the rectangle of the row just drawn (the tree node item) for the
+/// drop zones (M107).
+fn record_row(ui: &Ui, node: NodeId, kind: RowKind, context: &mut TreeContext<'_>) {
+    let [min, max] = [ui.item_rect_min(), ui.item_rect_max()];
+    context.rows.push(RowRect {
+        node,
+        kind,
+        left: min[0],
+        right: max[0],
+        top: min[1],
+        bottom: max[1],
+    });
+}
+
+/// Draws the drop line between rows or the highlight of a collapsed group
+/// (trailkit-ui skill §4) into the list's window.
+fn draw_drop_indicator(ui: &Ui, theme: &Theme, indicator: DropIndicator) {
+    let draw_list = ui.get_window_draw_list();
+    let color = theme.accent.base.to_array();
+    let thickness = 2.0 * theme.border.width;
+    match indicator {
+        DropIndicator::Line { y, left, right } => {
+            draw_list
+                .add_line([left, y], [right, y], color)
+                .thickness(thickness)
+                .build();
+        }
+        DropIndicator::Highlight { min, max } => {
+            draw_list
+                .add_rect(min, max, color)
+                .rounding(theme.radius)
+                .thickness(thickness)
+                .build();
+        }
+    }
+}
+
+/// Scrolls the current window while the mouse is within one row height of
+/// its top or bottom edge, faster closer to the edge (M111).
+fn scroll_near_edges(ui: &Ui, theme: &Theme) {
+    let band =
+        ui.text_line_height() + 2.0 * ui.clone_style().frame_padding[1] + theme.list.item_spacing;
+    let top = ui.window_pos()[1];
+    let bottom = top + ui.window_size()[1];
+    let mouse_y = ui.io().mouse_pos[1];
+    let depth = if mouse_y < top + band {
+        -(top + band - mouse_y) / band
+    } else if mouse_y > bottom - band {
+        (mouse_y - (bottom - band)) / band
+    } else {
+        return;
+    };
+    let step = depth.clamp(-1.0, 1.0) * DRAG_SCROLL_ROWS_PER_SECOND * band * ui.io().delta_time;
+    ui.set_scroll_y((ui.scroll_y() + step).clamp(0.0, ui.scroll_max_y()));
 }
 
 /// Draws "New note" and "New group" menu items that create at `point`

@@ -80,8 +80,10 @@ impl Icon {
     pub const CHECK: Self = Self('\u{e06c}');
     /// `chevron-right`: a menu entry that opens a submenu (memo M99).
     pub const CHEVRON_RIGHT: Self = Self('\u{e06f}');
+    /// `ban`: a drag over a place it cannot be dropped (memo M109).
+    pub const BAN: Self = Self('\u{e051}');
     /// Every icon above; keep in sync when adding one.
-    pub const ALL: [Self; 34] = [
+    pub const ALL: [Self; 35] = [
         Self::FILE_PLUS,
         Self::FOLDER_PLUS,
         Self::PANEL_LEFT_CLOSE,
@@ -116,6 +118,7 @@ impl Icon {
         Self::CHEVRON_DOWN,
         Self::CHECK,
         Self::CHEVRON_RIGHT,
+        Self::BAN,
     ];
 
     /// The glyph as a character of the icon font.

@@ -16,6 +16,7 @@ pub mod note_tree;
 pub mod reset_schedule;
 pub mod settings;
 pub mod storage_worker;
+pub mod tree_drag;
 pub mod ui_state;
 
 #[cfg(windows)]

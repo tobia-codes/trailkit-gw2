@@ -18,6 +18,8 @@ Das Fenster zeigt links die Notizliste und rechts die ausgewählte Notiz. Ziehe 
 - **Neue Notiz / neue Gruppe:** die beiden Buttons über der Liste. Der neue Eintrag landet in der ausgewählten Gruppe (bzw. der Gruppe der ausgewählten Notiz), ganz am Ende. Tippe gleich einen Namen ein und drücke Enter.
 - **Rechtsklick** auf eine Gruppe oder eine leere Stelle der Liste bietet dasselbe: auf einer Gruppe kommt der neue Eintrag in sie hinein, auf einer leeren Stelle ans Ende der Liste.
 - **Umbenennen:** Doppelklick auf einen Eintrag oder Rechtsklick › *Umbenennen*. Enter oder ein Klick daneben übernimmt den Namen, Escape bricht ab.
+- **Sortieren:** Ziehe eine Notiz oder Gruppe an eine neue Stelle. Eine Linie zeigt, wo sie landet; auf der unteren Hälfte einer offenen Gruppe wird sie deren erster Eintrag, unter dem letzten Eintrag kommt sie ans Ende der Liste. Auf der Mitte einer geschlossenen Gruppe landet sie an deren Ende; bleibst du kurz darauf, öffnet sich die Gruppe. Ein rotes Verbotszeichen heißt: Dort geht es nicht hin (eine Gruppe kann nicht in sich selbst). Am oberen oder unteren Rand scrollt die Liste. Escape bricht ab.
+- **Verschieben nach:** Rechtsklick › *Verschieben nach* › *Oberste Ebene* oder eine Gruppe verschiebt den Eintrag an deren Ende, ohne zu ziehen.
 - **Gruppen** haben fett gedruckte Namen und zeigen rechts, wie viele Notizen sie enthalten.
 - **Abzeichen** am rechten Ende einer Zeile: **T** kennzeichnet eine tägliche Notiz (Reset um 00:00 UTC), **W** eine wöchentliche (Reset montags um 07:30 UTC). Fahre mit der Maus darüber, um zu sehen, wie lange es bis zum nächsten Reset dauert.
 

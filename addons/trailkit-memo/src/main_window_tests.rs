@@ -466,3 +466,100 @@ fn reset_type_submenu_opens_beside_the_context_menu() {
         &image,
     );
 }
+
+/// Presses the left button at `from`, drags to `to` in a few frames and
+/// returns the image of the last frame while the button is still down.
+fn drag_rows(
+    harness: &mut UiHarness,
+    from: [f32; 2],
+    to: [f32; 2],
+    draw: &mut impl FnMut(&Ui),
+) -> trailkit_ui_testing::raster::Image {
+    let input = |position: [f32; 2], down: bool| FrameInput {
+        mouse_position: position,
+        left_button_down: down,
+        ..FrameInput::default()
+    };
+    harness.settle(2, &input(from, false), &mut *draw);
+    harness.frame(&input(from, true), &mut *draw);
+    for step in 1..=4_u8 {
+        let fraction = f32::from(step) / 4.0;
+        let position = [
+            from[0] + (to[0] - from[0]) * fraction,
+            from[1] + (to[1] - from[1]) * fraction,
+        ];
+        harness.frame(&input(position, true), &mut *draw);
+    }
+    harness.settle(3, &input(to, true), &mut *draw)
+}
+
+/// The titles on the root level and in the first group, e.g.
+/// `Shopping list, Dailies, Raids[Weekly clears]`.
+fn outline(memo: &MemoWindow) -> String {
+    memo.document
+        .root
+        .iter()
+        .map(|node| match node {
+            Node::Note(note) => note.title.clone(),
+            Node::Group(group) => format!(
+                "{}[{}]",
+                group.title,
+                group
+                    .children
+                    .iter()
+                    .map(|child| child.title().to_owned())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+#[test]
+fn dragging_a_note_into_an_expanded_group_moves_it_to_the_line() {
+    let document = sample_document();
+    let ui_state = selected_first(&document);
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    let size = [640.0, 360.0];
+    let mut harness = UiHarness::new(size);
+    {
+        let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
+        // Lower half of the expanded "Raids" row = first place inside (M107).
+        let image = drag_rows(&mut harness, [100.0, 97.0], [100.0, 168.0], &mut draw_dark);
+        assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-drag-into-group", &image);
+        let release = FrameInput {
+            mouse_position: [100.0, 168.0],
+            ..FrameInput::default()
+        };
+        harness.settle(2, &release, &mut draw_dark);
+    }
+    assert_eq!(
+        outline(&memo),
+        "Dailies, Raids[Shopping list, Weekly clears]"
+    );
+}
+
+#[test]
+fn a_group_cannot_be_dropped_into_itself() {
+    let document = sample_document();
+    let ui_state = selected_first(&document);
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    let size = [640.0, 360.0];
+    let mut harness = UiHarness::new(size);
+    {
+        let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
+        // "Raids" over its own child: ban icon, no line (M109).
+        let image = drag_rows(&mut harness, [100.0, 161.0], [100.0, 196.0], &mut draw_dark);
+        assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-drag-impossible", &image);
+        let release = FrameInput {
+            mouse_position: [100.0, 196.0],
+            ..FrameInput::default()
+        };
+        harness.settle(2, &release, &mut draw_dark);
+    }
+    assert_eq!(
+        outline(&memo),
+        "Shopping list, Dailies, Raids[Weekly clears]"
+    );
+}

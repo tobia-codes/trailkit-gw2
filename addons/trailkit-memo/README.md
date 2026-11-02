@@ -3,10 +3,10 @@
 Notes addon for Guild Wars 2, loaded by [Raidcore Nexus](https://raidcore.gg/Nexus).
 Plan: [`docs/plans/addons/trailkit-memo.md`](../../docs/plans/addons/trailkit-memo.md).
 
-> **Status:** phase 1, step 4 — note list (tree), rendered note view, own
-> editor with preview and chat-link chips, daily/weekly reset notes (kind
-> dropdown, countdown, automatic unticking). Drag & drop follows next
-> (memo plan M28).
+> **Status:** phase 1, step 5 — note list (tree) with drag & drop and
+> "Move to", rendered note view, own editor with preview and chat-link
+> chips, daily/weekly reset notes (kind dropdown, countdown, automatic
+> unticking). Search follows next (memo plan M28).
 
 ## Build
 
