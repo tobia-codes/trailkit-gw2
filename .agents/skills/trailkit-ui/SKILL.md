@@ -89,6 +89,9 @@ Build once, use everywhere. Planned:
   coin dots; `!` warning chip for broken codes). The addon supplies the texts
   through `ChipContext` (trailkit-ui has no strings). Used by the markdown
   view and the editor, where a chip is one atomic unit (memo M75)
+- Dropdown (select box) — **exists**: `dropdown::draw_dropdown` (themed
+  field with chevron, popup list, check mark on the chosen option; fixed
+  width of the widest option; memo M87). Never ImGui's plain combo
 - `Pane` and inset separator — **exist**: `pane::draw_pane`,
   `separator::draw_separator`; every sub-region of a window and every
   separator uses them (`lay-pane-padding`, decided 2026-11-01)

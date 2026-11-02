@@ -177,6 +177,28 @@ pub fn toggle_task(source: &str, marker: TaskMarker) -> Option<String> {
     Some(toggled)
 }
 
+/// Returns `source` with every checked task checkbox (`[x]`/`[X]`, nested
+/// ones included) unchecked, or `None` if nothing was checked (memo plan
+/// M88). Only real task markers change; `[x]` elsewhere, e.g. in code, stays.
+#[must_use]
+pub fn uncheck_all_tasks(source: &str) -> Option<String> {
+    let offsets: Vec<usize> = Parser::new_ext(source, Options::ENABLE_TASKLISTS)
+        .into_offset_iter()
+        .filter_map(|(event, range)| (event == Event::TaskListMarker(true)).then_some(range.start))
+        .collect();
+    if offsets.is_empty() {
+        return None;
+    }
+    let mut unchecked = source.to_owned();
+    for offset in offsets {
+        // The marker spans `[x]`; the state character follows the bracket.
+        if unchecked.as_bytes().get(offset) == Some(&b'[') {
+            unchecked.replace_range(offset + 1..offset + 2, " ");
+        }
+    }
+    Some(unchecked)
+}
+
 /// Whether `url` may be opened in the browser (M37: `http(s)` only).
 #[must_use]
 pub fn is_web_link(url: &str) -> bool {
@@ -528,6 +550,16 @@ mod tests {
         assert_eq!(once.as_deref(), Some("- [x] daily fractals\n- [x] wvw\n"));
         let twice = toggle_task(source, tasks[1].1);
         assert_eq!(twice.as_deref(), Some("- [ ] daily fractals\n- [ ] wvw\n"));
+    }
+
+    #[test]
+    fn uncheck_all_tasks_resets_nested_tasks_only() {
+        let source = "- [x] a\n  - [X] nested\n- [ ] b\n\n`[x]` code\n";
+        assert_eq!(
+            uncheck_all_tasks(source).as_deref(),
+            Some("- [ ] a\n  - [ ] nested\n- [ ] b\n\n`[x]` code\n")
+        );
+        assert_eq!(uncheck_all_tasks("- [ ] open\ntext [x]\n"), None);
     }
 
     #[test]
