@@ -23,7 +23,7 @@ use trailkit_ui::{
     editor::view::TextEditor,
     font_registry::FontScope,
     fonts::FontRole,
-    glyph_metrics::capital_middle,
+    glyph_metrics::{capital_middle, glyph_ink_box},
     icons::Icon,
     markdown::{self, MarkdownDocument},
     markdown_view::{MarkdownAction, draw_markdown, open_web_link},
@@ -2122,37 +2122,54 @@ fn draw_badge(ui: &Ui, kind: NoteKind, anchor: [f32; 2], context: &TreeContext<'
     };
     let line_height = ui.text_line_height();
     let padding = theme.spacing.extra_small;
-    let width = ui.calc_text_size("W")[0] + 2.0 * padding;
+    // Whole pixels, so the outline stays sharp and the letter can be
+    // centered exactly.
+    let width = (ui.calc_text_size("W")[0] + 2.0 * padding).round();
     let start = [
-        anchor[0] - width,
-        anchor[1] + ((ui.frame_height() - line_height) / 2.0).max(0.0),
+        (anchor[0] - width).round(),
+        (anchor[1] + ((ui.frame_height() - line_height) / 2.0).max(0.0)).round(),
     ];
+    let height = line_height.round();
     let letter = letter.get(language);
     let color = kind
         .period()
-        .map_or(theme.accent.base, |period| reset_color(theme, period))
-        .to_array();
-    // Lucide style (`lay-icons`): outline only, round corners, stroke ≈ 2/24 of the size.
+        .map_or(theme.accent.base, |period| reset_color(theme, period));
+    // Lucide style (`lay-icons`): round corners, stroke ≈ 2/24 of the size;
+    // a faint fill of the kind color makes it readable on dark panes (M105).
     let stroke = (line_height / 12.0).max(1.0);
-    let max = [start[0] + width, start[1] + line_height];
+    let max = [start[0] + width, start[1] + height];
     let draw_list = ui.get_window_draw_list();
     draw_list
-        .add_rect(start, max, color)
+        .add_rect(start, max, color.with_alpha(0.16).to_array())
+        .rounding(line_height * 0.25)
+        .filled(true)
+        .build();
+    draw_list
+        .add_rect(start, max, color.to_array())
         .rounding(line_height * 0.25)
         .thickness(stroke)
         .build();
-    let letter_size = ui.calc_text_size(letter);
-    // Center by the capital letter, not the line box: Open Sans sits low in
-    // it (M85).
-    let middle = capital_middle().unwrap_or(letter_size[1] / 2.0);
-    draw_list.add_text(
-        [
-            start[0] + (width - letter_size[0]) / 2.0,
-            (start[1] + line_height / 2.0 - middle).round(),
-        ],
-        color,
-        letter,
-    );
+    // A bold letter, centered by its own ink box, not by its advance width
+    // or the line box (Open Sans sits low in it, M85, M105).
+    {
+        let _bold = FontScope::push(ui, FontRole::BodyBold);
+        let letter_size = ui.calc_text_size(letter);
+        let ink = letter.chars().next().and_then(glyph_ink_box).unwrap_or([
+            0.0,
+            0.0,
+            letter_size[0],
+            letter_size[1],
+        ]);
+        let center = [start[0] + width / 2.0, start[1] + height / 2.0];
+        draw_list.add_text(
+            [
+                (center[0] - (ink[0] + ink[2]) / 2.0).round(),
+                (center[1] - (ink[1] + ink[3]) / 2.0).round(),
+            ],
+            color.to_array(),
+            letter,
+        );
+    }
     if ui.is_mouse_hovering_rect(start, max) {
         // The same kind and countdown as the note toolbar (M95), formatted
         // only while hovered.
