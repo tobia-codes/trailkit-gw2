@@ -409,3 +409,57 @@ fn kind_dropdown_lists_the_kinds_and_changes_the_note() {
     let kind = memo.document.note(note).map(|note| note.kind.period());
     assert_eq!(kind, Some(Some(ResetPeriod::Daily)));
 }
+
+#[test]
+fn right_click_on_an_empty_list_spot_creates_a_root_note() {
+    let document = sample_document();
+    let root_count = document.root.len();
+    let ui_state = selected_first(&document);
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    let size = [640.0, 360.0];
+    let mut harness = UiHarness::new(size);
+    let empty_spot = [100.0, 300.0];
+    let input = |position: [f32; 2], left: bool, right: bool| FrameInput {
+        mouse_position: position,
+        left_button_down: left,
+        right_button_down: right,
+        ..FrameInput::default()
+    };
+    let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
+    harness.settle(2, &input(empty_spot, false, false), &mut draw_dark);
+    harness.frame(&input(empty_spot, false, true), &mut draw_dark);
+    let image = harness.settle(2, &input(empty_spot, false, false), &mut draw_dark);
+    assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-list-context-menu", &image);
+    let new_note_item = [empty_spot[0] + 30.0, empty_spot[1] + 14.0];
+    harness.frame(&input(new_note_item, false, false), &mut draw_dark);
+    harness.frame(&input(new_note_item, true, false), &mut draw_dark);
+    harness.settle(2, &input(new_note_item, false, false), &mut draw_dark);
+    assert_eq!(memo.document.root.len(), root_count + 1);
+    assert!(matches!(memo.document.root.last(), Some(Node::Note(_))));
+}
+
+#[test]
+fn reset_type_submenu_opens_beside_the_context_menu() {
+    let document = sample_document();
+    let ui_state = selected_first(&document);
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    let size = [640.0, 360.0];
+    let mut harness = UiHarness::new(size);
+    let row = [100.0, 97.0];
+    let input = |position: [f32; 2], right: bool| FrameInput {
+        mouse_position: position,
+        right_button_down: right,
+        ..FrameInput::default()
+    };
+    let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
+    harness.settle(2, &input(row, false), &mut draw_dark);
+    harness.frame(&input(row, true), &mut draw_dark);
+    harness.frame(&input(row, false), &mut draw_dark);
+    let reset_type_item = [row[0] + 30.0, row[1] + 38.0];
+    let image = harness.settle(6, &input(reset_type_item, false), &mut draw_dark);
+    assert_snapshot(
+        env!("CARGO_MANIFEST_DIR"),
+        "memo-reset-type-submenu",
+        &image,
+    );
+}

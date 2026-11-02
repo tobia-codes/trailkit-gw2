@@ -136,27 +136,44 @@ pub fn draw_dropdown(
 }
 
 /// The width of one icon glyph at the current font size.
-fn icon_width(ui: &Ui) -> f32 {
+pub(crate) fn icon_width(ui: &Ui) -> f32 {
     let _icons = FontScope::push(ui, FontRole::Icons);
     let mut buffer = [0; 4];
     ui.calc_text_size(Icon::CHEVRON_DOWN.as_str(&mut buffer))[0]
 }
 
 /// Draws `icon` at `x`, centered between `top` and `bottom` by its line box
-/// (Lucide glyphs fill the whole line box, memo plan M85).
-fn draw_icon(ui: &Ui, icon: Icon, x: f32, [top, bottom]: [f32; 2], color: u32) {
+/// (Lucide glyphs fill the whole line box, memo plan M85), into the current
+/// window's draw list.
+fn draw_icon(ui: &Ui, icon: Icon, x: f32, vertical_span: [f32; 2], color: u32) {
+    // SAFETY: called on the render thread inside a frame, so the current
+    // window's draw list is valid.
+    let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
+    draw_icon_into(draw_list, ui, icon, x, vertical_span, color);
+}
+
+/// Like [`draw_icon`], into `draw_list` (e.g. a parent menu's list while a
+/// submenu window is current).
+pub(crate) fn draw_icon_into(
+    draw_list: *mut nexus::imgui::sys::ImDrawList,
+    ui: &Ui,
+    icon: Icon,
+    x: f32,
+    [top, bottom]: [f32; 2],
+    color: u32,
+) {
     let _icons = FontScope::push(ui, FontRole::Icons);
     let mut buffer = [0; 4];
     let glyph = icon.as_str(&mut buffer);
     let height = ui.text_line_height();
     let y = ((top + bottom - height) / 2.0).round();
     let begin = glyph.as_ptr().cast::<std::ffi::c_char>();
-    // SAFETY: called on the render thread inside a frame, so the current
-    // window's draw list is valid; `begin..begin + len` is the UTF-8 glyph,
-    // which ImGui only reads.
+    // SAFETY: called on the render thread inside a frame with a draw list
+    // of this frame; `begin..begin + len` is the UTF-8 glyph, which ImGui
+    // only reads.
     unsafe {
         nexus::imgui::sys::ImDrawList_AddText_Vec2(
-            nexus::imgui::sys::igGetWindowDrawList(),
+            draw_list,
             nexus::imgui::sys::ImVec2 { x, y },
             color,
             begin,
@@ -189,6 +206,6 @@ fn draw_border(min: [f32; 2], max: [f32; 2], color: Color, thickness: f32) {
 }
 
 /// `color` as packed `ImColor32` bits for raw draw list calls.
-fn packed(color: Color) -> u32 {
+pub(crate) fn packed(color: Color) -> u32 {
     ImColor32::from(color.to_array()).to_bits()
 }

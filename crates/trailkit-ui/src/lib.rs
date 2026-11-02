@@ -39,6 +39,8 @@ pub mod glyph_metrics;
 #[cfg(windows)]
 pub mod markdown_view;
 #[cfg(windows)]
+pub mod menu;
+#[cfg(windows)]
 pub mod pane;
 #[cfg(windows)]
 pub mod separator;

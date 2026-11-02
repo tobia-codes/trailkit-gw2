@@ -63,6 +63,8 @@ pub struct FrameInput {
     pub mouse_position: [f32; 2],
     /// Whether the left mouse button is held.
     pub left_button_down: bool,
+    /// Whether the right mouse button is held (context menus).
+    pub right_button_down: bool,
     /// Characters typed in this frame.
     pub characters: String,
     /// Virtual-key codes pressed in this frame (e.g. `0x08` Backspace).
@@ -151,6 +153,7 @@ impl UiHarness {
             }
             io.mouse_pos = input.mouse_position;
             io.mouse_down[0] = input.left_button_down;
+            io.mouse_down[1] = input.right_button_down;
             io.key_ctrl = input.control;
             io.key_shift = input.shift;
             io.mouse_wheel = input.mouse_wheel;

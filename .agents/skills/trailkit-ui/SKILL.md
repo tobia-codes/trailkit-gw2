@@ -92,6 +92,9 @@ Build once, use everywhere. Planned:
 - Dropdown (select box) — **exists**: `dropdown::draw_dropdown` (themed
   field with chevron, popup list, check mark on the chosen option; fixed
   width of the widest option; memo M87). Never ImGui's plain combo
+- Menu entries — **exist**: `menu::draw_menu_item` (check mark = Lucide
+  `check` in accent) and `menu::begin_submenu` (Lucide `chevron-right`,
+  flush beside the parent); never ImGui's own check mark/arrow (memo M99)
 - `Pane` and inset separator — **exist**: `pane::draw_pane`,
   `separator::draw_separator`; every sub-region of a window and every
   separator uses them (`lay-pane-padding`, decided 2026-11-01)
