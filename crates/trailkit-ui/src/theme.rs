@@ -281,8 +281,8 @@ impl Theme {
         border: BorderTokens {
             color: Color::from_rgb_hex(0x3A3F47),
             focus: Color::from_rgb_hex(0xD9A441),
-            // About 12 % white over the dark surfaces.
-            subtle: Color::from_rgb_hex(0xFFFFFF).with_alpha(0.12),
+            // About 6 % white over the dark surfaces.
+            subtle: Color::from_rgb_hex(0xFFFFFF).with_alpha(0.06),
             width: 1.0,
         },
         coin: CoinColors {
