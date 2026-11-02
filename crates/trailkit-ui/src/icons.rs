@@ -27,8 +27,10 @@ impl Icon {
     pub const FOLDER_OPEN: Self = Self('\u{e247}');
     /// `pencil`: start editing.
     pub const PENCIL: Self = Self('\u{e1f9}');
-    /// `heading`: format as heading.
-    pub const HEADING: Self = Self('\u{e384}');
+    /// `heading-1`: format as heading level 1 (memo M100).
+    pub const HEADING_1: Self = Self('\u{e385}');
+    /// `heading-2`: format as heading level 2 (memo M100).
+    pub const HEADING_2: Self = Self('\u{e386}');
     /// `bold`: format as bold.
     pub const BOLD: Self = Self('\u{e05d}');
     /// `italic`: format as italic.
@@ -77,7 +79,7 @@ impl Icon {
     /// `chevron-right`: a menu entry that opens a submenu (memo M99).
     pub const CHEVRON_RIGHT: Self = Self('\u{e06f}');
     /// Every icon above; keep in sync when adding one.
-    pub const ALL: [Self; 32] = [
+    pub const ALL: [Self; 33] = [
         Self::FILE_PLUS,
         Self::FOLDER_PLUS,
         Self::MENU,
@@ -86,7 +88,8 @@ impl Icon {
         Self::TRIANGLE_ALERT,
         Self::FOLDER_OPEN,
         Self::PENCIL,
-        Self::HEADING,
+        Self::HEADING_1,
+        Self::HEADING_2,
         Self::BOLD,
         Self::ITALIC,
         Self::LIST,
