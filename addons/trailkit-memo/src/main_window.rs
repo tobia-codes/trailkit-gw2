@@ -829,14 +829,11 @@ impl MemoWindow {
     /// then the note in its own scroll region so the toolbar stays in place.
     /// `menu_tooltip` names what the menu button does.
     fn draw_note_pane(&mut self, ui: &Ui, language: Language, theme: &Theme, menu_tooltip: Text) {
-        // The menu button is "on" while the note list is visible (M71).
-        let list_visible = menu_tooltip == Text::HideNoteList;
-        if draw_icon_toggle(
+        if draw_icon_button(
             ui,
             theme,
-            Icon::MENU,
+            note_list_icon(menu_tooltip),
             menu_tooltip.get(language),
-            list_visible,
         ) {
             self.actions.push(WindowAction::ToggleNoteList);
         }
@@ -1503,7 +1500,7 @@ fn draw_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str) -> bool {
 }
 
 /// Like [`draw_icon_button`], but the icon is drawn in the accent color when
-/// `active` (toggles whose state is on, M69, M71).
+/// `active` (toggles whose state is on, M69).
 fn draw_icon_toggle(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str, active: bool) -> bool {
     let _active_color =
         active.then(|| ui.push_style_color(StyleColor::Text, theme.accent.base.to_array()));
@@ -1530,6 +1527,17 @@ struct ToolbarState {
     active: ActiveFormats,
     /// Whether the preview is shown (M60).
     preview_visible: bool,
+}
+
+/// The sidebar icon of the note list toggle (M101): the icon itself shows
+/// what a click does, so the button needs no accent "on" state (replaces
+/// the gold menu button of M71).
+fn note_list_icon(tooltip: Text) -> Icon {
+    if tooltip == Text::HideNoteList {
+        Icon::PANEL_LEFT_CLOSE
+    } else {
+        Icon::PANEL_LEFT_OPEN
+    }
 }
 
 /// Draws the formatting buttons of the editor (M53), wrapping onto a new
@@ -1681,13 +1689,7 @@ fn draw_toolbar(
     actions: &mut Vec<WindowAction>,
 ) {
     if let Some(tooltip) = menu {
-        if draw_icon_toggle(
-            ui,
-            theme,
-            Icon::MENU,
-            tooltip.get(language),
-            tooltip == Text::HideNoteList,
-        ) {
+        if draw_icon_button(ui, theme, note_list_icon(tooltip), tooltip.get(language)) {
             actions.push(WindowAction::ToggleNoteList);
         }
         ui.same_line();

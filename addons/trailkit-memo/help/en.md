@@ -12,8 +12,8 @@ The window hides during loading screens, cutscenes and character select and reap
 
 The window shows the note list on the left and the selected note on the right. Drag the gap between both sides to change their widths (a line appears when you point at it). The note list keeps its width when you resize the window; the note gets the extra room.
 
-- **Menu button** (three lines, top left of the note): hides the note list so the note gets the full width; click it again to show the list. memo remembers your choice.
-- **Narrow window:** the note fills the window and the menu button opens the note list over it. Choose a note, click the dimmed note or the menu button again to close the list. While you edit with the preview open, memo switches earlier, so text and preview keep their room.
+- **Sidebar button** (panel icon, top left of the note): hides the note list so the note gets the full width; click it again to show the list. memo remembers your choice.
+- **Narrow window:** the note fills the window and the sidebar button opens the note list over it. Choose a note, click the dimmed note or the sidebar button again to close the list. While you edit with the preview open, memo switches earlier, so text and preview keep their room.
 
 - **New note / new group:** the two buttons above the list. The new entry goes into the selected group (or the group of the selected note), at the end. Type a name right away and press Enter.
 - **Right-click** a group or an empty spot of the list for the same actions: on a group the new entry goes into it, on an empty spot at the end of the list.
