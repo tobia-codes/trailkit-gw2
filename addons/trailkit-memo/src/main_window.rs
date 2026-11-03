@@ -996,7 +996,6 @@ impl MemoWindow {
             // Apply the new text in this frame already.
             self.update_search();
         }
-        ui.dummy([0.0, theme.spacing.extra_small]);
         draw_toolbar(ui, language, theme, menu, &mut self.actions);
         self.tree_rows.clear();
         if let Some(current) = &self.search.current
@@ -2098,15 +2097,34 @@ fn draw_toolbar(
             WindowAction::NewGroup(None),
         ),
     ];
+    // Both buttons share the row in equal widths, never narrower than an
+    // icon button; without room for both they stack (M128).
+    let spacing = ui.clone_style().item_spacing[0];
+    let row_x = ui.cursor_pos()[0];
+    let available = ui.content_region_avail()[0];
+    let minimum = buttons
+        .iter()
+        .map(|(icon, _, _)| icon_button_width(ui, *icon))
+        .fold(0.0, f32::max);
+    let side_by_side = available >= 2.0 * minimum + spacing;
+    let width = if side_by_side {
+        (available - spacing) / 2.0
+    } else {
+        available.max(minimum)
+    };
     for (index, (icon, tooltip, action)) in buttons.into_iter().enumerate() {
         if index > 0 {
-            ui.same_line();
+            if side_by_side {
+                ui.same_line();
+            } else {
+                ui.set_cursor_pos([row_x, ui.cursor_pos()[1]]);
+            }
         }
         let _id = ui.push_id(i32::try_from(index).unwrap_or_default());
         let clicked = {
             let _icons = FontScope::push(ui, FontRole::Icons);
             let mut buffer = [0; 4];
-            ui.button(icon.as_str(&mut buffer))
+            ui.button_with_size(icon.as_str(&mut buffer), [width, 0.0])
         };
         if ui.is_item_hovered() {
             ui.tooltip_text(tooltip.get(language));
