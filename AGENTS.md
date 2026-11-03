@@ -116,7 +116,7 @@ abbreviations are allowed (`id`, `url`, `api`, `http`, `json`, `ui`, `dll`,
 | Rust constants, statics | `SCREAMING_SNAKE_CASE` | `KEYBIND_TOGGLE` |
 | Rust source files | `snake_case.rs`; module dirs as `foo.rs` + `foo/` (no `mod.rs`, lint `clippy::mod_module_files`) | `src/note_tree.rs` |
 | Crates, packages, addon directories | `kebab-case`, prefix `trailkit-` | `trailkit-memo`, `trailkit-ui` |
-| All other directories and files | `kebab-case`, lowercase extensions | `data-pipeline.md`, `plan-template.md` |
+| All other directories and files (Rust module directories below `src/` are `snake_case` like their module) | `kebab-case`, lowercase extensions | `data-pipeline.md`, `plan-template.md` |
 | Fixed upper-case meta files | only these: `README.md`, `AGENTS.md`, `CLAUDE.md`, `LICENSE`, `CHANGELOG.md`, `CONTRIBUTING.md`, `PRIVACY.md`, `ROADMAP.md`, `BACKLOG.md`, `NEXT_SESSION.md`, `SKILL.md` | |
 | Tool-mandated files | as the tool requires | `Cargo.toml`, `package.json` |
 | Data identifiers (ids, slugs, JSON/TOML keys, settings) | `snake_case`; files named after a data id keep it | `world_bosses`, `schema_version`, `world_bosses.toml` |
