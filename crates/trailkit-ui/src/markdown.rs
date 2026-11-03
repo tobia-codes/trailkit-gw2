@@ -206,6 +206,29 @@ pub fn is_web_link(url: &str) -> bool {
     lower.starts_with("https://") || lower.starts_with("http://")
 }
 
+/// The visible text of `document` for searching (memo plan M120): span
+/// texts (link texts, task texts, chat codes) without markdown markers or
+/// link targets, one line per block.
+#[must_use]
+pub fn plain_text(document: &MarkdownDocument) -> String {
+    let mut text = String::new();
+    for block in &document.blocks {
+        let spans = match block {
+            Block::Heading { spans, .. }
+            | Block::Paragraph { spans, .. }
+            | Block::ListItem { spans, .. } => spans,
+            Block::Rule => continue,
+        };
+        if !text.is_empty() {
+            text.push('\n');
+        }
+        for span in spans {
+            text.push_str(&span.text);
+        }
+    }
+    text
+}
+
 /// Splits every chat code out of `spans` into a chip span of the same style
 /// (memo plan M75). Link texts stay text: a chip inside a link would hide it.
 fn split_chat_codes(spans: Vec<Span>) -> Vec<Span> {
@@ -644,5 +667,13 @@ mod tests {
                 ("[&BDgAAAA=]", false, true),
             ]
         );
+    }
+
+    #[test]
+    fn plain_text_keeps_visible_text_only() {
+        let document = parse(
+            "# Daily\n\n- [ ] **Buy** [ore](https://example.com) at [&BDgAAAA=]\n\n---\n\nDone",
+        );
+        assert_eq!(plain_text(&document), "Daily\nBuy ore at [&BDgAAAA=]\nDone");
     }
 }

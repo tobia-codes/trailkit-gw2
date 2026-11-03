@@ -111,6 +111,9 @@ pub struct AccentColors {
     /// `accent.text`: brass as text, icon or line on a surface (active
     /// toggles, check marks, drop line); ≥ 4.5:1 in both themes.
     pub text: Color,
+    /// `accent.highlight`: translucent brass behind search hits (memo M122);
+    /// text on it keeps ≥ 4.5:1 over every surface.
+    pub highlight: Color,
 }
 
 /// Status colors (always combined with an icon or text, never color alone).
@@ -355,6 +358,7 @@ impl Theme {
             hover: Color::from_rgb_hex(0xEDB65A),
             active: Color::from_rgb_hex(0xC98F2A),
             text: Color::from_rgb_hex(0xE8B055),
+            highlight: Color::from_rgb_hex(0xE2A740).with_alpha(0.24),
         },
         status: StatusColors {
             success: Color::from_rgb_hex(0x5CC48A),
@@ -433,6 +437,7 @@ impl Theme {
             hover: Color::from_rgb_hex(0xD69A32),
             active: Color::from_rgb_hex(0xC48A24),
             text: Color::from_rgb_hex(0x8A5A10),
+            highlight: Color::from_rgb_hex(0xE2A740).with_alpha(0.42),
         },
         status: StatusColors {
             success: Color::from_rgb_hex(0x176B3C),
@@ -557,6 +562,34 @@ mod tests {
                     theme.text.on_accent,
                     accent,
                 );
+            }
+        }
+    }
+
+    #[test]
+    fn text_stays_readable_on_search_highlights() {
+        for kind in ThemeKind::ALL {
+            let theme = kind.theme();
+            for (surface_name, surface) in [
+                ("bg.panel", theme.surface.panel),
+                ("bg.hover", theme.surface.hover),
+                ("bg.active", theme.surface.active),
+            ] {
+                let highlight = theme.accent.highlight.over(surface);
+                // Titles (text.primary) sit on list rows; links only occur
+                // in the note view on bg.panel.
+                let link = (surface_name == "bg.panel").then_some(("text.link", theme.text.link));
+                for (text_name, text) in [("text.primary", theme.text.primary)]
+                    .into_iter()
+                    .chain(link)
+                {
+                    assert_readable(
+                        kind,
+                        &format!("{text_name} on accent.highlight over {surface_name}"),
+                        text,
+                        highlight,
+                    );
+                }
             }
         }
     }

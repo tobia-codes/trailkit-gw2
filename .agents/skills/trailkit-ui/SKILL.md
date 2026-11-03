@@ -46,7 +46,7 @@ in the crate, document here):
 |-------|--------|
 | Surface | `bg.window`, `bg.panel`, `bg.input`, `bg.hover`, `bg.active`, `bg.popup`, `overlay.modal` |
 | Text | `text.primary`, `text.secondary`, `text.disabled`, `text.link`, `text.on_accent` |
-| Accent | `accent` (brass fill: primary button, selection bar), `accent.hover`, `accent.active`, `accent.text` (brass as text, icon or line) |
+| Accent | `accent` (brass fill: primary button, selection bar), `accent.hover`, `accent.active`, `accent.text` (brass as text, icon or line), `accent.highlight` (translucent brass behind search hits, R73) |
 | Status | `success`, `warning`, `danger`, `info` |
 | Border | `border` (inputs, dropdowns), `border.focus`, `border.subtle` (windows, panes, popups, dialogs; ~6 % white / ~8 % warm black), `border.width` |
 | Reset | `reset.daily` (brass), `reset.weekly` (violet): reset note badges and kind chip (memo M104; text colors, contrast-tested) |

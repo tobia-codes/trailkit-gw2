@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-03 (end of session 9, after PR #69).
+Last updated: 2026-11-03 (session 10: DLL size R72, search M118–M127).
 
 ## Where we are
 
@@ -11,8 +11,8 @@ Last updated: 2026-11-03 (end of session 9, after PR #69).
   tested in game. Decisions in `docs/plans/addons/trailkit-memo.md`.
 - Order from here (M28 as amended by M58, M62, M65):
   ~~visual & interaction tests~~ → ~~font subsetting~~ → ~~3c chips~~ →
-  ~~reset kinds~~ → ~~drag & drop~~ → **search (next)** → trash & undo
-  (delete, M12) → settings window → export/import → backups → help page →
+  ~~reset kinds~~ → ~~drag & drop~~ → ~~search~~ → **trash & undo
+  (delete, M12, next)** → settings window → export/import → backups → help page →
   **release preparation** (full test, screenshots M67, docs, measure the
   release DLL size by hand, R72).
 - **Session 9 (PRs #65–#69): new "Trailkit" theme, ROADMAP R71** (supersedes
@@ -102,6 +102,17 @@ Last updated: 2026-11-03 (end of session 9, after PR #69).
   dialogs (`overlay-dialog-scope`), Escape via Nexus registration.
 
 ## ▶ Resume here
+
+0. **Session 10 (PRs #71, #72):** DLL size round (R72: jiff without tzdb,
+   local time via Windows; performance beats size) and the **search**
+   (M118–M127, token `accent.highlight` R73, BL13 catch_unwind, BL14
+   next/previous hit). Deployed; **user to test in game**: search field
+   (typing, Ctrl+F also from the editor and with the list hidden, Escape
+   clears then closes, `x`), filtered list with hit counts and marks, jump
+   to the first hit, drag blocked while searching, empty result; the draft
+   time shows local time; title bar from #69. Then grill **trash & undo**.
+   The Claude Design system still lacks R71 updates and `accent.highlight`
+   (tokens.md §8 step 5) — offer it.
 
 1. **Check PR #69** (title bar) merged and its CI green; if not, fix or
    wait. Then let the user test in game: window moves by dragging the

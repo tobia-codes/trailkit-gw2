@@ -41,6 +41,19 @@ impl Color {
         Self { alpha, ..self }
     }
 
+    /// This color painted over the opaque `background` (alpha blending in
+    /// sRGB, as ImGui does); the result is opaque.
+    #[must_use]
+    pub fn over(self, background: Self) -> Self {
+        let blend = |top: f32, bottom: f32| top * self.alpha + bottom * (1.0 - self.alpha);
+        Self {
+            red: blend(self.red, background.red),
+            green: blend(self.green, background.green),
+            blue: blend(self.blue, background.blue),
+            alpha: 1.0,
+        }
+    }
+
     /// Returns the components as `[red, green, blue, alpha]`, the layout ImGui expects.
     #[must_use]
     pub const fn to_array(self) -> [f32; 4] {

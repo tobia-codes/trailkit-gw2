@@ -12,6 +12,7 @@
 pub mod drafts;
 pub mod i18n;
 pub mod note_editing;
+pub mod note_search;
 pub mod note_tree;
 pub mod reset_schedule;
 pub mod settings;
@@ -23,3 +24,5 @@ pub mod ui_state;
 mod addon;
 #[cfg(windows)]
 mod main_window;
+#[cfg(windows)]
+mod search_field;

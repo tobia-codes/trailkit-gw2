@@ -133,6 +133,14 @@ static UNSAVED_CHANGES: AtomicBool = AtomicBool::new(false);
 /// the render callback shows it again and asks (M54).
 static CLOSE_REQUESTED: AtomicBool = AtomicBool::new(false);
 
+/// Whether Escape should clear the search instead of closing the window (the
+/// focused search field holds text, M124). Written by the render callback.
+static SEARCH_TAKES_ESCAPE: AtomicBool = AtomicBool::new(false);
+
+/// Set when Nexus hid the window while the search took Escape; the render
+/// callback shows it again and clears the search (M124).
+static SEARCH_ESCAPED: AtomicBool = AtomicBool::new(false);
+
 /// Effective UI language, stored as the [`Language`] discriminant.
 static LANGUAGE: AtomicU8 = AtomicU8::new(Language::English as u8);
 
@@ -308,6 +316,12 @@ fn detect_nexus_language() -> Option<String> {
 /// Draws the main window. Returns immediately while the window is closed, and
 /// skips drawing (keeping it open) outside gameplay unless the settings allow it.
 fn render_main_window(ui: &nexus::imgui::Ui) {
+    // Escape in the focused, non-empty search field clears the search
+    // instead (M124); Nexus already hid the window, so show it again.
+    if !VISIBLE.load(Ordering::Relaxed) && SEARCH_TAKES_ESCAPE.swap(false, Ordering::Relaxed) {
+        VISIBLE.store(true, Ordering::Relaxed);
+        SEARCH_ESCAPED.store(true, Ordering::Relaxed);
+    }
     // Hidden by keybind or quick access with unsaved changes: show it again
     // and ask instead (M54).
     if !VISIBLE.load(Ordering::Relaxed) && UNSAVED_CHANGES.load(Ordering::Relaxed) {
@@ -349,7 +363,12 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
         || match &mut *notes {
             NotesState::Loading { .. } => ui.text(Text::Loading.get(language)),
             NotesState::Unavailable => ui.text_wrapped(Text::NotesInaccessible.get(language)),
-            NotesState::Ready(window) => window.draw(ui, language, &theme),
+            NotesState::Ready(window) => {
+                if SEARCH_ESCAPED.swap(false, Ordering::Relaxed) {
+                    window.clear_search_by_escape();
+                }
+                window.draw(ui, language, &theme);
+            }
         },
     );
     drop(title_bar);
@@ -362,12 +381,14 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
             let may_close =
                 window.take_close_approval() || (close_requested && window.request_close());
             UNSAVED_CHANGES.store(window.has_unsaved_changes(), Ordering::Relaxed);
+            SEARCH_TAKES_ESCAPE.store(window.search_takes_escape(), Ordering::Relaxed);
             may_close
         }
         _ => close_requested,
     };
     if may_close {
         UNSAVED_CHANGES.store(false, Ordering::Relaxed);
+        SEARCH_TAKES_ESCAPE.store(false, Ordering::Relaxed);
         VISIBLE.store(false, Ordering::Relaxed);
     }
 }
