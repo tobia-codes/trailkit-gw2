@@ -5,7 +5,7 @@ use jiff::Timestamp;
 use nexus::imgui::Ui;
 use trailkit_memo_shared::{
     drafts::Draft,
-    i18n::{Language, Text, format_local_time},
+    i18n::{Language, LocalizedText, Text, format_local_time},
     note_tree::NoteId,
 };
 use trailkit_ui::{

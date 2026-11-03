@@ -42,6 +42,7 @@ use trailkit_ui::{
 };
 
 use crate::main_window::{MemoWindow, NotesProblem, title_bar_texts};
+use trailkit_memo_shared::i18n::LocalizedText;
 use trailkit_memo_shared::{
     i18n::{Language, Text},
     note_tree::NotesDocument,

@@ -23,6 +23,7 @@ use trailkit_ui::{
 use crate::note_editing::{ActiveFormats, FormatCommand};
 use trailkit_memo_drafts::draft_hint::DraftHintAction;
 use trailkit_memo_reset_schedule::note_kind::{draw_kind_dropdown, kind_dropdown_size};
+use trailkit_memo_shared::i18n::LocalizedText;
 use trailkit_memo_shared::{
     i18n::{Language, Text, chip_text},
     note_tree::{NoteId, NoteKind},

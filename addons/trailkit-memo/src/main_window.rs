@@ -41,6 +41,7 @@ use trailkit_memo_search::{
     note_search::{NoteSearchIndex, SearchResults},
     search_field::SearchField,
 };
+use trailkit_memo_shared::i18n::LocalizedText;
 use trailkit_memo_shared::{
     drafts::DraftsDocument,
     i18n::{Language, Text, label_with_percent},

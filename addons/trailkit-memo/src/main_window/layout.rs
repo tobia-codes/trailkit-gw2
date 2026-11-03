@@ -11,6 +11,7 @@ use trailkit_ui::{
     theme::Theme,
 };
 
+use trailkit_memo_shared::i18n::LocalizedText;
 use trailkit_memo_shared::i18n::{Language, Text};
 
 use super::{DRAWER_MAXIMUM_FRACTION, MemoWindow, PaneWidths, WindowAction};

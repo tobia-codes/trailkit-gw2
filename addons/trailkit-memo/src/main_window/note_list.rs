@@ -30,6 +30,7 @@ use trailkit_memo_reset_schedule::{
     note_kind::{KIND_OPTIONS, reset_badge, reset_tooltip_lines},
 };
 use trailkit_memo_search::{i18n::SearchText, search_field::SearchFieldTexts};
+use trailkit_memo_shared::i18n::LocalizedText;
 use trailkit_memo_shared::{
     i18n::{Language, Text},
     note_tree::{

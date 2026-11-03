@@ -1,7 +1,7 @@
 //! The reset-schedule slice's user-facing strings in English and German
 //! (ROADMAP R76: every slice owns its texts; nexus-addon-dev skill §1).
 
-use trailkit_memo_shared::i18n::Language;
+use trailkit_memo_shared::i18n::{Language, LocalizedText};
 
 /// Words of [`reset_countdown`] in every language, for the font atlas.
 const COUNTDOWN_WORDS: &str = "Resets in Reset in d T h min";
@@ -23,9 +23,8 @@ pub enum ResetText {
     KindWeekly,
 }
 
-impl ResetText {
-    /// Every string of the slice.
-    pub const ALL: [Self; 6] = [
+impl LocalizedText for ResetText {
+    const ALL: &'static [Self] = &[
         Self::DailyBadge,
         Self::WeeklyBadge,
         Self::ResetType,
@@ -34,20 +33,12 @@ impl ResetText {
         Self::KindWeekly,
     ];
 
-    /// All strings in all languages concatenated, so the app can register
-    /// every character with Nexus' font atlas.
-    #[must_use]
-    pub fn all_texts() -> String {
-        Self::ALL
-            .iter()
-            .flat_map(|text| Language::ALL.map(|language| text.get(language)))
-            .chain([COUNTDOWN_WORDS])
-            .collect()
+    /// The words of the reset countdown.
+    fn extra_characters() -> String {
+        COUNTDOWN_WORDS.to_owned()
     }
 
-    /// Returns the translation of this string in `language`.
-    #[must_use]
-    pub const fn get(self, language: Language) -> &'static str {
+    fn get(self, language: Language) -> &'static str {
         match (self, language) {
             (Self::DailyBadge, Language::English) => "D",
             (Self::DailyBadge, Language::German) => "T",
@@ -100,12 +91,6 @@ mod tests {
 
     #[test]
     fn every_text_is_translated_and_registered() {
-        let all = ResetText::all_texts();
-        for text in ResetText::ALL {
-            for language in Language::ALL {
-                assert!(!text.get(language).is_empty(), "{text:?} {language:?}");
-                assert!(all.contains(text.get(language)));
-            }
-        }
+        trailkit_memo_shared::i18n::assert_all_translated::<ResetText>();
     }
 }

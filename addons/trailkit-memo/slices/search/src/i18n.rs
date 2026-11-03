@@ -1,7 +1,7 @@
 //! The search slice's user-facing strings in English and German (ROADMAP
 //! R76: every slice owns its texts; nexus-addon-dev skill §1).
 
-use trailkit_memo_shared::i18n::Language;
+use trailkit_memo_shared::i18n::{Language, LocalizedText};
 
 /// A translatable string of the search slice.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -19,9 +19,8 @@ pub enum SearchText {
     ContentHits,
 }
 
-impl SearchText {
-    /// Every string of the slice.
-    pub const ALL: [Self; 5] = [
+impl LocalizedText for SearchText {
+    const ALL: &'static [Self] = &[
         Self::SearchHint,
         Self::ClearSearch,
         Self::NoSearchResults,
@@ -29,19 +28,7 @@ impl SearchText {
         Self::ContentHits,
     ];
 
-    /// All strings in all languages concatenated, so the app can register
-    /// every character with Nexus' font atlas.
-    #[must_use]
-    pub fn all_texts() -> String {
-        Self::ALL
-            .iter()
-            .flat_map(|text| Language::ALL.map(|language| text.get(language)))
-            .collect()
-    }
-
-    /// Returns the translation of this string in `language`.
-    #[must_use]
-    pub const fn get(self, language: Language) -> &'static str {
+    fn get(self, language: Language) -> &'static str {
         match (self, language) {
             (Self::SearchHint, Language::English) => "Search …",
             (Self::SearchHint, Language::German) => "Suchen …",
@@ -63,12 +50,6 @@ mod tests {
 
     #[test]
     fn every_text_is_translated_and_registered() {
-        let all = SearchText::all_texts();
-        for text in SearchText::ALL {
-            for language in Language::ALL {
-                assert!(!text.get(language).is_empty(), "{text:?} {language:?}");
-                assert!(all.contains(text.get(language)));
-            }
-        }
+        trailkit_memo_shared::i18n::assert_all_translated::<SearchText>();
     }
 }

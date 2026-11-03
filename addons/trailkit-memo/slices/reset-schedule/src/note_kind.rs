@@ -4,7 +4,7 @@
 
 use jiff::Timestamp;
 use trailkit_memo_shared::{
-    i18n::Language,
+    i18n::{Language, LocalizedText},
     note_tree::{NoteKind, ResetPeriod},
     row_badge::RowBadge,
 };
@@ -34,10 +34,8 @@ pub const fn reset_color(theme: &Theme, period: ResetPeriod) -> Color {
 /// The row badge of a note (M45, M105): a letter in the kind color for
 /// reset notes, `None` for normal notes.
 #[must_use]
-pub const fn reset_badge(kind: NoteKind, language: Language, theme: &Theme) -> Option<RowBadge> {
-    let Some(period) = kind.period() else {
-        return None;
-    };
+pub fn reset_badge(kind: NoteKind, language: Language, theme: &Theme) -> Option<RowBadge> {
+    let period = kind.period()?;
     let letter = match period {
         ResetPeriod::Daily => ResetText::DailyBadge,
         ResetPeriod::Weekly => ResetText::WeeklyBadge,

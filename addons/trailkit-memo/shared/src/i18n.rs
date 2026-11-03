@@ -58,6 +58,52 @@ impl Language {
     }
 }
 
+/// A typed set of user-facing strings (ROADMAP R76, question 42a): shared
+/// i18n and every slice implement it for their text enum, so registering
+/// characters and checking translations work the same everywhere.
+pub trait LocalizedText: Sized + Copy + std::fmt::Debug + 'static {
+    /// Every string of the set.
+    const ALL: &'static [Self];
+
+    /// Returns the translation of this string in `language`.
+    fn get(self, language: Language) -> &'static str;
+
+    /// Further characters to register besides the strings themselves, e.g.
+    /// the digits and units of a number format. Empty by default.
+    #[must_use]
+    fn extra_characters() -> String {
+        String::new()
+    }
+
+    /// All strings in all languages concatenated, plus
+    /// [`extra_characters`](Self::extra_characters), so the app can register
+    /// every character with Nexus' font atlas (nexus-addon-dev skill §1).
+    #[must_use]
+    fn all_texts() -> String {
+        Self::ALL
+            .iter()
+            .flat_map(|text| Language::ALL.map(|language| text.get(language)))
+            .collect::<String>()
+            + &Self::extra_characters()
+    }
+}
+
+/// Checks that every string of `T` is translated into every language and
+/// part of [`LocalizedText::all_texts`]; called from each set's tests.
+///
+/// # Panics
+///
+/// Panics naming the first string that is empty or not registered.
+pub fn assert_all_translated<T: LocalizedText>() {
+    let all = T::all_texts();
+    for text in T::ALL {
+        for language in Language::ALL {
+            assert!(!text.get(language).is_empty(), "{text:?} {language:?}");
+            assert!(all.contains(text.get(language)), "{text:?} {language:?}");
+        }
+    }
+}
+
 /// The translation of a chat-link chip text (memo plan M75).
 #[must_use]
 pub const fn chip_text(text: ChipText, language: Language) -> &'static str {
@@ -211,9 +257,8 @@ pub enum Text {
     TopLevel,
 }
 
-impl Text {
-    /// Every string, for registering their characters with Nexus' font atlas.
-    pub const ALL: [Self; 43] = [
+impl LocalizedText for Text {
+    const ALL: &'static [Self] = &[
         Self::MainWindowTitle,
         Self::CollapseWindow,
         Self::ExpandWindow,
@@ -259,16 +304,11 @@ impl Text {
         Self::TopLevel,
     ];
 
-    /// All strings in all languages concatenated, so Nexus puts every
-    /// character they use into the font atlas (nexus-addon-dev skill §1).
-    #[must_use]
-    pub fn all_texts() -> String {
-        let chip_texts = ChipText::all()
-            .flat_map(|text| Language::ALL.map(|language| chip_text(text, language)));
-        Self::ALL
-            .iter()
-            .flat_map(|text| Language::ALL.map(|language| text.get(language)))
-            .chain(chip_texts)
+    /// Chat-link chip texts and the characters of the number and time
+    /// formats.
+    fn extra_characters() -> String {
+        ChipText::all()
+            .flat_map(|text| Language::ALL.map(|language| chip_text(text, language)))
             .chain([
                 CHIP_DETAIL_CHARACTERS,
                 PERCENT_CHARACTERS,
@@ -277,9 +317,7 @@ impl Text {
             .collect()
     }
 
-    /// Returns the translation of this string in `language`.
-    #[must_use]
-    pub const fn get(self, language: Language) -> &'static str {
+    fn get(self, language: Language) -> &'static str {
         match (self, language) {
             (Self::MainWindowTitle, Language::English) => "Notes",
             (Self::MainWindowTitle, Language::German) => "Notizen",
@@ -530,13 +568,7 @@ mod tests {
 
     #[test]
     fn every_text_is_translated_and_registered() {
-        let all = Text::all_texts();
-        for text in Text::ALL {
-            for language in Language::ALL {
-                assert!(!text.get(language).is_empty(), "{text:?} {language:?}");
-                assert!(all.contains(text.get(language)));
-            }
-        }
+        assert_all_translated::<Text>();
     }
 
     #[test]

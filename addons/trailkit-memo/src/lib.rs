@@ -17,6 +17,7 @@ mod main_window;
 use trailkit_memo_drafts::i18n::DraftText;
 use trailkit_memo_reset_schedule::i18n::ResetText;
 use trailkit_memo_search::i18n::SearchText;
+use trailkit_memo_shared::i18n::LocalizedText;
 use trailkit_memo_shared::i18n::Text;
 
 /// Every user-facing string of the app and all its slices in all languages,
