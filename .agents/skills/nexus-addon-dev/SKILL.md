@@ -9,6 +9,17 @@ Facts below were researched on 2026-10-31 against Nexus API v6
 (`RCGG-lib-nexus-api/Nexus.h`, Nexus source, `zerthox/nexus-rs` 0.12).
 Re-verify when bumping `NEXUS_API_VERSION` or `nexus-rs`.
 
+## 0. Addon structure (ROADMAP R76)
+
+- An addon = app crate (`addons/<addon>/`, builds the DLL, wires slices)
+  + slice crates (`addons/<addon>/slices/<slice>/`, crate
+  `trailkit-<addon>-<slice>`) + `trailkit-<addon>-shared`.
+- A slice **never** depends on another slice; shared needs go to the
+  shared crate (addon-internal) or `crates/` (cross-addon). The app passes
+  neutral shared types between slices.
+- A slice owns its state, `draw` function, text enum and help section;
+  removing a feature = removing its folder, dependency and wiring.
+
 ## 1. Platform facts
 
 - An addon is a Windows DLL exporting `GetAddonDef()`. In Rust: the
