@@ -124,6 +124,14 @@ pub fn draw_primary_button_with_icon(ui: &Ui, theme: &Theme, icon: Icon, label: 
     clicked
 }
 
+/// The width of an icon button showing `icon`.
+#[must_use]
+pub fn icon_button_width(ui: &Ui, icon: Icon) -> f32 {
+    let _icons = FontScope::push(ui, FontRole::Icons);
+    let mut buffer = [0; 4];
+    ui.calc_text_size(icon.as_str(&mut buffer))[0] + 2.0 * ui.clone_style().frame_padding[0]
+}
+
 /// The width of a button with an icon and `label` (at least
 /// `button.min_width`, M131), for right-aligning it.
 #[must_use]

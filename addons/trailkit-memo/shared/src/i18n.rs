@@ -104,6 +104,21 @@ pub fn assert_all_translated<T: LocalizedText>() {
     }
 }
 
+/// What chat-link chips need from memo (M75): chip texts in `language` and
+/// the code copied last (`copied`), shared by note view and editor.
+#[cfg(windows)]
+#[must_use]
+pub fn chip_context(
+    language: Language,
+    copied: Option<&str>,
+) -> trailkit_ui::chat_link_chip::ChipContext<'_> {
+    let text: &'static dyn Fn(ChipText) -> &'static str = match language {
+        Language::English => &|text| chip_text(text, Language::English),
+        Language::German => &|text| chip_text(text, Language::German),
+    };
+    trailkit_ui::chat_link_chip::ChipContext { text, copied }
+}
+
 /// The translation of a chat-link chip text (memo plan M75).
 #[must_use]
 pub const fn chip_text(text: ChipText, language: Language) -> &'static str {

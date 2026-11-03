@@ -109,18 +109,6 @@ impl MemoWindow {
     }
 }
 
-/// Continues the toolbar line at its right end for `width` of items,
-/// wrapping onto a new line when they do not fit (`lay-responsive`).
-pub(super) fn move_to_toolbar_end(ui: &Ui, width: f32) {
-    let right_edge = ui.window_content_region_max()[0] + ui.window_pos()[0];
-    ui.same_line();
-    if ui.cursor_screen_pos()[0] + width > right_edge {
-        ui.new_line();
-    }
-    let y = ui.cursor_screen_pos()[1];
-    ui.set_cursor_screen_pos([right_edge - width, y]);
-}
-
 /// Draws the empty state (M42): headline, primary and secondary button.
 pub(super) fn draw_empty_state(
     ui: &Ui,

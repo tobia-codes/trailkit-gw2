@@ -3,11 +3,11 @@
 
 use nexus::imgui::{ChildWindow, Key, MouseButton, StyleColor, Ui};
 use trailkit_ui::{
+    button::icon_button_width,
     button::{
         button_width, draw_button, draw_icon_button, draw_primary_button_with_icon,
         icon_label_button_width,
     },
-    chat_link_chip::ChipContext,
     font_registry::FontScope,
     fonts::FontRole,
     glyph_metrics::capital_middle,
@@ -18,6 +18,7 @@ use trailkit_ui::{
     separator::draw_separator,
     splitter::draw_vertical_splitter,
     theme::Theme,
+    toolbar::{begin_toolbar_group, move_to_toolbar_end},
 };
 
 use crate::note_editing::{ActiveFormats, FormatCommand};
@@ -25,11 +26,10 @@ use trailkit_memo_drafts::draft_hint::DraftHintAction;
 use trailkit_memo_reset_schedule::note_kind::{draw_kind_dropdown, kind_dropdown_size};
 use trailkit_memo_shared::i18n::LocalizedText;
 use trailkit_memo_shared::{
-    i18n::{Language, Text, chip_text},
+    i18n::{Language, Text, chip_context},
     note_tree::{NoteId, NoteKind},
 };
 
-use super::layout::move_to_toolbar_end;
 use super::{
     MINIMUM_PREVIEW_SPLIT_CHARACTERS, MemoWindow, ParsedNote, VIRTUAL_KEY_B, VIRTUAL_KEY_I,
     VIRTUAL_KEY_S, WindowAction, selected_note_in,
@@ -174,14 +174,12 @@ impl MemoWindow {
         } else {
             0.0
         };
-        let chip_texts = |text| chip_text(text, language);
-        let chips = ChipContext {
-            text: &chip_texts,
-            copied: self
-                .copied_chat_link
+        let chips = chip_context(
+            language,
+            self.copied_chat_link
                 .as_ref()
                 .map(|copied| copied.code.as_str()),
-        };
+        );
         let response = editor.body.draw(ui, theme, "##body", [width, 0.0], chips);
         if response.changed {
             editor.sync_body();
@@ -297,14 +295,12 @@ impl MemoWindow {
         }
         match &self.parsed {
             Some(parsed) if !parsed.document.blocks.is_empty() => {
-                let chip_texts = |text| chip_text(text, language);
-                let chips = ChipContext {
-                    text: &chip_texts,
-                    copied: self
-                        .copied_chat_link
+                let chips = chip_context(
+                    language,
+                    self.copied_chat_link
                         .as_ref()
                         .map(|copied| copied.code.as_str()),
-                };
+                );
                 // Search hits are marked; a new search or a newly opened
                 // note jumps to the first one (M122).
                 let mut highlight = self
@@ -401,39 +397,6 @@ pub(super) const FORMAT_GROUPS: [&[FormatButton]; 4] = [
         (Icon::CALENDAR_CLOCK, Text::InsertEventRequiresCore, None),
     ],
 ];
-
-/// The width of an icon button showing `icon`.
-pub(super) fn icon_button_width(ui: &Ui, icon: Icon) -> f32 {
-    let _icons = FontScope::push(ui, FontRole::Icons);
-    let mut buffer = [0; 4];
-    ui.calc_text_size(icon.as_str(&mut buffer))[0] + 2.0 * ui.clone_style().frame_padding[0]
-}
-
-/// Starts a toolbar group of `width` on the current line, after a thin
-/// vertical separator (M102); in a narrow pane the group moves to a new line
-/// instead, without a separator (`lay-responsive`).
-pub(super) fn begin_toolbar_group(ui: &Ui, theme: &Theme, width: f32) {
-    let gap = theme.spacing.small;
-    let height = ui.item_rect_size()[1];
-    let right_edge = ui.window_content_region_max()[0] + ui.window_pos()[0];
-    ui.same_line_with_spacing(0.0, gap);
-    let [x, y] = ui.cursor_screen_pos();
-    if x + 1.0 + gap + width > right_edge {
-        ui.new_line();
-        return;
-    }
-    let inset = (height * 0.2).round();
-    ui.get_window_draw_list()
-        .add_line(
-            [x + 0.5, y + inset],
-            [x + 0.5, y + height - inset],
-            theme.border.color.to_array(),
-        )
-        .thickness(1.0)
-        .build();
-    ui.dummy([1.0, height]);
-    ui.same_line_with_spacing(0.0, gap);
-}
 
 /// Draws the formatting buttons of the editor in groups with separators
 /// (M53, M102), then the preview toggle. Buttons of the formatting at the

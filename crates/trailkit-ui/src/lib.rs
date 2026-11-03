@@ -54,4 +54,6 @@ pub mod style_scope;
 #[cfg(windows)]
 pub mod title_bar;
 #[cfg(windows)]
+pub mod toolbar;
+#[cfg(windows)]
 pub mod tree_arrow;

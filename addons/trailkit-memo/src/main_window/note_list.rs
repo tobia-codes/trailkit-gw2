@@ -9,6 +9,7 @@ use nexus::imgui::{
     TreeNodeFlags, Ui, WindowHoveredFlags,
 };
 use trailkit_ui::{
+    button::icon_button_width,
     button::{button_width, draw_button, draw_icon_button},
     font_registry::FontScope,
     fonts::FontRole,
@@ -45,7 +46,7 @@ use super::{
 };
 use super::{
     layout::{centered_text, format_count, indent_to_center, truncate_to_width},
-    note_pane::{icon_button_width, note_list_icon},
+    note_pane::note_list_icon,
 };
 
 impl MemoWindow {
