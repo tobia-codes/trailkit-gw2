@@ -23,13 +23,15 @@ use trailkit_ui::{
 };
 
 use crate::{
-    i18n::{Language, Text, reset_countdown},
-    note_tree::{
-        Group, GroupId, InsertionPoint, MoveCheck, NodeId, Note, NoteKind, TreeNode as Node,
-    },
     search_field::SearchFieldTexts,
     tree_drag::{
         DRAG_THRESHOLD, DropIndicator, EXPAND_DELAY_SECONDS, RowKind, RowRect, resolve_drop,
+    },
+};
+use trailkit_memo_shared::{
+    i18n::{Language, Text, reset_countdown},
+    note_tree::{
+        Group, GroupId, InsertionPoint, MoveCheck, NodeId, Note, NoteKind, TreeNode as Node,
     },
 };
 

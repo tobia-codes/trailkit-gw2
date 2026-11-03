@@ -635,7 +635,7 @@ mod tests {
         };
         // UI strings plus the help pages (rendered with the same fonts).
         let texts =
-            Text::all_texts() + include_str!("../help/en.md") + include_str!("../help/de.md");
+            Text::all_texts() + include_str!("../../help/en.md") + include_str!("../../help/de.md");
         for font in [
             OPEN_SANS_REGULAR,
             OPEN_SANS_BOLD,

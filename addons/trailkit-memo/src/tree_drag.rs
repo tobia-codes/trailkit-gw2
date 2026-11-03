@@ -5,7 +5,7 @@
 //! indicator that shows it. Platform-independent so it can be unit-tested
 //! on any host (ROADMAP R23).
 
-use crate::note_tree::{GroupId, InsertionPoint, NodeId};
+use trailkit_memo_shared::note_tree::{GroupId, InsertionPoint, NodeId};
 
 /// Mouse movement in pixels after which a press on a row starts a drag
 /// (M106), so a click never moves anything by accident.
@@ -161,7 +161,7 @@ fn zone_bottom(rows: &[RowRect], index: usize) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::note_tree::NoteId;
+    use trailkit_memo_shared::note_tree::NoteId;
 
     /// A row of `kind` for `node` between `top` and `top + 20`, indented by
     /// `left`.

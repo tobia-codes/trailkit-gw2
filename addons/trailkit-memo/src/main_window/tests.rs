@@ -16,7 +16,7 @@ use trailkit_ui_testing::{
 };
 
 use super::*;
-use crate::storage_worker::{SavingAllowed, StorageWorker};
+use trailkit_memo_shared::storage_worker::{SavingAllowed, StorageWorker};
 
 /// A fixed point in time, so rendered dates never change.
 fn fixed_time() -> Timestamp {

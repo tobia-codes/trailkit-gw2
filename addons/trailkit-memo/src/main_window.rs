@@ -30,19 +30,21 @@ use trailkit_ui::{
 };
 
 use crate::{
-    drafts::DraftsDocument,
-    i18n::{Language, Text, label_with_percent},
     note_editing::{ActiveFormats, EditSession, FormatCommand, active_formats, format_edit},
     note_search::{NoteSearchIndex, SearchResults},
+    search_field::SearchField,
+    tree_drag::{DropTarget, RowRect},
+};
+use trailkit_memo_shared::{
+    drafts::DraftsDocument,
+    i18n::{Language, Text, label_with_percent},
     note_tree::{
         Group, GroupId, InsertionPoint, MoveCheck, NodeId, Note, NoteId, NoteKind, NotesDocument,
         TreeNode as Node,
     },
     reset_schedule::{ResetPeriod, next_reset_of_any_period},
-    search_field::SearchField,
     settings::{Settings, TextScale, UnsavedChanges},
     storage_worker::StorageSaver,
-    tree_drag::{DropTarget, RowRect},
     ui_state::UiState,
 };
 

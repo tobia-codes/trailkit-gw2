@@ -23,10 +23,10 @@ use trailkit_ui::{
     theme::Theme,
 };
 
-use crate::{
+use crate::note_editing::{ActiveFormats, FormatCommand};
+use trailkit_memo_shared::{
     drafts::Draft,
     i18n::{Language, Text, chip_text, format_local_time},
-    note_editing::{ActiveFormats, FormatCommand},
     note_tree::{NoteId, NoteKind},
     reset_schedule::ResetPeriod,
 };

@@ -31,12 +31,7 @@ cargo xtask ui-test           # window snapshots (tests/snapshots/) via the head
 | Path | Content |
 |------|---------|
 | `src/lib.rs` | crate root |
-| `src/i18n.rs` | languages + typed UI strings (en/de) |
-| `src/settings.rs` | typed user settings + visibility rules, persisted as `settings.json` |
-| `src/note_tree.rs` | note tree data model (notes, groups, trash), persisted as `notes.json` |
-| `src/reset_schedule.rs` | daily (00:00 UTC) and weekly (Monday 07:30 UTC) reset times (M13, M90) |
-| `src/storage_worker.rs` | worker thread that loads notes and saves notes/settings/window state debounced (M18, M30) |
-| `src/ui_state.rs` | restorable window state, persisted as `ui_state.json` (M39) |
+| `shared/` | crate `trailkit-memo-shared`: note tree, documents, storage worker, reset periods, localization — what several slices need (ROADMAP R76) |
 | `src/main_window.rs` | main window: state, drawing entry point, applying user actions (Windows only) |
 | `src/main_window/note_list.rs` | note list: header, tree rows, rename, context menu, search hits, drag & drop |
 | `src/main_window/note_pane.rs` | note pane: note view, editor and formatting toolbar, title with kind, draft hint |

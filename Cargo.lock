@@ -1486,9 +1486,25 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "trailkit-memo-shared",
  "trailkit-storage",
  "trailkit-ui",
  "trailkit-ui-testing",
+ "uuid",
+ "windows",
+]
+
+[[package]]
+name = "trailkit-memo-shared"
+version = "0.0.0"
+dependencies = [
+ "jiff",
+ "log",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "trailkit-storage",
+ "trailkit-ui",
  "uuid",
  "windows",
 ]

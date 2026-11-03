@@ -9,7 +9,9 @@ use std::collections::{HashMap, HashSet};
 
 use trailkit_ui::{markdown, text_search::SearchQuery};
 
-use crate::note_tree::{Group, GroupId, NodeId, Note, NoteId, NotesDocument, TreeNode};
+use trailkit_memo_shared::note_tree::{
+    Group, GroupId, NodeId, Note, NoteId, NotesDocument, TreeNode,
+};
 
 /// Lower-cased title and visible text of every note and group title, built
 /// once per change of the notes.
@@ -220,7 +222,7 @@ mod tests {
     use jiff::Timestamp;
 
     use super::*;
-    use crate::note_tree::NoteKind;
+    use trailkit_memo_shared::note_tree::NoteKind;
 
     /// A note with `title` and `body`.
     fn note(title: &str, body: &str) -> Note {

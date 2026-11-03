@@ -41,9 +41,9 @@ use trailkit_ui::{
     title_bar::{TitleBarState, draw_window},
 };
 
-use crate::{
+use crate::main_window::{MemoWindow, NotesProblem, title_bar_texts};
+use trailkit_memo_shared::{
     i18n::{Language, Text},
-    main_window::{MemoWindow, NotesProblem, title_bar_texts},
     note_tree::NotesDocument,
     settings::{QuickAccessIcon, Settings, TextScale},
     storage_worker::{LoadedDocuments, SAVE_DEBOUNCE, SavingAllowed, StorageSaver, StorageWorker},
