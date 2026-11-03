@@ -21,7 +21,7 @@ Latin up to Extended-B plus punctuation, the icon font only the icons in
 |--------|---------|----------|
 | `color` | `Color` (RGBA) + WCAG contrast ratio | any |
 | `theme` | `Theme` tokens, built-in `Theme::DARK` (default) / `Theme::LIGHT`, `ThemeKind` | any |
-| `fonts` | shared font roles (body, bold, italic, headings, icons), embedded Inter + Lucide (R71) | any |
+| `fonts` | shared font roles (body, bold, italic, headings, icons), embedded Open Sans + Lucide | any |
 | `icons` | Lucide icon glyphs used by trailkit (add new ones here) | any |
 | `markdown` | markdown → blocks and styled spans; task toggling; `http(s)`-only links | any |
 | `button` | `draw_button` (label centered by its capitals, M85), `draw_primary_button` (accent, `lay-one-primary`), `button_width` | Windows |
