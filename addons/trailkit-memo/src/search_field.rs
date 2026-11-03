@@ -6,7 +6,10 @@
 //! rule 7); the settings window will be the likely second user.
 
 use nexus::imgui::{StyleColor, StyleVar, Ui};
-use trailkit_ui::{font_registry::FontScope, fonts::FontRole, icons::Icon, theme::Theme};
+use trailkit_ui::{
+    font_registry::FontScope, fonts::FontRole, glyph_metrics::glyph_ink_box, icons::Icon,
+    theme::Theme,
+};
 
 /// State of the search field that outlives a frame.
 #[derive(Debug, Default)]
@@ -70,28 +73,38 @@ impl SearchField {
             .build();
 
         // Magnifier on the left, the clear `x` mirrored on the right: same
-        // size, color and distance to the frame (M128).
-        let (icon_width, clear_size) = {
+        // size, color and distance to the frame (M128). Both are placed by
+        // their ink, not their line box, in which Lucide glyphs sit off
+        // center.
+        let middle = start[1] + height / 2.0;
+        let (magnifier, clear) = {
+            let _icons = FontScope::push(ui, FontRole::Icons);
+            let line = ui.text_line_height();
+            let ink = |icon: Icon| glyph_ink_box(icon.glyph()).unwrap_or([0.0, 0.0, line, line]);
+            (ink(Icon::SEARCH), ink(Icon::X))
+        };
+        let magnifier_position = [
+            start[0] + padding[0] - magnifier[0],
+            middle - (magnifier[1] + magnifier[3]) / 2.0,
+        ];
+        let clear_position = [
+            end[0] - padding[0] - clear[2],
+            middle - (clear[1] + clear[3]) / 2.0,
+        ];
+        {
             let _icons = FontScope::push(ui, FontRole::Icons);
             let mut buffer = [0; 4];
-            let icon = Icon::SEARCH.as_str(&mut buffer);
-            let size = ui.calc_text_size(icon);
             ui.get_window_draw_list().add_text(
-                [start[0] + padding[0], start[1] + (height - size[1]) / 2.0],
+                magnifier_position,
                 theme.text.secondary.to_array(),
-                icon,
+                Icon::SEARCH.as_str(&mut buffer),
             );
-            (size[0], ui.calc_text_size(Icon::X.as_str(&mut buffer)))
-        };
-        let input_x = start[0] + padding[0] + icon_width + theme.spacing.extra_small;
-        let clear_position = [
-            end[0] - padding[0] - clear_size[0],
-            start[1] + (height - clear_size[1]) / 2.0,
-        ];
+        }
+        let input_x = start[0] + padding[0] + (magnifier[2] - magnifier[0]) + theme.spacing.small;
         let clear_width = if self.text.is_empty() {
             0.0
         } else {
-            padding[0] + clear_size[0] + theme.spacing.extra_small
+            padding[0] + (clear[2] - clear[0]) + theme.spacing.small
         };
 
         let changed = {
@@ -117,7 +130,7 @@ impl SearchField {
         };
 
         let cleared = !self.text.is_empty()
-            && self.draw_clear_button(ui, theme, clear_position, clear_size, texts.clear);
+            && self.draw_clear_button(ui, theme, clear_position, clear, texts.clear);
         if cleared {
             self.clear(true);
         }
@@ -138,20 +151,24 @@ impl SearchField {
         changed || cleared
     }
 
-    /// Draws the clear `x` at `position` (glyph of `size`): `text.secondary`,
-    /// on hover `text.primary` over a small `bg.hover` square around the
-    /// glyph. Returns whether it was clicked.
+    /// Draws the clear `x` at pen `position` (`ink` box relative to it):
+    /// `text.secondary`, on hover `text.primary` over a small `bg.hover`
+    /// square centered on the glyph. Returns whether it was clicked.
     fn draw_clear_button(
         &self,
         ui: &Ui,
         theme: &Theme,
         position: [f32; 2],
-        size: [f32; 2],
+        ink: [f32; 4],
         tooltip: &str,
     ) -> bool {
-        let inset = theme.spacing.extra_small;
-        let box_start = [position[0] - inset, position[1] - inset];
-        let box_size = [size[0] + 2.0 * inset, size[1] + 2.0 * inset];
+        let side = (ink[2] - ink[0]).max(ink[3] - ink[1]) + 2.0 * theme.spacing.extra_small;
+        let center = [
+            position[0] + (ink[0] + ink[2]) / 2.0,
+            position[1] + (ink[1] + ink[3]) / 2.0,
+        ];
+        let box_start = [center[0] - side / 2.0, center[1] - side / 2.0];
+        let box_size = [side, side];
         ui.same_line_with_spacing(0.0, 0.0);
         ui.set_cursor_screen_pos(box_start);
         let clicked = {

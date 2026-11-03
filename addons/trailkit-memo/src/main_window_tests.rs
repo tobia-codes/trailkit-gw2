@@ -629,9 +629,15 @@ fn search_for(
             ..FrameInput::default()
         },
     );
-    let mut image = draw_frame(&mut harness, &FrameInput::default());
+    // Rest the mouse on the clear button: its hover square must sit
+    // centered on the `x` (M128).
+    let over_clear = FrameInput {
+        mouse_position: [185.0, 70.0],
+        ..FrameInput::default()
+    };
+    let mut image = draw_frame(&mut harness, &over_clear);
     for _ in 0..3 {
-        image = draw_frame(&mut harness, &FrameInput::default());
+        image = draw_frame(&mut harness, &over_clear);
     }
     image
 }

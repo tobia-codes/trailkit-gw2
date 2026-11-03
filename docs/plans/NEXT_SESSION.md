@@ -143,6 +143,17 @@ Last updated: 2026-11-03 (session 10: DLL size R72, search M118–M127).
    - In this WSL shell, plain `grep` fails (a broken wrapper); use
      `command grep`. Run `source ~/.cargo/env` before cargo.
 
+## Facts learned in session 10
+
+- The Lucide source font stores `xMin`/`yMin` = 0 for every glyph, so
+  ImGui glyph quads were far larger than the ink and icons could not be
+  centered by `glyph_ink_box`. `cargo xtask subset-fonts` now rewrites the
+  boxes from the outline points (`fix_glyph_bounds`); drawing positions do
+  not change.
+- Test fonts are 16 px, in game 18 px: anything sized from an icon
+  button's natural width can overflow in game while tests look fine —
+  size inner controls from the ink or a fixed square.
+
 ## Facts learned in session 9
 
 - ImGui's `AddLine` already adds half a pixel; add none yourself or a 1 px
