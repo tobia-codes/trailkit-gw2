@@ -19,7 +19,7 @@ use trailkit_ui::{
     },
     chat_link_chip::ChipContext,
     color::Color,
-    dropdown::{DropdownVariant, draw_dropdown, dropdown_height, dropdown_width},
+    dropdown::{draw_dropdown, dropdown_width},
     editor::view::TextEditor,
     font_registry::FontScope,
     fonts::FontRole,
@@ -2289,8 +2289,9 @@ fn reset_color(theme: &Theme, period: ResetPeriod) -> Color {
     }
 }
 
-/// Draws the note title with the kind chip right behind it (M102), centered
-/// on the title's capitals; the chip moves below a title that leaves no room.
+/// Draws the note title with the kind dropdown right behind it (M102, the
+/// one shared dropdown since R71), centered on the title's capitals; the
+/// dropdown moves below a title that leaves no room.
 /// Pushes a chosen kind as an action.
 fn draw_title_with_kind(
     ui: &Ui,
@@ -2301,11 +2302,8 @@ fn draw_title_with_kind(
     actions: &mut Vec<WindowAction>,
 ) {
     let labels = KIND_OPTIONS.map(|(_, text)| text.get(language));
-    let chip = DropdownVariant::Chip {
-        tint: kind.period().map(|period| reset_color(theme, period)),
-    };
-    let chip_width = dropdown_width(ui, theme, chip, &labels);
-    let chip_height = dropdown_height(ui, theme, chip);
+    let tint = kind.period().map(|period| reset_color(theme, period));
+    let dropdown_size = [dropdown_width(ui, &labels), ui.frame_height()];
     let gap = theme.spacing.medium;
     let available = ui.content_region_avail()[0];
     let [left, top] = ui.cursor_screen_pos();
@@ -2313,7 +2311,7 @@ fn draw_title_with_kind(
         let _heading = FontScope::push(ui, FontRole::Heading1);
         let height = ui.text_line_height();
         let middle = capital_middle().unwrap_or(height / 2.0);
-        let is_beside = ui.calc_text_size(title)[0] + gap + chip_width <= available;
+        let is_beside = ui.calc_text_size(title)[0] + gap + dropdown_size[0] <= available;
         if is_beside {
             ui.text(title);
         } else {
@@ -2324,7 +2322,7 @@ fn draw_title_with_kind(
     if is_beside {
         ui.same_line_with_spacing(0.0, gap);
         let x = ui.cursor_screen_pos()[0];
-        ui.set_cursor_screen_pos([x, (top + title_middle - chip_height / 2.0).round()]);
+        ui.set_cursor_screen_pos([x, (top + title_middle - dropdown_size[1] / 2.0).round()]);
     }
     let selected = KIND_OPTIONS
         .iter()
@@ -2333,7 +2331,7 @@ fn draw_title_with_kind(
     if let Some(index) = draw_dropdown(
         ui,
         theme,
-        chip,
+        tint,
         "kind",
         Text::ResetType.get(language),
         &labels,
@@ -2343,7 +2341,7 @@ fn draw_title_with_kind(
         actions.push(WindowAction::SetResetPeriod(note, *period));
     }
     if is_beside {
-        // Continue below the title, not below the centered chip.
+        // Continue below the title, not below the centered dropdown.
         let spacing = ui.clone_style().item_spacing[1];
         ui.set_cursor_screen_pos([left, top + title_height + spacing]);
     }

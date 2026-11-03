@@ -100,10 +100,12 @@ Build once, use everywhere. Planned:
   dots; warning chip for broken codes; R71). The addon supplies the texts
   through `ChipContext` (trailkit-ui has no strings). Used by the markdown
   view and the editor, where a chip is one atomic unit (memo M75)
-- Dropdown (select box) — **exists**: `dropdown::draw_dropdown` (themed
-  field with chevron, popup list, check mark on the chosen option; fixed
-  width of the widest option; memo M87; `DropdownVariant::Chip { tint }` for
-  a compact chip next to a title, optionally tinted, M102/M104). Never ImGui's plain combo
+- Dropdown (select box) — **exists**: `dropdown::draw_dropdown`, **one
+  dropdown for every place** (R71): button height, filled like a button
+  (`bg.hover`) with a `border` frame, chevron, popup list, check mark on the
+  chosen option; fixed width of the widest option (memo M87); an optional
+  `tint` colors frame, text, chevron and check mark (e.g. the reset kind,
+  M104). No compact or other variants. Never ImGui's plain combo
 - Selection bar — **exists**: `selection_bar::draw_selection_bar`, called
   right after the selected row's tree node or selectable (R71)
 - Menu entries — **exist**: `menu::draw_menu_item` (check mark = Lucide

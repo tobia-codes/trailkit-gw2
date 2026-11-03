@@ -5,46 +5,18 @@
 //! that opens a popup list below it. The field has the width of its widest
 //! option, so it does not jump when the choice changes.
 
-use nexus::imgui::{ImColor32, Selectable, StyleColor, StyleStackToken, StyleVar, Ui};
+use nexus::imgui::{ImColor32, Selectable, Ui};
 
 use crate::{
     button::draw_label, color::Color, font_registry::FontScope, fonts::FontRole, icons::Icon,
     theme::Theme,
 };
 
-/// How a dropdown looks.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum DropdownVariant {
-    /// A form field: input background, regular frame padding, primary text.
-    Field,
-    /// A compact chip next to a title (memo M102): no background, slim
-    /// padding, a border only; text, chevron and border in `tint`, or in the
-    /// secondary text and border colors without one (memo M104).
-    Chip {
-        /// The chip's color, e.g. the color of the chosen reset kind.
-        tint: Option<Color>,
-    },
-}
-
-impl DropdownVariant {
-    /// Pushes the frame padding of this variant; pop by dropping the token.
-    fn push_padding<'ui>(self, ui: &'ui Ui, theme: &Theme) -> Option<StyleStackToken<'ui>> {
-        match self {
-            Self::Field => None,
-            Self::Chip { .. } => Some(ui.push_style_var(StyleVar::FramePadding([
-                theme.spacing.small,
-                (theme.spacing.extra_small / 2.0).round(),
-            ]))),
-        }
-    }
-}
-
 /// The width of a dropdown with `options`: the widest option plus padding,
 /// a gap and the chevron, e.g. to right-align it or to decide whether it
 /// fits next to something else.
 #[must_use]
-pub fn dropdown_width(ui: &Ui, theme: &Theme, variant: DropdownVariant, options: &[&str]) -> f32 {
-    let _padding = variant.push_padding(ui, theme);
+pub fn dropdown_width(ui: &Ui, options: &[&str]) -> f32 {
     let style = ui.clone_style();
     let widest = options
         .iter()
@@ -53,53 +25,31 @@ pub fn dropdown_width(ui: &Ui, theme: &Theme, variant: DropdownVariant, options:
     widest + 2.0 * style.frame_padding[0] + style.item_spacing[0] + icon_width(ui)
 }
 
-/// The height of a dropdown of `variant` in the current font, e.g. to center
-/// it next to a title.
-#[must_use]
-pub fn dropdown_height(ui: &Ui, theme: &Theme, variant: DropdownVariant) -> f32 {
-    let _padding = variant.push_padding(ui, theme);
-    ui.frame_height()
-}
-
 /// Draws a dropdown showing `options[selected]` and returns the index the
 /// user picked, if it differs from `selected`. `id` must be unique in the
 /// current ID scope; `tooltip` is shown while the field is hovered (the
 /// options alone may not say what is chosen, `a11y-icon-tooltip`).
+///
+/// There is one dropdown for every place (R71): button height, filled like a
+/// button (`bg.hover`) with a `border` frame. `tint` colors border, text,
+/// chevron and check mark, e.g. with the chosen reset kind (memo M104).
 pub fn draw_dropdown(
     ui: &Ui,
     theme: &Theme,
-    variant: DropdownVariant,
+    tint: Option<Color>,
     id: &str,
     tooltip: &str,
     options: &[&str],
     selected: usize,
 ) -> Option<usize> {
-    let width = dropdown_width(ui, theme, variant, options);
-    let padding = variant.push_padding(ui, theme);
+    let width = dropdown_width(ui, options);
     let style = ui.clone_style();
-    let (background, text) = match variant {
-        DropdownVariant::Field => (theme.surface.input.to_array(), theme.text.primary),
-        DropdownVariant::Chip { tint } => ([0.0; 4], tint.unwrap_or(theme.text.secondary)),
-    };
+    let text = tint.unwrap_or(theme.text.primary);
     let _id = ui.push_id(id);
     let popup_id = "##options";
-    // A tinted chip uses its color everywhere, also while open (memo M104):
-    // border, check mark, text and chevron.
-    let tint = match variant {
-        DropdownVariant::Chip { tint } => tint,
-        DropdownVariant::Field => None,
-    };
 
-    let clicked = {
-        let _colors = [
-            ui.push_style_color(StyleColor::Button, background),
-            ui.push_style_color(StyleColor::ButtonHovered, theme.surface.hover.to_array()),
-            ui.push_style_color(StyleColor::ButtonActive, theme.surface.active.to_array()),
-        ];
-        ui.button_with_size("##field", [width, ui.frame_height()])
-    };
-    // The popup keeps the regular padding.
-    drop(padding);
+    // Filled and hovered like a button (`StyleScope` colors).
+    let clicked = ui.button_with_size("##field", [width, ui.frame_height()]);
     let is_hovered = ui.is_item_hovered();
     let [min, max] = [ui.item_rect_min(), ui.item_rect_max()];
     if clicked {
