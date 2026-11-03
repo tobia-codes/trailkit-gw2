@@ -56,6 +56,7 @@ in the crate, document here):
 | Spacing | `space.xs` 4, `space.sm` 8, `space.md` 12, `space.lg` 16, `space.xl` 24 (px at 100 %) |
 | Lists | `list.item_spacing`, `list.indent`, `list.selection_bar_width` 3, `list.selection_bar_inset` 6 |
 | Panes | `pane.padding` 8 (inner padding), `pane.gap` 8 (space between panes) — see `lay-pane-padding` |
+| Buttons | `button.min_width` 4 (× current font size; minimum width of text buttons, not icon buttons) — see `lay-button-min-width` |
 | Shape | `radius.sm` 4 (chips, badges, scrollbar), `radius.md` 6 (buttons, inputs, rows, menus), `radius.lg` 10 (windows, panes, popups, dialogs); user-overridable; custom-drawn frames use them too |
 | Typography | `font.size.small`, `font.size.body`, `font.size.heading`, `font.line_height` (running text: 1.5 × font size, text centered in its line; markdown view and editor) |
 
@@ -90,7 +91,8 @@ Build once, use everywhere. Planned:
 - `HelpWindow` (renders bundled markdown help in active language)
 - Buttons — **exist**: `button::draw_button` (secondary, `bg.hover` fill),
   `draw_primary_button`, `draw_primary_button_with_icon` (Lucide icon +
-  label, R71), `draw_icon_button` / `draw_icon_toggle` (borderless icon
+  label, R71; primary toolbar actions, `lay-button-icon`), all text
+  buttons at least `button.min_width` wide (M131), `draw_icon_button` / `draw_icon_toggle` (borderless icon
   buttons with tooltip). Planned: danger
 - `Popover` / `Tooltip`, `ConfirmDialog`, `UnsavedChangesDialog`
 - `DependencyHint` (greyed feature + explanation + "Open core settings"/

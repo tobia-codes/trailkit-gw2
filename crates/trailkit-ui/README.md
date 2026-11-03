@@ -24,7 +24,7 @@ Latin up to Extended-B plus punctuation, the icon font only the icons in
 | `fonts` | shared font roles (body, bold, italic, headings, icons), embedded Open Sans + Lucide | any |
 | `icons` | Lucide icon glyphs used by trailkit (add new ones here) | any |
 | `markdown` | markdown → blocks and styled spans; task toggling; `http(s)`-only links | any |
-| `button` | `draw_button` (label centered by its capitals, M85), `draw_primary_button` (accent, `lay-one-primary`), `draw_primary_button_with_icon` (icon + label), `draw_icon_button` / `draw_icon_toggle` (borderless, tooltip), `button_width`, `icon_label_button_width` | Windows |
+| `button` | `draw_button` (label centered by its capitals, M85), `draw_primary_button` (accent, `lay-one-primary`), `draw_primary_button_with_icon` (icon + label), `draw_icon_button` / `draw_icon_toggle` (borderless, tooltip), `button_width`, `icon_label_button_width`; text buttons are at least `button.min_width` wide (M131) | Windows |
 | `menu` | `draw_menu_item` (Lucide check mark), `begin_submenu` (Lucide chevron, opens flush beside the parent, M98/M99) | Windows |
 | `dropdown` | `draw_dropdown` (themed select box, popup list with check mark, M87; variants `Field` and compact `Chip`, M102), `dropdown_width`, `dropdown_height` | Windows |
 | `pane` | `draw_pane` — a content region on `bg.panel` with `pane.padding` on every side (`lay-pane-padding`) | Windows |

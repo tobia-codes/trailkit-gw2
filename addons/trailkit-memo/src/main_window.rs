@@ -894,7 +894,7 @@ impl MemoWindow {
                 true
             }
         };
-        if offers_folder && draw_button(ui, Text::OpenFolder.get(language)) {
+        if offers_folder && draw_button(ui, theme, Text::OpenFolder.get(language)) {
             self.actions.push(WindowAction::OpenFolder);
         }
         draw_separator(ui, theme);
@@ -1229,13 +1229,15 @@ impl MemoWindow {
         if self.editor.is_some() {
             let cancel = Text::Cancel.get(language);
             let save = Text::Save.get(language);
-            let width = button_width(ui, cancel) + spacing + button_width(ui, save);
+            let width = button_width(ui, theme, cancel)
+                + spacing
+                + icon_label_button_width(ui, theme, save);
             move_to_toolbar_end(ui, width);
-            if draw_button(ui, cancel) {
+            if draw_button(ui, theme, cancel) {
                 self.actions.push(WindowAction::CancelEditing);
             }
             ui.same_line();
-            if draw_primary_button(ui, theme, save) {
+            if draw_primary_button_with_icon(ui, theme, Icon::CHECK, save) {
                 self.actions.push(WindowAction::FinishEditing);
             }
             if ui.is_item_hovered() {
@@ -1790,11 +1792,11 @@ fn draw_unsaved_changes_card(
     let padding = theme.spacing.large;
     let window_position = ui.window_pos();
     let window_size = ui.window_size();
-    let row_width = button_width(ui, discard)
+    let row_width = button_width(ui, theme, discard)
         + theme.spacing.extra_large
-        + button_width(ui, keep_editing)
+        + button_width(ui, theme, keep_editing)
         + spacing[0]
-        + button_width(ui, save);
+        + button_width(ui, theme, save);
     let maximum_content = (window_size[0] * DIALOG_MAXIMUM_FRACTION - 2.0 * padding).max(1.0);
     let content_width = row_width
         .max(ui.calc_text_size(question)[0])
@@ -1840,22 +1842,23 @@ fn draw_unsaved_changes_card(
             answer = Some(WindowAction::LeaveSaving);
         }
         ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
-        if draw_button_with_size(ui, keep_editing, full) {
+        if draw_button_with_size(ui, theme, keep_editing, full) {
             answer = Some(WindowAction::LeaveCancelled);
         }
         ui.dummy([0.0, theme.spacing.small]);
         ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
-        if draw_button_with_size(ui, discard, full) {
+        if draw_button_with_size(ui, theme, discard, full) {
             answer = Some(WindowAction::LeaveDiscarding);
         }
     } else {
         ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
-        if draw_button(ui, discard) {
+        if draw_button(ui, theme, discard) {
             answer = Some(WindowAction::LeaveDiscarding);
         }
-        let right_group = button_width(ui, keep_editing) + spacing[0] + button_width(ui, save);
+        let right_group =
+            button_width(ui, theme, keep_editing) + spacing[0] + button_width(ui, theme, save);
         ui.same_line_with_pos(left + content_width - right_group - window_position[0]);
-        if draw_button(ui, keep_editing) {
+        if draw_button(ui, theme, keep_editing) {
             answer = Some(WindowAction::LeaveCancelled);
         }
         ui.same_line();
@@ -1957,7 +1960,7 @@ const FORMAT_GROUPS: [&[FormatButton]; 4] = [
 fn icon_button_width(ui: &Ui, icon: Icon) -> f32 {
     let _icons = FontScope::push(ui, FontRole::Icons);
     let mut buffer = [0; 4];
-    button_width(ui, icon.as_str(&mut buffer))
+    ui.calc_text_size(icon.as_str(&mut buffer))[0] + 2.0 * ui.clone_style().frame_padding[0]
 }
 
 /// Starts a toolbar group of `width` on the current line, after a thin
@@ -2080,7 +2083,7 @@ fn draw_draft_hint(
         actions.push(WindowAction::RestoreDraft(draft.note));
     }
     ui.same_line();
-    if draw_button(ui, Text::DiscardChanges.get(language)) {
+    if draw_button(ui, theme, Text::DiscardChanges.get(language)) {
         actions.push(WindowAction::DiscardDraft(draft.note));
     }
     draw_separator(ui, theme);
@@ -2835,8 +2838,8 @@ fn draw_no_search_results(
     }
     ui.dummy([0.0, theme.spacing.small]);
     let label = Text::ClearSearch.get(language);
-    indent_to_center(ui, button_width(ui, label), width);
-    if draw_button(ui, label) {
+    indent_to_center(ui, button_width(ui, theme, label), width);
+    if draw_button(ui, theme, label) {
         actions.push(WindowAction::ClearSearch);
     }
 }
@@ -2856,9 +2859,8 @@ fn draw_empty_state(ui: &Ui, language: Language, theme: &Theme, actions: &mut Ve
 
     let primary = Text::CreateFirstNote.get(language);
     let secondary = Text::NewGroup.get(language);
-    let padding = ui.clone_style().frame_padding[0] * 2.0;
-    let primary_width = ui.calc_text_size(primary)[0] + padding;
-    let secondary_width = ui.calc_text_size(secondary)[0] + padding;
+    let primary_width = button_width(ui, theme, primary);
+    let secondary_width = button_width(ui, theme, secondary);
     let spacing = theme.spacing.small;
     let fits_one_row = primary_width + spacing + secondary_width <= available[0];
 
@@ -2877,7 +2879,7 @@ fn draw_empty_state(ui: &Ui, language: Language, theme: &Theme, actions: &mut Ve
     } else {
         indent_to_center(ui, secondary_width, available[0]);
     }
-    if draw_button(ui, secondary) {
+    if draw_button(ui, theme, secondary) {
         actions.push(WindowAction::NewGroup(None));
     }
 }

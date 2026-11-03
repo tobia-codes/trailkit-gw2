@@ -57,6 +57,8 @@ pub struct Theme {
     pub list: ListMetrics,
     /// Pane metrics (`pane.*`).
     pub pane: PaneMetrics,
+    /// Button metrics (`button.*`, memo plan M131).
+    pub button: ButtonMetrics,
     /// Corner radii (`radius.*`, R71).
     pub radius: Radii,
     /// Font sizes (`font.size.*`).
@@ -267,6 +269,23 @@ pub struct PaneMetrics {
     pub gap: f32,
 }
 
+/// Button metrics.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ButtonMetrics {
+    /// `button.min_width`: minimum width of a button with a text label, as a
+    /// multiple of the current font size, so it scales with the text size
+    /// (memo plan M131). Icon-only buttons stay square.
+    pub min_width: f32,
+}
+
+impl ButtonMetrics {
+    /// The minimum width of a text button in pixels for `font_size`.
+    #[must_use]
+    pub fn min_width_for(&self, font_size: f32) -> f32 {
+        (font_size * self.min_width).round()
+    }
+}
+
 /// Font sizes in pixels.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Typography {
@@ -325,6 +344,9 @@ const PANE_METRICS: PaneMetrics = PaneMetrics {
     padding: SPACING.small,
     gap: SPACING.small,
 };
+
+/// Button metrics shared by both built-in themes.
+const BUTTON_METRICS: ButtonMetrics = ButtonMetrics { min_width: 4.0 };
 
 /// Font sizes shared by both built-in themes.
 const TYPOGRAPHY: Typography = Typography {
@@ -410,6 +432,7 @@ impl Theme {
         spacing: SPACING,
         list: LIST_METRICS,
         pane: PANE_METRICS,
+        button: BUTTON_METRICS,
         radius: RADII,
         typography: TYPOGRAPHY,
     };
@@ -489,6 +512,7 @@ impl Theme {
         spacing: SPACING,
         list: LIST_METRICS,
         pane: PANE_METRICS,
+        button: BUTTON_METRICS,
         radius: RADII,
         typography: TYPOGRAPHY,
     };
