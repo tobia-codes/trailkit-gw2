@@ -1,0 +1,24 @@
+[package]
+name = "trailkit-memo-search"
+version = "0.0.0"
+description = "Search slice of trailkit-memo: note search index, results and the search field"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+trailkit-memo-shared.workspace = true
+trailkit-ui.workspace = true
+
+[dev-dependencies]
+jiff.workspace = true
+
+# The search field draws with the Nexus ImGui bindings, which only build for Windows.
+[target.'cfg(windows)'.dependencies]
+nexus.workspace = true
+
+[lints]
+workspace = true

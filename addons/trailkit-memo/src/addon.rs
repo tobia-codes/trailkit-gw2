@@ -183,7 +183,7 @@ fn load() {
         }
     });
     register_keybind_with_string(KEYBIND_TOGGLE, on_toggle, UNBOUND).revert_on_unload();
-    register_fonts(GLYPHS_KEY, &Text::all_texts());
+    register_fonts(GLYPHS_KEY, &crate::all_texts());
 
     NEXUS_LINK.store(get_nexus_link().cast_mut(), Ordering::Release);
 

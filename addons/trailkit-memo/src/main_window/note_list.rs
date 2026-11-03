@@ -22,12 +22,10 @@ use trailkit_ui::{
     tree_arrow::draw_tree_arrow,
 };
 
-use crate::{
-    search_field::SearchFieldTexts,
-    tree_drag::{
-        DRAG_THRESHOLD, DropIndicator, EXPAND_DELAY_SECONDS, RowKind, RowRect, resolve_drop,
-    },
+use crate::tree_drag::{
+    DRAG_THRESHOLD, DropIndicator, EXPAND_DELAY_SECONDS, RowKind, RowRect, resolve_drop,
 };
+use trailkit_memo_search::{i18n::SearchText, search_field::SearchFieldTexts};
 use trailkit_memo_shared::{
     i18n::{Language, Text, reset_countdown},
     note_tree::{
@@ -56,8 +54,8 @@ impl MemoWindow {
         menu: Option<Text>,
     ) {
         let search_texts = SearchFieldTexts {
-            hint: Text::SearchHint.get(language),
-            clear: Text::ClearSearch.get(language),
+            hint: SearchText::SearchHint.get(language),
+            clear: SearchText::ClearSearch.get(language),
         };
         if self.search_field.draw(ui, theme, search_texts) {
             // Apply the new text in this frame already.
@@ -118,7 +116,7 @@ impl MemoWindow {
             } else if self.drag_blocked_by_search
                 && ui.is_mouse_dragging_with_threshold(MouseButton::Left, DRAG_THRESHOLD)
             {
-                ui.tooltip_text(Text::ClearSearchToMove.get(language));
+                ui.tooltip_text(SearchText::ClearSearchToMove.get(language));
             }
         } else if let Some(node) = context.pressed {
             self.drag = Some(TreeDrag {
@@ -510,7 +508,7 @@ pub(super) fn draw_note_row(ui: &Ui, note: &Note, context: &mut TreeContext<'_>)
         );
         if is_row_hovered && ui.io().mouse_pos[0] >= count_x {
             ui.tooltip_text(
-                Text::ContentHits
+                SearchText::ContentHits
                     .get(context.language)
                     .replace("{count}", count),
             );
@@ -924,7 +922,7 @@ pub(super) fn draw_no_search_results(
 ) {
     let width = ui.content_region_avail()[0];
     ui.dummy([0.0, theme.spacing.medium]);
-    let message = Text::NoSearchResults
+    let message = SearchText::NoSearchResults
         .get(language)
         .replace("{query}", text.trim());
     {
@@ -932,7 +930,7 @@ pub(super) fn draw_no_search_results(
         centered_text(ui, &message, width);
     }
     ui.dummy([0.0, theme.spacing.small]);
-    let label = Text::ClearSearch.get(language);
+    let label = SearchText::ClearSearch.get(language);
     indent_to_center(ui, button_width(ui, theme, label), width);
     if draw_button(ui, theme, label) {
         actions.push(WindowAction::ClearSearch);

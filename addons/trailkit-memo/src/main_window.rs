@@ -31,9 +31,11 @@ use trailkit_ui::{
 
 use crate::{
     note_editing::{ActiveFormats, EditSession, FormatCommand, active_formats, format_edit},
+    tree_drag::{DropTarget, RowRect},
+};
+use trailkit_memo_search::{
     note_search::{NoteSearchIndex, SearchResults},
     search_field::SearchField,
-    tree_drag::{DropTarget, RowRect},
 };
 use trailkit_memo_shared::{
     drafts::DraftsDocument,

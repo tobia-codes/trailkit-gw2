@@ -30,8 +30,9 @@ cargo xtask ui-test           # window snapshots (tests/snapshots/) via the head
 
 | Path | Content |
 |------|---------|
-| `src/lib.rs` | crate root |
+| `src/lib.rs` | crate root; `all_texts()` collects the texts of the app and every slice for the font atlas |
 | `shared/` | crate `trailkit-memo-shared`: note tree, documents, storage worker, reset periods, localization — what several slices need (ROADMAP R76) |
+| `slices/search/` | crate `trailkit-memo-search`: search index, results, search field and its texts |
 | `src/main_window.rs` | main window: state, drawing entry point, applying user actions (Windows only) |
 | `src/main_window/note_list.rs` | note list: header, tree rows, rename, context menu, search hits, drag & drop |
 | `src/main_window/note_pane.rs` | note pane: note view, editor and formatting toolbar, title with kind, draft hint |
