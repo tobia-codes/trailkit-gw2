@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-03 (end of session 11, after PR #80; slice conversion in progress).
+Last updated: 2026-11-03 (session 12, slice conversion steps 1–5 done).
 
 ## Where we are
 
@@ -105,36 +105,36 @@ Last updated: 2026-11-03 (end of session 11, after PR #80; slice conversion in p
 ## ▶ Resume here
 
 1. **Continue the slice-crate conversion of memo (ROADMAP R76)** on the
-   local, **unpushed** branch `chore/memo-slice-crates` (2 commits: R76
-   docs, step 1). `git switch chore/memo-slice-crates` first.
-   - Done: **step 1** — `addons/trailkit-memo/shared/` = crate
-     `trailkit-memo-shared` (note_tree, reset_schedule, drafts, settings,
-     ui_state, storage_worker, i18n). All tests and snapshots green.
-   - Settled (questions 30–35, all recommendations accepted):
-     slices `note-list` (incl. drag & drop), `note-view`, `editor`,
-     `search`, `reset-schedule`, `drafts` under
-     `addons/trailkit-memo/slices/<name>/`, crates `trailkit-memo-<name>`,
-     each with README; the app (`trailkit-memo`) keeps main window, layout,
-     dialogs, Nexus glue and the window snapshot tests. `ResetPeriod` stays
-     in shared; reset logic/badge/colors go to `reset-schedule`. Slices
-     never depend on each other; the app passes neutral shared types
-     (e.g. hit ranges, badge data) between them. Each slice gets its **own
-     text enum** (Q25) — `Text::all_texts()` and the font-coverage test in
-     shared i18n must then cover every slice's texts (e.g. each slice
-     exposes `all_texts()`, the app test concatenates them).
-   - Next: step 2 `search` (note_search.rs + search_field.rs + search
-     texts SearchHint/ClearSearch/NoSearchResults/ClearSearchToMove/
-     ContentHits), then `reset-schedule`, `drafts`, `note-view`, `editor`,
-     `note-list`. Add `"addons/*/slices/*"` to the workspace members with
-     the first slice (an empty glob breaks cargo). After every step:
-     fmt, clippy (Linux + `cargo xwin clippy` Windows), tests,
-     `cargo xtask ui-test` (snapshots must stay pixel-identical, never
-     `--update`), `check-names`. At the end: update memo README, deploy,
-     ask the user to test, merge only after the OK (R74).
+   local, **unpushed** branch `chore/memo-slice-crates`
+   (`git switch chore/memo-slice-crates` first).
+   - Done (session 12, one commit each, all checks green, snapshots
+     pixel-identical): step 1 `shared`, step 2 `search`, step 3
+     `reset-schedule`, step 4 `drafts`, `LocalizedText` trait, toolbar
+     helpers → `trailkit-ui::toolbar` / `button::icon_button_width`,
+     `chip_context` in shared, step 5 `note-view`.
+   - Settled in session 12: questions 36–47 (ROADMAP R76 "Details" and the
+     slice convention in nexus-addon-dev skill §0). Q25 confirmed (texts per
+     slice, no central catalog).
+   - Next: step 6 **`editor`** — `note_editing.rs` (EditSession, formats),
+     `draw_editor` (title input, body, Ctrl+S/B/I, preview + splitter),
+     `draw_format_toolbar` + `ToolbarState`, editor texts (TitleHint,
+     Format*, InsertEventRequiresCore, ShowPreview/HidePreview, …). The app
+     keeps the toolbar end (Edit / Cancel / Save) and the unsaved-changes
+     dialog; the editor gets `&mut f32` for `preview_split_fraction`, the
+     `preview_visible` flag, `is_dialog_open`, `Option<&SearchQuery>` and a
+     `ChipContext`, and returns `EditorOutput { actions, split_changed }`.
+     Then step 7 **`note-list`** (note_list.rs + tree_drag.rs; badge via
+     `RowBadge`, hit counts via search results passed as neutral data).
+   - Per step: fmt, clippy (Linux + `cargo xwin clippy` Windows), tests,
+     `cargo xtask ui-test` (never `--update`), `check-names`. At the end:
+     memo README, measure the release DLL size against `develop` (user
+     asked whether the slices cost performance — expected: no, thin LTO +
+     codegen-units 1), deploy, ask the user to test, merge only after the
+     OK (R74).
 2. **Then grill trash & undo** (M12: trash, purged after 30 days,
    "Deleted — Undo" toast, confirm deleting a non-empty group with its
    note count; M25/M34 mention delete in step 7) — as a new slice
-   `trash`. Next decision ids: M132+, R77+, questions from 36.
+   `trash`. Next decision ids: M132+, R77+, questions from 48.
 3. In-game test status: search, list header, draft time, title bar, Save
    icon (floppy, M130) and button min width (M131) were all confirmed by
    the user in session 11.
@@ -282,7 +282,7 @@ Last updated: 2026-11-03 (end of session 11, after PR #80; slice conversion in p
 ## Recurring checks
 
 - GW2 wiki (2026-10-31): still behind Cognito login → Wayback workaround stays.
-- C-703/25 P (checked 2026-11-03, session 10 — check again next session): still
+- C-703/25 P (checked 2026-11-03, session 12 — check again next session): still
   pending, no hearing date or judgment reported; DPF in force. Microsoft intervened for the
   Commission; noyb asked for repeal (2026-06-30) but has not sued yet.
 - DPF reminder workflow: the 2026-11-01 08:00 cron was silently skipped by
