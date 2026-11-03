@@ -33,6 +33,7 @@ use trailkit_ui::{
     separator::draw_separator,
     splitter::draw_vertical_splitter,
     theme::Theme,
+    tree_arrow::draw_tree_arrow,
 };
 
 use crate::{
@@ -1966,14 +1967,35 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut TreeContext<'_>) {
         } else {
             truncate_to_width(ui, &group.title, title_end - (row_start[0] + title_offset))
         };
-        let token = TreeNode::new("group")
-            .label::<&str, _>(&label)
-            .flags(flags)
-            .opened(group.expanded, Condition::Always)
-            .push(ui);
+        // The node draws hover, selection and its triangle in the text
+        // color; a transparent text color hides the triangle, and the
+        // Lucide chevron and the title are drawn over it (R71).
+        let token = {
+            let _hidden_triangle = ui.push_style_color(StyleColor::Text, [0.0; 4]);
+            TreeNode::new("group")
+                .label::<&str, _>("")
+                .flags(flags)
+                .opened(group.expanded, Condition::Always)
+                .push(ui)
+        };
         if context.selected == Some(node) {
             draw_selection_bar(ui, context.theme);
         }
+        draw_tree_arrow(
+            ui,
+            context.theme,
+            token.is_some(),
+            row_start,
+            context.frame_padding,
+        );
+        ui.get_window_draw_list().add_text(
+            [
+                row_start[0] + title_offset,
+                row_start[1] + context.frame_padding[1],
+            ],
+            context.theme.text.primary.to_array(),
+            &*label,
+        );
         (label, token)
     };
     let kind = if group.expanded {
