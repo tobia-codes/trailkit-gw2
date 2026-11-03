@@ -16,6 +16,7 @@ trailkit-storage = { path = "crates/trailkit-storage" }
 trailkit-ui-testing = { path = "crates/trailkit-ui-testing" }
 # Addon-internal crates (ROADMAP R76).
 trailkit-memo-shared = { path = "addons/trailkit-memo/shared" }
+trailkit-memo-drafts = { path = "addons/trailkit-memo/slices/drafts" }
 trailkit-memo-reset-schedule = { path = "addons/trailkit-memo/slices/reset-schedule" }
 trailkit-memo-search = { path = "addons/trailkit-memo/slices/search" }
 nexus = { git = "https://github.com/zerthox/nexus-rs", rev = "51bff5ab38ad11332316448b452ece1b773018cd", features = ["log"] }

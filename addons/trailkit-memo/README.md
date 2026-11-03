@@ -32,6 +32,7 @@ cargo xtask ui-test           # window snapshots (tests/snapshots/) via the head
 |------|---------|
 | `src/lib.rs` | crate root; `all_texts()` collects the texts of the app and every slice for the font atlas |
 | `shared/` | crate `trailkit-memo-shared`: note tree, documents, storage worker, localization — what several slices need (ROADMAP R76) |
+| `slices/drafts/` | crate `trailkit-memo-drafts`: the draft hint (restore / discard) and its texts |
 | `slices/reset-schedule/` | crate `trailkit-memo-reset-schedule`: reset times, due resets, reset badge, kind dropdown and their texts |
 | `slices/search/` | crate `trailkit-memo-search`: search index, results, search field and its texts |
 | `src/main_window.rs` | main window: state, drawing entry point, applying user actions (Windows only) |

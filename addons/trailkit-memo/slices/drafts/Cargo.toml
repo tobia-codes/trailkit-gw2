@@ -1,0 +1,22 @@
+[package]
+name = "trailkit-memo-drafts"
+version = "0.0.0"
+description = "Drafts slice of trailkit-memo: the hint that offers restoring or discarding a kept draft"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+trailkit-memo-shared.workspace = true
+
+# The hint draws with the Nexus ImGui bindings, which only build for Windows.
+[target.'cfg(windows)'.dependencies]
+jiff.workspace = true
+nexus.workspace = true
+trailkit-ui.workspace = true
+
+[lints]
+workspace = true

@@ -195,12 +195,6 @@ pub enum Text {
     DiscardChanges,
     /// Stay in the editor (unsaved changes dialog).
     KeepEditing,
-    /// Draft hint, followed by the date and time of the draft (M54).
-    DraftFound,
-    /// Draft hint addition when the note changed after the draft (M54).
-    DraftNoteChangedSince,
-    /// Restore a draft into the editor (M54).
-    RestoreDraft,
     /// Tooltip of the preview button while the preview is hidden (M60).
     ShowPreview,
     /// Tooltip of the preview button while the preview is shown (M60).
@@ -219,7 +213,7 @@ pub enum Text {
 
 impl Text {
     /// Every string, for registering their characters with Nexus' font atlas.
-    pub const ALL: [Self; 46] = [
+    pub const ALL: [Self; 43] = [
         Self::MainWindowTitle,
         Self::CollapseWindow,
         Self::ExpandWindow,
@@ -256,9 +250,6 @@ impl Text {
         Self::KeepChanges,
         Self::DiscardChanges,
         Self::KeepEditing,
-        Self::DraftFound,
-        Self::DraftNoteChangedSince,
-        Self::RestoreDraft,
         Self::ShowPreview,
         Self::HidePreview,
         Self::EmptyNote,
@@ -382,12 +373,6 @@ impl Text {
             (Self::DiscardChanges, Language::German) => "Verwerfen",
             (Self::KeepEditing, Language::English) => "Keep editing",
             (Self::KeepEditing, Language::German) => "Weiter bearbeiten",
-            (Self::DraftFound, Language::English) => "Unsaved changes from",
-            (Self::DraftFound, Language::German) => "Ungespeicherte Änderungen vom",
-            (Self::DraftNoteChangedSince, Language::English) => "The note was changed since.",
-            (Self::DraftNoteChangedSince, Language::German) => "Die Notiz wurde seitdem geändert.",
-            (Self::RestoreDraft, Language::English) => "Restore",
-            (Self::RestoreDraft, Language::German) => "Wiederherstellen",
             (Self::ShowPreview, Language::English) => "Show preview",
             (Self::ShowPreview, Language::German) => "Vorschau einblenden",
             (Self::HidePreview, Language::English) => "Hide preview",

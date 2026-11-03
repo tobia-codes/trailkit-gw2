@@ -33,6 +33,7 @@ use crate::{
     note_editing::{ActiveFormats, EditSession, FormatCommand, active_formats, format_edit},
     tree_drag::{DropTarget, RowRect},
 };
+use trailkit_memo_drafts::draft_hint::DraftHint;
 use trailkit_memo_reset_schedule::{
     due_resets::apply_due_resets, schedule::next_reset_of_any_period,
 };
@@ -373,7 +374,7 @@ pub struct MemoWindow {
     close_approved: bool,
     /// Cached draft hint label (note, language, text), so it is not
     /// formatted every frame.
-    draft_hint: Option<(NoteId, Language, String)>,
+    draft_hint: DraftHint,
     /// When reset notes must be checked next (M90); `None` checks at once,
     /// e.g. after an action that may have unblocked a waiting reset (M89).
     next_reset_check: Option<Timestamp>,
@@ -497,7 +498,7 @@ impl MemoWindow {
             text_scale_changed_at: None,
             settings,
             close_approved: false,
-            draft_hint: None,
+            draft_hint: DraftHint::default(),
             dialog_height: None,
             next_reset_check: None,
             drag: None,

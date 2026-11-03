@@ -14,6 +14,7 @@ mod addon;
 #[cfg(windows)]
 mod main_window;
 
+use trailkit_memo_drafts::i18n::DraftText;
 use trailkit_memo_reset_schedule::i18n::ResetText;
 use trailkit_memo_search::i18n::SearchText;
 use trailkit_memo_shared::i18n::Text;
@@ -23,7 +24,7 @@ use trailkit_memo_shared::i18n::Text;
 /// (nexus-addon-dev skill §1).
 #[must_use]
 pub fn all_texts() -> String {
-    Text::all_texts() + &ResetText::all_texts() + &SearchText::all_texts()
+    Text::all_texts() + &DraftText::all_texts() + &ResetText::all_texts() + &SearchText::all_texts()
 }
 
 #[cfg(test)]

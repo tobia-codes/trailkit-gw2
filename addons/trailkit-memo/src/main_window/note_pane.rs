@@ -1,12 +1,11 @@
 //! The note pane of the memo main window: note view, editor with its
-//! formatting toolbar (M51–M53, M94), title with kind (M102) and draft hint.
+//! formatting toolbar (M51–M53, M94), title with kind (M102) and draft hint (from the drafts slice).
 
-use jiff::Timestamp;
 use nexus::imgui::{ChildWindow, Key, MouseButton, StyleColor, Ui};
 use trailkit_ui::{
     button::{
-        button_width, draw_button, draw_icon_button, draw_primary_button,
-        draw_primary_button_with_icon, icon_label_button_width,
+        button_width, draw_button, draw_icon_button, draw_primary_button_with_icon,
+        icon_label_button_width,
     },
     chat_link_chip::ChipContext,
     font_registry::FontScope,
@@ -22,10 +21,10 @@ use trailkit_ui::{
 };
 
 use crate::note_editing::{ActiveFormats, FormatCommand};
+use trailkit_memo_drafts::draft_hint::DraftHintAction;
 use trailkit_memo_reset_schedule::note_kind::{draw_kind_dropdown, kind_dropdown_size};
 use trailkit_memo_shared::{
-    drafts::Draft,
-    i18n::{Language, Text, chip_text, format_local_time},
+    i18n::{Language, Text, chip_text},
     note_tree::{NoteId, NoteKind},
 };
 
@@ -251,15 +250,18 @@ impl MemoWindow {
         }
 
         if let Some(draft) = self.drafts.get(note_id) {
-            draw_draft_hint(
-                ui,
-                language,
-                theme,
-                draft,
-                note.updated_at,
-                &mut self.draft_hint,
-                &mut self.actions,
-            );
+            match self
+                .draft_hint
+                .draw(ui, language, theme, draft, note.updated_at)
+            {
+                Some(DraftHintAction::Restore) => {
+                    self.actions.push(WindowAction::RestoreDraft(note_id));
+                }
+                Some(DraftHintAction::Discard) => {
+                    self.actions.push(WindowAction::DiscardDraft(note_id));
+                }
+                None => {}
+            }
         }
 
         draw_title_with_kind(
@@ -489,47 +491,6 @@ pub(super) fn draw_format_toolbar(
     if draw_icon_button(ui, theme, Icon::EYE, tooltip.get(language)) {
         actions.push(WindowAction::TogglePreview);
     }
-}
-
-/// Draws the draft hint above a note (M54): when the draft was saved, whether
-/// the note changed since, and "Restore" (primary) / "Discard".
-pub(super) fn draw_draft_hint(
-    ui: &Ui,
-    language: Language,
-    theme: &Theme,
-    draft: &Draft,
-    note_updated_at: Timestamp,
-    cache: &mut Option<(NoteId, Language, String)>,
-    actions: &mut Vec<WindowAction>,
-) {
-    let is_cached = cache.as_ref().is_some_and(|(note, cached_language, _)| {
-        *note == draft.note && *cached_language == language
-    });
-    if !is_cached {
-        let time = format_local_time(draft.saved_at, language);
-        *cache = Some((
-            draft.note,
-            language,
-            format!("{} {time}", Text::DraftFound.get(language)),
-        ));
-    }
-    if let Some((_, _, label)) = cache.as_ref() {
-        ui.text_colored(theme.status.warning.to_array(), label);
-    }
-    if draft.note_updated_at != note_updated_at {
-        ui.text_colored(
-            theme.text.secondary.to_array(),
-            Text::DraftNoteChangedSince.get(language),
-        );
-    }
-    if draw_primary_button(ui, theme, Text::RestoreDraft.get(language)) {
-        actions.push(WindowAction::RestoreDraft(draft.note));
-    }
-    ui.same_line();
-    if draw_button(ui, theme, Text::DiscardChanges.get(language)) {
-        actions.push(WindowAction::DiscardDraft(draft.note));
-    }
-    draw_separator(ui, theme);
 }
 
 /// Draws the note title with the kind dropdown right behind it (M102, the
