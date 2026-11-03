@@ -2418,10 +2418,6 @@ fn draw_rename_input(
     }
 }
 
-/// Pixels by which a badge letter is nudged right and up before rounding,
-/// so it looks centered rather than measures centered.
-const OPTICAL_BIAS: f32 = 0.25;
-
 /// Draws the reset badge of a note row (M45, M49): an outlined rounded box
 /// with a letter for reset notes, nothing for normal notes. The badge ends at
 /// `anchor[0]` and is vertically centered in the row starting at `anchor[1]`
@@ -2476,13 +2472,10 @@ fn draw_badge(ui: &Ui, kind: NoteKind, anchor: [f32; 2], context: &TreeContext<'
             letter_size[1],
         ]);
         let center = [start[0] + width / 2.0, start[1] + height / 2.0];
-        // Rounded with a quarter-pixel bias right and up: the letters are
-        // stem-heavy on the left (D) and looked half a pixel low and left
-        // with plain rounding (in-game test with Inter, R71).
         draw_list.add_text(
             [
-                (center[0] - (ink[0] + ink[2]) / 2.0 + OPTICAL_BIAS).round(),
-                (center[1] - (ink[1] + ink[3]) / 2.0 - OPTICAL_BIAS).round(),
+                (center[0] - (ink[0] + ink[2]) / 2.0).round(),
+                (center[1] - (ink[1] + ink[3]) / 2.0).round(),
             ],
             color.to_array(),
             letter,

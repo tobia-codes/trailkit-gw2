@@ -511,16 +511,16 @@ mod tests {
     #[test]
     fn every_character_is_in_the_subset_fonts() {
         use trailkit_ui::fonts::{
-            INTER_ITALIC, INTER_REGULAR, INTER_SEMIBOLD, INTER_SEMIBOLD_ITALIC, covers,
+            OPEN_SANS_BOLD, OPEN_SANS_BOLD_ITALIC, OPEN_SANS_ITALIC, OPEN_SANS_REGULAR, covers,
         };
         // UI strings plus the help pages (rendered with the same fonts).
         let texts =
             Text::all_texts() + include_str!("../help/en.md") + include_str!("../help/de.md");
         for font in [
-            INTER_REGULAR,
-            INTER_SEMIBOLD,
-            INTER_ITALIC,
-            INTER_SEMIBOLD_ITALIC,
+            OPEN_SANS_REGULAR,
+            OPEN_SANS_BOLD,
+            OPEN_SANS_ITALIC,
+            OPEN_SANS_BOLD_ITALIC,
         ] {
             let missing: String = texts
                 .chars()

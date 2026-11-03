@@ -92,8 +92,7 @@ Build once, use everywhere. Planned:
 - `ColorTokenEditor`, `KeybindHint`, `EmptyState`, `ErrorState`, `Spinner`
 - Markdown renderer (read-only view) — **exists**: `markdown` (parser,
   any platform) + `markdown_view` (ImGui)
-- Shared fonts (Inter regular/semibold/italic/semibold italic, headings;
-  M62, R71) and
+- Shared fonts (Open Sans regular/bold/italic/bold italic, headings; M62) and
   Lucide icons — **exist**: `fonts`, `font_registry` (`FontScope`), `icons`
 - Chat-link chip — **exists**: `chat_link` (find/decode `[&…]`, any
   platform) + `chat_link_chip` (pill in its category color: icon and kind in
