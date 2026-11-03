@@ -675,3 +675,30 @@ fn search_without_hits_offers_to_clear_it() {
     let image = search_for(&mut memo, [640.0, 360.0], "zzz");
     assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-search-empty", &image);
 }
+
+#[test]
+fn only_the_tree_scrolls_below_the_fixed_list_header() {
+    let mut document = sample_document();
+    for number in 1..=20 {
+        document.root.push(Node::Note(note(
+            &format!("Note {number}"),
+            "",
+            NoteKind::Normal,
+        )));
+    }
+    let ui_state = selected_first(&document);
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    let size = [640.0, 360.0];
+    let mut harness = UiHarness::new(size);
+    let over_list = |mouse_wheel| FrameInput {
+        mouse_position: [100.0, 250.0],
+        mouse_wheel,
+        ..FrameInput::default()
+    };
+    let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
+    harness.settle(2, &over_list(0.0), &mut draw_dark);
+    harness.frame(&over_list(-5.0), &mut draw_dark);
+    // Search field and buttons stay at the top (M129).
+    let image = harness.settle(3, &over_list(0.0), &mut draw_dark);
+    assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-list-scrolled", &image);
+}
