@@ -985,8 +985,9 @@ impl MemoWindow {
         }
     }
 
-    /// Draws the toolbar and the tree. `menu` is the tooltip of a leading
-    /// menu button (drawer only, so it closes where it opened).
+    /// Draws the fixed header (search field, toolbar) and below it the
+    /// scrolling tree (M129). `menu` is the tooltip of a leading menu button
+    /// (drawer only, so it closes where it opened).
     fn draw_tree_pane(&mut self, ui: &Ui, language: Language, theme: &Theme, menu: Option<Text>) {
         let search_texts = SearchFieldTexts {
             hint: Text::SearchHint.get(language),
@@ -997,6 +998,17 @@ impl MemoWindow {
             self.update_search();
         }
         draw_toolbar(ui, language, theme, menu, &mut self.actions);
+        // Search field and buttons stay put; only the tree below the
+        // separator scrolls, with its own scrollbar (M129).
+        ChildWindow::new("note_list")
+            .size([0.0, 0.0])
+            .draw_background(false)
+            .build(ui, || self.draw_note_list(ui, language, theme));
+    }
+
+    /// Draws the scrolling part of the note list: the tree (or the empty
+    /// search result), drag & drop and the context menu of empty spots.
+    fn draw_note_list(&mut self, ui: &Ui, language: Language, theme: &Theme) {
         self.tree_rows.clear();
         if let Some(current) = &self.search.current
             && !current.results.has_hits()
