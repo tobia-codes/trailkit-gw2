@@ -1,8 +1,9 @@
 //! Panes: content regions inside a window (trailkit-ui skill §3,
 //! `lay-pane-padding`).
 //!
-//! A pane is an ImGui child window with the `bg.panel` background and
-//! `pane.padding` on every side. ImGui gives borderless child windows no
+//! A pane is an ImGui child window with the `bg.panel` background,
+//! `pane.padding` on every side and a `border.highlight` line along its top
+//! inner edge (R71). ImGui gives borderless child windows no
 //! padding at all, so every sub-region of a trailkit window is drawn through
 //! [`draw_pane`] instead of a bare `ChildWindow`.
 
@@ -36,5 +37,25 @@ pub fn draw_pane<R>(
         .border(true)
         .begin(ui);
     padding.pop();
-    token.map(|_pane| content())
+    token.map(|_pane| {
+        draw_top_highlight(ui, theme);
+        content()
+    })
+}
+
+/// Draws the 1 px `border.highlight` line along the top inner edge of the
+/// current pane, between its rounded corners.
+fn draw_top_highlight(ui: &Ui, theme: &Theme) {
+    let [left, top] = ui.window_pos();
+    let width = ui.window_size()[0];
+    let corner = theme.radius.large;
+    let y = top + theme.border.width + 0.5;
+    ui.get_window_draw_list()
+        .add_line(
+            [left + corner, y],
+            [left + width - corner, y],
+            theme.border.highlight.to_array(),
+        )
+        .thickness(1.0)
+        .build();
 }

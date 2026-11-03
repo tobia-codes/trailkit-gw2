@@ -41,9 +41,9 @@ const COLOR_SLOTS: [(StyleColor, ColorToken); 44] = [
     (StyleColor::ScrollbarGrabActive, |theme| {
         theme.text.secondary
     }),
-    (StyleColor::CheckMark, |theme| theme.accent.base),
-    (StyleColor::SliderGrab, |theme| theme.accent.base),
-    (StyleColor::SliderGrabActive, |theme| theme.accent.active),
+    (StyleColor::CheckMark, |theme| theme.accent.text),
+    (StyleColor::SliderGrab, |theme| theme.accent.text),
+    (StyleColor::SliderGrabActive, |theme| theme.accent.text),
     (StyleColor::Button, |theme| theme.surface.input),
     (StyleColor::ButtonHovered, |theme| theme.surface.hover),
     (StyleColor::ButtonActive, |theme| theme.surface.active),
@@ -76,13 +76,13 @@ const COLOR_SLOTS: [(StyleColor, ColorToken); 44] = [
 
 /// Maps every themed ImGui style variable to the theme tokens it uses.
 const STYLE_VARS: [fn(&Theme) -> StyleVar; 14] = [
-    |theme| StyleVar::WindowRounding(theme.radius),
-    |theme| StyleVar::ChildRounding(theme.radius),
-    |theme| StyleVar::PopupRounding(theme.radius),
-    |theme| StyleVar::FrameRounding(theme.radius),
-    |theme| StyleVar::ScrollbarRounding(theme.radius),
-    |theme| StyleVar::GrabRounding(theme.radius),
-    |theme| StyleVar::TabRounding(theme.radius),
+    |theme| StyleVar::WindowRounding(theme.radius.large),
+    |theme| StyleVar::ChildRounding(theme.radius.large),
+    |theme| StyleVar::PopupRounding(theme.radius.large),
+    |theme| StyleVar::FrameRounding(theme.radius.medium),
+    |theme| StyleVar::ScrollbarRounding(theme.radius.small),
+    |theme| StyleVar::GrabRounding(theme.radius.small),
+    |theme| StyleVar::TabRounding(theme.radius.medium),
     |theme| StyleVar::WindowBorderSize(theme.border.width),
     |theme| StyleVar::PopupBorderSize(theme.border.width),
     |theme| StyleVar::ChildBorderSize(theme.border.width),

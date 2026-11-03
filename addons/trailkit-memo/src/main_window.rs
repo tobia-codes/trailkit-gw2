@@ -29,6 +29,7 @@ use trailkit_ui::{
     markdown_view::{MarkdownAction, draw_markdown, open_web_link},
     menu::{begin_submenu, draw_menu_item},
     pane::draw_pane,
+    selection_bar::draw_selection_bar,
     separator::draw_separator,
     splitter::draw_vertical_splitter,
     theme::Theme,
@@ -975,7 +976,7 @@ impl MemoWindow {
         let border = if is_impossible {
             theme.status.danger
         } else {
-            theme.accent.base
+            theme.accent.text
         };
         let _border = ui.push_style_color(StyleColor::Border, border.to_array());
         ui.tooltip(|| {
@@ -1048,13 +1049,11 @@ impl MemoWindow {
                 ui.tooltip_text(Text::SaveTooltip.get(language));
             }
         } else if self.selected_note().is_some() {
-            let width = {
-                let _icons = FontScope::push(ui, FontRole::Icons);
-                let mut buffer = [0; 4];
-                button_width(ui, Icon::PENCIL.as_str(&mut buffer))
-            };
-            move_to_toolbar_end(ui, width);
-            if draw_icon_button(ui, theme, Icon::PENCIL, Text::EditNote.get(language)) {
+            // Editing is the main action of the reading view: the one brass
+            // button of the view (R71).
+            let edit = Text::EditNote.get(language);
+            move_to_toolbar_end(ui, button_width(ui, edit));
+            if draw_primary_button(ui, theme, edit) {
                 self.actions.push(WindowAction::StartEditing);
             }
         }
@@ -1589,12 +1588,12 @@ fn draw_unsaved_changes_card(
     draw_list
         .add_rect(min, max, theme.surface.panel.to_array())
         .filled(true)
-        .rounding(theme.radius)
+        .rounding(theme.radius.large)
         .build();
     draw_list
         .add_rect(min, max, theme.border.subtle.to_array())
         .thickness(theme.border.width.max(1.0))
-        .rounding(theme.radius)
+        .rounding(theme.radius.large)
         .build();
     let left = min[0] + padding;
     ui.set_cursor_screen_pos([left, min[1] + padding]);
@@ -1666,7 +1665,7 @@ fn draw_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str) -> bool {
 /// `active` (toggles whose state is on, M69).
 fn draw_icon_toggle(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str, active: bool) -> bool {
     let _active_color =
-        active.then(|| ui.push_style_color(StyleColor::Text, theme.accent.base.to_array()));
+        active.then(|| ui.push_style_color(StyleColor::Text, theme.accent.text.to_array()));
     let clicked = {
         let _colors = [
             ui.push_style_color(StyleColor::Button, [0.0; 4]),
@@ -1811,7 +1810,7 @@ fn draw_format_toolbar(
             // `text.disabled` and its clicks are ignored.
             let icon_color = match command {
                 None => Some(theme.text.disabled),
-                Some(command) if state.active.is_active(*command) => Some(theme.accent.base),
+                Some(command) if state.active.is_active(*command) => Some(theme.accent.text),
                 Some(_) => None,
             };
             let _icon_color =
@@ -1830,7 +1829,7 @@ fn draw_format_toolbar(
     let (tooltip, _selected) = if state.preview_visible {
         (
             Text::HidePreview,
-            Some(ui.push_style_color(StyleColor::Text, theme.accent.base.to_array())),
+            Some(ui.push_style_color(StyleColor::Text, theme.accent.text.to_array())),
         )
     } else {
         (Text::ShowPreview, None)
@@ -1972,6 +1971,9 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut TreeContext<'_>) {
             .flags(flags)
             .opened(group.expanded, Condition::Always)
             .push(ui);
+        if context.selected == Some(node) {
+            draw_selection_bar(ui, context.theme);
+        }
         (label, token)
     };
     let kind = if group.expanded {
@@ -2036,6 +2038,9 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut TreeContext<'_>) {
         .label::<&str, _>("")
         .flags(flags)
         .push(ui);
+    if context.selected == Some(node) {
+        draw_selection_bar(ui, context.theme);
+    }
     let row_start = ui.item_rect_min();
     record_row(ui, node, RowKind::Note, context);
     // Ask the tree node itself: it spans the whole row, and once a click
@@ -2210,7 +2215,7 @@ fn record_row(ui: &Ui, node: NodeId, kind: RowKind, context: &mut TreeContext<'_
 /// (trailkit-ui skill §4) into the list's window.
 fn draw_drop_indicator(ui: &Ui, theme: &Theme, indicator: DropIndicator) {
     let draw_list = ui.get_window_draw_list();
-    let color = theme.accent.base.to_array();
+    let color = theme.accent.text.to_array();
     let thickness = 2.0 * theme.border.width;
     match indicator {
         DropIndicator::Line { y, left, right } => {
@@ -2222,7 +2227,7 @@ fn draw_drop_indicator(ui: &Ui, theme: &Theme, indicator: DropIndicator) {
         DropIndicator::Highlight { min, max } => {
             draw_list
                 .add_rect(min, max, color)
-                .rounding(theme.radius)
+                .rounding(theme.radius.medium)
                 .thickness(thickness)
                 .build();
         }
@@ -2376,7 +2381,7 @@ fn draw_rename_input(
             theme.border.focus.to_array(),
         )
         .thickness(theme.border.width.max(1.0))
-        .rounding(theme.radius)
+        .rounding(theme.radius.medium)
         .build();
 
     let padding_x = theme.spacing.extra_small;
@@ -2438,7 +2443,7 @@ fn draw_badge(ui: &Ui, kind: NoteKind, anchor: [f32; 2], context: &TreeContext<'
     let letter = letter.get(language);
     let color = kind
         .period()
-        .map_or(theme.accent.base, |period| reset_color(theme, period));
+        .map_or(theme.accent.text, |period| reset_color(theme, period));
     // Lucide style (`lay-icons`): round corners, stroke ≈ 2/24 of the size;
     // a faint fill of the kind color makes it readable on dark panes (M105).
     let stroke = (line_height / 12.0).max(1.0);
@@ -2455,7 +2460,7 @@ fn draw_badge(ui: &Ui, kind: NoteKind, anchor: [f32; 2], context: &TreeContext<'
         .thickness(stroke)
         .build();
     // A bold letter, centered by its own ink box, not by its advance width
-    // or the line box (Open Sans sits low in it, M85, M105).
+    // or the line box (the text font sits low in it, M85, M105).
     {
         let _bold = FontScope::push(ui, FontRole::BodyBold);
         let letter_size = ui.calc_text_size(letter);

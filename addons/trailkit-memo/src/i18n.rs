@@ -153,7 +153,7 @@ pub enum Text {
     ShowNoteList,
     /// Tooltip of the menu button while the note list is shown (M48).
     HideNoteList,
-    /// Tooltip of the edit button (M51).
+    /// Label of the primary edit button (M51; a brass text button, R71).
     EditNote,
     /// Button committing an edit (M51).
     Save,
@@ -341,8 +341,8 @@ impl Text {
             (Self::ShowNoteList, Language::German) => "Notizliste einblenden",
             (Self::HideNoteList, Language::English) => "Hide note list",
             (Self::HideNoteList, Language::German) => "Notizliste ausblenden",
-            (Self::EditNote, Language::English) => "Edit note",
-            (Self::EditNote, Language::German) => "Notiz bearbeiten",
+            (Self::EditNote, Language::English) => "Edit",
+            (Self::EditNote, Language::German) => "Bearbeiten",
             (Self::Save, Language::English) => "Save",
             (Self::Save, Language::German) => "Speichern",
             (Self::SaveTooltip, Language::English) => "Save changes (Ctrl+Enter, Ctrl+S)",
@@ -511,16 +511,16 @@ mod tests {
     #[test]
     fn every_character_is_in_the_subset_fonts() {
         use trailkit_ui::fonts::{
-            OPEN_SANS_BOLD, OPEN_SANS_BOLD_ITALIC, OPEN_SANS_ITALIC, OPEN_SANS_REGULAR, covers,
+            INTER_ITALIC, INTER_REGULAR, INTER_SEMIBOLD, INTER_SEMIBOLD_ITALIC, covers,
         };
         // UI strings plus the help pages (rendered with the same fonts).
         let texts =
             Text::all_texts() + include_str!("../help/en.md") + include_str!("../help/de.md");
         for font in [
-            OPEN_SANS_REGULAR,
-            OPEN_SANS_BOLD,
-            OPEN_SANS_ITALIC,
-            OPEN_SANS_BOLD_ITALIC,
+            INTER_REGULAR,
+            INTER_SEMIBOLD,
+            INTER_ITALIC,
+            INTER_SEMIBOLD_ITALIC,
         ] {
             let missing: String = texts
                 .chars()

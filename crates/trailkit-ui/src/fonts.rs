@@ -1,5 +1,5 @@
-//! The shared trailkit fonts: Open Sans text faces and the Lucide icon font
-//! (memo plan M35, M36, M62).
+//! The shared trailkit fonts: Inter text faces and the Lucide icon font
+//! (memo plan M35, M36, M62; ROADMAP R71).
 //!
 //! Every addon registers the same font identifiers with Nexus; Nexus loads a
 //! font once and shares it between all addons that ask for the same id. The
@@ -7,20 +7,18 @@
 //! headings are derived from it. This module only describes the fonts and is
 //! platform-independent; registration lives in `font_registry` (Windows).
 
-/// Open Sans Regular (OFL, see `assets/fonts/open-sans/LICENSE`).
-pub static OPEN_SANS_REGULAR: &[u8] =
-    include_bytes!("../assets/fonts/open-sans/open-sans-regular.ttf");
+/// Inter Regular (OFL, see `assets/fonts/inter/LICENSE`).
+pub static INTER_REGULAR: &[u8] = include_bytes!("../assets/fonts/inter/inter-regular.ttf");
 
-/// Open Sans Bold.
-pub static OPEN_SANS_BOLD: &[u8] = include_bytes!("../assets/fonts/open-sans/open-sans-bold.ttf");
+/// Inter SemiBold, the weight of bold text and headings.
+pub static INTER_SEMIBOLD: &[u8] = include_bytes!("../assets/fonts/inter/inter-semibold.ttf");
 
-/// Open Sans Italic.
-pub static OPEN_SANS_ITALIC: &[u8] =
-    include_bytes!("../assets/fonts/open-sans/open-sans-italic.ttf");
+/// Inter Italic.
+pub static INTER_ITALIC: &[u8] = include_bytes!("../assets/fonts/inter/inter-italic.ttf");
 
-/// Open Sans Bold Italic.
-pub static OPEN_SANS_BOLD_ITALIC: &[u8] =
-    include_bytes!("../assets/fonts/open-sans/open-sans-bold-italic.ttf");
+/// Inter SemiBold Italic.
+pub static INTER_SEMIBOLD_ITALIC: &[u8] =
+    include_bytes!("../assets/fonts/inter/inter-semibold-italic.ttf");
 
 /// Lucide icon font (ISC, see `assets/fonts/lucide/LICENSE`).
 pub static LUCIDE: &[u8] = include_bytes!("../assets/fonts/lucide/lucide.ttf");
@@ -82,10 +80,10 @@ impl FontRole {
     #[must_use]
     pub fn data(self) -> &'static [u8] {
         match self {
-            Self::Body => OPEN_SANS_REGULAR,
-            Self::BodyBold | Self::Heading1 | Self::Heading2 | Self::Heading3 => OPEN_SANS_BOLD,
-            Self::BodyItalic => OPEN_SANS_ITALIC,
-            Self::BodyBoldItalic => OPEN_SANS_BOLD_ITALIC,
+            Self::Body => INTER_REGULAR,
+            Self::BodyBold | Self::Heading1 | Self::Heading2 | Self::Heading3 => INTER_SEMIBOLD,
+            Self::BodyItalic => INTER_ITALIC,
+            Self::BodyBoldItalic => INTER_SEMIBOLD_ITALIC,
             Self::Icons => LUCIDE,
         }
     }
@@ -223,10 +221,10 @@ mod tests {
             );
         }
         let text_fonts = [
-            OPEN_SANS_REGULAR,
-            OPEN_SANS_BOLD,
-            OPEN_SANS_ITALIC,
-            OPEN_SANS_BOLD_ITALIC,
+            INTER_REGULAR,
+            INTER_SEMIBOLD,
+            INTER_ITALIC,
+            INTER_SEMIBOLD_ITALIC,
         ];
         for font in text_fonts {
             for character in "Aaäöüß ÄÖÜ ŐőŁł •…–—„“”‘’› 0123456789".chars()
