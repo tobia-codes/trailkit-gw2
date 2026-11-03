@@ -7,7 +7,8 @@
 
 use nexus::imgui::{StyleColor, StyleVar, Ui};
 use trailkit_ui::{
-    button::draw_icon_button, font_registry::FontScope, fonts::FontRole, icons::Icon, theme::Theme,
+    button::draw_icon_button_with_size, font_registry::FontScope, fonts::FontRole, icons::Icon,
+    theme::Theme,
 };
 
 /// State of the search field that outlives a frame.
@@ -85,10 +86,14 @@ impl SearchField {
             size[0]
         };
         let input_x = start[0] + padding[0] + icon_width + theme.spacing.extra_small;
+        // The clear button is a square inset by the same gap on every side,
+        // so it never reaches the frame whatever the font size (M128).
+        let clear_inset = theme.spacing.small / 2.0;
+        let clear_side = height - 2.0 * clear_inset;
         let clear_width = if self.text.is_empty() {
             0.0
         } else {
-            ui.frame_height() + theme.spacing.small / 2.0
+            clear_side + 2.0 * clear_inset
         };
 
         let changed = {
@@ -116,8 +121,9 @@ impl SearchField {
         let mut cleared = false;
         if !self.text.is_empty() {
             ui.same_line_with_spacing(0.0, 0.0);
-            ui.set_cursor_screen_pos([end[0] - clear_width, input_y]);
-            if draw_icon_button(ui, theme, Icon::X, texts.clear) {
+            ui.set_cursor_screen_pos([end[0] - clear_inset - clear_side, start[1] + clear_inset]);
+            if draw_icon_button_with_size(ui, theme, Icon::X, texts.clear, [clear_side, clear_side])
+            {
                 self.clear(true);
                 cleared = true;
             }
