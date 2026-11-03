@@ -13,7 +13,8 @@ Last updated: 2026-11-03 (end of session 9, after PR #69).
   ~~visual & interaction tests~~ → ~~font subsetting~~ → ~~3c chips~~ →
   ~~reset kinds~~ → ~~drag & drop~~ → **search (next)** → trash & undo
   (delete, M12) → settings window → export/import → backups → help page →
-  **release preparation** (full test, screenshots M67, docs).
+  **release preparation** (full test, screenshots M67, docs, measure the
+  release DLL size by hand, R72).
 - **Session 9 (PRs #65–#69): new "Trailkit" theme, ROADMAP R71** (supersedes
   R51), all deployed; the user called the result "richtig gut":
   - Dark/Light (named just that): ink-tinted dark and parchment-warm light
@@ -110,9 +111,10 @@ Last updated: 2026-11-03 (end of session 9, after PR #69).
 2. **Next feature: grill the search step** (M28 order) with the grilling
    skill. The mockup canvas shows a search field at the top of the
    sidebar; its place and behavior were explicitly left to this round.
-3. Still open: the **DLL size grill round** (bundled jiff tzdb ~230 KiB
-   used only by `format_local_time`; `opt-level` s/z = −11/−14 %; font
-   subset ranges could be narrowed).
+3. ~~DLL size grill round~~ done in session 10 (R72, BL13): jiff without
+   tzdb, local time via Windows; `opt-level` 3 and unwind stay
+   (performance beats size). Memo release DLL now 1 964 032 bytes. User to
+   check in game: a restored draft shows the right local time.
 4. Optional: bring the Claude Design system "Trailkit" in line with R71
    (drop Inter and `border-highlight`, selection bar sits on the row
    highlight's left edge, one dropdown, title bar). The user was offered
@@ -208,8 +210,7 @@ Last updated: 2026-11-03 (end of session 9, after PR #69).
 ## Recurring checks
 
 - GW2 wiki (2026-10-31): still behind Cognito login → Wayback workaround stays.
-- C-703/25 P (checked 2026-11-02, session 7; **not checked in session 9**,
-  which only touched UI — check at the start of the next session): still
+- C-703/25 P (checked 2026-11-03, session 10): still
   pending, no hearing date or judgment reported; DPF in force. Microsoft intervened for the
   Commission; noyb asked for repeal (2026-06-30) but has not sued yet.
 - DPF reminder workflow: the 2026-11-01 08:00 cron was silently skipped by

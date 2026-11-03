@@ -478,15 +478,94 @@ pub fn reset_countdown(minutes: i64, language: Language) -> String {
 /// `time` as a date and time in the player's local time zone, formatted for
 /// `language` (`data-formatting`), e.g. "2026-11-03 01:00" or
 /// "03.11.2026, 01:00".
+///
+/// The local offset comes from the operating system (ROADMAP R72: jiff ships
+/// without a time-zone database); under Wine/Proton, Wine derives it from the
+/// Linux host's zone.
 #[must_use]
 pub fn format_local_time(time: jiff::Timestamp, language: Language) -> String {
     let pattern = match language {
         Language::German => "%d.%m.%Y, %H:%M",
         Language::English => "%Y-%m-%d %H:%M",
     };
-    time.to_zoned(jiff::tz::TimeZone::system())
+    time.to_zoned(jiff::tz::TimeZone::fixed(local_utc_offset(time)))
         .strftime(pattern)
         .to_string()
+}
+
+/// The player's UTC offset at `time`, daylight saving time included, as
+/// Windows' current time-zone settings define it. Falls back to UTC (and logs
+/// a warning) if Windows cannot convert the time.
+#[cfg(windows)]
+fn local_utc_offset(time: jiff::Timestamp) -> jiff::tz::Offset {
+    use windows::Win32::{Foundation::SYSTEMTIME, System::Time::SystemTimeToTzSpecificLocalTime};
+
+    let utc = time.to_zoned(jiff::tz::TimeZone::UTC).datetime();
+    let Some(utc_system_time) = system_time_from_civil(utc) else {
+        return jiff::tz::Offset::UTC;
+    };
+    let mut local_system_time = SYSTEMTIME::default();
+    // SAFETY: both pointers refer to live, properly aligned `SYSTEMTIME`
+    // values for the duration of the call; `None` selects the current
+    // time-zone settings.
+    let conversion = unsafe {
+        SystemTimeToTzSpecificLocalTime(
+            None,
+            &raw const utc_system_time,
+            &raw mut local_system_time,
+        )
+    };
+    if let Err(error) = conversion {
+        log::warn!("local time conversion failed, showing UTC: {error}");
+        return jiff::tz::Offset::UTC;
+    }
+    civil_from_system_time(local_system_time)
+        .and_then(|local| local.duration_since(utc).as_secs().try_into().ok())
+        .and_then(|seconds| jiff::tz::Offset::from_seconds(seconds).ok())
+        .unwrap_or(jiff::tz::Offset::UTC)
+}
+
+/// Without Windows (unit tests on Linux) there are no time-zone settings to
+/// ask: the offset is always UTC.
+#[cfg(not(windows))]
+fn local_utc_offset(_time: jiff::Timestamp) -> jiff::tz::Offset {
+    jiff::tz::Offset::UTC
+}
+
+/// `date_time` as a Windows `SYSTEMTIME` (milliseconds dropped), or `None`
+/// for years Windows cannot represent.
+#[cfg(windows)]
+fn system_time_from_civil(
+    date_time: jiff::civil::DateTime,
+) -> Option<windows::Win32::Foundation::SYSTEMTIME> {
+    Some(windows::Win32::Foundation::SYSTEMTIME {
+        wYear: u16::try_from(date_time.year()).ok()?,
+        wMonth: u16::try_from(date_time.month()).ok()?,
+        wDayOfWeek: u16::try_from(date_time.weekday().to_sunday_zero_offset()).ok()?,
+        wDay: u16::try_from(date_time.day()).ok()?,
+        wHour: u16::try_from(date_time.hour()).ok()?,
+        wMinute: u16::try_from(date_time.minute()).ok()?,
+        wSecond: u16::try_from(date_time.second()).ok()?,
+        wMilliseconds: 0,
+    })
+}
+
+/// A Windows `SYSTEMTIME` as a civil date and time, or `None` if its fields
+/// are out of range.
+#[cfg(windows)]
+fn civil_from_system_time(
+    system_time: windows::Win32::Foundation::SYSTEMTIME,
+) -> Option<jiff::civil::DateTime> {
+    jiff::civil::DateTime::new(
+        i16::try_from(system_time.wYear).ok()?,
+        i8::try_from(system_time.wMonth).ok()?,
+        i8::try_from(system_time.wDay).ok()?,
+        i8::try_from(system_time.wHour).ok()?,
+        i8::try_from(system_time.wMinute).ok()?,
+        i8::try_from(system_time.wSecond).ok()?,
+        0,
+    )
+    .ok()
 }
 
 #[cfg(test)]
