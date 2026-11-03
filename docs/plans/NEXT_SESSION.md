@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-03 (session 12, slice conversion steps 1–5 done).
+Last updated: 2026-11-03 (session 13, slice conversion steps 1–6 done; note-list questions 48–53 open).
 
 ## Where we are
 
@@ -115,16 +115,53 @@ Last updated: 2026-11-03 (session 12, slice conversion steps 1–5 done).
    - Settled in session 12: questions 36–47 (ROADMAP R76 "Details" and the
      slice convention in nexus-addon-dev skill §0). Q25 confirmed (texts per
      slice, no central catalog).
-   - Next: step 6 **`editor`** — `note_editing.rs` (EditSession, formats),
-     `draw_editor` (title input, body, Ctrl+S/B/I, preview + splitter),
-     `draw_format_toolbar` + `ToolbarState`, editor texts (TitleHint,
-     Format*, InsertEventRequiresCore, ShowPreview/HidePreview, …). The app
-     keeps the toolbar end (Edit / Cancel / Save) and the unsaved-changes
-     dialog; the editor gets `&mut f32` for `preview_split_fraction`, the
-     `preview_visible` flag, `is_dialog_open`, `Option<&SearchQuery>` and a
-     `ChipContext`, and returns `EditorOutput { actions, split_changed }`.
-     Then step 7 **`note-list`** (note_list.rs + tree_drag.rs; badge via
-     `RowBadge`, hit counts via search results passed as neutral data).
+   - Step 6 **`editor`** done (session 13, commit `8812510`): edit session,
+     formatting, toolbar, title/body inputs, preview and `EditorText` live in
+     `trailkit-memo-editor`. Deviation from the earlier sketch: the editor
+     gets the clamped split fraction and reports `preview_split_fraction:
+     Option<f32>` + `split_released` (no `&mut f32`); the app writes and saves.
+   - Next: step 7 **`note-list`** — first answer the open grill round
+     (questions 48–53 below), then extract.
+
+   **Open grill round (note-list slice boundaries), recommendations ➡️:**
+
+   - **Q48 Search data to the list:** the list needs per row "visible?",
+     "group note count", "content hits", plus the `SearchQuery` for title
+     highlights. (a) trait `ListFilter` in shared (`is_visible(NodeId)`,
+     `group_count(GroupId)`, `content_hits(NoteId)`) implemented by
+     `SearchResults`; the list gets `Option<ListSearch { query, filter:
+     &dyn ListFilter, collapsed: &HashSet<GroupId>, texts }>`; (b) move
+     `SearchResults` into shared; (c) app precomputes per row.
+     ➡️ (a): no copying, typed, search keeps its result structure.
+   - **Q49 Empty search result:** "No results for …" + clear button moves
+     into the search slice; the app draws either it or the list.
+     ➡️ yes.
+   - **Q50 Search texts in the list:** the tooltips "{count} hits in the
+     content" and "clear the search to move" come in as a neutral
+     `ListSearchTexts { content_hits, clear_search_to_move }` inside
+     `ListSearch`, filled by the app from `SearchText` (like
+     `SearchFieldTexts`). ➡️ yes.
+   - **Q51 Reset things on note rows:** badge, badge tooltip (countdown)
+     and the "Reset type" submenu come as closures in the list input
+     (`NoteRowExtras`): `badge: &dyn Fn(&Note) -> Option<RowBadge>`,
+     `badge_tooltip: &mut dyn FnMut(&Ui, &Note)` (only while hovered),
+     `context_menu: &mut dyn FnMut(&Ui, &Note)` (extra items after
+     "Rename"; the app collects the chosen period itself, like the note
+     view's `TitleTrailing`). ➡️ yes, closures — a trait would be the only
+     deviation from the existing convention.
+   - **Q52 List header:** the app draws the menu (drawer) button and the
+     search field; the slice draws only "New note / New group" (equal
+     widths, stacking, M128) and the separator; `note_list_icon` stays in
+     the app. ➡️ yes.
+   - **Q53 What moves into the slice:** tree rows, rename (`RenameState`),
+     context menu with "Move to…" and "New…", drag & drop incl.
+     `tree_drag.rs` (`TreeDrag`, drop line, auto-scroll, drag label),
+     `DRAGGED_ROW_ALPHA`, `DRAG_SCROLL_ROWS_PER_SECOND`; output
+     `NoteListOutput { actions: Vec<NoteListAction> }`, mapped by the app.
+     `truncate_to_width`, `format_count`, `centered_text` (`layout.rs`) move
+     to `trailkit-ui` because app and slice both need them (rule 7).
+     ➡️ yes, all of it, except `collapsed_in_search` stays in the app (reset
+     per search).
    - Per step: fmt, clippy (Linux + `cargo xwin clippy` Windows), tests,
      `cargo xtask ui-test` (never `--update`), `check-names`. At the end:
      memo README, measure the release DLL size against `develop` (user
@@ -134,7 +171,7 @@ Last updated: 2026-11-03 (session 12, slice conversion steps 1–5 done).
 2. **Then grill trash & undo** (M12: trash, purged after 30 days,
    "Deleted — Undo" toast, confirm deleting a non-empty group with its
    note count; M25/M34 mention delete in step 7) — as a new slice
-   `trash`. Next decision ids: M132+, R77+, questions from 48.
+   `trash`. Next decision ids: M132+, R77+, questions from 54 (48–53 open, above).
 3. In-game test status: search, list header, draft time, title bar, Save
    icon (floppy, M130) and button min width (M131) were all confirmed by
    the user in session 11.
