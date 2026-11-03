@@ -78,8 +78,11 @@ If a design needs a fourth use, it needs a decision first (grill-me).
   `radius.lg` 10 for windows, panes, popups and dialogs. Custom-drawn shapes
   pick the radius of the thing they look like.
 - Every window, pane, popup and dialog has the 1 px `border.subtle` outline.
-  Panes add the `border.highlight` line along their top inner edge
-  (`draw_pane` does it). No shadows: ImGui has none, and fakes look cheap.
+  No highlight edges and no shadows (a top highlight was tried and dropped
+  after the in-game test, R71).
+- Lines (separators, outlines) sit on whole pixels: a 1 px line drawn
+  between two pixel rows blurs into a soft 2 px band. `draw_separator`
+  snaps; custom-drawn lines must do the same.
 
 ## 6. Selection
 

@@ -136,9 +136,6 @@ pub struct BorderTokens {
     /// `border.subtle`: the faint outline of windows, panes, popups and
     /// dialogs (memo M103).
     pub subtle: Color,
-    /// `border.highlight`: a 1 px line along the top inner edge of panes, a
-    /// machined edge instead of a shadow (R71).
-    pub highlight: Color,
     /// `border.width`: border thickness in pixels.
     pub width: f32,
 }
@@ -370,7 +367,6 @@ impl Theme {
             focus: Color::from_rgb_hex(0xE8B055),
             // About 6 % white over the dark surfaces.
             subtle: Color::from_rgb_hex(0xFFFFFF).with_alpha(0.06),
-            highlight: Color::from_rgb_hex(0xFFFFFF).with_alpha(0.045),
             width: 1.0,
         },
         reset: ResetColors {
@@ -449,7 +445,6 @@ impl Theme {
             focus: Color::from_rgb_hex(0x8A5A10),
             // About 8 % warm black over the light surfaces.
             subtle: Color::from_rgb_hex(0x1E180C).with_alpha(0.08),
-            highlight: Color::from_rgb_hex(0xFFFFFF).with_alpha(0.8),
             width: 1.0,
         },
         reset: ResetColors {
