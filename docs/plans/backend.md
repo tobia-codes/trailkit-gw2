@@ -4,7 +4,7 @@
   target design for when a dynamic feature (e.g. price history) needs a server.
   Data formats and paths of the static files are chosen so this server can
   take over without changing core.
-- **Crate path:** `backend/` (binary) + shared types in `crates/trailkit-api-types`
+- **Crate path:** `backend/` (binary) + shared types in `crates/trailkit-model` (R75)
 
 ## Goal
 
@@ -75,8 +75,8 @@ Hosting alternatives (free tiers, to be verified at decision time):
 - **HTTP client:** `reqwest` (+ `backon` or own retry) for the GW2 API.
 - **Scheduling:** in-process `tokio-cron-scheduler` *or* external trigger
   (GitHub Actions `schedule`) — open question.
-- **Serialization/types:** `serde`; API DTOs in `crates/trailkit-api-types`
-  shared with the addons (end-to-end typing, like tRPC in TS).
+- **Serialization/types:** `serde`; response types are `crates/trailkit-model`
+  types shared with the addons (end-to-end typing, like tRPC in TS; R75).
 - **API docs:** `utoipa` (OpenAPI generated from types).
 - **Rate limiting:** `tower_governor` (per-IP token bucket).
 - **Observability:** `tracing` + `tracing-subscriber`.
@@ -117,7 +117,7 @@ API" is not enforceable; we can only raise the bar and limit damage:
 | B8 | From day one: **always-on Rust runtime with REST API + database** (no static-files-only setup) | 2026-10-31 |
 | B9 | One sync run per day at **00:30 UTC** (prices, items, achievements, waypoints, events). Manual re-sync is **admin-only** (never triggerable by addon users), no cooldown | 2026-10-31 |
 | B10 | Server binary runs as Docker image (built in CI), deployed via SSH script **only with explicit user approval**; Caddy as reverse proxy/TLS; secrets only as env vars on the server | 2026-10-31 |
-| B11 | REST API versioned under `/v1`, `?lang=en|de`; endpoints: `/v1/events`, `/v1/waypoints`, `/v1/achievements`, `/v1/items` (**all at once** or `?ids=`), `/v1/prices` (**all at once** or `?ids=`), `/v1/prices/{item_id}/history`, `/v1/meta`; OpenAPI via `utoipa`; DTOs in `crates/trailkit-api-types` shared with core | 2026-10-31 |
+| B11 | REST API versioned under `/v1`, `?lang=en|de`; endpoints: `/v1/events`, `/v1/waypoints`, `/v1/achievements`, `/v1/items` (**all at once** or `?ids=`), `/v1/prices` (**all at once** or `?ids=`), `/v1/prices/{item_id}/history`, `/v1/meta`; OpenAPI via `utoipa`; DTOs in `crates/trailkit-api-types` shared with core (**R75:** responses use `crates/trailkit-model`) | 2026-10-31 |
 | B12 | Admin re-sync via `POST /admin/sync` protected by an admin token only the owner holds (never shipped in addons), strict rate limit, no cooldown | 2026-10-31 |
 | B13 | Domain bought at **INWX** (timing/name superseded by ROADMAP R27: trailkit.de, bought now) (~5 €/year, DNS included); subdomains (e.g. `api.`, `www.`, further sites) via DNS records, routed per subdomain by Caddy with automatic TLS; name/TLD decided before release. | 2026-10-31 |
 | B20 | **No Cloudflare / no US providers.** DNS at INWX, DDoS protection by Hetzner, rate limiting in the Rust server; a CDN only when needed, then Bunny.net (EU). Independent of the pending CJEU ruling on the EU-US Data Privacy Framework (C-703/25 P). Supersedes the CDN part of B3 | 2026-10-31 |

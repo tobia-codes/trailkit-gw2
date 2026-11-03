@@ -39,9 +39,10 @@ scheduled CI job (daily, UTC)
        └─ writes price archive file   ──► archive storage (never read by addons)
 ```
 
-- One Rust CLI does both jobs; it reuses the DTOs in
-  `crates/trailkit-api-types` that core uses to parse the files
-  (end-to-end typing, same as the planned REST API).
+- One Rust CLI does both jobs. It parses the GW2 API with its own DTOs,
+  refines the data into `crates/trailkit-model` types and writes the files
+  in that shape; core parses them with the same model types (end-to-end
+  typing, same as the planned REST API; ROADMAP R75).
 - **Paths mirror the future REST API** (`/v1/items.en.json`,
   `/v1/prices.json`, `/v1/meta.json`, …), so a later server can serve the
   same paths and core only needs a base-URL change (or none, if a domain we
@@ -186,7 +187,7 @@ See `NEXT_SESSION.md`.
 | D25 | Schema evolution of served files: adding fields is always allowed (consumers ignore unknown fields); breaking changes get a new path prefix (`/v2/…`); the old prefix keeps being generated for **6 months** after the new one ships | 2026-10-31 |
 | D26 | datagen is a polite GW2 API client: client-side throttle (~4 req/s), retries with backoff on 429/5xx, partial failures recorded in the manifest instead of aborting the whole run | 2026-10-31 |
 | D27 | Code path: `tools/trailkit-datagen` (binary crate in the workspace) | 2026-10-31 |
-| D28 | GW2 API DTOs live inside datagen for now (only the order book condensation D17 needs typed parsing; the archive stays raw); they move to `crates/trailkit-api-types` when core needs them (AGENTS.md rule 7) | 2026-10-31 |
+| D28 | GW2 API DTOs live inside datagen for now (only the order book condensation D17 needs typed parsing; the archive stays raw); they move to `crates/trailkit-gw2-api-types` only when core calls the same endpoints (AGENTS.md rule 7). **Amended by R75 (2026-11-03):** published files use our refined `trailkit-model` types, not the API shape | 2026-10-31 |
 | D29 | WvW reset snapshots (D15) at **Fri 17:23 UTC** (before EU reset 18:00) and **Sat 01:23 UTC** (before NA reset 02:00): ~35 min margin for delayed scheduled runs, off the full hour; one asset per snapshot (`<date>.wvw-eu-reset.ndjson.gz`, `<date>.wvw-na-reset.ndjson.gz`) | 2026-10-31 |
 | D30 | **No item-id diff** (supersedes that part of D15): the daily price archive already contains every tradeable id, so new/removed tradeable items are visible there; non-tradeable items have no price relevance, and the current item list can be rebuilt from the API at any time. Saves code (previous-day lookup) and archive space | 2026-10-31 |
 | D31 | Gem exchange (D15) archived at the in-game quantities used as amounts paid: `/v2/commerce/exchange/gems` with 400, 800, 1200, 2000 gems ("Get Gold" direction) and `/v2/commerce/exchange/coins` with 1, 10, 50, 100, 250 gold ("Get Gems" direction) — 9 requests per run | 2026-10-31 |
