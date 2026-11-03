@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-03 (end of session 10, after PR #75).
+Last updated: 2026-11-03 (end of session 11, after PR #80; slice conversion in progress).
 
 ## Where we are
 
@@ -104,29 +104,40 @@ Last updated: 2026-11-03 (end of session 10, after PR #75).
 
 ## ▶ Resume here
 
-1. **Check that PR #75 (fixed list header, M129) merged** with green CI
-   (`gh pr view 75 --json state`); if not, fix or wait. All other
-   session-10 PRs (#71–#74) are merged.
-2. **In-game test by the user** (everything is deployed; nothing of this
-   was confirmed in game yet). Ask for screenshots and measure them
-   pixel-wise before changing anything:
-   - Search (M118–M129): typing filters live; Ctrl+F focuses the field
-     (also while editing and with the list hidden / drawer closed);
-     Escape in the field clears it, a second Escape closes the window;
-     the `x` sits centered and mirrors the magnifier (fixed in #74 —
-     the user's last screenshot was before that fix); hit marks in list
-     titles, note view and preview; content hit count at the row end;
-     jump to the first hit; drag blocked with tooltip; empty result with
-     "Clear search"; creating a note clears the search.
-   - List header (M128/M129): New note/New group buttons full width and
-     equal; field taller; only the tree scrolls in a long list.
-   - Draft time (R72): restore a draft — the time must be local time.
-   - Title bar (#69): drag the header to move, chevron collapses,
-     `x`/Escape close (unsaved changes still ask).
-3. **Next feature: grill trash & undo** (M12: trash, purged after 30 days,
+1. **Continue the slice-crate conversion of memo (ROADMAP R76)** on the
+   local, **unpushed** branch `chore/memo-slice-crates` (2 commits: R76
+   docs, step 1). `git switch chore/memo-slice-crates` first.
+   - Done: **step 1** — `addons/trailkit-memo/shared/` = crate
+     `trailkit-memo-shared` (note_tree, reset_schedule, drafts, settings,
+     ui_state, storage_worker, i18n). All tests and snapshots green.
+   - Settled (questions 30–35, all recommendations accepted):
+     slices `note-list` (incl. drag & drop), `note-view`, `editor`,
+     `search`, `reset-schedule`, `drafts` under
+     `addons/trailkit-memo/slices/<name>/`, crates `trailkit-memo-<name>`,
+     each with README; the app (`trailkit-memo`) keeps main window, layout,
+     dialogs, Nexus glue and the window snapshot tests. `ResetPeriod` stays
+     in shared; reset logic/badge/colors go to `reset-schedule`. Slices
+     never depend on each other; the app passes neutral shared types
+     (e.g. hit ranges, badge data) between them. Each slice gets its **own
+     text enum** (Q25) — `Text::all_texts()` and the font-coverage test in
+     shared i18n must then cover every slice's texts (e.g. each slice
+     exposes `all_texts()`, the app test concatenates them).
+   - Next: step 2 `search` (note_search.rs + search_field.rs + search
+     texts SearchHint/ClearSearch/NoSearchResults/ClearSearchToMove/
+     ContentHits), then `reset-schedule`, `drafts`, `note-view`, `editor`,
+     `note-list`. Add `"addons/*/slices/*"` to the workspace members with
+     the first slice (an empty glob breaks cargo). After every step:
+     fmt, clippy (Linux + `cargo xwin clippy` Windows), tests,
+     `cargo xtask ui-test` (snapshots must stay pixel-identical, never
+     `--update`), `check-names`. At the end: update memo README, deploy,
+     ask the user to test, merge only after the OK (R74).
+2. **Then grill trash & undo** (M12: trash, purged after 30 days,
    "Deleted — Undo" toast, confirm deleting a non-empty group with its
-   note count; M25/M34 mention delete in step 7). Use the grilling skill:
-   numbered questions with recommendations, record answers as M130+.
+   note count; M25/M34 mention delete in step 7) — as a new slice
+   `trash`. Next decision ids: M132+, R77+, questions from 36.
+3. In-game test status: search, list header, draft time, title bar, Save
+   icon (floppy, M130) and button min width (M131) were all confirmed by
+   the user in session 11.
 4. Optional, offer once: update the Claude Design system "Trailkit"
    (https://claude.ai/artifact/G7sNVZe1JYTgxbUE5mhS33) to R71–R73
    (no Inter, no `border-highlight`, one dropdown, title bar, search
@@ -150,6 +161,20 @@ Last updated: 2026-11-03 (end of session 10, after PR #75).
      `command grep`. Run `source ~/.cargo/env` before cargo.
    - Never leave an `eprintln!` debug line before `cargo fmt`: fmt splits
      it over lines and `sed '/marker/d'` then leaves a broken remnant.
+
+## Session 11 summary (2026-11-03, PRs #77–#80)
+
+- **M130/M131** (#77, #78): primary toolbar buttons carry a Lucide icon
+  (Save = floppy `save`, Edit = pencil); text buttons are at least
+  `button.min_width` = 4 × font size wide, icon buttons stay square.
+- **R74** (#79): merge into `develop` only after the user's in-game OK.
+- **R75** (#79): three type layers — `trailkit-gw2-api-types` (boundary
+  only), `trailkit-model` (our refined domain types, shared by addons,
+  datagen, backend), `trailkit-protocol` (`#[repr(C)]`).
+- **#80**: `main_window.rs` split into `main_window/{note_list,note_pane,
+  dialogs,layout,tests}.rs`; check-names allows snake_case module dirs
+  below `src/`.
+- **R76** (local branch): addons are built from slice crates; step 1 done.
 
 ## Session 10 summary (2026-11-03, PRs #71–#75)
 
