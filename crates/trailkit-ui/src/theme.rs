@@ -1,9 +1,10 @@
-//! Semantic theme tokens and the built-in themes (trailkit-ui skill §2).
+//! Semantic theme tokens and the built-in themes (trailkit-ui skill §2,
+//! `references/tokens.md`; palette ROADMAP R71).
 //!
 //! Components never use raw colors or numbers; they read tokens from the
 //! active [`Theme`]. Sizes are in pixels at 100 % UI scaling.
 
-use crate::color::Color;
+use crate::{chat_link::ChipCategory, color::Color};
 
 /// The built-in themes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -48,14 +49,16 @@ pub struct Theme {
     pub coin: CoinColors,
     /// Colors of the reset note kinds (`reset.*`, memo plan M104).
     pub reset: ResetColors,
+    /// Colors of the chat-link chip categories (`chip.*`, R71).
+    pub chip: ChipColors,
     /// Spacing scale (`space.*`).
     pub spacing: Spacing,
     /// List metrics (`list.*`).
     pub list: ListMetrics,
     /// Pane metrics (`pane.*`).
     pub pane: PaneMetrics,
-    /// Corner radius (`radius`, default 4 — slightly rounded, memo M103).
-    pub radius: f32,
+    /// Corner radii (`radius.*`, R71).
+    pub radius: Radii,
     /// Font sizes (`font.size.*`).
     pub typography: Typography,
 }
@@ -94,15 +97,20 @@ pub struct TextColors {
     pub on_accent: Color,
 }
 
-/// Accent colors (primary actions, focus, selection).
+/// Accent colors: brass, spent only on the primary action, focus and
+/// selection (R71).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct AccentColors {
-    /// `accent`: resting state.
+    /// `accent`: fill of the primary button and the selection bar. A fill
+    /// only: in the light theme it is too light for text or thin lines.
     pub base: Color,
-    /// `accent.hover`: hovered state.
+    /// `accent.hover`: hovered primary button.
     pub hover: Color,
-    /// `accent.active`: pressed state.
+    /// `accent.active`: pressed primary button.
     pub active: Color,
+    /// `accent.text`: brass as text, icon or line on a surface (active
+    /// toggles, check marks, drop line); ≥ 4.5:1 in both themes.
+    pub text: Color,
 }
 
 /// Status colors (always combined with an icon or text, never color alone).
@@ -128,6 +136,9 @@ pub struct BorderTokens {
     /// `border.subtle`: the faint outline of windows, panes, popups and
     /// dialogs (memo M103).
     pub subtle: Color,
+    /// `border.highlight`: a 1 px line along the top inner edge of panes, a
+    /// machined edge instead of a shadow (R71).
+    pub highlight: Color,
     /// `border.width`: border thickness in pixels.
     pub width: f32,
 }
@@ -141,6 +152,53 @@ pub struct ResetColors {
     /// `reset.weekly`: weekly reset notes (muted violet, apart from the
     /// gold accent and the blue links).
     pub weekly: Color,
+}
+
+/// Text and background color of one chat-link chip category.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ChipCategoryColors {
+    /// Color of the type icon and label (≥ 4.5:1 on `background`).
+    pub text: Color,
+    /// Fill of the chip.
+    pub background: Color,
+}
+
+/// The four chat-link chip categories (R71); `ChatLinkKind::category`
+/// assigns every link kind to one of them.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ChipColors {
+    /// `chip.place`: map point, WvW objective (copper).
+    pub place: ChipCategoryColors,
+    /// `chip.character`: skill, trait, build (blue).
+    pub character: ChipCategoryColors,
+    /// `chip.item`: item, recipe, skin, outfit, coins (jade).
+    pub item: ChipCategoryColors,
+    /// `chip.progress`: achievement, NPC text, player (violet).
+    pub progress: ChipCategoryColors,
+}
+
+impl ChipColors {
+    /// The colors of `category`.
+    #[must_use]
+    pub const fn for_category(&self, category: ChipCategory) -> ChipCategoryColors {
+        match category {
+            ChipCategory::Place => self.place,
+            ChipCategory::Character => self.character,
+            ChipCategory::Item => self.item,
+            ChipCategory::Progress => self.progress,
+        }
+    }
+}
+
+/// Corner radii in pixels (R71).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Radii {
+    /// `radius.sm` (4): chips, badges, scrollbar grab.
+    pub small: f32,
+    /// `radius.md` (6): buttons, inputs, dropdowns, rows, menu items.
+    pub medium: f32,
+    /// `radius.lg` (10): windows, panes, popups, dialogs.
+    pub large: f32,
 }
 
 /// Gold, silver and copper, as the game colors coin amounts.
@@ -191,6 +249,12 @@ pub struct ListMetrics {
     pub item_spacing: f32,
     /// `list.indent`: indentation per tree level.
     pub indent: f32,
+    /// `list.selection_bar_width`: width of the brass bar on the left edge
+    /// of the selected row (R71).
+    pub selection_bar_width: f32,
+    /// `list.selection_bar_inset`: gap between the bar and the top and
+    /// bottom of its row.
+    pub selection_bar_inset: f32,
 }
 
 /// Pane metrics in pixels (content regions inside a window).
@@ -245,6 +309,15 @@ const SPACING: Spacing = Spacing {
 const LIST_METRICS: ListMetrics = ListMetrics {
     item_spacing: 4.0,
     indent: 16.0,
+    selection_bar_width: 3.0,
+    selection_bar_inset: 6.0,
+};
+
+/// Corner radii shared by both built-in themes.
+const RADII: Radii = Radii {
+    small: 4.0,
+    medium: 6.0,
+    large: 10.0,
 };
 
 /// Pane metrics shared by both built-in themes (`space.sm`).
@@ -262,45 +335,65 @@ const TYPOGRAPHY: Typography = Typography {
 };
 
 impl Theme {
-    /// The built-in dark theme (default).
+    /// The built-in dark theme (default): ink-tinted surfaces, brass accent.
     pub const DARK: Self = Self {
         surface: SurfaceColors {
-            window: Color::from_rgb_hex(0x1B1D21),
-            panel: Color::from_rgb_hex(0x23262B),
-            input: Color::from_rgb_hex(0x2C3036),
-            hover: Color::from_rgb_hex(0x353A42),
-            active: Color::from_rgb_hex(0x40464F),
-            popup: Color::from_rgb_hex(0x202327),
-            modal_overlay: Color::from_rgba_hex(0x0000_00B3),
+            window: Color::from_rgb_hex(0x0F1318),
+            panel: Color::from_rgb_hex(0x151A21),
+            input: Color::from_rgb_hex(0x0C1015),
+            hover: Color::from_rgb_hex(0x1D232C),
+            active: Color::from_rgb_hex(0x232A35),
+            popup: Color::from_rgb_hex(0x1A2029),
+            modal_overlay: Color::from_rgba_hex(0x0507_0AB8),
         },
         text: TextColors {
-            primary: Color::from_rgb_hex(0xE8E9EB),
-            secondary: Color::from_rgb_hex(0xA9AEB6),
-            disabled: Color::from_rgb_hex(0x6B7079),
-            link: Color::from_rgb_hex(0x8AB8FF),
-            on_accent: Color::from_rgb_hex(0x16181B),
+            primary: Color::from_rgb_hex(0xE9ECF1),
+            secondary: Color::from_rgb_hex(0x9AA4B2),
+            disabled: Color::from_rgb_hex(0x5E6876),
+            link: Color::from_rgb_hex(0x8DB8F0),
+            on_accent: Color::from_rgb_hex(0x17130A),
         },
         accent: AccentColors {
-            base: Color::from_rgb_hex(0xD9A441),
-            hover: Color::from_rgb_hex(0xE6B65C),
-            active: Color::from_rgb_hex(0xC2902F),
+            base: Color::from_rgb_hex(0xE2A740),
+            hover: Color::from_rgb_hex(0xEDB65A),
+            active: Color::from_rgb_hex(0xC98F2A),
+            text: Color::from_rgb_hex(0xE8B055),
         },
         status: StatusColors {
-            success: Color::from_rgb_hex(0x5CC27A),
-            warning: Color::from_rgb_hex(0xE5B94C),
-            danger: Color::from_rgb_hex(0xF48A8A),
-            info: Color::from_rgb_hex(0x6AAEF2),
+            success: Color::from_rgb_hex(0x5CC48A),
+            warning: Color::from_rgb_hex(0xE9B44C),
+            danger: Color::from_rgb_hex(0xF08A84),
+            info: Color::from_rgb_hex(0x7AB0F0),
         },
         border: BorderTokens {
-            color: Color::from_rgb_hex(0x3A3F47),
-            focus: Color::from_rgb_hex(0xD9A441),
+            color: Color::from_rgb_hex(0x2A323E),
+            focus: Color::from_rgb_hex(0xE8B055),
             // About 6 % white over the dark surfaces.
             subtle: Color::from_rgb_hex(0xFFFFFF).with_alpha(0.06),
+            highlight: Color::from_rgb_hex(0xFFFFFF).with_alpha(0.045),
             width: 1.0,
         },
         reset: ResetColors {
-            daily: Color::from_rgb_hex(0xD9A441),
-            weekly: Color::from_rgb_hex(0xB39DDB),
+            daily: Color::from_rgb_hex(0xE8B055),
+            weekly: Color::from_rgb_hex(0xB8A6F0),
+        },
+        chip: ChipColors {
+            place: ChipCategoryColors {
+                text: Color::from_rgb_hex(0xE89A6B),
+                background: Color::from_rgb_hex(0x2E292A),
+            },
+            character: ChipCategoryColors {
+                text: Color::from_rgb_hex(0x8DB8F0),
+                background: Color::from_rgb_hex(0x232D3A),
+            },
+            item: ChipCategoryColors {
+                text: Color::from_rgb_hex(0x6CCDB3),
+                background: Color::from_rgb_hex(0x1F2E31),
+            },
+            progress: ChipCategoryColors {
+                text: Color::from_rgb_hex(0xB8A6F0),
+                background: Color::from_rgb_hex(0x2A2C3C),
+            },
         },
         coin: CoinColors {
             gold: Color::from_rgba_hex(0xE8C1_4AFF),
@@ -308,58 +401,78 @@ impl Theme {
             copper: Color::from_rgba_hex(0xC87F_4AFF),
         },
         event: EventColors {
-            default: Color::from_rgb_hex(0x8A9099),
-            highlight: Color::from_rgb_hex(0xF2C14E),
-            active: Color::from_rgb_hex(0x5CC27A),
-            upcoming: Color::from_rgb_hex(0x6AAEF2),
-            custom: Color::from_rgb_hex(0xB48EF0),
+            default: Color::from_rgb_hex(0x8E98A6),
+            highlight: Color::from_rgb_hex(0xE8B055),
+            active: Color::from_rgb_hex(0x5CC48A),
+            upcoming: Color::from_rgb_hex(0x7AB0F0),
+            custom: Color::from_rgb_hex(0xB8A6F0),
         },
         spacing: SPACING,
         list: LIST_METRICS,
         pane: PANE_METRICS,
-        radius: 4.0,
+        radius: RADII,
         typography: TYPOGRAPHY,
     };
 
-    /// The built-in light theme.
+    /// The built-in light theme: parchment-warm surfaces, brass accent.
     pub const LIGHT: Self = Self {
         surface: SurfaceColors {
-            window: Color::from_rgb_hex(0xF4F5F7),
-            panel: Color::from_rgb_hex(0xFFFFFF),
+            window: Color::from_rgb_hex(0xEFEDE8),
+            panel: Color::from_rgb_hex(0xFAF9F6),
             input: Color::from_rgb_hex(0xFFFFFF),
-            hover: Color::from_rgb_hex(0xE6E8EC),
-            active: Color::from_rgb_hex(0xD6DAE0),
+            hover: Color::from_rgb_hex(0xF0EEE9),
+            active: Color::from_rgb_hex(0xE7E3DB),
             popup: Color::from_rgb_hex(0xFFFFFF),
-            modal_overlay: Color::from_rgba_hex(0x0000_0080),
+            modal_overlay: Color::from_rgba_hex(0x1410_0873),
         },
         text: TextColors {
-            primary: Color::from_rgb_hex(0x1B1D21),
-            secondary: Color::from_rgb_hex(0x4F5560),
-            disabled: Color::from_rgb_hex(0x9AA0A9),
-            link: Color::from_rgb_hex(0x1F5FBF),
-            on_accent: Color::from_rgb_hex(0xFFFFFF),
+            primary: Color::from_rgb_hex(0x1B1E23),
+            secondary: Color::from_rgb_hex(0x555C66),
+            disabled: Color::from_rgb_hex(0x9AA0A8),
+            link: Color::from_rgb_hex(0x1F5DB0),
+            on_accent: Color::from_rgb_hex(0x17130A),
         },
         accent: AccentColors {
-            base: Color::from_rgb_hex(0x8C5E0A),
-            hover: Color::from_rgb_hex(0x7A5208),
-            active: Color::from_rgb_hex(0x664406),
+            base: Color::from_rgb_hex(0xE2A740),
+            hover: Color::from_rgb_hex(0xD69A32),
+            active: Color::from_rgb_hex(0xC48A24),
+            text: Color::from_rgb_hex(0x8A5A10),
         },
         status: StatusColors {
-            success: Color::from_rgb_hex(0x1A7034),
+            success: Color::from_rgb_hex(0x176B3C),
             warning: Color::from_rgb_hex(0x8A5A00),
-            danger: Color::from_rgb_hex(0xB42318),
-            info: Color::from_rgb_hex(0x1F5FBF),
+            danger: Color::from_rgb_hex(0xB3261E),
+            info: Color::from_rgb_hex(0x1F5DB0),
         },
         border: BorderTokens {
-            color: Color::from_rgb_hex(0xC9CED6),
-            focus: Color::from_rgb_hex(0x8C5E0A),
-            // About 10 % black over the light surfaces.
-            subtle: Color::from_rgb_hex(0x000000).with_alpha(0.10),
+            color: Color::from_rgb_hex(0xD6D1C7),
+            focus: Color::from_rgb_hex(0x8A5A10),
+            // About 8 % warm black over the light surfaces.
+            subtle: Color::from_rgb_hex(0x1E180C).with_alpha(0.08),
+            highlight: Color::from_rgb_hex(0xFFFFFF).with_alpha(0.8),
             width: 1.0,
         },
         reset: ResetColors {
-            daily: Color::from_rgb_hex(0x8C5E0A),
-            weekly: Color::from_rgb_hex(0x6A4FB0),
+            daily: Color::from_rgb_hex(0x8A5A10),
+            weekly: Color::from_rgb_hex(0x6141B5),
+        },
+        chip: ChipColors {
+            place: ChipCategoryColors {
+                text: Color::from_rgb_hex(0xA2471A),
+                background: Color::from_rgb_hex(0xFBE9DF),
+            },
+            character: ChipCategoryColors {
+                text: Color::from_rgb_hex(0x1F5DB0),
+                background: Color::from_rgb_hex(0xE5EEFA),
+            },
+            item: ChipCategoryColors {
+                text: Color::from_rgb_hex(0x0E6E58),
+                background: Color::from_rgb_hex(0xDDF2EB),
+            },
+            progress: ChipCategoryColors {
+                text: Color::from_rgb_hex(0x6141B5),
+                background: Color::from_rgb_hex(0xEDE8FA),
+            },
         },
         coin: CoinColors {
             gold: Color::from_rgba_hex(0xA67C_00FF),
@@ -368,15 +481,15 @@ impl Theme {
         },
         event: EventColors {
             default: Color::from_rgb_hex(0x5F6670),
-            highlight: Color::from_rgb_hex(0x9A6B00),
-            active: Color::from_rgb_hex(0x1A7034),
-            upcoming: Color::from_rgb_hex(0x1F5FBF),
-            custom: Color::from_rgb_hex(0x6B3FC0),
+            highlight: Color::from_rgb_hex(0x8A5A10),
+            active: Color::from_rgb_hex(0x176B3C),
+            upcoming: Color::from_rgb_hex(0x1F5DB0),
+            custom: Color::from_rgb_hex(0x6141B5),
         },
         spacing: SPACING,
         list: LIST_METRICS,
         pane: PANE_METRICS,
-        radius: 4.0,
+        radius: RADII,
         typography: TYPOGRAPHY,
     };
 }
@@ -414,11 +527,13 @@ mod tests {
                 ("bg.input", theme.surface.input),
                 ("bg.popup", theme.surface.popup),
                 ("bg.hover", theme.surface.hover),
+                ("bg.active", theme.surface.active),
             ];
             let texts = [
                 ("text.primary", theme.text.primary),
                 ("text.secondary", theme.text.secondary),
                 ("text.link", theme.text.link),
+                ("accent.text", theme.accent.text),
                 ("success", theme.status.success),
                 ("warning", theme.status.warning),
                 ("danger", theme.status.danger),
@@ -452,9 +567,41 @@ mod tests {
     }
 
     #[test]
-    fn built_in_themes_are_slightly_rounded() {
+    fn chip_text_meets_contrast_minimum_on_its_fill() {
         for kind in ThemeKind::ALL {
-            assert_eq!(kind.theme().radius, 4.0);
+            let theme = kind.theme();
+            let chip = theme.chip;
+            for (name, colors) in [
+                ("chip.place", chip.place),
+                ("chip.character", chip.character),
+                ("chip.item", chip.item),
+                ("chip.progress", chip.progress),
+            ] {
+                assert_readable(kind, name, colors.text, colors.background);
+                assert_readable(
+                    kind,
+                    &format!("text.secondary on {name}"),
+                    theme.text.secondary,
+                    colors.background,
+                );
+                assert_readable(
+                    kind,
+                    &format!("text.primary on {name}"),
+                    theme.text.primary,
+                    colors.background,
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn radii_grow_from_chips_to_windows() {
+        for kind in ThemeKind::ALL {
+            let radius = kind.theme().radius;
+            assert_eq!(
+                (radius.small, radius.medium, radius.large),
+                (4.0, 6.0, 10.0)
+            );
         }
     }
 

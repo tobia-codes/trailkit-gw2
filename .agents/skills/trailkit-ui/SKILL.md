@@ -9,18 +9,21 @@ All trailkit addons must look and feel like **one product**. This skill is
 the **single source of truth** for UI/UX in this repo. The detailed rule set
 (game overlay, accessibility, interaction, forms, layout, navigation, states,
 charts) lives in [`references/ux-rules.md`](references/ux-rules.md) — read it
-before designing a new window or component and when reviewing UI. Do not apply
+before designing a new window or component and when reviewing UI. How to use
+the theme tokens (which token for what, the brass budget, chips, selection,
+adding a token) is binding in [`references/tokens.md`](references/tokens.md) —
+read it before touching any color, size or radius. Do not apply
 generic web/mobile UI guidelines (touch targets, breakpoints, CSS, …) here.
 
 ## 1. Principles
 
 1. **Consistency over novelty** — same component, same look, same place, in
    every addon.
-2. **Modern, flat, slightly rounded** — one `radius` of 4 px everywhere
-   (windows, panes, frames, buttons, popups, scrollbars, tabs, dialogs);
-   windows, panes, popups and dialogs get a faint 1 px `border.subtle`
-   outline (memo M103, all addons). Clear hierarchy through spacing,
-   typography and color, not decoration.
+2. **Calm, flat, slightly rounded** — ink-tinted dark and parchment-warm
+   light surfaces with one brass accent spent sparingly (R71); radii 4 / 6 /
+   10 by element size; windows, panes, popups and dialogs get a faint 1 px
+   `border.subtle` outline (memo M103), panes a `border.highlight` top edge.
+   Clear hierarchy through spacing, typography and color, not decoration.
 3. **Clarity** — every control has a visible label; icons always have a
    tooltip; destructive actions ask for confirmation; unsaved changes warn
    before being discarded.
@@ -43,22 +46,26 @@ in the crate, document here):
 |-------|--------|
 | Surface | `bg.window`, `bg.panel`, `bg.input`, `bg.hover`, `bg.active`, `bg.popup`, `overlay.modal` |
 | Text | `text.primary`, `text.secondary`, `text.disabled`, `text.link`, `text.on_accent` |
-| Accent | `accent`, `accent.hover`, `accent.active` |
+| Accent | `accent` (brass fill: primary button, selection bar), `accent.hover`, `accent.active`, `accent.text` (brass as text, icon or line) |
 | Status | `success`, `warning`, `danger`, `info` |
-| Border | `border` (inputs, dropdowns), `border.focus`, `border.subtle` (windows, panes, popups, dialogs; ~6 % white / ~10 % black), `border.width` |
-| Reset | `reset.daily` (gold), `reset.weekly` (muted violet): reset note badges and kind chip (memo M104; text colors, contrast-tested) |
+| Border | `border` (inputs, dropdowns), `border.focus`, `border.subtle` (windows, panes, popups, dialogs; ~6 % white / ~8 % warm black), `border.highlight` (top inner edge of panes), `border.width` |
+| Reset | `reset.daily` (brass), `reset.weekly` (violet): reset note badges and kind chip (memo M104; text colors, contrast-tested) |
+| Chip | `chip.place`, `chip.character`, `chip.item`, `chip.progress`, each with `text` and `background` (chat-link categories, R71) |
 | Coin | `coin.gold`, `coin.silver`, `coin.copper` (coin amounts in chat-link chips; graphics, not text) |
 | Event | `event.default`, `event.highlight`, `event.active`, `event.upcoming`, `event.custom` (per category overrides allowed) |
 | Spacing | `space.xs` 4, `space.sm` 8, `space.md` 12, `space.lg` 16, `space.xl` 24 (px at 100 %) |
-| Lists | `list.item_spacing`, `list.indent` |
+| Lists | `list.item_spacing`, `list.indent`, `list.selection_bar_width` 3, `list.selection_bar_inset` 6 |
 | Panes | `pane.padding` 8 (inner padding), `pane.gap` 8 (space between panes) — see `lay-pane-padding` |
-| Shape | `radius` = 4 (user-overridable; custom-drawn frames use it too) |
+| Shape | `radius.sm` 4 (chips, badges, scrollbar), `radius.md` 6 (buttons, inputs, rows, menus), `radius.lg` 10 (windows, panes, popups, dialogs); user-overridable; custom-drawn frames use them too |
 | Typography | `font.size.small`, `font.size.body`, `font.size.heading`, `font.line_height` (running text: 1.5 × font size, text centered in its line; markdown view and editor) |
 
 - **Built-in themes:** `Dark` (default) and `Light`. Both are full token sets.
-  Values: `crates/trailkit-ui/src/theme.rs` (palette R51: anthracite surfaces,
-  GW2-like gold accent). A unit test enforces ≥ 4.5:1 for every text color on
-  every background — add new text/background tokens to that test.
+  Values: `crates/trailkit-ui/src/theme.rs` (palette R71, supersedes R51:
+  ink-tinted dark and parchment-warm light surfaces, brass accent; visual
+  reference: the "Trailkit" design system in Claude Design). The themes are
+  called just "Dark" and "Light", in code and in the UI. Unit tests enforce
+  ≥ 4.5:1 for every text color on every surface and for chip text on its
+  fill — add new text/background tokens to them (`references/tokens.md` §8).
 - **User customization:** the user can override any token in the settings
   (color pickers, sliders) and save as a custom theme; reset-to-default per
   token and for the whole theme. Overrides are stored as a diff over the base
@@ -85,19 +92,23 @@ Build once, use everywhere. Planned:
 - `ColorTokenEditor`, `KeybindHint`, `EmptyState`, `ErrorState`, `Spinner`
 - Markdown renderer (read-only view) — **exists**: `markdown` (parser,
   any platform) + `markdown_view` (ImGui)
-- Shared fonts (Open Sans regular/bold/italic/bold italic, headings; M62) and
+- Shared fonts (Inter regular/semibold/italic/semibold italic, headings;
+  M62, R71) and
   Lucide icons — **exist**: `fonts`, `font_registry` (`FontScope`), `icons`
 - Chat-link chip — **exists**: `chat_link` (find/decode `[&…]`, any
-  platform) + `chat_link_chip` (pill: icon, kind, id; coins as amounts with
-  coin dots; `!` warning chip for broken codes). The addon supplies the texts
+  platform) + `chat_link_chip` (pill in its category color: icon and kind in
+  `chip.<category>.text`, id in `text.secondary`; coins as amounts with coin
+  dots; warning chip for broken codes; R71). The addon supplies the texts
   through `ChipContext` (trailkit-ui has no strings). Used by the markdown
   view and the editor, where a chip is one atomic unit (memo M75)
 - Dropdown (select box) — **exists**: `dropdown::draw_dropdown` (themed
   field with chevron, popup list, check mark on the chosen option; fixed
   width of the widest option; memo M87; `DropdownVariant::Chip { tint }` for
   a compact chip next to a title, optionally tinted, M102/M104). Never ImGui's plain combo
+- Selection bar — **exists**: `selection_bar::draw_selection_bar`, called
+  right after the selected row's tree node or selectable (R71)
 - Menu entries — **exist**: `menu::draw_menu_item` (check mark = Lucide
-  `check` in accent) and `menu::begin_submenu` (Lucide `chevron-right`,
+  `check` in `accent.text`) and `menu::begin_submenu` (Lucide `chevron-right`,
   flush beside the parent); never ImGui's own check mark/arrow (memo M99)
 - `Pane` and inset separator — **exist**: `pane::draw_pane`,
   `separator::draw_separator`; every sub-region of a window and every
@@ -114,22 +125,24 @@ move it into `crates/trailkit-ui` (see AGENTS.md "Code sharing").
 - Settings windows: grouped sections with headings, short help text under
   non-obvious options, changes apply live (no "Apply" button) except
   destructive/import actions.
-- Lists: consistent row height, hover highlight, selected state, context menu
+- Lists: consistent row height, hover highlight, selected state (`bg.active`
+  plus the brass selection bar, never a colored fill), context menu
   on right-click with the same actions as visible buttons. Item names start
   flush left; per-item icons and badges sit right-aligned at the row end
   (the name is truncated before them); only structural controls such as a
   group's expand arrow stay on the left.
-- Drag & drop: show a drop indicator line (`accent`) between items and a
+- Drag & drop: show a drop indicator line (`accent.text`) between items and a
   highlight on groups; the dragged item's title floats next to the cursor
-  in a label with an `accent` border (`danger` plus Lucide `ban` over an
+  in a label with an `accent.text` border (`danger` plus Lucide `ban` over an
   impossible target, memo M109/M116); Escape cancels.
 - Text: sentence case for labels, title case never; no trailing colons on
   section headers.
 - Every window remembers position/size; Escape closes (register via
   `GUI_RegisterCloseOnEscape`).
 - Text buttons: always `button::draw_button` / `draw_primary_button`, never
-  `ui.button` with a text label (Open Sans sits low in ImGui's centering,
-  memo M85).
+  `ui.button` with a text label (text fonts sit low in ImGui's centering,
+  memo M85). One `draw_primary_button` per view at most (brass budget,
+  `references/tokens.md` §3).
 - Tooltips: plain ImGui tooltips; `StyleScope` moves them right of the real
   cursor (GW2's cursor is large, memo M84) — never position them by hand.
 - Overlays inside a window (scrims): ImGui renders a child window's
@@ -141,7 +154,8 @@ move it into `crates/trailkit-ui` (see AGENTS.md "Code sharing").
 
 - [ ] Rules in `references/ux-rules.md` checked (cite rule ids in reviews)
 - [ ] Overlay rules: compact, no focus stealing, auto-hide, frame budget
-- [ ] Only tokens used, no raw colors/sizes
+- [ ] Only tokens used, no raw colors/sizes; token checklist in
+      `references/tokens.md` §9 passed
 - [ ] Works and is readable in Dark *and* Light
 - [ ] Empty / loading / error / disabled states present
 - [ ] Every string localized (en + de)

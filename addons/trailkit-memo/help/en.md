@@ -32,7 +32,7 @@ Choose the kind of a note in the box next to its title (*Normal*, *Daily reset*,
 - While you edit a note (or it has a draft), its reset waits until you save or discard; your text is never changed under your hands.
 - **Checkboxes** in a note can be ticked directly.
 - **Links** open in your browser (only `http://` and `https://`); hover a link to see where it goes.
-- **Chat links** from the game (`[&…]`, e.g. a waypoint or an item) show as chips with an icon, the kind and the id; coins show their amount. Click a chip to copy its code, then paste it into the game chat. Hover it to see the code. A chip with **!** has a broken code; the tooltip says why. Names (instead of ids) will come with trailkit-core.
+- **Chat links** from the game (`[&…]`, e.g. a waypoint or an item) show as chips with an icon, the kind and the id; coins show their amount. The chip color shows the group: copper for places, blue for skills, traits and builds, green for items, violet for achievements, NPC texts and players. Click a chip to copy its code, then paste it into the game chat. Hover it to see the code. A chip with **!** has a broken code; the tooltip says why. Names (instead of ids) will come with trailkit-core.
 
 Long names are shortened with "…" — hover them to see the full name. In a long note the title stays at the top while you scroll.
 
@@ -40,7 +40,7 @@ Long names are shortened with "…" — hover them to see the full name. In a lo
 
 ## Editing a note
 
-Click the **pencil** at the top right of a note, or double-click the note. You edit the title and the text in markdown; the buttons in the bar above (in groups, like in Word) insert headings (H1, H2 — clicking the other level switches it, the same level removes it), **bold**, *italic*, lists, checkboxes and links (also **Ctrl+B** and **Ctrl+I**); clicking a button again removes the formatting (also links). Buttons of the formatting at the cursor light up. The event button needs trailkit-core.
+Click **Edit** at the top right of a note, or double-click the note. You edit the title and the text in markdown; the buttons in the bar above (in groups, like in Word) insert headings (H1, H2 — clicking the other level switches it, the same level removes it), **bold**, *italic*, lists, checkboxes and links (also **Ctrl+B** and **Ctrl+I**); clicking a button again removes the formatting (also links). Buttons of the formatting at the cursor light up. The event button needs trailkit-core.
 
 - **Chat links:** paste a code (`[&…]`) into the text and it becomes a chip. The cursor jumps over a chip and Backspace deletes it whole; to change it, delete it and paste the new code.
 - The **eye** button shows a preview of the formatted note next to the text; drag the gap between them to change the widths. memo remembers both.

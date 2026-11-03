@@ -153,7 +153,7 @@ pub fn draw_dropdown(
                     Icon::CHECK,
                     row_max[0] - icon_width(ui),
                     [row_min[1], row_max[1]],
-                    packed(tint.unwrap_or(theme.accent.base)),
+                    packed(tint.unwrap_or(theme.accent.text)),
                 );
             }
         }
@@ -166,7 +166,13 @@ pub fn draw_dropdown(
     } else {
         theme.border.color
     });
-    draw_border(min, max, border, theme.border.width.max(1.0), theme.radius);
+    draw_border(
+        min,
+        max,
+        border,
+        theme.border.width.max(1.0),
+        theme.radius.medium,
+    );
     if let Some(label) = options.get(selected) {
         draw_label(
             label,

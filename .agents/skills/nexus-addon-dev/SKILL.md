@@ -160,7 +160,7 @@ Project contract (to be finalized in `docs/plans/addons/trailkit-core.md`):
   Write one paragraph or list item per source line: single line breaks are
   shown as line breaks (memo M63).
   Use only characters the subset fonts contain (Latin up to Extended-B,
-  general punctuation): Open Sans has no arrows — write menu paths as
+  general punctuation, arrows): keep writing menu paths as
   `Nexus › Options` (a test checks every character, M62).
 - **Missing dependency guidance**: if a feature needs data the user disabled
   in core (or core is not installed), the feature is greyed out and shows an

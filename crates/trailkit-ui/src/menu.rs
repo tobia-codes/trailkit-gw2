@@ -27,7 +27,7 @@ pub fn draw_menu_item(ui: &Ui, theme: &Theme, label: &str, checked: bool) -> boo
             Icon::CHECK,
             max[0] - icon_width(ui),
             [min[1], max[1]],
-            packed(theme.accent.base),
+            packed(theme.accent.text),
         );
     }
     clicked

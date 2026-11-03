@@ -8,7 +8,7 @@ use crate::{glyph_metrics::capital_middle, theme::Theme};
 
 /// Draws a button with `label` and returns whether it was clicked. Unlike
 /// `ui.button` the label is centered by its capital letters, not by the font
-/// line box, in which Open Sans sits low (memo plan M85).
+/// line box, in which the text font sits low (memo plan M85).
 pub fn draw_button(ui: &Ui, label: &str) -> bool {
     draw_button_with_size(ui, label, [0.0, 0.0])
 }

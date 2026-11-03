@@ -56,6 +56,33 @@ impl ChatLinkKind {
         Self::BuildTemplate,
         Self::Achievement,
     ];
+
+    /// The chip category of this kind: it picks the chip's colors (R71).
+    #[must_use]
+    pub const fn category(self) -> ChipCategory {
+        match self {
+            Self::MapPoint | Self::WvwObjective => ChipCategory::Place,
+            Self::Skill | Self::Trait | Self::BuildTemplate => ChipCategory::Character,
+            Self::Coins | Self::Item | Self::Recipe | Self::Skin | Self::Outfit => {
+                ChipCategory::Item
+            }
+            Self::Achievement | Self::NpcText | Self::Player => ChipCategory::Progress,
+        }
+    }
+}
+
+/// The four color groups of chat-link chips (R71). A new link kind joins
+/// one of them instead of adding a fifth color.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ChipCategory {
+    /// Places: map point, WvW objective (copper).
+    Place,
+    /// The character: skill, trait, build (blue).
+    Character,
+    /// Things you own: item, recipe, skin, outfit, coins (jade).
+    Item,
+    /// Progress and text: achievement, NPC text, player (violet).
+    Progress,
 }
 
 /// A profession, as stored in build template links.

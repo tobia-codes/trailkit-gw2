@@ -187,7 +187,7 @@ fn draw_list_marker(
                 let glyph = icon.as_str(&mut buffer);
                 let size = ui.calc_text_size(glyph);
                 let color = if checked {
-                    theme.accent.base
+                    theme.accent.text
                 } else {
                     theme.text.secondary
                 };

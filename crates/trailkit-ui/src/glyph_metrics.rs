@@ -1,5 +1,5 @@
 //! Where glyphs really are inside a text line (Windows only; memo plan M80,
-//! M85). ImGui centers the whole font line box, but Open Sans keeps more room
+//! M85). ImGui centers the whole font line box, but the text font keeps more room
 //! above capitals (for accents) than below, so text centered by ImGui sits a
 //! little low. These measurements let components center by the letters.
 

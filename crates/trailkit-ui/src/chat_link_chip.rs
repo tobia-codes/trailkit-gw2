@@ -15,10 +15,6 @@ use crate::{
     theme::Theme,
 };
 
-/// Corner radius of a chip relative to `spacing.extra_small`: slightly
-/// rounded, not a pill (memo plan M80).
-const ROUNDING_FACTOR: f32 = 0.75;
-
 /// Icon size relative to the text size (memo plan M81, M82): at 100 % icons
 /// look taller than the capitals, at 80 % too small next to the letters.
 const ICON_SCALE: f32 = 0.85;
@@ -120,11 +116,11 @@ fn for_each_piece(
     context: ChipContext<'_>,
     mut visit: impl FnMut(Piece<'_>),
 ) {
-    let accent = theme.accent.base;
     let primary = theme.text.primary;
     match chip.link {
         Ok(ChatLink::Coins { copper }) => {
-            visit(Piece::Icon(Icon::COINS, accent));
+            let category = theme.chip.for_category(ChatLinkKind::Coins.category());
+            visit(Piece::Icon(Icon::COINS, category.text));
             let parts = [
                 (copper / 10_000, theme.coin.gold),
                 (copper / 100 % 100, theme.coin.silver),
@@ -144,15 +140,18 @@ fn for_each_piece(
         }
         Ok(link) => {
             let kind = link.kind();
-            visit(Piece::Icon(kind_icon(kind), accent));
-            visit(Piece::Text((context.text)(ChipText::Kind(kind)), primary));
+            // Icon and label in the category color; the id stays secondary
+            // so the name reads first (R71).
+            let label = theme.chip.for_category(kind.category()).text;
+            visit(Piece::Icon(kind_icon(kind), label));
+            visit(Piece::Text((context.text)(ChipText::Kind(kind)), label));
             if let ChatLink::BuildTemplate { profession } = link {
-                visit(Piece::Text(" (", primary));
+                visit(Piece::Text(" (", label));
                 visit(Piece::Text(
                     (context.text)(ChipText::Profession(profession)),
-                    primary,
+                    label,
                 ));
-                visit(Piece::Text(")", primary));
+                visit(Piece::Text(")", label));
             }
             if !chip.detail.is_empty() {
                 visit(Piece::Text(&chip.detail, theme.text.secondary));
@@ -256,9 +255,15 @@ pub fn draw_chip(
     let vertical_padding = vertical_padding(ui, theme);
     let min = [position[0], position[1] - vertical_padding];
     let max = [position[0] + width, position[1] + height + vertical_padding];
-    let rounding = theme.spacing.extra_small * ROUNDING_FACTOR;
+    let rounding = theme.radius.small;
+    // Valid links are filled in their category color, invalid ones keep
+    // the neutral fill with a warning frame.
+    let fill = chip.link.as_ref().map_or_else(
+        |_| theme.surface.hover.with_alpha(0.6),
+        |link| theme.chip.for_category(link.kind().category()).background,
+    );
     draw_list
-        .add_rect(min, max, theme.surface.hover.with_alpha(0.6).to_array())
+        .add_rect(min, max, fill.to_array())
         .filled(true)
         .rounding(rounding)
         .build();

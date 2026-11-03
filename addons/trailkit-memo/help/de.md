@@ -32,7 +32,7 @@ Wähle die Art einer Notiz im Feld neben ihrem Titel (*Normal*, *Täglicher Rese
 - Während du eine Notiz bearbeitest (oder es einen Entwurf gibt), wartet ihr Reset, bis du speicherst oder verwirfst; dein Text wird nie unter deinen Händen geändert.
 - **Checkboxen** in einer Notiz kannst du direkt abhaken.
 - **Links** öffnen sich im Browser (nur `http://` und `https://`); fahre mit der Maus darüber, um das Ziel zu sehen.
-- **Chat-Links** aus dem Spiel (`[&…]`, z. B. eine Wegmarke oder ein Gegenstand) erscheinen als Chips mit Symbol, Art und ID; Münzen zeigen ihren Betrag. Klicke auf einen Chip, um den Code zu kopieren, und füge ihn dann im Spiel-Chat ein. Fahre mit der Maus darüber, um den Code zu sehen. Ein Chip mit **!** hat einen beschädigten Code; der Tooltip sagt, warum. Namen (statt IDs) kommen mit trailkit-core.
+- **Chat-Links** aus dem Spiel (`[&…]`, z. B. eine Wegmarke oder ein Gegenstand) erscheinen als Chips mit Symbol, Art und ID; Münzen zeigen ihren Betrag. Die Farbe zeigt die Gruppe: Kupfer für Orte, Blau für Fertigkeiten, Eigenschaften und Builds, Grün für Gegenstände, Violett für Erfolge, NPC-Texte und Spieler. Klicke auf einen Chip, um den Code zu kopieren, und füge ihn dann im Spiel-Chat ein. Fahre mit der Maus darüber, um den Code zu sehen. Ein Chip mit **!** hat einen beschädigten Code; der Tooltip sagt, warum. Namen (statt IDs) kommen mit trailkit-core.
 
 Lange Namen werden mit „…“ gekürzt — fahre mit der Maus darüber, um den ganzen Namen zu sehen. In einer langen Notiz bleibt der Titel oben stehen, während du scrollst.
 
@@ -40,7 +40,7 @@ Lange Namen werden mit „…“ gekürzt — fahre mit der Maus darüber, um de
 
 ## Eine Notiz bearbeiten
 
-Klicke auf den **Stift** oben rechts in einer Notiz oder doppelklicke die Notiz. Du bearbeitest Titel und Text in Markdown; die Buttons in der Leiste darüber (in Gruppen wie in Word) fügen Überschriften (H1, H2 – ein Klick auf die andere Ebene wechselt sie, auf dieselbe entfernt sie), **Fett**, *Kursiv*, Aufzählungen, Checkboxen und Links ein (auch **Strg+B** und **Strg+I**); ein erneuter Klick entfernt die Formatierung wieder (auch Links). Die Buttons der Formatierung an der Cursorposition leuchten auf. Der Event-Button benötigt trailkit-core.
+Klicke oben rechts in einer Notiz auf **Bearbeiten** oder doppelklicke die Notiz. Du bearbeitest Titel und Text in Markdown; die Buttons in der Leiste darüber (in Gruppen wie in Word) fügen Überschriften (H1, H2 – ein Klick auf die andere Ebene wechselt sie, auf dieselbe entfernt sie), **Fett**, *Kursiv*, Aufzählungen, Checkboxen und Links ein (auch **Strg+B** und **Strg+I**); ein erneuter Klick entfernt die Formatierung wieder (auch Links). Die Buttons der Formatierung an der Cursorposition leuchten auf. Der Event-Button benötigt trailkit-core.
 
 - **Chat-Links:** Füge einen Code (`[&…]`) in den Text ein, und er wird zum Chip. Der Cursor springt über einen Chip, und die Rücktaste löscht ihn ganz; um ihn zu ändern, lösche ihn und füge den neuen Code ein.
 - Der **Augen**-Button zeigt eine Vorschau der formatierten Notiz neben dem Text; ziehe den Spalt dazwischen, um die Breiten zu ändern. memo merkt sich beides.

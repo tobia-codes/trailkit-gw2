@@ -43,6 +43,8 @@ pub mod menu;
 #[cfg(windows)]
 pub mod pane;
 #[cfg(windows)]
+pub mod selection_bar;
+#[cfg(windows)]
 pub mod separator;
 #[cfg(windows)]
 pub mod splitter;
