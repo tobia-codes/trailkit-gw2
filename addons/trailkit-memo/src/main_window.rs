@@ -18,10 +18,9 @@ use nexus::imgui::{
     WindowHoveredFlags,
 };
 use trailkit_ui::{
-    editor::view::TextEditor,
     font_registry::FontScope,
     fonts::FontRole,
-    markdown::{self, MarkdownDocument},
+    markdown,
     markdown_view::{MarkdownAction, open_web_link},
     pane::draw_pane,
     text_search::SearchQuery,
@@ -29,11 +28,12 @@ use trailkit_ui::{
     title_bar::TitleBarTexts,
 };
 
-use crate::{
-    note_editing::{ActiveFormats, EditSession, FormatCommand, active_formats, format_edit},
-    tree_drag::{DropTarget, RowRect},
-};
+use crate::tree_drag::{DropTarget, RowRect};
 use trailkit_memo_drafts::draft_hint::DraftHint;
+use trailkit_memo_editor::{
+    editor::Editor,
+    note_editing::{EditSession, FormatCommand},
+};
 use trailkit_memo_note_view::note_view::NoteView;
 use trailkit_memo_reset_schedule::{
     due_resets::apply_due_resets, schedule::next_reset_of_any_period,
@@ -69,10 +69,6 @@ const MINIMUM_PANE_CHARACTERS: f32 = 22.0;
 /// Minimum content width of the note list in average characters (M73): the
 /// user may drag it narrower than the other panes.
 const MINIMUM_TREE_CHARACTERS: f32 = 10.0;
-/// Width in characters (of `n`) that editor and preview each keep, so the
-/// splitter between them stays usable (M72).
-const MINIMUM_PREVIEW_SPLIT_CHARACTERS: f32 = 3.0;
-
 /// How long the text size waits after the last Ctrl+mouse wheel step before
 /// the fonts are rebuilt (M80): rebuilding on every step flickers.
 const TEXT_SCALE_APPLY_DELAY_SECONDS: f64 = 0.4;
@@ -106,20 +102,12 @@ struct PaneWidths {
 /// of the dimmed note stays visible to click away (M48, `lay-drawer`).
 const DRAWER_MAXIMUM_FRACTION: f32 = 0.85;
 
-/// Windows virtual-key code of `B` (Nexus feeds ImGui with virtual-key codes).
-const VIRTUAL_KEY_B: i32 = 0x42;
-
-/// Windows virtual-key code of `0` (Ctrl+0 resets the text size, M79).
+/// Windows virtual-key code of `0` (Nexus feeds ImGui with virtual-key
+/// codes; Ctrl+0 resets the text size, M79).
 const VIRTUAL_KEY_0: i32 = 0x30;
 
 /// Windows virtual-key code of `F` (Ctrl+F focuses the search, M124).
 const VIRTUAL_KEY_F: i32 = 0x46;
-
-/// Windows virtual-key code of `I`.
-const VIRTUAL_KEY_I: i32 = 0x49;
-
-/// Windows virtual-key code of `S` (Ctrl+S finishes editing, M93).
-const VIRTUAL_KEY_S: i32 = 0x53;
 
 /// A problem with `notes.json` shown above the notes (M31).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -212,73 +200,6 @@ enum LeaveReason {
     CloseWindow,
     /// Leave the editor ("Cancel").
     Cancel,
-}
-
-/// The editor of one note (M51–M53, M58).
-#[derive(Debug)]
-struct Editor {
-    /// Uncommitted title and body.
-    session: EditSession,
-    /// The word-wrapping body editor; its text is mirrored into
-    /// `session.body` on every change.
-    body: TextEditor,
-    /// The parsed preview of the body (M60); `None` when it must be parsed
-    /// again because the text changed.
-    preview: Option<MarkdownDocument>,
-    /// Whether the title input was active in the last frame.
-    title_was_active: bool,
-    /// Formatting active at the cursor, cached per text revision and
-    /// selection (M69).
-    active: Option<(u64, std::ops::Range<usize>, ActiveFormats)>,
-}
-
-impl Editor {
-    /// Opens an editor for `session`, focused on the body.
-    fn new(session: EditSession) -> Self {
-        let body = TextEditor::new(session.body.clone());
-        Self {
-            session,
-            body,
-            preview: None,
-            title_was_active: false,
-            active: None,
-        }
-    }
-
-    /// Applies a formatting command to the body at its selection (M53).
-    fn format(&mut self, command: FormatCommand) {
-        let edit = format_edit(self.body.text(), self.body.selection(), command);
-        self.body
-            .apply_edit(edit.range, &edit.replacement, edit.selection);
-        self.body.focus();
-        self.sync_body();
-    }
-
-    /// The formatting active at the cursor (recomputed only when the text or
-    /// the selection changed).
-    fn active_formats(&mut self) -> ActiveFormats {
-        let revision = self.body.revision();
-        let selection = self.body.selection();
-        match &self.active {
-            Some((cached_revision, cached_selection, formats))
-                if *cached_revision == revision && *cached_selection == selection =>
-            {
-                *formats
-            }
-            _ => {
-                let formats = active_formats(self.body.text(), selection.clone());
-                self.active = Some((revision, selection, formats));
-                formats
-            }
-        }
-    }
-
-    /// Copies the editor text into the session and marks the preview stale.
-    fn sync_body(&mut self) {
-        self.session.body.clear();
-        self.session.body.push_str(self.body.text());
-        self.preview = None;
-    }
 }
 
 /// An inline rename in progress (M44).
@@ -579,7 +500,7 @@ impl MemoWindow {
             self.saver.save_ui_state(self.ui_state);
         }
         if let Some(editor) = &mut self.editor {
-            editor.body.unfocus();
+            editor.unfocus_body();
         }
         self.search_field.request_focus();
     }
@@ -639,7 +560,7 @@ impl MemoWindow {
     pub fn has_unsaved_changes(&self) -> bool {
         self.editor
             .as_ref()
-            .is_some_and(|editor| editor.session.has_changes())
+            .is_some_and(|editor| editor.session().has_changes())
     }
 
     /// Asks to close the window (close button, keybind, quick access icon,
@@ -685,13 +606,13 @@ impl MemoWindow {
         let Some(editor) = &self.editor else {
             return;
         };
-        if !editor.session.has_changes() {
+        if !editor.session().has_changes() {
             return;
         }
-        let Some(note) = self.document.note(editor.session.note) else {
+        let Some(note) = self.document.note(editor.session().note) else {
             return;
         };
-        let draft = editor.session.to_draft(Timestamp::now(), note.updated_at);
+        let draft = editor.session().to_draft(Timestamp::now(), note.updated_at);
         self.drafts.upsert(draft);
         self.saver.save_drafts(self.drafts.clone());
     }
@@ -770,7 +691,7 @@ impl MemoWindow {
         if self.next_reset_check.is_some_and(|check| now < check) {
             return;
         }
-        let edited = self.editor.as_ref().map(|editor| editor.session.note);
+        let edited = self.editor.as_ref().map(|editor| editor.session().note);
         let drafts = &self.drafts;
         let changed = apply_due_resets(&mut self.document, now, |note| {
             Some(note) == edited || drafts.get(note).is_some()
@@ -844,12 +765,15 @@ impl MemoWindow {
     fn apply(&mut self, action: &WindowAction, language: Language) {
         let now = Timestamp::now();
         if let Some(editor) = &self.editor
-            && action.leaves_editor_of(editor.session.note)
+            && action.leaves_editor_of(editor.session().note)
         {
             if self.leave_prompt.is_some() {
                 return;
             }
-            match (editor.session.has_changes(), self.settings.unsaved_changes) {
+            match (
+                editor.session().has_changes(),
+                self.settings.unsaved_changes,
+            ) {
                 (true, UnsavedChanges::Ask) => {
                     self.leave_prompt = Some(LeaveReason::Action(action.clone()));
                     return;
@@ -1034,7 +958,7 @@ impl MemoWindow {
         let Some(editor) = self.editor.take() else {
             return;
         };
-        let session = editor.session;
+        let session = editor.into_session();
         let mut changed = self
             .document
             .rename(NodeId::Note(session.note), &session.title, now);

@@ -228,24 +228,6 @@ pub enum Text {
     SaveTooltip,
     /// Button cancelling an edit (M51).
     Cancel,
-    /// Placeholder of the title input (M51).
-    TitleHint,
-    /// Tooltip of the heading 1 button (M100).
-    FormatHeading1,
-    /// Tooltip of the heading 2 button (M100).
-    FormatHeading2,
-    /// Tooltip of the bold button (M53).
-    FormatBold,
-    /// Tooltip of the italic button (M53).
-    FormatItalic,
-    /// Tooltip of the bulleted list button (M53).
-    FormatBulletList,
-    /// Tooltip of the checkbox button (M53).
-    FormatCheckbox,
-    /// Tooltip of the link button (M53).
-    FormatLink,
-    /// Tooltip of the disabled event button without trailkit-core (M53).
-    InsertEventRequiresCore,
     /// Title of the unsaved changes dialog (M54).
     UnsavedChangesTitle,
     /// Text of the unsaved changes dialog (M54).
@@ -256,10 +238,6 @@ pub enum Text {
     DiscardChanges,
     /// Stay in the editor (unsaved changes dialog).
     KeepEditing,
-    /// Tooltip of the preview button while the preview is hidden (M60).
-    ShowPreview,
-    /// Tooltip of the preview button while the preview is shown (M60).
-    HidePreview,
     /// Label of the text size shown while changing it (M80).
     TextSize,
     /// Context menu submenu that moves a note or group (M112).
@@ -292,22 +270,11 @@ impl LocalizedText for Text {
         Self::Save,
         Self::SaveTooltip,
         Self::Cancel,
-        Self::TitleHint,
-        Self::FormatHeading1,
-        Self::FormatHeading2,
-        Self::FormatBold,
-        Self::FormatItalic,
-        Self::FormatBulletList,
-        Self::FormatCheckbox,
-        Self::FormatLink,
-        Self::InsertEventRequiresCore,
         Self::UnsavedChangesTitle,
         Self::UnsavedChangesQuestion,
         Self::KeepChanges,
         Self::DiscardChanges,
         Self::KeepEditing,
-        Self::ShowPreview,
-        Self::HidePreview,
         Self::TextSize,
         Self::MoveTo,
         Self::TopLevel,
@@ -384,28 +351,6 @@ impl LocalizedText for Text {
             (Self::SaveTooltip, Language::German) => "Änderungen speichern (Strg+Enter, Strg+S)",
             (Self::Cancel, Language::English) => "Cancel",
             (Self::Cancel, Language::German) => "Abbrechen",
-            (Self::TitleHint, Language::English) => "Title",
-            (Self::TitleHint, Language::German) => "Titel",
-            (Self::FormatHeading1, Language::English) => "Heading 1",
-            (Self::FormatHeading1, Language::German) => "Überschrift 1",
-            (Self::FormatHeading2, Language::English) => "Heading 2",
-            (Self::FormatHeading2, Language::German) => "Überschrift 2",
-            (Self::FormatBold, Language::English) => "Bold (Ctrl+B)",
-            (Self::FormatBold, Language::German) => "Fett (Strg+B)",
-            (Self::FormatItalic, Language::English) => "Italic (Ctrl+I)",
-            (Self::FormatItalic, Language::German) => "Kursiv (Strg+I)",
-            (Self::FormatBulletList, Language::English) => "Bulleted list",
-            (Self::FormatBulletList, Language::German) => "Aufzählung",
-            (Self::FormatCheckbox, Language::English) => "Checkbox",
-            (Self::FormatCheckbox, Language::German) => "Checkbox",
-            (Self::FormatLink, Language::English) => "Link",
-            (Self::FormatLink, Language::German) => "Link",
-            (Self::InsertEventRequiresCore, Language::English) => {
-                "Insert event — requires trailkit-core"
-            }
-            (Self::InsertEventRequiresCore, Language::German) => {
-                "Event einfügen – benötigt trailkit-core"
-            }
             (Self::UnsavedChangesTitle, Language::English) => "Unsaved changes",
             (Self::UnsavedChangesTitle, Language::German) => "Ungespeicherte Änderungen",
             (Self::UnsavedChangesQuestion, Language::English) => {
@@ -420,10 +365,6 @@ impl LocalizedText for Text {
             (Self::DiscardChanges, Language::German) => "Verwerfen",
             (Self::KeepEditing, Language::English) => "Keep editing",
             (Self::KeepEditing, Language::German) => "Weiter bearbeiten",
-            (Self::ShowPreview, Language::English) => "Show preview",
-            (Self::ShowPreview, Language::German) => "Vorschau einblenden",
-            (Self::HidePreview, Language::English) => "Hide preview",
-            (Self::HidePreview, Language::German) => "Vorschau ausblenden",
             (Self::TextSize, Language::English) => "Text size",
             (Self::TextSize, Language::German) => "Textgröße",
             (Self::MoveTo, Language::English) => "Move to",

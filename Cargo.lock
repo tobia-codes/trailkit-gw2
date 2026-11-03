@@ -1487,6 +1487,7 @@ dependencies = [
  "serde_json",
  "tempfile",
  "trailkit-memo-drafts",
+ "trailkit-memo-editor",
  "trailkit-memo-note-view",
  "trailkit-memo-reset-schedule",
  "trailkit-memo-search",
@@ -1500,6 +1501,16 @@ dependencies = [
 
 [[package]]
 name = "trailkit-memo-drafts"
+version = "0.0.0"
+dependencies = [
+ "jiff",
+ "nexus",
+ "trailkit-memo-shared",
+ "trailkit-ui",
+]
+
+[[package]]
+name = "trailkit-memo-editor"
 version = "0.0.0"
 dependencies = [
  "jiff",
