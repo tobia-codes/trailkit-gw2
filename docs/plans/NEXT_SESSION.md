@@ -145,7 +145,7 @@ Last updated: 2026-11-03 (end of session 10, after PR #75).
      Stay on one work branch, deploy when a task is done, ask "darf ich
      mergen?"; push + PR + auto-merge only after the OK.
    - Changing UI layout above the list shifts rows: the drag tests in
-     `main_window_tests.rs` use fixed mouse coordinates — shift them.
+     `main_window/tests.rs` use fixed mouse coordinates — shift them.
    - In this WSL shell, plain `grep` fails (a broken wrapper); use
      `command grep`. Run `source ~/.cargo/env` before cargo.
    - Never leave an `eprintln!` debug line before `cargo fmt`: fmt splits

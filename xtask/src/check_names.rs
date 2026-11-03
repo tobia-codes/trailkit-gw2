@@ -4,6 +4,8 @@
 //!
 //! Rules per path segment:
 //! - directories: `kebab-case` (a leading `.` is allowed, e.g. `.github`);
+//!   below a `src/` directory also `snake_case`, because Rust module
+//!   directories carry the module name (`main_window.rs` + `main_window/`);
 //! - Rust sources (`*.rs`): `snake_case`;
 //! - files below `data/`: `snake_case` or `kebab-case` (files named after a
 //!   data id keep the id's `snake_case`);
@@ -92,7 +94,11 @@ fn check_path(path: &str) -> Option<String> {
     }
     let segments: Vec<&str> = path.split('/').collect();
     let (file_name, directories) = segments.split_last()?;
-    for directory in directories {
+    for (index, directory) in directories.iter().enumerate() {
+        let in_rust_sources = directories[..index].contains(&"src");
+        if in_rust_sources && is_snake_case(directory) {
+            continue;
+        }
         if !is_kebab_case(directory.strip_prefix('.').unwrap_or(directory)) {
             return Some(format!(
                 "{path}: directory `{directory}` must be kebab-case"
@@ -164,6 +170,7 @@ mod tests {
             "addons/trailkit-memo/Cargo.toml",
             "addons/trailkit-memo/src/i18n.rs",
             "xtask/src/sync_versions.rs",
+            "addons/trailkit-memo/src/main_window/note_list.rs",
             "docs/plans/data-pipeline.md",
             ".github/workflows/ci.yml",
             ".node-version",
@@ -184,6 +191,8 @@ mod tests {
             "addons/trailkit-memo/src/note-tree.rs",
             "apps/web/NoteTree.tsx",
             "docs/my_notes.md",
+            "docs/my_plans/roadmap.md",
+            "addons/trailkit-memo/src/MainWindow/note_list.rs",
             "assets/icon.PNG",
         ] {
             assert!(check_path(path).is_some(), "{path}");
