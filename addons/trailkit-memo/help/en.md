@@ -10,7 +10,7 @@ The window hides during loading screens, cutscenes and character select and reap
 
 ## Your notes
 
-The window shows the note list on the left and the selected note on the right. Drag the gap between both sides to change their widths (a line appears when you point at it). The note list keeps its width when you resize the window; the note gets the extra room.
+The window shows the note list on the left and the selected note on the right. The arrow left of the title collapses the window to its title bar (click it again to expand), the **×** on the right closes it. Drag the gap between both sides to change their widths (a line appears when you point at it). The note list keeps its width when you resize the window; the note gets the extra room.
 
 - **Sidebar button** (panel icon, top left of the note): hides the note list so the note gets the full width; click it again to show the list. memo remembers your choice.
 - **Narrow window:** the note fills the window and the sidebar button opens the note list over it. Choose a note, click the dimmed note or the sidebar button again to close the list. While you edit with the preview open, memo switches earlier, so text and preview keep their room.

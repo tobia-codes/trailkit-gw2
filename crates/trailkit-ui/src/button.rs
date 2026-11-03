@@ -4,7 +4,14 @@
 
 use nexus::imgui::{ImColor32, StyleColor, Ui};
 
-use crate::{glyph_metrics::capital_middle, theme::Theme};
+use crate::{
+    dropdown::{draw_icon_into, icon_width},
+    font_registry::FontScope,
+    fonts::FontRole,
+    glyph_metrics::capital_middle,
+    icons::Icon,
+    theme::Theme,
+};
 
 /// Draws a button with `label` and returns whether it was clicked. Unlike
 /// `ui.button` the label is centered by its capital letters, not by the font
@@ -76,6 +83,76 @@ pub fn draw_primary_button_with_size(ui: &Ui, theme: &Theme, label: &str, size: 
         ui.push_style_color(StyleColor::Text, theme.text.on_accent.to_array()),
     ];
     draw_button_with_size(ui, label, size)
+}
+
+/// Draws a primary button with a Lucide `icon` before `label` (accent
+/// background, `text.on_accent` icon and label; R71) and returns whether it
+/// was clicked.
+pub fn draw_primary_button_with_icon(ui: &Ui, theme: &Theme, icon: Icon, label: &str) -> bool {
+    let _colors = [
+        ui.push_style_color(StyleColor::Button, theme.accent.base.to_array()),
+        ui.push_style_color(StyleColor::ButtonHovered, theme.accent.hover.to_array()),
+        ui.push_style_color(StyleColor::ButtonActive, theme.accent.active.to_array()),
+        ui.push_style_color(StyleColor::Text, theme.text.on_accent.to_array()),
+    ];
+    let padding = ui.clone_style().frame_padding[0];
+    let gap = icon_label_gap(theme);
+    let size = [icon_label_button_width(ui, theme, label), ui.frame_height()];
+    let _id = ui.push_id(label);
+    let clicked = ui.button_with_size("##button", size);
+    let [min, max] = [ui.item_rect_min(), ui.item_rect_max()];
+    let color = ImColor32::from(ui.style_color(StyleColor::Text)).to_bits();
+    // SAFETY: called on the render thread inside a frame, where ImGui has a
+    // current window and returns its draw list.
+    let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
+    let icon_x = (min[0] + padding).round();
+    draw_icon_into(draw_list, ui, icon, icon_x, [min[1], max[1]], color);
+    draw_label(
+        label,
+        icon_x + icon_width(ui) + gap,
+        [min[1], max[1]],
+        color,
+    );
+    clicked
+}
+
+/// The width of a button with an icon and `label`, for right-aligning it.
+#[must_use]
+pub fn icon_label_button_width(ui: &Ui, theme: &Theme, label: &str) -> f32 {
+    let padding = ui.clone_style().frame_padding[0];
+    2.0 * padding + icon_width(ui) + icon_label_gap(theme) + ui.calc_text_size(label)[0]
+}
+
+/// The gap between an icon and its label inside a button.
+fn icon_label_gap(theme: &Theme) -> f32 {
+    theme.spacing.extra_small * 1.5
+}
+
+/// Draws a borderless icon button (`bg.hover` only while hovered) with
+/// `tooltip` and returns whether it was clicked.
+pub fn draw_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str) -> bool {
+    draw_icon_toggle(ui, theme, icon, tooltip, false)
+}
+
+/// Like [`draw_icon_button`], but the icon is drawn in `accent.text` when
+/// `active` (toggles whose state is on, memo M69).
+pub fn draw_icon_toggle(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str, active: bool) -> bool {
+    let _active_color =
+        active.then(|| ui.push_style_color(StyleColor::Text, theme.accent.text.to_array()));
+    let clicked = {
+        let _colors = [
+            ui.push_style_color(StyleColor::Button, [0.0; 4]),
+            ui.push_style_color(StyleColor::ButtonHovered, theme.surface.hover.to_array()),
+            ui.push_style_color(StyleColor::ButtonActive, theme.surface.active.to_array()),
+        ];
+        let _icons = FontScope::push(ui, FontRole::Icons);
+        let mut buffer = [0; 4];
+        ui.button(icon.as_str(&mut buffer))
+    };
+    if ui.is_item_hovered() {
+        ui.tooltip_text(tooltip);
+    }
+    clicked
 }
 
 /// The width a button with `label` takes, for right-aligning button rows.

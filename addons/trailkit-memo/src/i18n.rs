@@ -125,6 +125,12 @@ pub const fn chip_text(text: ChipText, language: Language) -> &'static str {
 pub enum Text {
     /// Title of the main window.
     MainWindowTitle,
+    /// Tooltip of the title bar chevron while the window is expanded (R71).
+    CollapseWindow,
+    /// Tooltip of the title bar chevron while the window is collapsed.
+    ExpandWindow,
+    /// Tooltip of the title bar close button.
+    CloseWindow,
     /// Display name of the open/close keybind in the Nexus keybind list.
     KeybindToggle,
     /// Tooltip of the quick access icon.
@@ -225,8 +231,11 @@ pub enum Text {
 
 impl Text {
     /// Every string, for registering their characters with Nexus' font atlas.
-    pub const ALL: [Self; 49] = [
+    pub const ALL: [Self; 52] = [
         Self::MainWindowTitle,
+        Self::CollapseWindow,
+        Self::ExpandWindow,
+        Self::CloseWindow,
         Self::KeybindToggle,
         Self::QuickAccessTooltip,
         Self::Loading,
@@ -301,6 +310,12 @@ impl Text {
         match (self, language) {
             (Self::MainWindowTitle, Language::English) => "Notes",
             (Self::MainWindowTitle, Language::German) => "Notizen",
+            (Self::CollapseWindow, Language::English) => "Collapse",
+            (Self::CollapseWindow, Language::German) => "Einklappen",
+            (Self::ExpandWindow, Language::English) => "Expand",
+            (Self::ExpandWindow, Language::German) => "Ausklappen",
+            (Self::CloseWindow, Language::English) => "Close",
+            (Self::CloseWindow, Language::German) => "Schließen",
             (Self::KeybindToggle, Language::English) => "Open/close notes",
             (Self::KeybindToggle, Language::German) => "Notizen öffnen/schließen",
             (Self::QuickAccessTooltip, Language::English) => "Notes",

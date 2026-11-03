@@ -38,11 +38,12 @@ use trailkit_ui::{
     font_registry::{follow_body_size, font_size_of, register_fonts},
     style_scope::StyleScope,
     theme::ThemeKind,
+    title_bar::{TitleBarState, draw_window},
 };
 
 use crate::{
     i18n::{Language, Text},
-    main_window::{MemoWindow, NotesProblem},
+    main_window::{MemoWindow, NotesProblem, title_bar_texts},
     note_tree::NotesDocument,
     settings::{QuickAccessIcon, Settings, TextScale},
     storage_worker::{LoadedDocuments, SAVE_DEBOUNCE, SavingAllowed, StorageSaver, StorageWorker},
@@ -134,6 +135,9 @@ static CLOSE_REQUESTED: AtomicBool = AtomicBool::new(false);
 
 /// Effective UI language, stored as the [`Language`] discriminant.
 static LANGUAGE: AtomicU8 = AtomicU8::new(Language::English as u8);
+
+/// Collapsed state of the main window's title bar (R71); render thread only.
+static TITLE_BAR: Mutex<TitleBarState> = Mutex::new(TitleBarState::NEW);
 
 /// Main window title incl. a stable ImGui id (`###`), built once at load.
 static WINDOW_TITLE: OnceLock<String> = OnceLock::new();
@@ -332,14 +336,23 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
     let theme = ThemeKind::default().theme();
     let _theme = StyleScope::push(ui, &theme);
     let mut open = true;
-    Window::new(title)
-        .size([640.0, 420.0], Condition::FirstUseEver)
-        .opened(&mut open)
-        .build(ui, || match &mut *notes {
+    let mut title_bar = TITLE_BAR
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    draw_window(
+        ui,
+        &theme,
+        Window::new(title).size([640.0, 420.0], Condition::FirstUseEver),
+        title_bar_texts(language),
+        &mut title_bar,
+        &mut open,
+        || match &mut *notes {
             NotesState::Loading { .. } => ui.text(Text::Loading.get(language)),
             NotesState::Unavailable => ui.text_wrapped(Text::NotesInaccessible.get(language)),
             NotesState::Ready(window) => window.draw(ui, language, &theme),
-        });
+        },
+    );
+    drop(title_bar);
     if let NotesState::Ready(window) = &mut *notes {
         window.draw_dialog(ui, language, &theme);
     }
