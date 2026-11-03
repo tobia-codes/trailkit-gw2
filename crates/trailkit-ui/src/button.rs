@@ -134,34 +134,9 @@ pub fn draw_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str) -> bo
     draw_icon_toggle(ui, theme, icon, tooltip, false)
 }
 
-/// Like [`draw_icon_button`], but exactly `size` (e.g. a square that must
-/// fit inside another control, memo M128); the icon stays centered.
-pub fn draw_icon_button_with_size(
-    ui: &Ui,
-    theme: &Theme,
-    icon: Icon,
-    tooltip: &str,
-    size: [f32; 2],
-) -> bool {
-    draw_icon_button_styled(ui, theme, icon, tooltip, false, size)
-}
-
 /// Like [`draw_icon_button`], but the icon is drawn in `accent.text` when
 /// `active` (toggles whose state is on, memo M69).
 pub fn draw_icon_toggle(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str, active: bool) -> bool {
-    draw_icon_button_styled(ui, theme, icon, tooltip, active, [0.0, 0.0])
-}
-
-/// Draws a borderless icon button of `size` (`[0.0, 0.0]`: fitted to the
-/// icon), with the icon in `accent.text` when `active`.
-fn draw_icon_button_styled(
-    ui: &Ui,
-    theme: &Theme,
-    icon: Icon,
-    tooltip: &str,
-    active: bool,
-    size: [f32; 2],
-) -> bool {
     let _active_color =
         active.then(|| ui.push_style_color(StyleColor::Text, theme.accent.text.to_array()));
     let clicked = {
@@ -172,7 +147,7 @@ fn draw_icon_button_styled(
         ];
         let _icons = FontScope::push(ui, FontRole::Icons);
         let mut buffer = [0; 4];
-        ui.button_with_size(icon.as_str(&mut buffer), size)
+        ui.button(icon.as_str(&mut buffer))
     };
     if ui.is_item_hovered() {
         ui.tooltip_text(tooltip);

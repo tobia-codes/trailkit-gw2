@@ -91,8 +91,7 @@ Build once, use everywhere. Planned:
 - Buttons — **exist**: `button::draw_button` (secondary, `bg.hover` fill),
   `draw_primary_button`, `draw_primary_button_with_icon` (Lucide icon +
   label, R71), `draw_icon_button` / `draw_icon_toggle` (borderless icon
-  buttons with tooltip), `draw_icon_button_with_size` (fixed size, e.g. inside
-  a field). Planned: danger
+  buttons with tooltip). Planned: danger
 - `Popover` / `Tooltip`, `ConfirmDialog`, `UnsavedChangesDialog`
 - `DependencyHint` (greyed feature + explanation + "Open core settings"/
   "Get trailkit-core" button)

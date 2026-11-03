@@ -6,10 +6,7 @@
 //! rule 7); the settings window will be the likely second user.
 
 use nexus::imgui::{StyleColor, StyleVar, Ui};
-use trailkit_ui::{
-    button::draw_icon_button_with_size, font_registry::FontScope, fonts::FontRole, icons::Icon,
-    theme::Theme,
-};
+use trailkit_ui::{font_registry::FontScope, fonts::FontRole, icons::Icon, theme::Theme};
 
 /// State of the search field that outlives a frame.
 #[derive(Debug, Default)]
@@ -72,8 +69,9 @@ impl SearchField {
             .rounding(theme.radius.medium)
             .build();
 
-        // Magnifier, centered vertically like the icon buttons' glyphs.
-        let icon_width = {
+        // Magnifier on the left, the clear `x` mirrored on the right: same
+        // size, color and distance to the frame (M128).
+        let (icon_width, clear_size) = {
             let _icons = FontScope::push(ui, FontRole::Icons);
             let mut buffer = [0; 4];
             let icon = Icon::SEARCH.as_str(&mut buffer);
@@ -83,17 +81,17 @@ impl SearchField {
                 theme.text.secondary.to_array(),
                 icon,
             );
-            size[0]
+            (size[0], ui.calc_text_size(Icon::X.as_str(&mut buffer)))
         };
         let input_x = start[0] + padding[0] + icon_width + theme.spacing.extra_small;
-        // The clear button is a square inset by the same gap on every side,
-        // so it never reaches the frame whatever the font size (M128).
-        let clear_inset = theme.spacing.small / 2.0;
-        let clear_side = height - 2.0 * clear_inset;
+        let clear_position = [
+            end[0] - padding[0] - clear_size[0],
+            start[1] + (height - clear_size[1]) / 2.0,
+        ];
         let clear_width = if self.text.is_empty() {
             0.0
         } else {
-            clear_side + 2.0 * clear_inset
+            padding[0] + clear_size[0] + theme.spacing.extra_small
         };
 
         let changed = {
@@ -118,15 +116,10 @@ impl SearchField {
             changed
         };
 
-        let mut cleared = false;
-        if !self.text.is_empty() {
-            ui.same_line_with_spacing(0.0, 0.0);
-            ui.set_cursor_screen_pos([end[0] - clear_inset - clear_side, start[1] + clear_inset]);
-            if draw_icon_button_with_size(ui, theme, Icon::X, texts.clear, [clear_side, clear_side])
-            {
-                self.clear(true);
-                cleared = true;
-            }
+        let cleared = !self.text.is_empty()
+            && self.draw_clear_button(ui, theme, clear_position, clear_size, texts.clear);
+        if cleared {
+            self.clear(true);
         }
 
         let frame = if self.is_active {
@@ -143,5 +136,50 @@ impl SearchField {
         ui.set_cursor_screen_pos([start[0], end[1]]);
         ui.dummy([0.0, 0.0]);
         changed || cleared
+    }
+
+    /// Draws the clear `x` at `position` (glyph of `size`): `text.secondary`,
+    /// on hover `text.primary` over a small `bg.hover` square around the
+    /// glyph. Returns whether it was clicked.
+    fn draw_clear_button(
+        &self,
+        ui: &Ui,
+        theme: &Theme,
+        position: [f32; 2],
+        size: [f32; 2],
+        tooltip: &str,
+    ) -> bool {
+        let inset = theme.spacing.extra_small;
+        let box_start = [position[0] - inset, position[1] - inset];
+        let box_size = [size[0] + 2.0 * inset, size[1] + 2.0 * inset];
+        ui.same_line_with_spacing(0.0, 0.0);
+        ui.set_cursor_screen_pos(box_start);
+        let clicked = {
+            let _id = ui.push_id(self.generation);
+            ui.invisible_button("##clear_search", box_size)
+        };
+        let hovered = ui.is_item_hovered();
+        if hovered {
+            ui.get_window_draw_list()
+                .add_rect(
+                    box_start,
+                    [box_start[0] + box_size[0], box_start[1] + box_size[1]],
+                    theme.surface.hover.to_array(),
+                )
+                .filled(true)
+                .rounding(theme.radius.small)
+                .build();
+            ui.tooltip_text(tooltip);
+        }
+        let color = if hovered {
+            theme.text.primary
+        } else {
+            theme.text.secondary
+        };
+        let _icons = FontScope::push(ui, FontRole::Icons);
+        let mut buffer = [0; 4];
+        ui.get_window_draw_list()
+            .add_text(position, color.to_array(), Icon::X.as_str(&mut buffer));
+        clicked
     }
 }
