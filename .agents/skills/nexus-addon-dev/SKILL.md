@@ -127,7 +127,14 @@ Nexus offers two primitives:
 
 Project contract (to be finalized in `docs/plans/addons/trailkit-core.md`):
 
-- All cross-addon types live in **one** crate (`crates/trailkit-protocol`),
+- **Type layers (ROADMAP R75):** domain types (what an event, waypoint,
+  chat link, note summary or language *is* at Trailkit) live in
+  `crates/trailkit-model` (serde, no Nexus/ImGui) and are used by every
+  addon, datagen and the backend; GW2 API DTOs stay at the boundary
+  (datagen, core) and are refined into model types via `TryFrom`; addons
+  never see the API shape. An addon owns its own data (memo: notes) and
+  shares only slim model types through the protocol.
+- All cross-addon FFI types live in **one** crate (`crates/trailkit-protocol`),
   `#[repr(C)]`, with an explicit `version: u32` as first field. No Rust-ABI
   types (`String`, `Vec`, `Box`, trait objects) cross the DLL boundary.
 - Memory is freed by the DLL that allocated it.

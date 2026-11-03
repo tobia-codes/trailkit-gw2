@@ -141,10 +141,9 @@ Last updated: 2026-11-03 (end of session 10, after PR #75).
    - Test fonts are 16 px, in game 18 px: verify in-game screenshots, not
      only snapshots.
    - Deploy after every UI change (`cargo xtask deploy trailkit-memo`).
-   - With `gh pr merge --auto` armed, **check `gh pr view <n> --json
-     state` before pushing follow-ups** (happened twice this session:
-     #72 and #73 merged before the follow-up). Merged → new branch from
-     `origin/develop` (uncommitted changes carry over with `git stash`).
+   - **R74 (since 2026-11-03): merge only after the user's in-game OK.**
+     Stay on one work branch, deploy when a task is done, ask "darf ich
+     mergen?"; push + PR + auto-merge only after the OK.
    - Changing UI layout above the list shifts rows: the drag tests in
      `main_window_tests.rs` use fixed mouse coordinates — shift them.
    - In this WSL shell, plain `grep` fails (a broken wrapper); use

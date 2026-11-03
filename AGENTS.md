@@ -18,20 +18,22 @@ Planning documents live in [`docs/plans/`](docs/plans/README.md).
 
 ## Hard rules
 
-1. **Pushing and merging.** Agents may push their work branches
-   (`feature/`, `chore/`, `bugfix/`, `hotfix/`), open PRs into `develop` and
-   merge them **on their own once every CI check of the PR is green**
-   (ROADMAP R69); a red or pending check means: fix or wait, never merge.
-   Merge with `gh pr merge --auto --merge --delete-branch` right after
-   opening the PR and keep working instead of waiting: `develop` requires
-   all CI checks, so GitHub merges only when they are green (R70). Group
-   related logical commits into one PR instead of one PR per commit.
+1. **Pushing and merging.** Agents work on a work branch (`feature/`,
+   `chore/`, `bugfix/`, `hotfix/`) and commit logical steps there. When a
+   task is done they **deploy the DLL into the game** (`cargo xtask deploy
+   <addon>`) and **ask the user whether they may merge**; the user tests in
+   game first. Follow-up changes stay on the same branch, redeployed, until
+   the user says OK (ROADMAP R74). Only after that OK in the current
+   conversation: push, open the PR into `develop` and arm
+   `gh pr merge --auto --merge --delete-branch` (GitHub merges only when
+   every required CI check is green, R70; red means fix, never bypass).
+   Changes without anything to test in game (docs, plans) need the same OK.
+   Group related logical commits into one PR instead of one PR per commit.
    Everything else that publishes needs the user's explicit approval in the
    current conversation, every time: merging into `main`, release PRs, tags,
    GitHub releases, force pushes, and changes to branch protection or CI
    workflows. Direct pushes to `develop`/`main` stay blocked by the pre-push
-   hook. Agents commit logical steps on work branches on their own
-   (Conventional Commits).
+   hook. Commits use Conventional Commits.
    **No AI attribution:** commit messages and PR descriptions carry no
    `Co-Authored-By` trailer for an AI and no "Generated with …" footer
    (ROADMAP R68).
