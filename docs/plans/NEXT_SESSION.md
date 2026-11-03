@@ -1,21 +1,52 @@
 # Next session — handoff
 
-Last updated: 2026-11-02 (end of session 7, after PR #61).
+Last updated: 2026-11-03 (end of session 9, after PR #69).
 
 ## Where we are
 
 - **Phase 0 + 0b complete.** Daily archive runs (sometimes hours late).
 - **Phase 1 (trailkit-memo standalone):** steps 1 (storage), 2 (tree & note
-  view), 3 (editing, M51–M57), 3b (own word-wrapping editor with preview,
-  M58–M64) and **3c (chat-link chips, M75–M77)** are merged into `develop`
-  and tested in game by the user. Decisions M16–M85 in
-  `docs/plans/addons/trailkit-memo.md`.
+  view), 3 (editing), 3b (own editor with preview), 3c (chat-link chips),
+  reset kinds and **drag & drop (M106–M117)** are merged into `develop` and
+  tested in game. Decisions in `docs/plans/addons/trailkit-memo.md`.
 - Order from here (M28 as amended by M58, M62, M65):
   ~~visual & interaction tests~~ → ~~font subsetting~~ → ~~3c chips~~ →
-  ~~reset kinds (M13, M86–M105)~~ → **drag & drop (grilling in progress)**
-  → search → trash & undo (delete, M12) → settings window → export/import
-  → backups → help page → **release preparation** (full test, screenshots
-  M67, docs).
+  ~~reset kinds~~ → ~~drag & drop~~ → **search (next)** → trash & undo
+  (delete, M12) → settings window → export/import → backups → help page →
+  **release preparation** (full test, screenshots M67, docs).
+- **Session 9 (PRs #65–#69): new "Trailkit" theme, ROADMAP R71** (supersedes
+  R51), all deployed; the user called the result "richtig gut":
+  - Dark/Light (named just that): ink-tinted dark and parchment-warm light
+    surfaces; **brass** accent `#E2A740` spent only on the primary action,
+    focus and selection; `accent.text` for brass text, icons and lines.
+  - Selection = neutral `bg.active` + short inset 3 px brass bar
+    (`trailkit_ui::selection_bar`); tree expand arrows are Lucide chevrons
+    (`tree_arrow`); no folder/note icons (M49 stays).
+  - Chat-link chips in four categories (`ChatLinkKind::category()`,
+    `theme.chip.*`): place copper, character blue, item jade, progress
+    violet; id in `text.secondary`; invalid links stay warnings.
+  - Radii 4/6/10 (`radius.sm/md/lg`); buttons filled with `bg.hover`
+    (never darker than the pane); separators in `border.subtle`, drawn on a
+    whole pixel; no pane highlight edge, no shadows.
+  - **One dropdown** (`draw_dropdown(ui, theme, tint, …)`): button height,
+    `bg.hover` fill, `border` frame, optional tint; the chip variant is gone.
+  - **Own title bar** (`title_bar::draw_window`): no band, Lucide chevron
+    collapses, bold title, Lucide `x` closes; memo's Edit is a brass button
+    with a pencil (`draw_primary_button_with_icon`); `draw_icon_button`
+    moved into trailkit-ui.
+  - Inter was tried and **dropped** (≈130 KB bigger, wider, less soft) —
+    Open Sans stays (M62).
+  - **Binding token guideline** for Claude and Codex:
+    `.agents/skills/trailkit-ui/references/tokens.md` (linked from the
+    trailkit-ui skill).
+  - Visual reference in the user's Claude account: design system
+    "Trailkit" (https://claude.ai/artifact/G7sNVZe1JYTgxbUE5mhS33) and the
+    mockup canvas (https://claude.ai/artifact/Dp8BGiKczKw1ysiBmA8acj). Both
+    are **out of date** in places (still mention Inter, the pane highlight
+    and a selection bar at a fixed x); `theme.rs` is the source of truth.
+- Session 8 (PRs #63–#64): drag & drop and "Move to…" for notes and groups
+  (M106–M115), gold drag-label border (M116), text size steps of 6.25 %
+  (M117).
 - Session 7 (PRs #52–#61), all deployed and checked in game by the user:
   - Reset kinds: `reset_schedule` (daily 00:00 UTC, weekly Mon 07:30 UTC),
     due resets untick all tasks on open/while open, wait for edited notes
@@ -71,32 +102,46 @@ Last updated: 2026-11-02 (end of session 7, after PR #61).
 
 ## ▶ Resume here
 
-1. **Drag & drop grilling, round 1 is asked but not answered yet.** Settled
-   before: M22 (notes and groups; upper/lower edge = before/after, on a
-   group = into; "Move to…" in the context menu) and the trailkit-ui
-   skill §4 (drop line, group highlight, Escape cancels). Open questions
-   with recommendations (re-ask them):
-   - Q25 drag starts after ~6 px; origin row faded, floating title label → yes
-   - Q26 zones: note = upper/lower half; group = top/bottom quarter
-     before/after, middle = into (row highlighted) → yes
-   - Q27 drop into a collapsed group appends and expands it; hovering
-     ~0.7 s over a collapsed group expands it early → yes
-   - Q28 a group cannot go into itself/its descendants: no indicator,
-     drop does nothing → yes
-   - Q29 drop below the last entry = end of root level; auto-scroll near
-     the list's top/bottom edge → yes
-   - Q30 "Move to…" submenu: "Top level" + all groups as an indented flat
-     list, current place checked, invalid targets omitted, moves to the
-     end → yes
-   - Q31 Alt+↑/↓ keyboard move → no for v1, to BACKLOG
-   Reusable already: `NotesDocument::insert(InsertionPoint::{End, After})`.
-2. UI tests: `cargo xtask ui-test [--update]`; look at PNGs only when they
-   change. Pixel checks of snapshots: decode PNGs with a small Python
-   script (no PIL installed) — worked well for badge centering.
-3. Token economy (user asked): short tool output, no re-reading.
-4. Deploy after every UI change (`cargo xtask deploy trailkit-memo`); when
-   several PRs are open, build the next step **on top of the open PR
-   branch** — a deploy from `develop` once dropped unmerged changes.
+1. **Check PR #69** (title bar) merged and its CI green; if not, fix or
+   wait. Then let the user test in game: window moves by dragging the
+   header, chevron collapses/expands, `×` and Escape close (unsaved
+   changes still ask). The collapsed state is kept only until the game
+   restarts (not persisted) — fine for now unless the user objects.
+2. **Next feature: grill the search step** (M28 order) with the grilling
+   skill. The mockup canvas shows a search field at the top of the
+   sidebar; its place and behavior were explicitly left to this round.
+3. Still open: the **DLL size grill round** (bundled jiff tzdb ~230 KiB
+   used only by `format_local_time`; `opt-level` s/z = −11/−14 %; font
+   subset ranges could be narrowed).
+4. Optional: bring the Claude Design system "Trailkit" in line with R71
+   (drop Inter and `border-highlight`, selection bar sits on the row
+   highlight's left edge, one dropdown, title bar). The user was offered
+   this but did not ask for it yet.
+5. Working rules that proved useful:
+   - UI tests: `cargo xtask ui-test [--update]`; look at PNGs only when they
+     change. Pixel checks: decode PNGs with a stdlib Python script (no PIL,
+     no numpy, no pip) — upscaling in-game crops found the 2 px separator
+     and the badge offset.
+   - Deploy after every UI change (`cargo xtask deploy trailkit-memo`).
+   - With `gh pr merge --auto` armed, **check `gh pr view <n> --json state`
+     before pushing follow-ups**: two commits once landed after #66 had
+     merged and had to be re-shipped in #67. Merged → branch fresh from
+     `origin/develop` and cherry-pick.
+   - In this WSL shell, plain `grep` fails (a broken wrapper); use
+     `command grep`. Run `source ~/.cargo/env` before cargo.
+
+## Facts learned in session 9
+
+- ImGui's `AddLine` already adds half a pixel; add none yourself or a 1 px
+  line straddles two rows and shows as a dim 2 px band in game (the test
+  renderer does not show it).
+- ImGui draws a tree node's triangle in the node's text color: push a
+  transparent `Text` color while pushing the node, then draw chevron and
+  title yourself.
+- Windows with `NO_TITLE_BAR` can be moved from any empty area even when
+  `ConfigWindowsMoveFromTitleBarOnly` is set.
+- Lucide glyph codepoints: parse the source TTF's `cmap` + `post` tables in
+  Python (e.g. `x` = U+E1B2); no fontTools available.
 
 ## Facts learned in session 7
 
@@ -163,8 +208,9 @@ Last updated: 2026-11-02 (end of session 7, after PR #61).
 ## Recurring checks
 
 - GW2 wiki (2026-10-31): still behind Cognito login → Wayback workaround stays.
-- C-703/25 P (checked 2026-11-02, session 7): still pending, no
-  hearing date or judgment reported; DPF in force. Microsoft intervened for the
+- C-703/25 P (checked 2026-11-02, session 7; **not checked in session 9**,
+  which only touched UI — check at the start of the next session): still
+  pending, no hearing date or judgment reported; DPF in force. Microsoft intervened for the
   Commission; noyb asked for repeal (2026-06-30) but has not sued yet.
 - DPF reminder workflow: the 2026-11-01 08:00 cron was silently skipped by
   GitHub; triggered manually (issue #11). If it skips again on 2026-12-01,
