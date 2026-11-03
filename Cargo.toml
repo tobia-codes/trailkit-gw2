@@ -20,7 +20,9 @@ anyhow = "1"
 toml_edit = "0.25"
 # One HTTP client (R65) and one date/time library (R66) for every crate.
 ureq = "3.5.0"
-jiff = { version = "0.2.38", features = ["serde"] }
+# No bundled time-zone database (~230 KiB in every addon DLL): everything runs in
+# UTC, local time comes from the operating system (ROADMAP R72).
+jiff = { version = "0.2.38", default-features = false, features = ["std", "serde", "perf-inline"] }
 # Persistence and data model (memo plan M16, M25, M29).
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
@@ -28,7 +30,7 @@ uuid = { version = "1.29.0", features = ["v7", "serde"] }
 thiserror = "2.0.21"
 tempfile = "3.27.0"
 # Win32 calls (cursor size for tooltips, memo plan M84); same version as nexus-rs uses.
-windows = { version = "0.62.2", features = ["Win32_UI_WindowsAndMessaging", "Win32_Graphics_Gdi"] }
+windows = { version = "0.62.2", features = ["Win32_UI_WindowsAndMessaging", "Win32_Graphics_Gdi", "Win32_System_Time"] }
 # Markdown view (memo plan M19).
 pulldown-cmark = { version = "0.13.6", default-features = false }
 
