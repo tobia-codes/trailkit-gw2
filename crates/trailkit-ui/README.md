@@ -29,6 +29,7 @@ Latin up to Extended-B plus punctuation, the icon font only the icons in
 | `dropdown` | `draw_dropdown` (themed select box, popup list with check mark, M87; variants `Field` and compact `Chip`, M102), `dropdown_width`, `dropdown_height` | Windows |
 | `pane` | `draw_pane` — a content region on `bg.panel` with `pane.padding` on every side (`lay-pane-padding`) | Windows |
 | `selection_bar` | `draw_selection_bar` — the brass bar on the left edge of the selected row (R71) | Windows |
+| `tree_arrow` | `draw_tree_arrow` — the Lucide chevron of an expandable tree row (R71) | Windows |
 | `splitter` | `draw_vertical_splitter` — resizable gap between two panes (accent line on hover/drag) | Windows |
 | `separator` | `draw_separator` — horizontal line that ends at the window/pane padding | Windows |
 | `style_scope` | `StyleScope` — RAII guard that pushes a theme onto the shared ImGui context and pops it on drop (no per-frame allocation) | Windows |

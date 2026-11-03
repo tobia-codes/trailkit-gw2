@@ -108,6 +108,9 @@ Build once, use everywhere. Planned:
   M104). No compact or other variants. Never ImGui's plain combo
 - Selection bar — **exists**: `selection_bar::draw_selection_bar`, called
   right after the selected row's tree node or selectable (R71)
+- Tree arrow — **exists**: `tree_arrow::draw_tree_arrow`, the Lucide chevron
+  (`chevron-down` / `chevron-right` in `text.disabled`) over ImGui's hidden
+  triangle; never ImGui's filled triangle in lists (R71)
 - Menu entries — **exist**: `menu::draw_menu_item` (check mark = Lucide
   `check` in `accent.text`) and `menu::begin_submenu` (Lucide `chevron-right`,
   flush beside the parent); never ImGui's own check mark/arrow (memo M99)
@@ -131,7 +134,8 @@ move it into `crates/trailkit-ui` (see AGENTS.md "Code sharing").
   on right-click with the same actions as visible buttons. Item names start
   flush left; per-item icons and badges sit right-aligned at the row end
   (the name is truncated before them); only structural controls such as a
-  group's expand arrow stay on the left.
+  group's expand arrow (a Lucide chevron) stay on the left. Rows have no
+  type icons (no folder or note icons; R71).
 - Drag & drop: show a drop indicator line (`accent.text`) between items and a
   highlight on groups; the dragged item's title floats next to the cursor
   in a label with an `accent.text` border (`danger` plus Lucide `ban` over an
