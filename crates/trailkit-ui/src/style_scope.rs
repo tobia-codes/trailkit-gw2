@@ -44,8 +44,10 @@ const COLOR_SLOTS: [(StyleColor, ColorToken); 44] = [
     (StyleColor::CheckMark, |theme| theme.accent.text),
     (StyleColor::SliderGrab, |theme| theme.accent.text),
     (StyleColor::SliderGrabActive, |theme| theme.accent.text),
-    (StyleColor::Button, |theme| theme.surface.input),
-    (StyleColor::ButtonHovered, |theme| theme.surface.hover),
+    // Buttons are raised (`bg.hover`), never darker than their pane: a
+    // darker fill reads as a hole (R71, in-game test).
+    (StyleColor::Button, |theme| theme.surface.hover),
+    (StyleColor::ButtonHovered, |theme| theme.surface.active),
     (StyleColor::ButtonActive, |theme| theme.surface.active),
     // `Header` is the selected state of rows (`bg.active`); hover stays distinct.
     (StyleColor::Header, |theme| theme.surface.active),

@@ -22,7 +22,7 @@ generic web/mobile UI guidelines (touch targets, breakpoints, CSS, …) here.
 2. **Calm, flat, slightly rounded** — ink-tinted dark and parchment-warm
    light surfaces with one brass accent spent sparingly (R71); radii 4 / 6 /
    10 by element size; windows, panes, popups and dialogs get a faint 1 px
-   `border.subtle` outline (memo M103), panes a `border.highlight` top edge.
+   `border.subtle` outline (memo M103); no highlight edges, no shadows.
    Clear hierarchy through spacing, typography and color, not decoration.
 3. **Clarity** — every control has a visible label; icons always have a
    tooltip; destructive actions ask for confirmation; unsaved changes warn
@@ -48,7 +48,7 @@ in the crate, document here):
 | Text | `text.primary`, `text.secondary`, `text.disabled`, `text.link`, `text.on_accent` |
 | Accent | `accent` (brass fill: primary button, selection bar), `accent.hover`, `accent.active`, `accent.text` (brass as text, icon or line) |
 | Status | `success`, `warning`, `danger`, `info` |
-| Border | `border` (inputs, dropdowns), `border.focus`, `border.subtle` (windows, panes, popups, dialogs; ~6 % white / ~8 % warm black), `border.highlight` (top inner edge of panes), `border.width` |
+| Border | `border` (inputs, dropdowns), `border.focus`, `border.subtle` (windows, panes, popups, dialogs; ~6 % white / ~8 % warm black), `border.width` |
 | Reset | `reset.daily` (brass), `reset.weekly` (violet): reset note badges and kind chip (memo M104; text colors, contrast-tested) |
 | Chip | `chip.place`, `chip.character`, `chip.item`, `chip.progress`, each with `text` and `background` (chat-link categories, R71) |
 | Coin | `coin.gold`, `coin.silver`, `coin.copper` (coin amounts in chat-link chips; graphics, not text) |
