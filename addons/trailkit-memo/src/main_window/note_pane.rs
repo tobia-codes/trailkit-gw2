@@ -9,8 +9,6 @@ use trailkit_ui::{
         draw_primary_button_with_icon, icon_label_button_width,
     },
     chat_link_chip::ChipContext,
-    color::Color,
-    dropdown::{draw_dropdown, dropdown_width},
     font_registry::FontScope,
     fonts::FontRole,
     glyph_metrics::capital_middle,
@@ -24,17 +22,17 @@ use trailkit_ui::{
 };
 
 use crate::note_editing::{ActiveFormats, FormatCommand};
+use trailkit_memo_reset_schedule::note_kind::{draw_kind_dropdown, kind_dropdown_size};
 use trailkit_memo_shared::{
     drafts::Draft,
     i18n::{Language, Text, chip_text, format_local_time},
     note_tree::{NoteId, NoteKind},
-    reset_schedule::ResetPeriod,
 };
 
 use super::layout::move_to_toolbar_end;
 use super::{
-    KIND_OPTIONS, MINIMUM_PREVIEW_SPLIT_CHARACTERS, MemoWindow, ParsedNote, VIRTUAL_KEY_B,
-    VIRTUAL_KEY_I, VIRTUAL_KEY_S, WindowAction, selected_note_in,
+    MINIMUM_PREVIEW_SPLIT_CHARACTERS, MemoWindow, ParsedNote, VIRTUAL_KEY_B, VIRTUAL_KEY_I,
+    VIRTUAL_KEY_S, WindowAction, selected_note_in,
 };
 
 impl MemoWindow {
@@ -534,14 +532,6 @@ pub(super) fn draw_draft_hint(
     draw_separator(ui, theme);
 }
 
-/// The color of a reset kind (M104): badge and kind chip share it.
-pub(super) fn reset_color(theme: &Theme, period: ResetPeriod) -> Color {
-    match period {
-        ResetPeriod::Daily => theme.reset.daily,
-        ResetPeriod::Weekly => theme.reset.weekly,
-    }
-}
-
 /// Draws the note title with the kind dropdown right behind it (M102, the
 /// one shared dropdown since R71), centered on the title's capitals; the
 /// dropdown moves below a title that leaves no room.
@@ -554,9 +544,7 @@ pub(super) fn draw_title_with_kind(
     (note, kind): (NoteId, NoteKind),
     actions: &mut Vec<WindowAction>,
 ) {
-    let labels = KIND_OPTIONS.map(|(_, text)| text.get(language));
-    let tint = kind.period().map(|period| reset_color(theme, period));
-    let dropdown_size = [dropdown_width(ui, &labels), ui.frame_height()];
+    let dropdown_size = kind_dropdown_size(ui, language);
     let gap = theme.spacing.medium;
     let available = ui.content_region_avail()[0];
     let [left, top] = ui.cursor_screen_pos();
@@ -577,31 +565,12 @@ pub(super) fn draw_title_with_kind(
         let x = ui.cursor_screen_pos()[0];
         ui.set_cursor_screen_pos([x, (top + title_middle - dropdown_size[1] / 2.0).round()]);
     }
-    let selected = KIND_OPTIONS
-        .iter()
-        .position(|(period, _)| *period == kind.period())
-        .unwrap_or(0);
-    if let Some(index) = draw_dropdown(
-        ui,
-        theme,
-        tint,
-        "kind",
-        Text::ResetType.get(language),
-        &labels,
-        selected,
-    ) && let Some((period, _)) = KIND_OPTIONS.get(index)
-    {
-        actions.push(WindowAction::SetResetPeriod(note, *period));
+    if let Some(period) = draw_kind_dropdown(ui, theme, language, kind) {
+        actions.push(WindowAction::SetResetPeriod(note, period));
     }
     if is_beside {
         // Continue below the title, not below the centered dropdown.
         let spacing = ui.clone_style().item_spacing[1];
         ui.set_cursor_screen_pos([left, top + title_height + spacing]);
     }
-}
-
-/// Whole minutes from `now` to the next `period` reset, rounded up (M91).
-pub(super) fn minutes_until_next_reset(period: ResetPeriod, now: Timestamp) -> i64 {
-    let seconds = period.next_reset(now).as_second() - now.as_second();
-    (seconds + 59) / 60
 }

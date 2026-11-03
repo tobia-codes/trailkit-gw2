@@ -9,10 +9,7 @@
 use jiff::Timestamp;
 use serde::{Deserialize, Serialize};
 use trailkit_storage::{SchemaVersion, VersionedDocument};
-use trailkit_ui::markdown::uncheck_all_tasks;
 use uuid::Uuid;
-
-use crate::reset_schedule::ResetPeriod;
 
 /// Stable unique id of a note (UUID v7, time-ordered).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -72,6 +69,20 @@ pub enum NodeId {
     Note(NoteId),
     /// A group.
     Group(GroupId),
+}
+
+/// How often a reset note is reset.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ResetPeriod {
+    /// Every day at 00:00 UTC.
+    Daily,
+    /// Every Monday at 07:30 UTC.
+    Weekly,
+}
+
+impl ResetPeriod {
+    /// Both periods, in the order the kind dropdown lists them.
+    pub const ALL: [Self; 2] = [Self::Daily, Self::Weekly];
 }
 
 /// What happens to a note's checkboxes at the game's reset times (M13).
@@ -546,32 +557,10 @@ impl NotesDocument {
         })
     }
 
-    /// Applies every due reset at `now` (M88–M90): unchecks all tasks of a
-    /// reset note whose reset passed and records `now` as its reset state.
-    /// Notes for which `is_being_edited` is true wait (M89). `updated_at`
-    /// stays. Returns whether anything changed and must be saved.
-    pub fn apply_due_resets(
-        &mut self,
-        now: Timestamp,
-        is_being_edited: impl Fn(NoteId) -> bool,
-    ) -> bool {
-        let mut changed = false;
-        for_each_note_mut(&mut self.root, &mut |note| {
-            let (Some(period), Some(last_reset_applied_at)) =
-                (note.kind.period(), note.kind.last_reset_applied_at())
-            else {
-                return;
-            };
-            if !period.is_due(last_reset_applied_at, now) || is_being_edited(note.id) {
-                return;
-            }
-            if let Some(body) = uncheck_all_tasks(&note.body) {
-                note.body = body;
-            }
-            note.kind = NoteKind::with_period(Some(period), now);
-            changed = true;
-        });
-        changed
+    /// Calls `visit` for every note in the tree, nested ones included (the
+    /// trash is not part of the tree).
+    pub fn for_each_note_mut(&mut self, mut visit: impl FnMut(&mut Note)) {
+        for_each_note_mut(&mut self.root, &mut visit);
     }
 }
 
@@ -746,36 +735,6 @@ mod tests {
             document.note(id).map(|note| note.kind),
             Some(NoteKind::Normal)
         );
-    }
-
-    #[test]
-    fn due_resets_uncheck_tasks_except_while_editing() {
-        let mut document = sample_document();
-        let weekly = note_id(&document, "Weekly clears").expect("sample note");
-        let ideas = note_id(&document, "Ideas").expect("sample note");
-        for id in [weekly, ideas] {
-            if let Some(note) = document.note_mut(id) {
-                "- [x] boss\n".clone_into(&mut note.body);
-            }
-        }
-        let next_week = "2026-11-02T08:00:00Z".parse().unwrap_or_default();
-        assert!(!document.apply_due_resets(next_week, |id| id == weekly));
-        assert_eq!(
-            document.note(weekly).map(|note| note.body.as_str()),
-            Some("- [x] boss\n")
-        );
-
-        assert!(document.apply_due_resets(next_week, |_| false));
-        let note = document.note(weekly).expect("sample note");
-        assert_eq!(note.body, "- [ ] boss\n");
-        assert_eq!(note.kind.last_reset_applied_at(), Some(next_week));
-        assert_eq!(note.updated_at, noon());
-        // Normal notes are never reset; a second run finds nothing due.
-        assert_eq!(
-            document.note(ideas).map(|note| note.body.as_str()),
-            Some("- [x] boss\n")
-        );
-        assert!(!document.apply_due_resets(next_week, |_| false));
     }
 
     #[test]

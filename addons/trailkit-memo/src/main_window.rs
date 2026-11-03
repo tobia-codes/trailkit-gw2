@@ -33,6 +33,9 @@ use crate::{
     note_editing::{ActiveFormats, EditSession, FormatCommand, active_formats, format_edit},
     tree_drag::{DropTarget, RowRect},
 };
+use trailkit_memo_reset_schedule::{
+    due_resets::apply_due_resets, schedule::next_reset_of_any_period,
+};
 use trailkit_memo_search::{
     note_search::{NoteSearchIndex, SearchResults},
     search_field::SearchField,
@@ -42,9 +45,8 @@ use trailkit_memo_shared::{
     i18n::{Language, Text, label_with_percent},
     note_tree::{
         Group, GroupId, InsertionPoint, MoveCheck, NodeId, Note, NoteId, NoteKind, NotesDocument,
-        TreeNode as Node,
+        ResetPeriod, TreeNode as Node,
     },
-    reset_schedule::{ResetPeriod, next_reset_of_any_period},
     settings::{Settings, TextScale, UnsavedChanges},
     storage_worker::StorageSaver,
     ui_state::UiState,
@@ -67,13 +69,6 @@ const MINIMUM_TREE_CHARACTERS: f32 = 10.0;
 /// Width in characters (of `n`) that editor and preview each keep, so the
 /// splitter between them stays usable (M72).
 const MINIMUM_PREVIEW_SPLIT_CHARACTERS: f32 = 3.0;
-
-/// The note kinds in menu and dropdown order with their labels (M86).
-const KIND_OPTIONS: [(Option<ResetPeriod>, Text); 3] = [
-    (None, Text::KindNormal),
-    (Some(ResetPeriod::Daily), Text::KindDaily),
-    (Some(ResetPeriod::Weekly), Text::KindWeekly),
-];
 
 /// How long the text size waits after the last Ctrl+mouse wheel step before
 /// the fonts are rebuilt (M80): rebuilding on every step flickers.
@@ -791,7 +786,7 @@ impl MemoWindow {
         }
         let edited = self.editor.as_ref().map(|editor| editor.session.note);
         let drafts = &self.drafts;
-        let changed = self.document.apply_due_resets(now, |note| {
+        let changed = apply_due_resets(&mut self.document, now, |note| {
             Some(note) == edited || drafts.get(note).is_some()
         });
         if changed {

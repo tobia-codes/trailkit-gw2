@@ -25,21 +25,26 @@ use trailkit_ui::{
 use crate::tree_drag::{
     DRAG_THRESHOLD, DropIndicator, EXPAND_DELAY_SECONDS, RowKind, RowRect, resolve_drop,
 };
+use trailkit_memo_reset_schedule::{
+    i18n::ResetText,
+    note_kind::{KIND_OPTIONS, reset_badge, reset_tooltip_lines},
+};
 use trailkit_memo_search::{i18n::SearchText, search_field::SearchFieldTexts};
 use trailkit_memo_shared::{
-    i18n::{Language, Text, reset_countdown},
+    i18n::{Language, Text},
     note_tree::{
         Group, GroupId, InsertionPoint, MoveCheck, NodeId, Note, NoteKind, TreeNode as Node,
     },
+    row_badge::RowBadge,
 };
 
 use super::{
-    DRAG_SCROLL_ROWS_PER_SECOND, DRAGGED_ROW_ALPHA, KIND_OPTIONS, MemoWindow, TreeContext,
-    TreeDrag, WindowAction, find_title,
+    DRAG_SCROLL_ROWS_PER_SECOND, DRAGGED_ROW_ALPHA, MemoWindow, TreeContext, TreeDrag,
+    WindowAction, find_title,
 };
 use super::{
     layout::{centered_text, format_count, indent_to_center, truncate_to_width},
-    note_pane::{icon_button_width, minutes_until_next_reset, note_list_icon, reset_color},
+    note_pane::{icon_button_width, note_list_icon},
 };
 
 impl MemoWindow {
@@ -489,10 +494,22 @@ pub(super) fn draw_note_row(ui: &Ui, note: &Note, context: &mut TreeContext<'_>)
     // Notes have no arrow: the title starts where a group's arrow does.
     let title_x = row_start[0] + context.frame_padding[0];
     let content_end = row_content_end(ui, context);
-    let mut title_end = match draw_badge(ui, note.kind, [content_end, row_start[1]], context) {
-        Some(badge_start) => badge_start - context.theme.spacing.small,
-        None => content_end,
-    };
+    let mut title_end = content_end;
+    if let Some(badge) = reset_badge(note.kind, context.language, context.theme) {
+        let (badge_start, is_hovered) =
+            draw_row_badge(ui, badge, [content_end, row_start[1]], context.theme);
+        if is_hovered && let Some(period) = note.kind.period() {
+            // The same kind and countdown as the note toolbar (M95),
+            // formatted only while hovered.
+            let lines = reset_tooltip_lines(period, context.language, Timestamp::now());
+            ui.tooltip(|| {
+                for line in &lines {
+                    ui.text(line);
+                }
+            });
+        }
+        title_end = badge_start - context.theme.spacing.small;
+    }
     // A note matching through its content shows its hit count (M122).
     if let Some(hits) = context
         .search
@@ -593,7 +610,7 @@ pub(super) fn draw_context_menu(
         // Notes get the reset type submenu with the current kind checked
         // (M86); groups have no kind.
         if let (NodeId::Note(note), Some(kind)) = (node, kind)
-            && let Some(_submenu) = begin_submenu(ui, theme, Text::ResetType.get(language))
+            && let Some(_submenu) = begin_submenu(ui, theme, ResetText::ResetType.get(language))
         {
             for (period, text) in KIND_OPTIONS {
                 let is_current = kind.period() == period;
@@ -803,23 +820,17 @@ pub(super) fn draw_rename_input(
     }
 }
 
-/// Draws the reset badge of a note row (M45, M49): an outlined rounded box
-/// with a letter for reset notes, nothing for normal notes. The badge ends at
-/// `anchor[0]` and is vertically centered in the row starting at `anchor[1]`
-/// (one frame tall). Returns the badge's left edge, or `None` if no badge
-/// was drawn.
-pub(super) fn draw_badge(
+/// Draws a row badge (M45, M49, M105): an outlined rounded box with a
+/// letter. The badge ends at `anchor[0]` and is vertically centered in the
+/// row starting at `anchor[1]` (one frame tall). Returns the badge's left
+/// edge and whether the mouse is over it.
+pub(super) fn draw_row_badge(
     ui: &Ui,
-    kind: NoteKind,
+    badge: RowBadge,
     anchor: [f32; 2],
-    context: &TreeContext<'_>,
-) -> Option<f32> {
-    let (language, theme) = (context.language, context.theme);
-    let (letter, tooltip) = match kind {
-        NoteKind::Normal => return None,
-        NoteKind::DailyReset { .. } => (Text::DailyBadge, Text::KindDaily),
-        NoteKind::WeeklyReset { .. } => (Text::WeeklyBadge, Text::KindWeekly),
-    };
+    theme: &Theme,
+) -> (f32, bool) {
+    let RowBadge { letter, color } = badge;
     let line_height = ui.text_line_height();
     let padding = theme.spacing.extra_small;
     // Whole pixels, so the outline stays sharp and the letter can be
@@ -830,10 +841,6 @@ pub(super) fn draw_badge(
         (anchor[1] + ((ui.frame_height() - line_height) / 2.0).max(0.0)).round(),
     ];
     let height = line_height.round();
-    let letter = letter.get(language);
-    let color = kind
-        .period()
-        .map_or(theme.accent.text, |period| reset_color(theme, period));
     // Lucide style (`lay-icons`): round corners, stroke ≈ 2/24 of the size;
     // a faint fill of the kind color makes it readable on dark panes (M105).
     // Whole pixels, so the outline stays sharp instead of a soft band.
@@ -871,20 +878,7 @@ pub(super) fn draw_badge(
             letter,
         );
     }
-    if ui.is_mouse_hovering_rect(start, max) {
-        // The same kind and countdown as the note toolbar (M95), formatted
-        // only while hovered.
-        let countdown = kind.period().map(|period| {
-            reset_countdown(minutes_until_next_reset(period, Timestamp::now()), language)
-        });
-        ui.tooltip(|| {
-            ui.text(tooltip.get(language));
-            if let Some(countdown) = &countdown {
-                ui.text(countdown);
-            }
-        });
-    }
-    Some(start[0])
+    (start[0], ui.is_mouse_hovering_rect(start, max))
 }
 
 /// Marks the search hits in a row title drawn at `position` with the

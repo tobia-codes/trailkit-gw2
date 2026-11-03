@@ -1486,6 +1486,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "trailkit-memo-reset-schedule",
  "trailkit-memo-search",
  "trailkit-memo-shared",
  "trailkit-storage",
@@ -1493,6 +1494,16 @@ dependencies = [
  "trailkit-ui-testing",
  "uuid",
  "windows",
+]
+
+[[package]]
+name = "trailkit-memo-reset-schedule"
+version = "0.0.0"
+dependencies = [
+ "jiff",
+ "nexus",
+ "trailkit-memo-shared",
+ "trailkit-ui",
 ]
 
 [[package]]

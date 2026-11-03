@@ -5,13 +5,13 @@ depend on this crate, never on each other.
 
 | Module | Content |
 |--------|---------|
-| `note_tree` | note tree data model (notes, groups, trash), persisted as `notes.json` |
-| `reset_schedule` | reset periods: daily (00:00 UTC) and weekly (Monday 07:30 UTC) reset times (M13, M90) |
+| `note_tree` | note tree data model (notes, groups, trash, reset periods), persisted as `notes.json` |
+| `row_badge` | neutral row badge (letter + color) that a slice describes and the note list draws |
 | `drafts` | unsaved edits kept for restoring (`drafts.json`) |
 | `settings` | typed user settings + visibility rules, persisted as `settings.json` |
 | `ui_state` | restorable window state, persisted as `ui_state.json` (M39) |
 | `storage_worker` | worker thread that loads and saves all documents debounced (M18, M30) |
-| `i18n` | languages + typed UI strings (en/de), local time formatting |
+| `i18n` | languages, the texts no slice owns yet (en/de), local time and percentage formatting |
 
 ## Build and test
 

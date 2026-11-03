@@ -209,29 +209,17 @@ pub enum Text {
     EmptyNote,
     /// Shown in the note pane when no note is selected.
     SelectNote,
-    /// Letter on the badge of daily reset notes.
-    DailyBadge,
-    /// Letter on the badge of weekly reset notes.
-    WeeklyBadge,
     /// Label of the text size shown while changing it (M80).
     TextSize,
-    /// Context menu submenu and dropdown tooltip for the note kind (M86).
-    ResetType,
     /// Context menu submenu that moves a note or group (M112).
     MoveTo,
     /// "Move to" target: the root level of the note list (M112).
     TopLevel,
-    /// Note kind option: no reset.
-    KindNormal,
-    /// Note kind option: daily reset.
-    KindDaily,
-    /// Note kind option: weekly reset.
-    KindWeekly,
 }
 
 impl Text {
     /// Every string, for registering their characters with Nexus' font atlas.
-    pub const ALL: [Self; 52] = [
+    pub const ALL: [Self; 46] = [
         Self::MainWindowTitle,
         Self::CollapseWindow,
         Self::ExpandWindow,
@@ -275,15 +263,9 @@ impl Text {
         Self::HidePreview,
         Self::EmptyNote,
         Self::SelectNote,
-        Self::DailyBadge,
-        Self::WeeklyBadge,
         Self::TextSize,
-        Self::ResetType,
         Self::MoveTo,
         Self::TopLevel,
-        Self::KindNormal,
-        Self::KindDaily,
-        Self::KindWeekly,
     ];
 
     /// All strings in all languages concatenated, so Nexus puts every
@@ -414,22 +396,12 @@ impl Text {
             (Self::EmptyNote, Language::German) => "Diese Notiz ist leer.",
             (Self::SelectNote, Language::English) => "Select a note in the list.",
             (Self::SelectNote, Language::German) => "Wähle eine Notiz in der Liste aus.",
-            (Self::DailyBadge, Language::English) => "D",
-            (Self::DailyBadge, Language::German) => "T",
-            (Self::WeeklyBadge, Language::English | Language::German) => "W",
             (Self::TextSize, Language::English) => "Text size",
             (Self::TextSize, Language::German) => "Textgröße",
-            (Self::ResetType, Language::English) => "Reset type",
-            (Self::ResetType, Language::German) => "Reset-Art",
             (Self::MoveTo, Language::English) => "Move to",
             (Self::MoveTo, Language::German) => "Verschieben nach",
             (Self::TopLevel, Language::English) => "Top level",
             (Self::TopLevel, Language::German) => "Oberste Ebene",
-            (Self::KindNormal, Language::English | Language::German) => "Normal",
-            (Self::KindDaily, Language::English) => "Daily reset",
-            (Self::KindDaily, Language::German) => "Täglicher Reset",
-            (Self::KindWeekly, Language::English) => "Weekly reset",
-            (Self::KindWeekly, Language::German) => "Wöchentlicher Reset",
         }
     }
 }
@@ -451,29 +423,9 @@ pub fn label_with_percent(label: &str, percent: f32, language: Language) -> Stri
     }
 }
 
-/// Characters of [`reset_countdown`] and [`format_local_time`] besides
-/// words that are already in [`Text`].
+/// Characters of [`format_local_time`] and of the slices' number formats
+/// (e.g. the reset countdown) besides words that are already in a text.
 const COUNTDOWN_CHARACTERS: &str = "0123456789 hminTd.,:-";
-
-/// The time until the next reset, in whole minutes rounded up (M91), e.g.
-/// "Resets in 5 h 12 min", "Resets in 12 min", "Resets in 3 d 4 h";
-/// German "Reset in …" with "T" for days.
-#[must_use]
-pub fn reset_countdown(minutes: i64, language: Language) -> String {
-    let (prefix, day_unit) = match language {
-        Language::English => ("Resets in", "d"),
-        Language::German => ("Reset in", "T"),
-    };
-    let minutes = minutes.max(1);
-    let (days, hours, minutes) = (minutes / 1_440, minutes % 1_440 / 60, minutes % 60);
-    if days > 0 {
-        format!("{prefix} {days} {day_unit} {hours} h")
-    } else if hours > 0 {
-        format!("{prefix} {hours} h {minutes} min")
-    } else {
-        format!("{prefix} {minutes} min")
-    }
-}
 
 /// `time` as a date and time in the player's local time zone, formatted for
 /// `language` (`data-formatting`), e.g. "2026-11-03 01:00" or
@@ -571,17 +523,6 @@ fn civil_from_system_time(
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn countdown_uses_the_largest_two_units() {
-        assert_eq!(
-            reset_countdown(312, Language::English),
-            "Resets in 5 h 12 min"
-        );
-        assert_eq!(reset_countdown(12, Language::German), "Reset in 12 min");
-        assert_eq!(reset_countdown(4_560, Language::German), "Reset in 3 T 4 h");
-        assert_eq!(reset_countdown(0, Language::English), "Resets in 1 min");
-    }
 
     #[test]
     fn setting_wins_over_nexus_language() {
