@@ -260,10 +260,6 @@ pub enum Text {
     ShowPreview,
     /// Tooltip of the preview button while the preview is shown (M60).
     HidePreview,
-    /// Shown instead of an empty note's content.
-    EmptyNote,
-    /// Shown in the note pane when no note is selected.
-    SelectNote,
     /// Label of the text size shown while changing it (M80).
     TextSize,
     /// Context menu submenu that moves a note or group (M112).
@@ -312,8 +308,6 @@ impl LocalizedText for Text {
         Self::KeepEditing,
         Self::ShowPreview,
         Self::HidePreview,
-        Self::EmptyNote,
-        Self::SelectNote,
         Self::TextSize,
         Self::MoveTo,
         Self::TopLevel,
@@ -430,10 +424,6 @@ impl LocalizedText for Text {
             (Self::ShowPreview, Language::German) => "Vorschau einblenden",
             (Self::HidePreview, Language::English) => "Hide preview",
             (Self::HidePreview, Language::German) => "Vorschau ausblenden",
-            (Self::EmptyNote, Language::English) => "This note is empty.",
-            (Self::EmptyNote, Language::German) => "Diese Notiz ist leer.",
-            (Self::SelectNote, Language::English) => "Select a note in the list.",
-            (Self::SelectNote, Language::German) => "Wähle eine Notiz in der Liste aus.",
             (Self::TextSize, Language::English) => "Text size",
             (Self::TextSize, Language::German) => "Textgröße",
             (Self::MoveTo, Language::English) => "Move to",

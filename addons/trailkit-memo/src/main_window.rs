@@ -34,6 +34,7 @@ use crate::{
     tree_drag::{DropTarget, RowRect},
 };
 use trailkit_memo_drafts::draft_hint::DraftHint;
+use trailkit_memo_note_view::note_view::NoteView;
 use trailkit_memo_reset_schedule::{
     due_resets::apply_due_resets, schedule::next_reset_of_any_period,
 };
@@ -311,17 +312,6 @@ struct TreeDrag {
     collapsed_hover: Option<(GroupId, f64)>,
 }
 
-/// The parsed markdown of the shown note, re-parsed only when it changes.
-#[derive(Debug)]
-struct ParsedNote {
-    /// The note the cache belongs to.
-    note: NoteId,
-    /// The body the document was parsed from.
-    source: String,
-    /// The parsed body.
-    document: MarkdownDocument,
-}
-
 /// State of the main window, owned by the render thread.
 pub struct MemoWindow {
     /// The note tree (M30).
@@ -336,8 +326,8 @@ pub struct MemoWindow {
     addon_directory: PathBuf,
     /// Inline rename in progress.
     rename: Option<RenameState>,
-    /// Markdown cache of the shown note.
-    parsed: Option<ParsedNote>,
+    /// The reading view of the selected note.
+    note_view: NoteView,
     /// Narrow window: whether the note list drawer is open (M48).
     drawer_open: bool,
     /// The chat code copied last, while its chip says "Copied" (M75).
@@ -345,8 +335,6 @@ pub struct MemoWindow {
     /// Whether the window was too narrow for two panes in the last frame;
     /// decides what the menu button does.
     is_narrow: bool,
-    /// Whether the saved scroll position still has to be applied.
-    restore_scroll: bool,
     /// Actions collected while drawing; reused every frame.
     actions: Vec<WindowAction>,
     /// Drafts kept from earlier unloads (M54, M55).
@@ -391,8 +379,6 @@ pub struct MemoWindow {
     /// Groups collapsed during the current search; the saved expand state
     /// stays untouched and returns when the search is cleared (M124).
     collapsed_in_search: HashSet<GroupId>,
-    /// Scroll the note view to its first search hit on the next draw (M122).
-    scroll_to_first_hit: bool,
     /// A row was pressed while searching: dragging cannot move it (M125).
     drag_blocked_by_search: bool,
     /// Counts saves of the notes; a changed value invalidates the search
@@ -484,11 +470,10 @@ impl MemoWindow {
             saver,
             addon_directory,
             rename: None,
-            parsed: None,
+            note_view: NoteView::default(),
             drawer_open: false,
             copied_chat_link: None,
             is_narrow: false,
-            restore_scroll: true,
             actions: Vec::new(),
             drafts,
             editor: None,
@@ -507,7 +492,6 @@ impl MemoWindow {
             search_field: SearchField::default(),
             search: SearchCache::default(),
             collapsed_in_search: HashSet::new(),
-            scroll_to_first_hit: false,
             drag_blocked_by_search: false,
             document_revision: 0,
         }
@@ -638,7 +622,7 @@ impl MemoWindow {
             // A new search starts with every matching group expanded and
             // jumps to the first hit of the open note (M122).
             self.collapsed_in_search.clear();
-            self.scroll_to_first_hit = true;
+            self.note_view.jump_to_first_hit();
         }
         let results = SearchResults::compute(&self.document, index, &query, keep_visible);
         self.search.current = Some(CurrentSearch {
@@ -1074,8 +1058,8 @@ impl MemoWindow {
         if self.ui_state.selected != Some(node) {
             self.ui_state.selected = Some(node);
             self.ui_state.note_scroll = 0.0;
-            self.restore_scroll = true;
-            self.scroll_to_first_hit = self.search.current.is_some();
+            self.note_view
+                .show_other_note(self.search.current.is_some());
             self.saver.save_ui_state(self.ui_state);
         }
         // Choosing a note closes the drawer; groups keep it open (M48).

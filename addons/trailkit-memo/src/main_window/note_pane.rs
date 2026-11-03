@@ -1,7 +1,7 @@
 //! The note pane of the memo main window: note view, editor with its
 //! formatting toolbar (M51–M53, M94), title with kind (M102) and draft hint (from the drafts slice).
 
-use nexus::imgui::{ChildWindow, Key, MouseButton, StyleColor, Ui};
+use nexus::imgui::{Key, StyleColor, Ui};
 use trailkit_ui::{
     button::icon_button_width,
     button::{
@@ -10,7 +10,6 @@ use trailkit_ui::{
     },
     font_registry::FontScope,
     fonts::FontRole,
-    glyph_metrics::capital_middle,
     icons::Icon,
     markdown::{self},
     markdown_view::{MarkdownAction, SearchHighlight, draw_markdown},
@@ -23,16 +22,14 @@ use trailkit_ui::{
 
 use crate::note_editing::{ActiveFormats, FormatCommand};
 use trailkit_memo_drafts::draft_hint::DraftHintAction;
+use trailkit_memo_note_view::note_view::{NoteViewAction, NoteViewInput, TitleTrailing};
 use trailkit_memo_reset_schedule::note_kind::{draw_kind_dropdown, kind_dropdown_size};
 use trailkit_memo_shared::i18n::LocalizedText;
-use trailkit_memo_shared::{
-    i18n::{Language, Text, chip_context},
-    note_tree::{NoteId, NoteKind},
-};
+use trailkit_memo_shared::i18n::{Language, Text, chip_context};
 
 use super::{
-    MINIMUM_PREVIEW_SPLIT_CHARACTERS, MemoWindow, ParsedNote, VIRTUAL_KEY_B, VIRTUAL_KEY_I,
-    VIRTUAL_KEY_S, WindowAction, selected_note_in,
+    MINIMUM_PREVIEW_SPLIT_CHARACTERS, MemoWindow, VIRTUAL_KEY_B, VIRTUAL_KEY_I, VIRTUAL_KEY_S,
+    WindowAction, selected_note_in,
 };
 
 impl MemoWindow {
@@ -225,109 +222,62 @@ impl MemoWindow {
         }
     }
 
-    /// Draws the selected note: its title and rendered content.
+    /// Draws the selected note through the note-view slice: the draft hint
+    /// (drafts slice) above it and the kind dropdown (reset-schedule slice)
+    /// behind its title.
     pub(super) fn draw_note_body(&mut self, ui: &Ui, language: Language, theme: &Theme) {
-        // Borrow only the document, so the markdown cache can be updated below.
-        let Some(note) = selected_note_in(&self.document, self.ui_state.selected) else {
-            ui.text_colored(
-                theme.text.secondary.to_array(),
-                Text::SelectNote.get(language),
-            );
-            return;
-        };
-        let note_id = note.id;
-        let is_stale = self
-            .parsed
-            .as_ref()
-            .is_none_or(|parsed| parsed.note != note_id || parsed.source != note.body);
-        if is_stale {
-            self.parsed = Some(ParsedNote {
-                note: note_id,
-                source: note.body.clone(),
-                document: markdown::parse(&note.body),
-            });
-        }
-
-        if let Some(draft) = self.drafts.get(note_id) {
+        // Borrow only the document, so the view's state can change below.
+        let note = selected_note_in(&self.document, self.ui_state.selected);
+        if let Some(note) = note
+            && let Some(draft) = self.drafts.get(note.id)
+        {
             match self
                 .draft_hint
                 .draw(ui, language, theme, draft, note.updated_at)
             {
                 Some(DraftHintAction::Restore) => {
-                    self.actions.push(WindowAction::RestoreDraft(note_id));
+                    self.actions.push(WindowAction::RestoreDraft(note.id));
                 }
                 Some(DraftHintAction::Discard) => {
-                    self.actions.push(WindowAction::DiscardDraft(note_id));
+                    self.actions.push(WindowAction::DiscardDraft(note.id));
                 }
                 None => {}
             }
         }
-
-        draw_title_with_kind(
-            ui,
-            language,
-            theme,
-            &note.title,
-            (note.id, note.kind),
-            &mut self.actions,
-        );
-        draw_separator(ui, theme);
-        if ui.is_window_hovered() && ui.is_mouse_double_clicked(MouseButton::Left) {
-            self.actions.push(WindowAction::StartEditing);
-        }
-        // Title and separator stay at the top; only the content scrolls, so
-        // its scrollbar starts below the separator (M81).
-        ChildWindow::new("note_body")
-            .size([0.0, 0.0])
-            .draw_background(false)
-            .build(ui, || self.draw_note_content(ui, language, theme));
-    }
-
-    /// Draws the rendered content of the selected note in the scrolling
-    /// region below its title.
-    pub(super) fn draw_note_content(&mut self, ui: &Ui, language: Language, theme: &Theme) {
-        if ui.is_window_hovered() && ui.is_mouse_double_clicked(MouseButton::Left) {
-            self.actions.push(WindowAction::StartEditing);
-        }
-        if self.restore_scroll {
-            ui.set_scroll_y(self.ui_state.note_scroll);
-            self.restore_scroll = false;
-        }
-        match &self.parsed {
-            Some(parsed) if !parsed.document.blocks.is_empty() => {
-                let chips = chip_context(
-                    language,
-                    self.copied_chat_link
-                        .as_ref()
-                        .map(|copied| copied.code.as_str()),
-                );
-                // Search hits are marked; a new search or a newly opened
-                // note jumps to the first one (M122).
-                let mut highlight = self
-                    .search
-                    .current
-                    .as_ref()
-                    .map(|current| SearchHighlight::new(&current.query));
-                if let Some(action) =
-                    draw_markdown(ui, &parsed.document, theme, chips, highlight.as_mut())
-                {
-                    self.actions.push(WindowAction::Markdown(action));
-                }
-                if std::mem::take(&mut self.scroll_to_first_hit)
-                    && let Some(first_hit) =
-                        highlight.as_ref().and_then(SearchHighlight::first_hit_y)
-                {
-                    ui.set_scroll_y((first_hit - ui.text_line_height()).max(0.0));
-                }
+        let mut chosen_kind = None;
+        let mut draw_kind = |ui: &Ui| {
+            if let Some(note) = note {
+                chosen_kind = draw_kind_dropdown(ui, theme, language, note.kind);
             }
-            _ => ui.text_colored(
-                theme.text.secondary.to_array(),
-                Text::EmptyNote.get(language),
+        };
+        let input = NoteViewInput {
+            note,
+            search: self.search.current.as_ref().map(|current| &current.query),
+            chips: chip_context(
+                language,
+                self.copied_chat_link
+                    .as_ref()
+                    .map(|copied| copied.code.as_str()),
             ),
+            title_trailing: Some(TitleTrailing {
+                size: kind_dropdown_size(ui, language),
+                draw: &mut draw_kind,
+            }),
+        };
+        let output =
+            self.note_view
+                .draw(ui, language, theme, input, &mut self.ui_state.note_scroll);
+        if let (Some(note), Some(period)) = (note, chosen_kind) {
+            self.actions
+                .push(WindowAction::SetResetPeriod(note.id, period));
         }
-        let scroll = ui.scroll_y();
-        if (scroll - self.ui_state.note_scroll).abs() >= 1.0 {
-            self.ui_state.note_scroll = scroll;
+        for action in output.actions {
+            self.actions.push(match action {
+                NoteViewAction::StartEditing => WindowAction::StartEditing,
+                NoteViewAction::Markdown(action) => WindowAction::Markdown(action),
+            });
+        }
+        if output.scroll_changed {
             self.saver.save_ui_state(self.ui_state);
         }
     }
@@ -454,48 +404,5 @@ pub(super) fn draw_format_toolbar(
     };
     if draw_icon_button(ui, theme, Icon::EYE, tooltip.get(language)) {
         actions.push(WindowAction::TogglePreview);
-    }
-}
-
-/// Draws the note title with the kind dropdown right behind it (M102, the
-/// one shared dropdown since R71), centered on the title's capitals; the
-/// dropdown moves below a title that leaves no room.
-/// Pushes a chosen kind as an action.
-pub(super) fn draw_title_with_kind(
-    ui: &Ui,
-    language: Language,
-    theme: &Theme,
-    title: &str,
-    (note, kind): (NoteId, NoteKind),
-    actions: &mut Vec<WindowAction>,
-) {
-    let dropdown_size = kind_dropdown_size(ui, language);
-    let gap = theme.spacing.medium;
-    let available = ui.content_region_avail()[0];
-    let [left, top] = ui.cursor_screen_pos();
-    let (title_height, title_middle, is_beside) = {
-        let _heading = FontScope::push(ui, FontRole::Heading1);
-        let height = ui.text_line_height();
-        let middle = capital_middle().unwrap_or(height / 2.0);
-        let is_beside = ui.calc_text_size(title)[0] + gap + dropdown_size[0] <= available;
-        if is_beside {
-            ui.text(title);
-        } else {
-            ui.text_wrapped(title);
-        }
-        (height, middle, is_beside)
-    };
-    if is_beside {
-        ui.same_line_with_spacing(0.0, gap);
-        let x = ui.cursor_screen_pos()[0];
-        ui.set_cursor_screen_pos([x, (top + title_middle - dropdown_size[1] / 2.0).round()]);
-    }
-    if let Some(period) = draw_kind_dropdown(ui, theme, language, kind) {
-        actions.push(WindowAction::SetResetPeriod(note, period));
-    }
-    if is_beside {
-        // Continue below the title, not below the centered dropdown.
-        let spacing = ui.clone_style().item_spacing[1];
-        ui.set_cursor_screen_pos([left, top + title_height + spacing]);
     }
 }
