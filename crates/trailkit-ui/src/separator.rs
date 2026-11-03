@@ -12,13 +12,15 @@ use crate::theme::Theme;
 /// Draws a horizontal line in the `border.subtle` color across the available
 /// content width and advances the cursor like an item of the line's
 /// thickness. The line is snapped to whole pixels: between two pixel rows it
-/// would blur into a soft band twice as thick (R71, in-game test).
+/// would blur into a soft band twice as thick (R71, in-game test). ImGui's
+/// `AddLine` already adds half a pixel, so the line goes through the whole
+/// pixel coordinate itself.
 pub fn draw_separator(ui: &Ui, theme: &Theme) {
     let start = ui.cursor_screen_pos();
     let width = ui.content_region_avail()[0].max(1.0);
     let thickness = theme.border.width.max(1.0).round();
     ui.dummy([width, thickness]);
-    let middle = start[1].round() + thickness / 2.0;
+    let middle = start[1].round() + ((thickness - 1.0) / 2.0).floor();
     let left = start[0].round();
     ui.get_window_draw_list()
         .add_line(

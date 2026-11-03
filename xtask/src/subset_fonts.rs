@@ -64,23 +64,23 @@ struct FontJob {
 /// Every embedded font.
 const JOBS: [FontJob; 5] = [
     FontJob {
-        source: "inter/source/inter-regular.ttf",
-        output: "inter/inter-regular.ttf",
+        source: "open-sans/source/open-sans-regular.ttf",
+        output: "open-sans/open-sans-regular.ttf",
         characters: CharacterSet::Text,
     },
     FontJob {
-        source: "inter/source/inter-semibold.ttf",
-        output: "inter/inter-semibold.ttf",
+        source: "open-sans/source/open-sans-bold.ttf",
+        output: "open-sans/open-sans-bold.ttf",
         characters: CharacterSet::Text,
     },
     FontJob {
-        source: "inter/source/inter-italic.ttf",
-        output: "inter/inter-italic.ttf",
+        source: "open-sans/source/open-sans-italic.ttf",
+        output: "open-sans/open-sans-italic.ttf",
         characters: CharacterSet::Text,
     },
     FontJob {
-        source: "inter/source/inter-semibold-italic.ttf",
-        output: "inter/inter-semibold-italic.ttf",
+        source: "open-sans/source/open-sans-bold-italic.ttf",
+        output: "open-sans/open-sans-bold-italic.ttf",
         characters: CharacterSet::Text,
     },
     FontJob {

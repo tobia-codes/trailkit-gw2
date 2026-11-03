@@ -94,9 +94,10 @@ on the row's left edge. Hover shows `bg.hover` only, no bar.
 
 ## 7. Typography
 
-Inter in Regular, SemiBold, Italic and SemiBold Italic (`fonts`, subset by
-`cargo xtask subset-fonts`). Bold text and headings use SemiBold. Use only
-characters the subset covers; a test fails otherwise.
+Open Sans in Regular, Bold, Italic and Bold Italic (`fonts`, subset by
+`cargo xtask subset-fonts`, memo M62). Inter was tried for R71 and dropped
+(larger DLL, wider, less soft). Use only characters the subset covers; a
+test fails otherwise.
 
 ## 8. Changing or adding a token
 
