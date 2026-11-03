@@ -86,8 +86,11 @@ impl Icon {
     pub const X: Self = Self('\u{e1b2}');
     /// `search`: search field (memo M118).
     pub const SEARCH: Self = Self('\u{e151}');
+    /// `save` (floppy disk): the Save button of an editor (memo M130).
+    pub const SAVE: Self = Self('\u{e14d}');
     /// Every icon above; keep in sync when adding one.
-    pub const ALL: [Self; 37] = [
+    pub const ALL: [Self; 38] = [
+        Self::SAVE,
         Self::X,
         Self::SEARCH,
         Self::FILE_PLUS,

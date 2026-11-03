@@ -1237,7 +1237,7 @@ impl MemoWindow {
                 self.actions.push(WindowAction::CancelEditing);
             }
             ui.same_line();
-            if draw_primary_button_with_icon(ui, theme, Icon::CHECK, save) {
+            if draw_primary_button_with_icon(ui, theme, Icon::SAVE, save) {
                 self.actions.push(WindowAction::FinishEditing);
             }
             if ui.is_item_hovered() {
