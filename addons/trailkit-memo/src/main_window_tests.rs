@@ -461,7 +461,7 @@ fn reset_type_submenu_opens_beside_the_context_menu() {
     let (mut memo, _worker, _directory) = memo_window(document, ui_state);
     let size = [640.0, 360.0];
     let mut harness = UiHarness::new(size);
-    let row = [100.0, 149.0];
+    let row = [100.0, 145.0];
     let input = |position: [f32; 2], right: bool| FrameInput {
         mouse_position: position,
         right_button_down: right,
@@ -539,10 +539,10 @@ fn dragging_a_note_into_an_expanded_group_moves_it_to_the_line() {
     {
         let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
         // Lower half of the expanded "Raids" row = first place inside (M107).
-        let image = drag_rows(&mut harness, [100.0, 149.0], [100.0, 220.0], &mut draw_dark);
+        let image = drag_rows(&mut harness, [100.0, 145.0], [100.0, 216.0], &mut draw_dark);
         assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-drag-into-group", &image);
         let release = FrameInput {
-            mouse_position: [100.0, 220.0],
+            mouse_position: [100.0, 216.0],
             ..FrameInput::default()
         };
         harness.settle(2, &release, &mut draw_dark);
@@ -563,10 +563,10 @@ fn a_group_cannot_be_dropped_into_itself() {
     {
         let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
         // "Raids" over its own child: ban icon, no line (M109).
-        let image = drag_rows(&mut harness, [100.0, 213.0], [100.0, 248.0], &mut draw_dark);
+        let image = drag_rows(&mut harness, [100.0, 209.0], [100.0, 244.0], &mut draw_dark);
         assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-drag-impossible", &image);
         let release = FrameInput {
-            mouse_position: [100.0, 248.0],
+            mouse_position: [100.0, 244.0],
             ..FrameInput::default()
         };
         harness.settle(2, &release, &mut draw_dark);

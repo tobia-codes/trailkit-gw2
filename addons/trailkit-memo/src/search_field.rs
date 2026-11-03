@@ -1,5 +1,5 @@
-//! The search field above the note list (memo plan M118, M123): a
-//! button-tall `bg.input` field with a Lucide magnifier, a hint, an `x` that
+//! The search field above the note list (memo plan M118, M123, M128): a
+//! `bg.input` field a little taller than a button with a Lucide magnifier, a hint, an `x` that
 //! clears it and a brass frame while focused.
 //!
 //! Lives in memo until a second addon needs a search field (AGENTS.md
@@ -58,7 +58,10 @@ impl SearchField {
     pub fn draw(&mut self, ui: &Ui, theme: &Theme, texts: SearchFieldTexts<'_>) -> bool {
         let start = ui.cursor_screen_pos();
         let width = ui.content_region_avail()[0];
-        let height = ui.frame_height();
+        // A little taller than a button (M128); the input inside keeps the
+        // regular frame height and sits centered.
+        let height = ui.frame_height() + theme.spacing.small;
+        let input_y = start[1] + theme.spacing.small / 2.0;
         let end = [start[0] + width, start[1] + height];
         let padding = ui.clone_style().frame_padding;
         // `DrawListMut` is a singleton: take it only for each drawing step.
@@ -82,7 +85,11 @@ impl SearchField {
             size[0]
         };
         let input_x = start[0] + padding[0] + icon_width + theme.spacing.extra_small;
-        let clear_width = if self.text.is_empty() { 0.0 } else { height };
+        let clear_width = if self.text.is_empty() {
+            0.0
+        } else {
+            ui.frame_height() + theme.spacing.small / 2.0
+        };
 
         let changed = {
             let _id = ui.push_id(self.generation);
@@ -93,7 +100,7 @@ impl SearchField {
                 ui.push_style_color(StyleColor::TextDisabled, theme.text.secondary.to_array()),
             ];
             let _border = ui.push_style_var(StyleVar::FrameBorderSize(0.0));
-            ui.set_cursor_screen_pos([input_x, start[1]]);
+            ui.set_cursor_screen_pos([input_x, input_y]);
             ui.set_next_item_width((end[0] - clear_width - input_x).max(1.0));
             if std::mem::take(&mut self.focus_requested) {
                 ui.set_keyboard_focus_here();
@@ -109,7 +116,7 @@ impl SearchField {
         let mut cleared = false;
         if !self.text.is_empty() {
             ui.same_line_with_spacing(0.0, 0.0);
-            ui.set_cursor_screen_pos([end[0] - clear_width, start[1]]);
+            ui.set_cursor_screen_pos([end[0] - clear_width, input_y]);
             if draw_icon_button(ui, theme, Icon::X, texts.clear) {
                 self.clear(true);
                 cleared = true;
