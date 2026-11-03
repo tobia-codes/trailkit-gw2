@@ -15,23 +15,29 @@ use crate::{
 
 /// Draws a button with `label` and returns whether it was clicked. Unlike
 /// `ui.button` the label is centered by its capital letters, not by the font
-/// line box, in which the text font sits low (memo plan M85).
-pub fn draw_button(ui: &Ui, label: &str) -> bool {
-    draw_button_with_size(ui, label, [0.0, 0.0])
+/// line box, in which the text font sits low (memo plan M85). The button is
+/// at least `button.min_width` wide (M131).
+pub fn draw_button(ui: &Ui, theme: &Theme, label: &str) -> bool {
+    draw_button_with_size(ui, theme, label, [0.0, 0.0])
 }
 
 /// Like [`draw_button`] with an explicit size (ImGui sizing: `0.0` fits the
-/// label, negative values fill the available space).
-pub fn draw_button_with_size(ui: &Ui, label: &str, size: [f32; 2]) -> bool {
+/// label but keeps `button.min_width`, negative values fill the available
+/// space).
+pub fn draw_button_with_size(ui: &Ui, theme: &Theme, label: &str, size: [f32; 2]) -> bool {
     let padding = ui.clone_style().frame_padding;
     let text_size = ui.calc_text_size(label);
-    let fitting = [
-        text_size[0] + 2.0 * padding[0],
-        text_size[1] + 2.0 * padding[1],
-    ];
     let size = [
-        if size[0] == 0.0 { fitting[0] } else { size[0] },
-        if size[1] == 0.0 { fitting[1] } else { size[1] },
+        if size[0] == 0.0 {
+            button_width(ui, theme, label)
+        } else {
+            size[0]
+        },
+        if size[1] == 0.0 {
+            text_size[1] + 2.0 * padding[1]
+        } else {
+            size[1]
+        },
     ];
     // The label is the ID only; ImGui draws the frame, the label follows.
     let _id = ui.push_id(label);
@@ -82,7 +88,7 @@ pub fn draw_primary_button_with_size(ui: &Ui, theme: &Theme, label: &str, size: 
         ui.push_style_color(StyleColor::ButtonActive, theme.accent.active.to_array()),
         ui.push_style_color(StyleColor::Text, theme.text.on_accent.to_array()),
     ];
-    draw_button_with_size(ui, label, size)
+    draw_button_with_size(ui, theme, label, size)
 }
 
 /// Draws a primary button with a Lucide `icon` before `label` (accent
@@ -95,8 +101,8 @@ pub fn draw_primary_button_with_icon(ui: &Ui, theme: &Theme, icon: Icon, label: 
         ui.push_style_color(StyleColor::ButtonActive, theme.accent.active.to_array()),
         ui.push_style_color(StyleColor::Text, theme.text.on_accent.to_array()),
     ];
-    let padding = ui.clone_style().frame_padding[0];
     let gap = icon_label_gap(theme);
+    let content_width = icon_label_content_width(ui, theme, label);
     let size = [icon_label_button_width(ui, theme, label), ui.frame_height()];
     let _id = ui.push_id(label);
     let clicked = ui.button_with_size("##button", size);
@@ -105,7 +111,9 @@ pub fn draw_primary_button_with_icon(ui: &Ui, theme: &Theme, icon: Icon, label: 
     // SAFETY: called on the render thread inside a frame, where ImGui has a
     // current window and returns its draw list.
     let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
-    let icon_x = (min[0] + padding).round();
+    // Icon and label are centered as one group when the minimum width makes
+    // the button wider than its content (M131).
+    let icon_x = (min[0] + (max[0] - min[0] - content_width) / 2.0).round();
     draw_icon_into(draw_list, ui, icon, icon_x, [min[1], max[1]], color);
     draw_label(
         label,
@@ -116,11 +124,24 @@ pub fn draw_primary_button_with_icon(ui: &Ui, theme: &Theme, icon: Icon, label: 
     clicked
 }
 
-/// The width of a button with an icon and `label`, for right-aligning it.
+/// The width of a button with an icon and `label` (at least
+/// `button.min_width`, M131), for right-aligning it.
 #[must_use]
 pub fn icon_label_button_width(ui: &Ui, theme: &Theme, label: &str) -> f32 {
     let padding = ui.clone_style().frame_padding[0];
-    2.0 * padding + icon_width(ui) + icon_label_gap(theme) + ui.calc_text_size(label)[0]
+    (2.0 * padding + icon_label_content_width(ui, theme, label))
+        .max(min_text_button_width(ui, theme))
+}
+
+/// The width of icon, gap and `label` inside a button, without padding.
+fn icon_label_content_width(ui: &Ui, theme: &Theme, label: &str) -> f32 {
+    icon_width(ui) + icon_label_gap(theme) + ui.calc_text_size(label)[0]
+}
+
+/// The minimum width of a button with a text label in the current font
+/// (`button.min_width`, M131).
+fn min_text_button_width(ui: &Ui, theme: &Theme) -> f32 {
+    theme.button.min_width_for(ui.current_font_size())
 }
 
 /// The gap between an icon and its label inside a button.
@@ -155,8 +176,10 @@ pub fn draw_icon_toggle(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str, activ
     clicked
 }
 
-/// The width a button with `label` takes, for right-aligning button rows.
+/// The width a text button with `label` takes (at least `button.min_width`,
+/// M131), for right-aligning button rows.
 #[must_use]
-pub fn button_width(ui: &Ui, label: &str) -> f32 {
-    ui.calc_text_size(label)[0] + 2.0 * ui.clone_style().frame_padding[0]
+pub fn button_width(ui: &Ui, theme: &Theme, label: &str) -> f32 {
+    let natural = ui.calc_text_size(label)[0] + 2.0 * ui.clone_style().frame_padding[0];
+    natural.max(min_text_button_width(ui, theme))
 }

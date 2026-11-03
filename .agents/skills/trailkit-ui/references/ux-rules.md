@@ -159,6 +159,14 @@ Each rule has an id (`area-name`) so reviews can cite it.
 - `lay-one-primary` — At most one primary button per window/dialog;
   secondary actions are visually subordinate; destructive actions use the
   `danger` variant and sit apart from the primary action.
+- `lay-button-icon` — The primary text button of a toolbar carries a Lucide
+  icon before its label (`draw_primary_button_with_icon`: Edit = pencil,
+  Save = check). Secondary text buttons and dialog buttons stay text only
+  (memo M130).
+- `lay-button-min-width` — Every button with a text label is at least
+  `button.min_width` (4 × font size) wide, so short labels stay easy to hit
+  and a toolbar does not jump when Edit turns into Save; icon and label are
+  centered as a group. Icon-only buttons stay square (memo M131).
 - `lay-responsive` — **Content adapts to the window size, never overflows
   it** (applies to every addon and window). Rows of controls (toolbars,
   button rows, chips, filters) wrap onto the next line when the window is too

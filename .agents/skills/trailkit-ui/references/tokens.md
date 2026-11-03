@@ -80,6 +80,9 @@ If a design needs a fifth use, it needs a decision first (grill-me).
   `radius.lg` 10 for windows, panes, popups and dialogs. Custom-drawn shapes
   pick the radius of the thing they look like.
 - Every window, pane, popup and dialog has the 1 px `border.subtle` outline.
+- Text buttons are at least `button.min_width` × font size wide (M131);
+  measure rows with `button_width` / `icon_label_button_width`, never with
+  `calc_text_size` + padding, or right-aligned rows drift.
   No highlight edges and no shadows (a top highlight was tried and dropped
   after the in-game test, R71).
 - Lines (separators, outlines) sit on whole pixels: a 1 px line drawn
