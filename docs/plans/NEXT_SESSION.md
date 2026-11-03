@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-03 (session 10: DLL size R72, search M118–M127).
+Last updated: 2026-11-03 (end of session 10, after PR #75).
 
 ## Where we are
 
@@ -8,7 +8,8 @@ Last updated: 2026-11-03 (session 10: DLL size R72, search M118–M127).
 - **Phase 1 (trailkit-memo standalone):** steps 1 (storage), 2 (tree & note
   view), 3 (editing), 3b (own editor with preview), 3c (chat-link chips),
   reset kinds and **drag & drop (M106–M117)** are merged into `develop` and
-  tested in game. Decisions in `docs/plans/addons/trailkit-memo.md`.
+  tested in game; **search (M118–M129)** is merged and deployed, not yet
+  confirmed in game. Decisions in `docs/plans/addons/trailkit-memo.md`.
 - Order from here (M28 as amended by M58, M62, M65):
   ~~visual & interaction tests~~ → ~~font subsetting~~ → ~~3c chips~~ →
   ~~reset kinds~~ → ~~drag & drop~~ → ~~search~~ → **trash & undo
@@ -103,45 +104,70 @@ Last updated: 2026-11-03 (session 10: DLL size R72, search M118–M127).
 
 ## ▶ Resume here
 
-0. **Session 10 (PRs #71, #72):** DLL size round (R72: jiff without tzdb,
-   local time via Windows; performance beats size) and the **search**
-   (M118–M127, token `accent.highlight` R73, BL13 catch_unwind, BL14
-   next/previous hit). Deployed; **user to test in game**: search field
-   (typing, Ctrl+F also from the editor and with the list hidden, Escape
-   clears then closes, `x`), filtered list with hit counts and marks, jump
-   to the first hit, drag blocked while searching, empty result; the draft
-   time shows local time; title bar from #69. Then grill **trash & undo**.
-   The Claude Design system still lacks R71 updates and `accent.highlight`
-   (tokens.md §8 step 5) — offer it.
-
-1. **Check PR #69** (title bar) merged and its CI green; if not, fix or
-   wait. Then let the user test in game: window moves by dragging the
-   header, chevron collapses/expands, `×` and Escape close (unsaved
-   changes still ask). The collapsed state is kept only until the game
-   restarts (not persisted) — fine for now unless the user objects.
-2. **Next feature: grill the search step** (M28 order) with the grilling
-   skill. The mockup canvas shows a search field at the top of the
-   sidebar; its place and behavior were explicitly left to this round.
-3. ~~DLL size grill round~~ done in session 10 (R72, BL13): jiff without
-   tzdb, local time via Windows; `opt-level` 3 and unwind stay
-   (performance beats size). Memo release DLL now 1 964 032 bytes. User to
-   check in game: a restored draft shows the right local time.
-4. Optional: bring the Claude Design system "Trailkit" in line with R71
-   (drop Inter and `border-highlight`, selection bar sits on the row
-   highlight's left edge, one dropdown, title bar). The user was offered
-   this but did not ask for it yet.
-5. Working rules that proved useful:
-   - UI tests: `cargo xtask ui-test [--update]`; look at PNGs only when they
-     change. Pixel checks: decode PNGs with a stdlib Python script (no PIL,
-     no numpy, no pip) — upscaling in-game crops found the 2 px separator
-     and the badge offset.
+1. **Check that PR #75 (fixed list header, M129) merged** with green CI
+   (`gh pr view 75 --json state`); if not, fix or wait. All other
+   session-10 PRs (#71–#74) are merged.
+2. **In-game test by the user** (everything is deployed; nothing of this
+   was confirmed in game yet). Ask for screenshots and measure them
+   pixel-wise before changing anything:
+   - Search (M118–M129): typing filters live; Ctrl+F focuses the field
+     (also while editing and with the list hidden / drawer closed);
+     Escape in the field clears it, a second Escape closes the window;
+     the `x` sits centered and mirrors the magnifier (fixed in #74 —
+     the user's last screenshot was before that fix); hit marks in list
+     titles, note view and preview; content hit count at the row end;
+     jump to the first hit; drag blocked with tooltip; empty result with
+     "Clear search"; creating a note clears the search.
+   - List header (M128/M129): New note/New group buttons full width and
+     equal; field taller; only the tree scrolls in a long list.
+   - Draft time (R72): restore a draft — the time must be local time.
+   - Title bar (#69): drag the header to move, chevron collapses,
+     `x`/Escape close (unsaved changes still ask).
+3. **Next feature: grill trash & undo** (M12: trash, purged after 30 days,
+   "Deleted — Undo" toast, confirm deleting a non-empty group with its
+   note count; M25/M34 mention delete in step 7). Use the grilling skill:
+   numbered questions with recommendations, record answers as M130+.
+4. Optional, offer once: update the Claude Design system "Trailkit"
+   (https://claude.ai/artifact/G7sNVZe1JYTgxbUE5mhS33) to R71–R73
+   (no Inter, no `border-highlight`, one dropdown, title bar, search
+   field, `accent.highlight`) — tokens.md §8 step 5.
+5. Backlog items created this session: BL13 (`catch_unwind` at every FFI
+   boundary — needs a grill round), BL14 (next/previous search hit).
+6. Working rules that proved useful:
+   - UI tests: `cargo xtask ui-test [--update]`; look at PNGs only when
+     they change. Pixel checks: stdlib Python PNG decoder (no PIL/numpy) —
+     a reusable one can be written in the scratchpad (`load()` + crop and
+     upscale); ASCII dumps of a region found the `x` offsets.
+   - Test fonts are 16 px, in game 18 px: verify in-game screenshots, not
+     only snapshots.
    - Deploy after every UI change (`cargo xtask deploy trailkit-memo`).
-   - With `gh pr merge --auto` armed, **check `gh pr view <n> --json state`
-     before pushing follow-ups**: two commits once landed after #66 had
-     merged and had to be re-shipped in #67. Merged → branch fresh from
-     `origin/develop` and cherry-pick.
+   - With `gh pr merge --auto` armed, **check `gh pr view <n> --json
+     state` before pushing follow-ups** (happened twice this session:
+     #72 and #73 merged before the follow-up). Merged → new branch from
+     `origin/develop` (uncommitted changes carry over with `git stash`).
+   - Changing UI layout above the list shifts rows: the drag tests in
+     `main_window_tests.rs` use fixed mouse coordinates — shift them.
    - In this WSL shell, plain `grep` fails (a broken wrapper); use
      `command grep`. Run `source ~/.cargo/env` before cargo.
+   - Never leave an `eprintln!` debug line before `cargo fmt`: fmt splits
+     it over lines and `sed '/marker/d'` then leaves a broken remnant.
+
+## Session 10 summary (2026-11-03, PRs #71–#75)
+
+- **R72 DLL size:** jiff without default features (no bundled tzdb),
+  local time via `SystemTimeToTzSpecificLocalTime` (Wine maps it under
+  Linux/Proton), clippy bans `jiff::tz::TimeZone::system`. Memo release
+  DLL 2 315 264 → 1 964 032 bytes. User: **performance beats size** —
+  `opt-level` 3 and `panic = "unwind"` stay; measured `s` −11 %, `z`
+  −14 %, abort −14 %. Compared with installed addons memo is mid-range
+  (Killproofme 14.8 MB, Event Timers 3.7 MB, DRF 2.4 MB, ArcDPS 1.4 MB).
+- **Search M118–M127** (`note_search`, `search_field`,
+  `trailkit_ui::text_search`, `markdown::plain_text`,
+  `markdown_view::SearchHighlight`), token **`accent.highlight` R73**
+  (brass budget now has four uses, tokens.md §3), Lucide `search` icon.
+- **M128** list header (equal full-width buttons that stack, taller
+  field, clear `x` mirrors the magnifier), **M129** fixed list header.
+- **#74** `xtask subset-fonts` fixes Lucide glyph boxes (see facts).
 
 ## Facts learned in session 10
 
@@ -232,7 +258,7 @@ Last updated: 2026-11-03 (session 10: DLL size R72, search M118–M127).
 ## Recurring checks
 
 - GW2 wiki (2026-10-31): still behind Cognito login → Wayback workaround stays.
-- C-703/25 P (checked 2026-11-03, session 10): still
+- C-703/25 P (checked 2026-11-03, session 10 — check again next session): still
   pending, no hearing date or judgment reported; DPF in force. Microsoft intervened for the
   Commission; noyb asked for repeal (2026-06-30) but has not sued yet.
 - DPF reminder workflow: the 2026-11-01 08:00 cron was silently skipped by
