@@ -161,7 +161,7 @@ Each rule has an id (`area-name`) so reviews can cite it.
   `danger` variant and sit apart from the primary action.
 - `lay-button-icon` — The primary text button of a toolbar carries a Lucide
   icon before its label (`draw_primary_button_with_icon`: Edit = pencil,
-  Save = check). Secondary text buttons and dialog buttons stay text only
+  Save = floppy disk `save`). Secondary text buttons and dialog buttons stay text only
   (memo M130).
 - `lay-button-min-width` — Every button with a text label is at least
   `button.min_width` (4 × font size) wide, so short labels stay easy to hit
