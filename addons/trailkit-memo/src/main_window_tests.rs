@@ -461,7 +461,7 @@ fn reset_type_submenu_opens_beside_the_context_menu() {
     let (mut memo, _worker, _directory) = memo_window(document, ui_state);
     let size = [640.0, 360.0];
     let mut harness = UiHarness::new(size);
-    let row = [100.0, 105.0];
+    let row = [100.0, 149.0];
     let input = |position: [f32; 2], right: bool| FrameInput {
         mouse_position: position,
         right_button_down: right,
@@ -539,10 +539,10 @@ fn dragging_a_note_into_an_expanded_group_moves_it_to_the_line() {
     {
         let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
         // Lower half of the expanded "Raids" row = first place inside (M107).
-        let image = drag_rows(&mut harness, [100.0, 105.0], [100.0, 176.0], &mut draw_dark);
+        let image = drag_rows(&mut harness, [100.0, 149.0], [100.0, 220.0], &mut draw_dark);
         assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-drag-into-group", &image);
         let release = FrameInput {
-            mouse_position: [100.0, 176.0],
+            mouse_position: [100.0, 220.0],
             ..FrameInput::default()
         };
         harness.settle(2, &release, &mut draw_dark);
@@ -563,10 +563,10 @@ fn a_group_cannot_be_dropped_into_itself() {
     {
         let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
         // "Raids" over its own child: ban icon, no line (M109).
-        let image = drag_rows(&mut harness, [100.0, 169.0], [100.0, 204.0], &mut draw_dark);
+        let image = drag_rows(&mut harness, [100.0, 213.0], [100.0, 248.0], &mut draw_dark);
         assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-drag-impossible", &image);
         let release = FrameInput {
-            mouse_position: [100.0, 204.0],
+            mouse_position: [100.0, 248.0],
             ..FrameInput::default()
         };
         harness.settle(2, &release, &mut draw_dark);
@@ -575,4 +575,97 @@ fn a_group_cannot_be_dropped_into_itself() {
         outline(&memo),
         "Shopping list, Dailies, Raids[Weekly clears]"
     );
+}
+
+/// The id of the weekly note inside the "Raids" group of
+/// [`sample_document`].
+fn weekly_note(document: &NotesDocument) -> Option<NodeId> {
+    document.root.iter().find_map(|node| match node {
+        Node::Group(group) => group.children.iter().find_map(|child| match child {
+            Node::Note(note) => Some(NodeId::Note(note.id)),
+            Node::Group(_) => None,
+        }),
+        Node::Note(_) => None,
+    })
+}
+
+/// The saved expand state of every root group of `document`.
+fn expanded_flags(document: &NotesDocument) -> Vec<bool> {
+    document
+        .root
+        .iter()
+        .filter_map(|node| match node {
+            Node::Group(group) => Some(group.expanded),
+            Node::Note(_) => None,
+        })
+        .collect()
+}
+
+/// Focuses the search with Ctrl+F, types `query` and lets the window
+/// settle; returns the last image.
+fn search_for(
+    memo: &mut MemoWindow,
+    size: [f32; 2],
+    query: &str,
+) -> trailkit_ui_testing::raster::Image {
+    let mut harness = UiHarness::new(size);
+    let mut draw_frame = |harness: &mut UiHarness, input: &FrameInput| {
+        harness.frame(input, |ui| draw(ui, memo, size, ThemeKind::Dark))
+    };
+    draw_frame(&mut harness, &FrameInput::default());
+    draw_frame(
+        &mut harness,
+        &FrameInput {
+            control: true,
+            keys: vec![0x46],
+            ..FrameInput::default()
+        },
+    );
+    draw_frame(&mut harness, &FrameInput::default());
+    draw_frame(
+        &mut harness,
+        &FrameInput {
+            characters: query.to_owned(),
+            ..FrameInput::default()
+        },
+    );
+    let mut image = draw_frame(&mut harness, &FrameInput::default());
+    for _ in 0..3 {
+        image = draw_frame(&mut harness, &FrameInput::default());
+    }
+    image
+}
+
+#[test]
+fn search_filters_the_list_and_marks_the_hits() {
+    let document = sample_document();
+    let ui_state = UiState {
+        selected: weekly_note(&document),
+        ..UiState::default()
+    };
+    let saved_expanded = expanded_flags(&document);
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    // "clears" matches the title, "spirit" the content: the row shows one
+    // content hit, the group counts one matching note (M119, M121, M122).
+    let image = search_for(&mut memo, [640.0, 360.0], "clears SPIRIT");
+    assert_eq!(memo.search_field.text, "clears SPIRIT");
+    assert!(memo.search_takes_escape());
+    assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-search-hits", &image);
+
+    // Escape (sent by Nexus as hiding the window) clears the search, and
+    // the saved expand state of the group is untouched (M124).
+    memo.clear_search_by_escape();
+    assert!(memo.search_field.text.is_empty());
+    assert_eq!(
+        expanded_flags(&memo.document),
+        saved_expanded,
+        "the saved expand state is untouched"
+    );
+}
+
+#[test]
+fn search_without_hits_offers_to_clear_it() {
+    let (mut memo, _worker, _directory) = memo_window(sample_document(), UiState::default());
+    let image = search_for(&mut memo, [640.0, 360.0], "zzz");
+    assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-search-empty", &image);
 }

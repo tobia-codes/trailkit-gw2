@@ -23,6 +23,17 @@ The window shows the note list on the left and the selected note on the right. T
 - **Groups** have bold names and show how many notes they contain on the right.
 - **Badges** at the right end of a row: **D** marks a daily note (reset at 00:00 UTC), **W** a weekly note (reset on Mondays at 07:30 UTC). Hover a badge to see how long it is until the next reset.
 
+## Searching
+
+Type into the **Search** field at the top of the note list (or press **Ctrl+F**). The list shows only notes that contain every word you typed — in their title or text, upper or lower case alike. Umlauts count as their own letters: "ä" finds "Ä", but not "a".
+
+- Groups with hits open by themselves; their number shows how many notes match. A group whose name matches shows everything inside.
+- Hits are marked in the titles and in the open note, which jumps to the first hit. Notes that match only through their text show the number of hits at the end of the row.
+- Link texts and chat-link codes are searched, link addresses are not. A chip whose code matches gets a frame.
+- The open note always stays in the list, even if it no longer matches after an edit.
+- You cannot drag entries while searching; clear the search first. Renaming, the right-click menu and *Move to* work as usual. A new note or group clears the search.
+- **×** in the field or **Escape** (while you type in the field) clears the search; a second Escape closes the window. The search stays when you close and reopen the window, until the game restarts.
+
 ## Daily and weekly notes
 
 Choose the kind of a note in the box next to its title (*Normal*, *Daily reset*, *Weekly reset*), or right-click it in the list › *Reset type*. At the game's daily or weekly reset all checkboxes in such a note are unticked again — handy for dailies and weekly clears. Hover the badge in the list to see how long it is until the next reset.

@@ -22,6 +22,7 @@ pub mod editor;
 pub mod fonts;
 pub mod icons;
 pub mod markdown;
+pub mod text_search;
 pub mod theme;
 
 #[cfg(windows)]

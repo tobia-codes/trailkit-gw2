@@ -5,7 +5,7 @@
 //! reused list; they are applied after the tree has been drawn, then changed
 //! documents are handed to the storage worker.
 
-use std::{borrow::Cow, path::PathBuf, sync::Arc};
+use std::{borrow::Cow, collections::HashSet, path::PathBuf, sync::Arc};
 
 use jiff::Timestamp;
 use nexus::imgui::{
@@ -26,12 +26,13 @@ use trailkit_ui::{
     glyph_metrics::{capital_middle, glyph_ink_box},
     icons::Icon,
     markdown::{self, MarkdownDocument},
-    markdown_view::{MarkdownAction, draw_markdown, open_web_link},
+    markdown_view::{MarkdownAction, SearchHighlight, draw_markdown, open_web_link},
     menu::{begin_submenu, draw_menu_item},
     pane::draw_pane,
     selection_bar::draw_selection_bar,
     separator::draw_separator,
     splitter::draw_vertical_splitter,
+    text_search::SearchQuery,
     theme::Theme,
     title_bar::TitleBarTexts,
     tree_arrow::draw_tree_arrow,
@@ -41,11 +42,13 @@ use crate::{
     drafts::{Draft, DraftsDocument},
     i18n::{Language, Text, chip_text, format_local_time, label_with_percent, reset_countdown},
     note_editing::{ActiveFormats, EditSession, FormatCommand, active_formats, format_edit},
+    note_search::{NoteSearchIndex, SearchResults},
     note_tree::{
         Group, GroupId, InsertionPoint, MoveCheck, NodeId, Note, NoteId, NoteKind, NotesDocument,
         TreeNode as Node,
     },
     reset_schedule::{ResetPeriod, next_reset_of_any_period},
+    search_field::{SearchField, SearchFieldTexts},
     settings::{Settings, TextScale, UnsavedChanges},
     storage_worker::StorageSaver,
     tree_drag::{
@@ -117,6 +120,9 @@ const VIRTUAL_KEY_B: i32 = 0x42;
 /// Windows virtual-key code of `0` (Ctrl+0 resets the text size, M79).
 const VIRTUAL_KEY_0: i32 = 0x30;
 
+/// Windows virtual-key code of `F` (Ctrl+F focuses the search, M124).
+const VIRTUAL_KEY_F: i32 = 0x46;
+
 /// Windows virtual-key code of `I`.
 const VIRTUAL_KEY_I: i32 = 0x49;
 
@@ -186,6 +192,11 @@ enum WindowAction {
     LeaveDiscarding,
     /// Unsaved changes dialog: stay in the editor.
     LeaveCancelled,
+    /// Collapse (`true`) or expand a group only for the current search
+    /// (not saved, M124).
+    SetCollapsedInSearch(GroupId, bool),
+    /// Empty the search field (empty search result, M126).
+    ClearSearch,
 }
 
 impl WindowAction {
@@ -381,6 +392,46 @@ pub struct MemoWindow {
     drag: Option<TreeDrag>,
     /// Rectangles of the list rows drawn in this frame; reused every frame.
     tree_rows: Vec<RowRect>,
+    /// The search field above the note list (M118); its text survives
+    /// closing the window, not a game restart (M124).
+    search_field: SearchField,
+    /// Search index and results, rebuilt only when needed (M119).
+    search: SearchCache,
+    /// Groups collapsed during the current search; the saved expand state
+    /// stays untouched and returns when the search is cleared (M124).
+    collapsed_in_search: HashSet<GroupId>,
+    /// Scroll the note view to its first search hit on the next draw (M122).
+    scroll_to_first_hit: bool,
+    /// A row was pressed while searching: dragging cannot move it (M125).
+    drag_blocked_by_search: bool,
+    /// Counts saves of the notes; a changed value invalidates the search
+    /// index.
+    document_revision: u64,
+}
+
+/// The search index and the results of the current query, each cached until
+/// what it depends on changes (M119: never rebuilt per frame).
+#[derive(Debug, Default)]
+struct SearchCache {
+    /// The index and the document revision it was built from.
+    index: Option<(u64, NoteSearchIndex)>,
+    /// The results of the current query, if the field holds one.
+    current: Option<CurrentSearch>,
+}
+
+/// Results of one query over one document revision.
+#[derive(Debug)]
+struct CurrentSearch {
+    /// The field text the results belong to.
+    text: String,
+    /// The parsed query.
+    query: SearchQuery,
+    /// The document revision the results belong to.
+    revision: u64,
+    /// The node kept visible (the open note, M125).
+    keep_visible: Option<NodeId>,
+    /// What the note list shows.
+    results: SearchResults,
 }
 
 /// Everything the tree drawing functions need besides the nodes.
@@ -406,6 +457,10 @@ struct TreeContext<'state> {
     /// ImGui frame padding; rows use it so they are as tall as the rename
     /// input and titles line up with the input text.
     frame_padding: [f32; 2],
+    /// The active search and its results (M118).
+    search: Option<(&'state SearchQuery, &'state SearchResults)>,
+    /// Groups collapsed during the search (M124).
+    collapsed_in_search: &'state HashSet<GroupId>,
 }
 
 impl MemoWindow {
@@ -458,6 +513,12 @@ impl MemoWindow {
             next_reset_check: None,
             drag: None,
             tree_rows: Vec::new(),
+            search_field: SearchField::default(),
+            search: SearchCache::default(),
+            collapsed_in_search: HashSet::new(),
+            scroll_to_first_hit: false,
+            drag_blocked_by_search: false,
+            document_revision: 0,
         }
     }
 
@@ -514,6 +575,88 @@ impl MemoWindow {
         } else {
             self.text_scale_changed_at = None;
         }
+    }
+
+    /// Whether Escape should clear the search instead of closing the window:
+    /// the focused search field holds text (M124).
+    #[must_use]
+    pub fn search_takes_escape(&self) -> bool {
+        self.search_field.is_active() && !self.search_field.text.is_empty()
+    }
+
+    /// Clears the search after Escape (see [`Self::search_takes_escape`]);
+    /// the field keeps the focus, so a second Escape closes the window.
+    pub fn clear_search_by_escape(&mut self) {
+        self.search_field.clear(true);
+    }
+
+    /// Ctrl+F focuses the search field (M124, M127): it shows the note list
+    /// or opens the drawer first and takes the focus from the editor, which
+    /// stays in edit mode.
+    fn handle_search_keys(&mut self, ui: &Ui) {
+        if !(self.window_focused && ui.io().key_ctrl && ui.is_key_index_pressed(VIRTUAL_KEY_F)) {
+            return;
+        }
+        if self.is_narrow {
+            self.drawer_open = true;
+        } else if self.ui_state.note_list_hidden {
+            self.ui_state.note_list_hidden = false;
+            self.saver.save_ui_state(self.ui_state);
+        }
+        if let Some(editor) = &mut self.editor {
+            editor.body.unfocus();
+        }
+        self.search_field.request_focus();
+    }
+
+    /// Brings the search index and results up to date with the field text,
+    /// the notes and the open note (M119). Cheap when nothing changed.
+    fn update_search(&mut self) {
+        let Some(query) = SearchQuery::parse(&self.search_field.text) else {
+            if self.search.current.take().is_some() {
+                self.collapsed_in_search.clear();
+            }
+            return;
+        };
+        let revision = self.document_revision;
+        let keep_visible = self.ui_state.selected;
+        if let Some(current) = &self.search.current
+            && current.revision == revision
+            && current.keep_visible == keep_visible
+            && current.text == self.search_field.text
+        {
+            return;
+        }
+        if self
+            .search
+            .index
+            .as_ref()
+            .is_none_or(|(built_from, _)| *built_from != revision)
+        {
+            self.search.index = Some((revision, NoteSearchIndex::build(&self.document)));
+        }
+        let Some((_, index)) = &self.search.index else {
+            return;
+        };
+        let query_changed = self
+            .search
+            .current
+            .as_ref()
+            .is_none_or(|current| current.query != query);
+        if query_changed {
+            // A new search starts with every matching group expanded and
+            // jumps to the first hit of the open note (M122).
+            self.collapsed_in_search.clear();
+            self.scroll_to_first_hit = true;
+        }
+        let results = SearchResults::compute(&self.document, index, &query, keep_visible);
+        self.search.current = Some(CurrentSearch {
+            text: self.search_field.text.clone(),
+            query,
+            revision,
+            keep_visible,
+            results,
+        });
     }
 
     /// Whether the editor holds changes that are not saved yet (M54).
@@ -595,6 +738,8 @@ impl MemoWindow {
             ui.is_window_focused_with_flags(WindowFocusedFlags::ROOT_AND_CHILD_WINDOWS);
         self.apply_due_resets(Timestamp::now());
         self.handle_text_scale_keys(ui);
+        self.handle_search_keys(ui);
+        self.update_search();
         self.update_text_scale(ui, language);
         self.draw_problem(ui, language, theme);
 
@@ -843,8 +988,23 @@ impl MemoWindow {
     /// Draws the toolbar and the tree. `menu` is the tooltip of a leading
     /// menu button (drawer only, so it closes where it opened).
     fn draw_tree_pane(&mut self, ui: &Ui, language: Language, theme: &Theme, menu: Option<Text>) {
+        let search_texts = SearchFieldTexts {
+            hint: Text::SearchHint.get(language),
+            clear: Text::ClearSearch.get(language),
+        };
+        if self.search_field.draw(ui, theme, search_texts) {
+            // Apply the new text in this frame already.
+            self.update_search();
+        }
+        ui.dummy([0.0, theme.spacing.extra_small]);
         draw_toolbar(ui, language, theme, menu, &mut self.actions);
         self.tree_rows.clear();
+        if let Some(current) = &self.search.current
+            && !current.results.has_hits()
+        {
+            draw_no_search_results(ui, language, theme, &current.text, &mut self.actions);
+            return;
+        }
         let style = ui.clone_style();
         let mut context = TreeContext {
             document: &self.document,
@@ -861,9 +1021,29 @@ impl MemoWindow {
             language,
             theme,
             frame_padding: style.frame_padding,
+            search: self
+                .search
+                .current
+                .as_ref()
+                .map(|current| (&current.query, &current.results)),
+            collapsed_in_search: &self.collapsed_in_search,
         };
         draw_nodes(ui, &self.document.root, &mut context);
-        if let Some(node) = context.pressed {
+        let is_searching = context.search.is_some();
+        if is_searching {
+            // Positions in a filtered list are ambiguous: no drag & drop
+            // while searching (M125).
+            if context.pressed.is_some() {
+                self.drag_blocked_by_search = true;
+            }
+            if !ui.is_mouse_down(MouseButton::Left) {
+                self.drag_blocked_by_search = false;
+            } else if self.drag_blocked_by_search
+                && ui.is_mouse_dragging_with_threshold(MouseButton::Left, DRAG_THRESHOLD)
+            {
+                ui.tooltip_text(Text::ClearSearchToMove.get(language));
+            }
+        } else if let Some(node) = context.pressed {
             self.drag = Some(TreeDrag {
                 node,
                 pressed_at: ui.io().mouse_pos,
@@ -1160,10 +1340,12 @@ impl MemoWindow {
                 .preview
                 .get_or_insert_with(|| markdown::parse(&editor.session.body));
             let actions = &mut self.actions;
+            let search_query = self.search.current.as_ref().map(|current| &current.query);
             draw_pane(ui, theme, "preview", [0.0, 0.0], || {
                 // The preview is read-only: links open and chips copy, but
-                // checkboxes do not toggle.
-                match draw_markdown(ui, preview, theme, chips) {
+                // checkboxes do not toggle. It marks search hits (M122).
+                let mut highlight = search_query.map(SearchHighlight::new);
+                match draw_markdown(ui, preview, theme, chips, highlight.as_mut()) {
                     Some(
                         action @ (MarkdownAction::OpenLink(_) | MarkdownAction::ChatLinkCopied(_)),
                     ) => {
@@ -1250,8 +1432,23 @@ impl MemoWindow {
                         .as_ref()
                         .map(|copied| copied.code.as_str()),
                 };
-                if let Some(action) = draw_markdown(ui, &parsed.document, theme, chips) {
+                // Search hits are marked; a new search or a newly opened
+                // note jumps to the first one (M122).
+                let mut highlight = self
+                    .search
+                    .current
+                    .as_ref()
+                    .map(|current| SearchHighlight::new(&current.query));
+                if let Some(action) =
+                    draw_markdown(ui, &parsed.document, theme, chips, highlight.as_mut())
+                {
                     self.actions.push(WindowAction::Markdown(action));
+                }
+                if std::mem::take(&mut self.scroll_to_first_hit)
+                    && let Some(first_hit) =
+                        highlight.as_ref().and_then(SearchHighlight::first_hit_y)
+                {
+                    ui.set_scroll_y((first_hit - ui.text_line_height()).max(0.0));
                 }
             }
             _ => ui.text_colored(
@@ -1321,6 +1518,8 @@ impl MemoWindow {
             }
             WindowAction::CancelRename => self.rename = None,
             WindowAction::NewNote(point) => {
+                // The new entry must be visible: creating clears the search (M126).
+                self.search_field.clear(false);
                 let point = self.insertion_point(*point);
                 let note = Note::new(
                     Text::NewNote.get(language).to_owned(),
@@ -1334,6 +1533,7 @@ impl MemoWindow {
                 self.save_notes();
             }
             WindowAction::NewGroup(point) => {
+                self.search_field.clear(false);
                 let point = self.insertion_point(*point);
                 let group = Group::new(Text::NewGroup.get(language).to_owned());
                 let id = NodeId::Group(group.id);
@@ -1342,6 +1542,14 @@ impl MemoWindow {
                 self.start_rename_of_new(id, Text::NewGroup.get(language));
                 self.save_notes();
             }
+            WindowAction::SetCollapsedInSearch(group, collapsed) => {
+                if *collapsed {
+                    self.collapsed_in_search.insert(*group);
+                } else {
+                    self.collapsed_in_search.remove(group);
+                }
+            }
+            WindowAction::ClearSearch => self.search_field.clear(false),
             WindowAction::ToggleNoteList => {
                 if self.is_narrow {
                     self.drawer_open = !self.drawer_open;
@@ -1474,6 +1682,7 @@ impl MemoWindow {
             self.ui_state.selected = Some(node);
             self.ui_state.note_scroll = 0.0;
             self.restore_scroll = true;
+            self.scroll_to_first_hit = self.search.current.is_some();
             self.saver.save_ui_state(self.ui_state);
         }
         // Choosing a note closes the drawer; groups keep it open (M48).
@@ -1501,8 +1710,10 @@ impl MemoWindow {
         });
     }
 
-    /// Hands a copy of the note tree to the storage worker.
-    fn save_notes(&self) {
+    /// Hands a copy of the note tree to the storage worker and marks the
+    /// search index stale.
+    fn save_notes(&mut self) {
+        self.document_revision = self.document_revision.wrapping_add(1);
         self.saver.save_notes(Arc::new(self.document.clone()));
     }
 }
@@ -1907,9 +2118,15 @@ fn draw_toolbar(
     draw_separator(ui, theme);
 }
 
-/// Draws `nodes` and, recursively, the children of expanded groups.
+/// Draws `nodes` and, recursively, the children of expanded groups; during a
+/// search only the rows it shows (M118).
 fn draw_nodes(ui: &Ui, nodes: &[Node], context: &mut TreeContext<'_>) {
     for node in nodes {
+        if let Some((_, results)) = context.search
+            && !results.is_visible(node.id())
+        {
+            continue;
+        }
         // The dragged row and its children are faded (M106).
         let _faded = (context.dragged == Some(node.id()))
             .then(|| ui.push_style_var(StyleVar::Alpha(DRAGGED_ROW_ALPHA)));
@@ -1939,8 +2156,17 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut TreeContext<'_>) {
     // right-aligned in the secondary text color like other row info (M49).
     let row_start = ui.cursor_screen_pos();
     let title_offset = group_title_offset(ui, context);
+    // During a search the count is the matching notes (M121) and groups
+    // are expanded unless collapsed for this search only (M124).
+    let (note_count, expanded) = match context.search {
+        Some((_, results)) => (
+            results.group_count(group.id),
+            !context.collapsed_in_search.contains(&group.id),
+        ),
+        None => (group.note_count(), group.expanded),
+    };
     let mut count_buffer = [0; 20];
-    let count = format_count(group.note_count(), &mut count_buffer);
+    let count = format_count(note_count, &mut count_buffer);
     let count_x = row_content_end(ui, context) - ui.calc_text_size(count)[0];
     let title_end = count_x - context.theme.spacing.small;
     let (label, token) = {
@@ -1958,7 +2184,7 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut TreeContext<'_>) {
             TreeNode::new("group")
                 .label::<&str, _>("")
                 .flags(flags)
-                .opened(group.expanded, Condition::Always)
+                .opened(expanded, Condition::Always)
                 .push(ui)
         };
         if context.selected == Some(node) {
@@ -1971,6 +2197,13 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut TreeContext<'_>) {
             row_start,
             context.frame_padding,
         );
+        let title_position = [
+            row_start[0] + title_offset,
+            row_start[1] + context.frame_padding[1],
+        ];
+        if let Some((query, _)) = context.search {
+            draw_title_hits(ui, context.theme, query, &label, title_position);
+        }
         ui.get_window_draw_list().add_text(
             [
                 row_start[0] + title_offset,
@@ -1981,7 +2214,7 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut TreeContext<'_>) {
         );
         (label, token)
     };
-    let kind = if group.expanded {
+    let kind = if expanded {
         RowKind::ExpandedGroup(group.id)
     } else {
         RowKind::CollapsedGroup(group.id)
@@ -1994,10 +2227,13 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut TreeContext<'_>) {
     );
     let is_open = token.is_some();
     handle_row_interaction(ui, node, &group.title, &label, context);
-    if is_open != group.expanded {
-        context
-            .actions
-            .push(WindowAction::SetExpanded(group.id, is_open));
+    if is_open != expanded {
+        let action = if context.search.is_some() {
+            WindowAction::SetCollapsedInSearch(group.id, !is_open)
+        } else {
+            WindowAction::SetExpanded(group.id, is_open)
+        };
+        context.actions.push(action);
     }
     if is_renaming {
         ui.same_line_with_spacing(0.0, 0.0);
@@ -2059,10 +2295,32 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut TreeContext<'_>) {
     // Notes have no arrow: the title starts where a group's arrow does.
     let title_x = row_start[0] + context.frame_padding[0];
     let content_end = row_content_end(ui, context);
-    let title_end = match draw_badge(ui, note.kind, [content_end, row_start[1]], context) {
+    let mut title_end = match draw_badge(ui, note.kind, [content_end, row_start[1]], context) {
         Some(badge_start) => badge_start - context.theme.spacing.small,
         None => content_end,
     };
+    // A note matching through its content shows its hit count (M122).
+    if let Some(hits) = context
+        .search
+        .and_then(|(_, results)| results.content_hits(note.id))
+    {
+        let mut count_buffer = [0; 20];
+        let count = format_count(hits, &mut count_buffer);
+        let count_x = title_end - ui.calc_text_size(count)[0];
+        ui.get_window_draw_list().add_text(
+            [count_x, row_start[1] + context.frame_padding[1]],
+            context.theme.text.secondary.to_array(),
+            count,
+        );
+        if is_row_hovered && ui.io().mouse_pos[0] >= count_x {
+            ui.tooltip_text(
+                Text::ContentHits
+                    .get(context.language)
+                    .replace("{count}", count),
+            );
+        }
+        title_end = count_x - context.theme.spacing.small;
+    }
     ui.same_line_with_spacing(0.0, 0.0);
     ui.set_cursor_screen_pos([title_x, row_start[1]]);
     if is_renaming {
@@ -2070,6 +2328,15 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut TreeContext<'_>) {
         return;
     }
     let label = truncate_to_width(ui, &note.title, title_end - title_x);
+    if let Some((query, _)) = context.search {
+        draw_title_hits(
+            ui,
+            context.theme,
+            query,
+            &label,
+            [title_x, row_start[1] + context.frame_padding[1]],
+        );
+    }
     ui.text(&label);
     // Interaction belongs to the whole row (the tree node item).
     if is_row_hovered {
@@ -2498,6 +2765,50 @@ fn draw_badge(ui: &Ui, kind: NoteKind, anchor: [f32; 2], context: &TreeContext<'
         });
     }
     Some(start[0])
+}
+
+/// Marks the search hits in a row title drawn at `position` with the
+/// `accent.highlight` background (M122); call before drawing the text.
+fn draw_title_hits(ui: &Ui, theme: &Theme, query: &SearchQuery, title: &str, position: [f32; 2]) {
+    for range in query.hit_ranges(title) {
+        let left = position[0] + ui.calc_text_size(&title[..range.start])[0];
+        let right = position[0] + ui.calc_text_size(&title[..range.end])[0];
+        ui.get_window_draw_list()
+            .add_rect(
+                [left, position[1]],
+                [right, position[1] + ui.text_line_height()],
+                theme.accent.highlight.to_array(),
+            )
+            .filled(true)
+            .rounding(theme.radius.small)
+            .build();
+    }
+}
+
+/// The empty search result (M126): what was searched for and a button that
+/// clears the search.
+fn draw_no_search_results(
+    ui: &Ui,
+    language: Language,
+    theme: &Theme,
+    text: &str,
+    actions: &mut Vec<WindowAction>,
+) {
+    let width = ui.content_region_avail()[0];
+    ui.dummy([0.0, theme.spacing.medium]);
+    let message = Text::NoSearchResults
+        .get(language)
+        .replace("{query}", text.trim());
+    {
+        let _secondary = ui.push_style_color(StyleColor::Text, theme.text.secondary.to_array());
+        centered_text(ui, &message, width);
+    }
+    ui.dummy([0.0, theme.spacing.small]);
+    let label = Text::ClearSearch.get(language);
+    indent_to_center(ui, button_width(ui, label), width);
+    if draw_button(ui, label) {
+        actions.push(WindowAction::ClearSearch);
+    }
 }
 
 /// Draws the empty state (M42): headline, primary and secondary button.

@@ -40,7 +40,7 @@ and `theme.rs` disagree, `theme.rs` wins and the difference is a bug to report.
 
 ## 3. The brass budget
 
-Brass (`accent`, `accent.text`) marks exactly three things:
+Brass (`accent`, `accent.text`, `accent.highlight`) marks exactly four things:
 
 1. **The primary action** of a view: one `draw_primary_button` per view
    (Save while editing, Edit while reading). Secondary actions use
@@ -48,9 +48,11 @@ Brass (`accent`, `accent.text`) marks exactly three things:
 2. **Keyboard focus** (`border.focus`).
 3. **The current selection or active state**: the selection bar, active
    toggles, check marks, the drop line while dragging.
+4. **Search hits** (R73, memo M122): `accent.highlight` behind matching
+   text, an `accent.text` frame around a matching chip.
 
 Brass never fills large areas, never decorates, and never marks a category.
-If a design needs a fourth use, it needs a decision first (grill-me).
+If a design needs a fifth use, it needs a decision first (grill-me).
 
 ## 4. Chat-link chips
 

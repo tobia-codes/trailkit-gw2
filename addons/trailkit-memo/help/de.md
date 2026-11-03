@@ -23,6 +23,17 @@ Das Fenster zeigt links die Notizliste und rechts die ausgewählte Notiz. Der Pf
 - **Gruppen** haben fett gedruckte Namen und zeigen rechts, wie viele Notizen sie enthalten.
 - **Abzeichen** am rechten Ende einer Zeile: **T** kennzeichnet eine tägliche Notiz (Reset um 00:00 UTC), **W** eine wöchentliche (Reset montags um 07:30 UTC). Fahre mit der Maus darüber, um zu sehen, wie lange es bis zum nächsten Reset dauert.
 
+## Suchen
+
+Tippe in das Feld **Suchen** oben über der Notizliste (oder drücke **Strg+F**). Die Liste zeigt dann nur Notizen, die jedes eingegebene Wort enthalten — im Titel oder im Text, egal ob groß oder klein geschrieben. Umlaute zählen als eigene Buchstaben: „ä“ findet „Ä“, aber nicht „a“.
+
+- Gruppen mit Treffern klappen von selbst auf; ihre Zahl zeigt, wie viele Notizen passen. Passt der Name einer Gruppe, erscheint alles darin.
+- Treffer sind in den Titeln und in der geöffneten Notiz markiert; die Notiz springt zum ersten Treffer. Notizen, die nur über ihren Text passen, zeigen am Ende der Zeile die Zahl der Treffer.
+- Linktexte und Chat-Codes werden durchsucht, Linkadressen nicht. Ein Chip, dessen Code passt, bekommt einen Rahmen.
+- Die geöffnete Notiz bleibt immer in der Liste, auch wenn sie nach einer Änderung nicht mehr passt.
+- Während einer Suche kannst du nichts verschieben; leere zuerst die Suche. Umbenennen, das Rechtsklick-Menü und *Verschieben nach* gehen wie gewohnt. Eine neue Notiz oder Gruppe leert die Suche.
+- **×** im Feld oder **Escape** (während du im Feld tippst) leert die Suche; ein zweites Escape schließt das Fenster. Die Suche bleibt beim Schließen und Öffnen des Fensters erhalten, bis das Spiel neu startet.
+
 ## Tägliche und wöchentliche Notizen
 
 Wähle die Art einer Notiz im Feld neben ihrem Titel (*Normal*, *Täglicher Reset*, *Wöchentlicher Reset*) oder per Rechtsklick in der Liste › *Reset-Art*. Beim täglichen bzw. wöchentlichen Reset des Spiels werden alle Häkchen in so einer Notiz entfernt – praktisch für Dailies und wöchentliche Raids. Fahre mit der Maus über das Abzeichen in der Liste, um zu sehen, wie lange es bis zum nächsten Reset dauert.

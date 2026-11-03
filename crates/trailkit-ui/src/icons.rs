@@ -84,9 +84,12 @@ impl Icon {
     pub const BAN: Self = Self('\u{e051}');
     /// `x`: closes a window from its title bar (R71).
     pub const X: Self = Self('\u{e1b2}');
+    /// `search`: search field (memo M118).
+    pub const SEARCH: Self = Self('\u{e151}');
     /// Every icon above; keep in sync when adding one.
-    pub const ALL: [Self; 36] = [
+    pub const ALL: [Self; 37] = [
         Self::X,
+        Self::SEARCH,
         Self::FILE_PLUS,
         Self::FOLDER_PLUS,
         Self::PANEL_LEFT_CLOSE,

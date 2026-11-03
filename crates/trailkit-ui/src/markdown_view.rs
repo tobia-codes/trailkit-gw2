@@ -5,10 +5,13 @@
 //! and still wrap at the readable width (`lay-line-length`) or the window
 //! edge, whichever is narrower (`lay-responsive`). Words wider than a whole
 //! line are broken between characters. Nothing is allocated per frame except
-//! the numbers of ordered list items.
+//! the numbers of ordered list items and, while a search is active, the hit
+//! ranges of each span (memo plan M122).
 //!
 //! The view never changes anything itself: clicks are returned as a
 //! [`MarkdownAction`] for the caller to apply.
+
+use std::ops::Range;
 
 use nexus::imgui::{MouseCursor, Ui};
 
@@ -19,11 +22,49 @@ use crate::{
     icons::Icon,
     markdown::{Block, ListMarker, MarkdownDocument, Span, TaskMarker},
     separator::draw_separator,
+    text_search::SearchQuery,
     theme::Theme,
 };
 
 /// Readable line length in average characters (`lay-line-length`, 60–80).
 const READABLE_LINE_CHARACTERS: f32 = 75.0;
+
+/// Search hits to mark while drawing (memo plan M122): matching text gets an
+/// `accent.highlight` background, a matching chat-link chip an
+/// `accent.text` frame.
+#[derive(Debug)]
+pub struct SearchHighlight<'query> {
+    /// What to mark.
+    query: &'query SearchQuery,
+    /// Window-content y of the first marked line, filled in by
+    /// [`draw_markdown`] (scroll target for "jump to the first hit").
+    first_hit_y: Option<f32>,
+}
+
+impl<'query> SearchHighlight<'query> {
+    /// Marks the hits of `query`.
+    #[must_use]
+    pub const fn new(query: &'query SearchQuery) -> Self {
+        Self {
+            query,
+            first_hit_y: None,
+        }
+    }
+
+    /// Window-content y (as for `set_scroll_y`) of the top of the first
+    /// marked line, if anything was marked.
+    #[must_use]
+    pub const fn first_hit_y(&self) -> Option<f32> {
+        self.first_hit_y
+    }
+
+    /// Remembers the first hit at screen `y`.
+    fn record_hit(&mut self, ui: &Ui, y: f32) {
+        if self.first_hit_y.is_none() {
+            self.first_hit_y = Some(y - ui.window_pos()[1] + ui.scroll_y());
+        }
+    }
+}
 
 /// A user interaction with the markdown view.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -48,12 +89,14 @@ struct LineBounds {
 }
 
 /// Draws `document` at the cursor position and returns what the user
-/// clicked. `chips` supplies the texts of chat-link chips.
+/// clicked. `chips` supplies the texts of chat-link chips; `highlight`
+/// marks search hits.
 pub fn draw_markdown(
     ui: &Ui,
     document: &MarkdownDocument,
     theme: &Theme,
     chips: ChipContext<'_>,
+    mut highlight: Option<&mut SearchHighlight<'_>>,
 ) -> Option<MarkdownAction> {
     let _body_font = FontScope::push(ui, FontRole::Body);
     let origin_x = ui.cursor_screen_pos()[0];
@@ -103,6 +146,7 @@ pub fn draw_markdown(
                     bounds,
                     theme,
                     chips,
+                    highlight.as_deref_mut(),
                 )
             }
             Block::Paragraph { depth, spans } => {
@@ -110,7 +154,15 @@ pub fn draw_markdown(
                     left: origin_x + f32::from(*depth) * indent,
                     right,
                 };
-                draw_spans(ui, spans, None, bounds, theme, chips)
+                draw_spans(
+                    ui,
+                    spans,
+                    None,
+                    bounds,
+                    theme,
+                    chips,
+                    highlight.as_deref_mut(),
+                )
             }
             Block::ListItem {
                 depth,
@@ -123,7 +175,15 @@ pub fn draw_markdown(
                     left: left + marker_column,
                     right,
                 };
-                let text_click = draw_spans(ui, spans, None, bounds, theme, chips);
+                let text_click = draw_spans(
+                    ui,
+                    spans,
+                    None,
+                    bounds,
+                    theme,
+                    chips,
+                    highlight.as_deref_mut(),
+                );
                 marker_click.or(text_click)
             }
             Block::Rule => {
@@ -209,8 +269,8 @@ fn draw_list_marker(
 
 /// Lays out `spans` word by word between `bounds`, starting at the current
 /// line, and leaves the cursor below the last line. `heading` overrides the
-/// font of every span; chat codes are drawn as chips. Returns a link or chip
-/// click.
+/// font of every span; chat codes are drawn as chips; `highlight` marks
+/// search hits. Returns a link or chip click.
 fn draw_spans(
     ui: &Ui,
     spans: &[Span],
@@ -218,6 +278,7 @@ fn draw_spans(
     bounds: LineBounds,
     theme: &Theme,
     chips: ChipContext<'_>,
+    mut highlight: Option<&mut SearchHighlight<'_>>,
 ) -> Option<MarkdownAction> {
     // Lines are `typography.line_height` apart; `y` is the text top, below
     // the leading of the line.
@@ -232,6 +293,7 @@ fn draw_spans(
     let mut x = bounds.left;
     let mut y = ui.cursor_screen_pos()[1] + leading;
     let mut action = None;
+    let mut hits: Vec<Range<usize>> = Vec::new();
 
     for (index, span) in spans.iter().enumerate() {
         if span.is_line_break() {
@@ -253,6 +315,20 @@ fn draw_spans(
             let hovered = ui.is_item_hovered();
             let clicked = ui.is_item_clicked();
             draw_chip(ui, &ui.get_window_draw_list(), chip, [x, y], theme, chips);
+            if let Some(highlight) = highlight.as_deref_mut()
+                && !highlight.query.hit_ranges(&chip.code).is_empty()
+            {
+                highlight.record_hit(ui, y);
+                ui.get_window_draw_list()
+                    .add_rect(
+                        [x, y],
+                        [x + width, y + ui.text_line_height()],
+                        theme.accent.text.to_array(),
+                    )
+                    .rounding(theme.radius.small)
+                    .thickness(theme.border.width)
+                    .build();
+            }
             if hovered {
                 ui.set_mouse_cursor(Some(MouseCursor::Hand));
                 chip_tooltip(ui, chip, theme, chips, true);
@@ -264,16 +340,41 @@ fn draw_spans(
             x += width;
             continue;
         }
+        match highlight.as_deref() {
+            Some(highlight) => highlight.query.collect_hit_ranges(&span.text, &mut hits),
+            None => hits.clear(),
+        }
+        let mut token_offset = 0;
         for token in span.text.split_inclusive(' ') {
             let word = token.trim_end_matches(' ');
+            let word_offset = token_offset;
+            token_offset += token.len();
             let word_width = ui.calc_text_size(word)[0];
             if x > bounds.left && x + word_width > bounds.right {
                 x = bounds.left;
                 y += line_height;
             }
             if !word.is_empty() {
-                let clicked = draw_word(ui, word, span, bounds, theme, &mut x, &mut y, line_height);
-                action = action.or(clicked);
+                let word_hits = WordHits {
+                    ranges: &hits,
+                    offset: word_offset,
+                };
+                let clicked = draw_word(
+                    ui,
+                    word,
+                    span,
+                    bounds,
+                    theme,
+                    (&mut x, &mut y),
+                    line_height,
+                    word_hits,
+                );
+                if let Some(first_hit) = clicked.first_hit_y
+                    && let Some(highlight) = highlight.as_deref_mut()
+                {
+                    highlight.record_hit(ui, first_hit);
+                }
+                action = action.or(clicked.action);
             }
             let trailing_spaces = &token[word.len()..];
             if x > bounds.left {
@@ -285,8 +386,27 @@ fn draw_spans(
     action
 }
 
-/// Draws one word at `(x, y)`, breaking it between characters if it is wider
-/// than a whole line, and advances `x`/`y`. Returns a link click.
+/// Search hits of a span, seen from one word of it.
+#[derive(Debug, Clone, Copy)]
+struct WordHits<'ranges> {
+    /// Hit byte ranges in the span text, sorted.
+    ranges: &'ranges [Range<usize>],
+    /// Byte offset of the word in the span text.
+    offset: usize,
+}
+
+/// What drawing one word produced.
+#[derive(Debug, Default)]
+struct WordOutcome {
+    /// A link click.
+    action: Option<MarkdownAction>,
+    /// Screen y of the first marked piece, if any.
+    first_hit_y: Option<f32>,
+}
+
+/// Draws one word at `position` (`x`, `y`), breaking it between characters if
+/// it is wider than a whole line, marks its search hits and advances the
+/// position. Returns a link click and where a hit was marked.
 #[expect(
     clippy::too_many_arguments,
     reason = "layout state is threaded through explicitly to avoid per-frame allocation"
@@ -297,27 +417,68 @@ fn draw_word(
     span: &Span,
     bounds: LineBounds,
     theme: &Theme,
-    x: &mut f32,
-    y: &mut f32,
+    position: (&mut f32, &mut f32),
     line_height: f32,
-) -> Option<MarkdownAction> {
-    let mut action = None;
+    hits: WordHits<'_>,
+) -> WordOutcome {
+    let (x, y) = position;
+    let mut outcome = WordOutcome::default();
     let mut rest = word;
+    let mut piece_offset = hits.offset;
     while !rest.is_empty() {
         let available = bounds.right - *x;
         let piece = fitting_prefix(ui, rest, available, *x <= bounds.left);
         let piece_width = ui.calc_text_size(piece)[0];
+        if mark_hits(ui, piece, piece_offset, hits.ranges, [*x, *y], theme) {
+            outcome.first_hit_y = outcome.first_hit_y.or(Some(*y));
+        }
         ui.set_cursor_screen_pos([*x, *y]);
         let clicked = draw_piece(ui, piece, span, theme);
-        action = action.or(clicked);
+        outcome.action = outcome.action.or(clicked);
         *x += piece_width;
+        piece_offset += piece.len();
         rest = &rest[piece.len()..];
         if !rest.is_empty() {
             *x = bounds.left;
             *y += line_height;
         }
     }
-    action
+    outcome
+}
+
+/// Draws the `accent.highlight` background behind the parts of `piece`
+/// (starting at byte `offset` of its span and drawn at `origin`) covered by
+/// `ranges`. Returns whether anything was marked.
+fn mark_hits(
+    ui: &Ui,
+    piece: &str,
+    offset: usize,
+    ranges: &[Range<usize>],
+    origin: [f32; 2],
+    theme: &Theme,
+) -> bool {
+    let piece_end = offset + piece.len();
+    let mut marked = false;
+    for range in ranges {
+        if range.end <= offset || range.start >= piece_end {
+            continue;
+        }
+        let start = range.start.max(offset) - offset;
+        let end = range.end.min(piece_end) - offset;
+        let left = origin[0] + ui.calc_text_size(&piece[..start])[0];
+        let right = origin[0] + ui.calc_text_size(&piece[..end])[0];
+        ui.get_window_draw_list()
+            .add_rect(
+                [left, origin[1]],
+                [right, origin[1] + ui.text_line_height()],
+                theme.accent.highlight.to_array(),
+            )
+            .filled(true)
+            .rounding(theme.radius.small)
+            .build();
+        marked = true;
+    }
+    marked
 }
 
 /// The longest prefix of `text` (whole characters) narrower than `available`;
