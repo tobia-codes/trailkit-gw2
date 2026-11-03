@@ -10,7 +10,7 @@ Während Ladebildschirmen, Zwischensequenzen und der Charakterauswahl wird das F
 
 ## Deine Notizen
 
-Das Fenster zeigt links die Notizliste und rechts die ausgewählte Notiz. Ziehe den Spalt zwischen beiden Seiten, um ihre Breite zu ändern (beim Darüberfahren erscheint eine Linie). Die Notizliste behält ihre Breite, wenn du das Fenster größer oder kleiner ziehst; der zusätzliche Platz geht an die Notiz.
+Das Fenster zeigt links die Notizliste und rechts die ausgewählte Notiz. Der Pfeil links vom Titel klappt das Fenster auf seine Titelleiste ein (erneut klicken zum Ausklappen), das **×** rechts schließt es. Ziehe den Spalt zwischen beiden Seiten, um ihre Breite zu ändern (beim Darüberfahren erscheint eine Linie). Die Notizliste behält ihre Breite, wenn du das Fenster größer oder kleiner ziehst; der zusätzliche Platz geht an die Notiz.
 
 - **Seitenleisten-Button** (Fenster-Symbol, oben links in der Notiz): blendet die Notizliste aus, damit die Notiz die ganze Breite bekommt; ein weiterer Klick blendet sie wieder ein. memo merkt sich deine Wahl.
 - **Schmales Fenster:** Die Notiz füllt das Fenster, und der Seitenleisten-Button öffnet die Notizliste darüber. Wähle eine Notiz, klicke auf die abgedunkelte Notiz oder erneut auf den Seitenleisten-Button, um die Liste zu schließen. Beim Bearbeiten mit offener Vorschau schaltet memo schon früher um, damit Text und Vorschau Platz behalten.

@@ -5,7 +5,11 @@ use std::time::Duration;
 
 use nexus::imgui::{Condition, Ui, Window};
 use trailkit_storage::DocumentStore;
-use trailkit_ui::{style_scope::StyleScope, theme::ThemeKind};
+use trailkit_ui::{
+    style_scope::StyleScope,
+    theme::ThemeKind,
+    title_bar::{TitleBarState, draw_window},
+};
 use trailkit_ui_testing::{
     harness::{FrameInput, UiHarness},
     snapshot::assert_snapshot,
@@ -85,10 +89,19 @@ fn memo_window(
 fn draw(ui: &Ui, memo: &mut MemoWindow, size: [f32; 2], theme: ThemeKind) {
     let theme = theme.theme();
     let _style = StyleScope::push_with_cursor_extent(ui, &theme, None);
-    Window::new("Notes###memo")
-        .position([0.0, 0.0], Condition::Always)
-        .size(size, Condition::Always)
-        .build(ui, || memo.draw(ui, Language::English, &theme));
+    let mut title_bar = TitleBarState::default();
+    let mut open = true;
+    draw_window(
+        ui,
+        &theme,
+        Window::new("Notes###memo")
+            .position([0.0, 0.0], Condition::Always)
+            .size(size, Condition::Always),
+        title_bar_texts(Language::English),
+        &mut title_bar,
+        &mut open,
+        || memo.draw(ui, Language::English, &theme),
+    );
     memo.draw_dialog(ui, Language::English, &theme);
 }
 
@@ -390,7 +403,7 @@ fn kind_dropdown_lists_the_kinds_and_changes_the_note() {
         left_button_down: down,
         ..FrameInput::default()
     };
-    let field = [400.0, 98.0];
+    let field = [400.0, 106.0];
     let mut draw_light = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Light);
     harness.settle(2, &at(field, false), &mut draw_light);
     harness.frame(&at(field, true), &mut draw_light);
@@ -402,7 +415,7 @@ fn kind_dropdown_lists_the_kinds_and_changes_the_note() {
         &image,
     );
 
-    let daily_row = [400.0, 152.0];
+    let daily_row = [400.0, 160.0];
     harness.frame(&at(daily_row, false), &mut draw_light);
     harness.frame(&at(daily_row, true), &mut draw_light);
     harness.frame(&at(daily_row, false), &mut draw_light);
@@ -448,7 +461,7 @@ fn reset_type_submenu_opens_beside_the_context_menu() {
     let (mut memo, _worker, _directory) = memo_window(document, ui_state);
     let size = [640.0, 360.0];
     let mut harness = UiHarness::new(size);
-    let row = [100.0, 97.0];
+    let row = [100.0, 105.0];
     let input = |position: [f32; 2], right: bool| FrameInput {
         mouse_position: position,
         right_button_down: right,
@@ -526,10 +539,10 @@ fn dragging_a_note_into_an_expanded_group_moves_it_to_the_line() {
     {
         let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
         // Lower half of the expanded "Raids" row = first place inside (M107).
-        let image = drag_rows(&mut harness, [100.0, 97.0], [100.0, 168.0], &mut draw_dark);
+        let image = drag_rows(&mut harness, [100.0, 105.0], [100.0, 176.0], &mut draw_dark);
         assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-drag-into-group", &image);
         let release = FrameInput {
-            mouse_position: [100.0, 168.0],
+            mouse_position: [100.0, 176.0],
             ..FrameInput::default()
         };
         harness.settle(2, &release, &mut draw_dark);
@@ -550,10 +563,10 @@ fn a_group_cannot_be_dropped_into_itself() {
     {
         let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
         // "Raids" over its own child: ban icon, no line (M109).
-        let image = drag_rows(&mut harness, [100.0, 161.0], [100.0, 196.0], &mut draw_dark);
+        let image = drag_rows(&mut harness, [100.0, 169.0], [100.0, 204.0], &mut draw_dark);
         assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-drag-impossible", &image);
         let release = FrameInput {
-            mouse_position: [100.0, 196.0],
+            mouse_position: [100.0, 204.0],
             ..FrameInput::default()
         };
         harness.settle(2, &release, &mut draw_dark);

@@ -81,10 +81,17 @@ in the crate, document here):
 
 Build once, use everywhere. Planned:
 
-- `Window` wrapper (title bar with menu: Settings, Help, About)
+- Title bar — **exists**: `title_bar::draw_window` replaces ImGui's title
+  bar on every trailkit window (R71): on the window background, Lucide
+  chevron to collapse, bold title, Lucide `x` to close; the addon passes the
+  texts and keeps a `TitleBarState`. A menu (Settings, Help, About) joins it
+  later
 - `SettingsWindow` scaffold (left navigation list, right content, search)
 - `HelpWindow` (renders bundled markdown help in active language)
-- `Button` variants: primary, secondary, ghost, danger
+- Buttons — **exist**: `button::draw_button` (secondary, `bg.hover` fill),
+  `draw_primary_button`, `draw_primary_button_with_icon` (Lucide icon +
+  label, R71), `draw_icon_button` / `draw_icon_toggle` (borderless icon
+  buttons with tooltip). Planned: danger
 - `Popover` / `Tooltip`, `ConfirmDialog`, `UnsavedChangesDialog`
 - `DependencyHint` (greyed feature + explanation + "Open core settings"/
   "Get trailkit-core" button)

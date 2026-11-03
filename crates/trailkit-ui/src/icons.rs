@@ -82,8 +82,11 @@ impl Icon {
     pub const CHEVRON_RIGHT: Self = Self('\u{e06f}');
     /// `ban`: a drag over a place it cannot be dropped (memo M109).
     pub const BAN: Self = Self('\u{e051}');
+    /// `x`: closes a window from its title bar (R71).
+    pub const X: Self = Self('\u{e1b2}');
     /// Every icon above; keep in sync when adding one.
-    pub const ALL: [Self; 35] = [
+    pub const ALL: [Self; 36] = [
+        Self::X,
         Self::FILE_PLUS,
         Self::FOLDER_PLUS,
         Self::PANEL_LEFT_CLOSE,

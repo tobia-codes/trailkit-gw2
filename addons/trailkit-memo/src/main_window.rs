@@ -14,8 +14,8 @@ use nexus::imgui::{
 };
 use trailkit_ui::{
     button::{
-        button_width, draw_button, draw_button_with_size, draw_primary_button,
-        draw_primary_button_with_size,
+        button_width, draw_button, draw_button_with_size, draw_icon_button, draw_primary_button,
+        draw_primary_button_with_icon, draw_primary_button_with_size, icon_label_button_width,
     },
     chat_link_chip::ChipContext,
     color::Color,
@@ -33,6 +33,7 @@ use trailkit_ui::{
     separator::draw_separator,
     splitter::draw_vertical_splitter,
     theme::Theme,
+    title_bar::TitleBarTexts,
     tree_arrow::draw_tree_arrow,
 };
 
@@ -1053,8 +1054,8 @@ impl MemoWindow {
             // Editing is the main action of the reading view: the one brass
             // button of the view (R71).
             let edit = Text::EditNote.get(language);
-            move_to_toolbar_end(ui, button_width(ui, edit));
-            if draw_primary_button(ui, theme, edit) {
+            move_to_toolbar_end(ui, icon_label_button_width(ui, theme, edit));
+            if draw_primary_button_with_icon(ui, theme, Icon::PENCIL, edit) {
                 self.actions.push(WindowAction::StartEditing);
             }
         }
@@ -1655,32 +1656,14 @@ fn draw_unsaved_changes_card(
     }
 }
 
-/// Draws a flat icon button: no background, highlighted only on hover, with
-/// a tooltip (`a11y-icon-tooltip`; menu button M48, note toolbar M51, M53).
-/// Returns whether it was clicked.
-fn draw_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str) -> bool {
-    draw_icon_toggle(ui, theme, icon, tooltip, false)
-}
-
-/// Like [`draw_icon_button`], but the icon is drawn in the accent color when
-/// `active` (toggles whose state is on, M69).
-fn draw_icon_toggle(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str, active: bool) -> bool {
-    let _active_color =
-        active.then(|| ui.push_style_color(StyleColor::Text, theme.accent.text.to_array()));
-    let clicked = {
-        let _colors = [
-            ui.push_style_color(StyleColor::Button, [0.0; 4]),
-            ui.push_style_color(StyleColor::ButtonHovered, theme.surface.hover.to_array()),
-            ui.push_style_color(StyleColor::ButtonActive, theme.surface.active.to_array()),
-        ];
-        let _icons = FontScope::push(ui, FontRole::Icons);
-        let mut buffer = [0; 4];
-        ui.button(icon.as_str(&mut buffer))
-    };
-    if ui.is_item_hovered() {
-        ui.tooltip_text(tooltip);
+/// The localized title and tooltips of the main window's title bar (R71).
+pub(crate) fn title_bar_texts(language: Language) -> TitleBarTexts<'static> {
+    TitleBarTexts {
+        title: Text::MainWindowTitle.get(language),
+        collapse: Text::CollapseWindow.get(language),
+        expand: Text::ExpandWindow.get(language),
+        close: Text::CloseWindow.get(language),
     }
-    clicked
 }
 
 /// What the formatting toolbar shows as active.
