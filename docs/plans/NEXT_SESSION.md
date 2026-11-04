@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-04 (session 14: slice conversion merged as PRs #81/#82; blueprint + R77 on an unpushed branch; next: trash & undo).
+Last updated: 2026-11-04 (session 15: PR #83 merged; new window layout M136–M139 on branch `feature/memo-sidebar-layout`, deployed, awaiting in-game OK; trash & undo half grilled).
 
 ## Where we are
 
@@ -104,56 +104,77 @@ Last updated: 2026-11-04 (session 14: slice conversion merged as PRs #81/#82; bl
 
 ## ▶ Resume here
 
-0. **Open branch first:** `chore/addon-structure-and-length-hints` (local,
-   **unpushed**, 2 commits: addon structure blueprint + R77 length hints).
-   Docs/xtask only, nothing to test in game. The user has **not** yet said
-   OK to merge — ask "darf ich mergen?"; after the OK: push, PR into
-   `develop`, `gh pr merge --auto --merge --delete-branch`.
-1. **Slice conversion of memo is complete** (ROADMAP R76, questions
-   22–58): PR #81 (steps 1–7, `note_tree` split, badge fix M132) and PR #82
-   (`main_window` split into `actions`/`search`/`text_scale`, `apply`
-   dispatcher) are merged into `develop`. How to build a new addon the same
-   way: `.agents/skills/nexus-addon-dev/references/addon-structure.md`.
-2. **Next: grill trash & undo** (M12: trash, purged after 30 days,
-   "Deleted — Undo" toast, confirm deleting a non-empty group with its
-   note count; M25/M34 mention delete) — as a new slice `trash` following
-   the blueprint. Next decision ids: **M133+, R78+, questions from 63**.
-2b. **R77 length hints** (new rule in AGENTS.md): at the end of every task
-   that changed Rust code run `cargo xtask check-file-length` (silent when
-   fine); for hints on touched files propose a split as a grill question,
-   never split unasked. Current candidates (`--all`, not touched yet):
-   files `trailkit-ui` `editor/view.rs` (543 code lines) and
-   `markdown_view.rs` (440); functions ≥ 80 code lines: `draw_spans` (111),
-   `draw_lines` (104), `draw_group` (103), `draw_unsaved_changes_card`
-   (101), `draw_markdown` (100), `draw_dropdown` (98), editor `draw` (94),
-   `run_worker` (89), search field `draw` (82), `handle_keyboard` (81).
-3. In-game test status: search, list header, draft time, title bar, Save
-   icon (floppy, M130) and button min width (M131) were all confirmed by
-   the user in session 11.
-4. Optional, offer once: update the Claude Design system "Trailkit"
-   (https://claude.ai/artifact/G7sNVZe1JYTgxbUE5mhS33) to R71–R73
-   (no Inter, no `border-highlight`, one dropdown, title bar, search
-   field, `accent.highlight`) — tokens.md §8 step 5.
-5. Backlog items created this session: BL13 (`catch_unwind` at every FFI
-   boundary — needs a grill round), BL14 (next/previous search hit).
-6. Working rules that proved useful:
+0. **Open branch first:** `feature/memo-sidebar-layout` (local, **unpushed**,
+   2 commits, **deployed** into the game). The user has **not** yet tested
+   it in game nor said OK — ask for the in-game test, then "darf ich
+   mergen?"; after the OK: push, PR into `develop`, auto-merge (R74). The
+   trash & undo implementation continues **on the same branch** unless the
+   user wants the layout merged first.
+1. **What the branch contains** (session 15, questions 63–88):
+   - Title bar (R78): addon toggles left — **⋮ tools** (`ellipsis-vertical`)
+     and **list** (note list) — bold title, then collapse chevron + `x` on
+     the right; first/last button flush with the panes below.
+   - **Tool rail** (M136, `trailkit_ui::tool_rail`): hidden by default,
+     holds Search now; Trash comes with the trash step, Settings later at
+     the bottom.
+   - Note list toggle moved to the title bar (M137); `panel-left` in the
+     note toolbar and the drawer close button are gone.
+   - **Search field only while shown** (M138): magnifier in the rail or
+     Ctrl+F; stays (also across restarts) until hidden; hiding clears it.
+   - **Compact note view** (M139): `maximize-2` in the note toolbar hides
+     toolbar + kind dropdown, `minimize-2` at the title row end; editing or
+     creating ends it.
+   - **R79:** toggles that keep a state are neutral (`bg.active` +
+     `text.primary`), never brass (`draw_icon_toggle`, tokens.md §3).
+   - Mockups of every variant and state: Claude Design canvas
+     https://claude.ai/artifact/5cVQAjdFNuuWHfP5Nz36Q5 (the chosen layout is
+     the row "Beide Schalter im Fensterkopf").
+2. **Trash & undo — settled** (M133–M135, M140–M142): delete via right-click
+   and Delete key; empty groups without asking, non-empty with note count;
+   undo for delete + move, 20 steps in memory, Ctrl+Z / Ctrl+Y; restore to
+   the former place; the edited note cannot be deleted; toast in trailkit-ui.
+3. **Trash & undo — still open, ask first (questions 74–80, recommended
+   "yes" each):** Q74 trash view (rail icon switches the list; newest first,
+   "27 d left", read-only preview with Restore / Delete forever), Q75
+   actions (right-click, "Empty trash" button replaces New note/group,
+   confirm, not undoable, stay in the view), Q76 deleted groups restore only
+   as a whole, Q77 toast (bottom centre in the window, 5 s, hover pauses,
+   one at a time), Q78 selection after delete (below, else above, else
+   empty), Q79 purge after 30 days at start + hourly, Q80 drafts stay with
+   a trashed note. The user may want mockups for Q74/Q75 first. Next ids:
+   **M143+, R80+, questions from 89**.
+4. **Open questions raised by the implementation:**
+   - R79 vs the editor toolbar: the formatting buttons still light up in
+     brass for the formatting at the cursor (M69) — apply R79 there too?
+   - R77 hint: `shared/src/i18n.rs` `Text::get` has 86 code lines (a flat
+     string table) — propose: no split (lookup table), or split per area.
+5. Earlier R77 candidates (`--all`, untouched): `editor/view.rs`,
+   `markdown_view.rs`, long `draw_*` functions (see session 14 notes).
+6. Optional, offer once: update the Claude Design system "Trailkit"
+   (https://claude.ai/artifact/G7sNVZe1JYTgxbUE5mhS33) to R71–R79.
+7. Working rules that proved useful:
    - UI tests: `cargo xtask ui-test [--update]`; look at PNGs only when
-     they change. Pixel checks: stdlib Python PNG decoder (no PIL/numpy) —
-     a reusable one can be written in the scratchpad (`load()` + crop and
-     upscale); ASCII dumps of a region found the `x` offsets.
-   - Test fonts are 16 px, in game 18 px: verify in-game screenshots, not
-     only snapshots.
-   - Deploy after every UI change (`cargo xtask deploy trailkit-memo`).
-   - **R74 (since 2026-11-03): merge only after the user's in-game OK.**
-     Stay on one work branch, deploy when a task is done, ask "darf ich
-     mergen?"; push + PR + auto-merge only after the OK.
-   - Changing UI layout above the list shifts rows: the drag tests in
-     `main_window/tests.rs` use fixed mouse coordinates — shift them.
-   - In this WSL shell, plain `grep` fails (a broken wrapper; in session 14
-     also `find`/`sort` in pipes, intermittently); use `command grep` or a
-     small Python search script. Run `source ~/.cargo/env` before cargo.
-   - Never leave an `eprintln!` debug line before `cargo fmt`: fmt splits
-     it over lines and `sed '/marker/d'` then leaves a broken remnant.
+     they change. Tests with fixed list coordinates use
+     `selected_first_with_search` (search field shown, M138).
+   - Characters in help pages must exist in the subset fonts (`⋮` does not;
+     the test `every_character_is_in_the_subset_fonts` catches it).
+   - Lucide codepoints by name: parse the source TTF `cmap` + `post`
+     (a stdlib Python script did it in session 15).
+   - Test fonts are 16 px, in game 18 px: verify in-game screenshots.
+   - Deploy after every UI change (`cargo xtask deploy trailkit-memo`);
+     check `Nexus.log` for "Loaded addon".
+   - In this WSL shell plain `grep` may fail; use `command grep`. Run
+     `source ~/.cargo/env` before cargo.
+   - Never leave an `eprintln!` debug line before `cargo fmt`.
+
+## Session 15 summary (2026-11-04, PR #83 + branch)
+
+- PR #83 (addon blueprint R76, length hints R77) merged.
+- Trash & undo grill round 1 (Q63–Q70) settled; the trash entry point led
+  to a whole layout round (Q68–Q88) with ~30 mockups on a Claude Design
+  canvas: tool rail like VS Code, both layout toggles in the title bar,
+  hideable search, compact note view, neutral toggles (user: "perfekt").
+- Implemented and deployed on `feature/memo-sidebar-layout`.
 
 ## Session 14 summary (2026-11-04, PRs #81–#82)
 
@@ -307,7 +328,7 @@ Last updated: 2026-11-04 (session 14: slice conversion merged as PRs #81/#82; bl
 ## Recurring checks
 
 - GW2 wiki (2026-10-31): still behind Cognito login → Wayback workaround stays.
-- C-703/25 P (checked 2026-11-04, session 14 — still pending, DPF in force; check again next session): still
+- C-703/25 P (checked 2026-11-04, sessions 14/15 — still pending, DPF in force; check again next session): still
   pending, no hearing date or judgment reported; DPF in force. Microsoft intervened for the
   Commission; noyb asked for repeal (2026-06-30) but has not sued yet.
 - DPF reminder workflow: the 2026-11-01 08:00 cron was silently skipped by
