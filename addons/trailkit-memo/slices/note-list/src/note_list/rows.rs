@@ -23,7 +23,7 @@ use trailkit_ui::{
 
 use super::{DRAGGED_ROW_ALPHA, NoteListAction, RenameStep, RowContext, context_menu};
 use crate::{
-    badge_geometry::{centered_pen, parity_matched_size},
+    badge_geometry::{center_matched_size, centered_pen},
     tree_drag::{RowKind, RowRect},
 };
 
@@ -378,10 +378,11 @@ fn draw_row_badge(ui: &Ui, badge: RowBadge, anchor: [f32; 2], theme: &Theme) -> 
         .and_then(glyph_visible_ink)
         .or_else(|| character.and_then(glyph_ink_box))
         .unwrap_or([0.0, 0.0, letter_size[0], letter_size[1]]);
-    // Whole pixels, so the outline stays sharp, sized so the space beside
-    // the letter is even and it sits exactly in the middle (question 56).
-    let width = parity_matched_size(room, ink[2] - ink[0]);
-    let height = parity_matched_size(line_height, ink[3] - ink[1]);
+    // Whole pixels, so the outline stays sharp; the box centre takes the
+    // fraction of the letter's centre, so the letter sits exactly in the
+    // middle (M132).
+    let width = center_matched_size(room, f32::midpoint(ink[0], ink[2]));
+    let height = center_matched_size(line_height, f32::midpoint(ink[1], ink[3]));
     let start = [
         (anchor[0] - width).round(),
         (anchor[1] + ((ui.frame_height() - height) / 2.0).max(0.0)).round(),

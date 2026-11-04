@@ -160,8 +160,9 @@ move it into `crates/trailkit-ui` (see AGENTS.md "Code sharing").
 - A single glyph centered in a box (badge letters, later icons in boxes):
   measure its *visible* ink with `glyph_metrics::glyph_visible_ink` (font
   atlas pixels; the quad from `glyph_ink_box` is widened unevenly by
-  ImGui's oversampling) and size the box so the space beside the ink is
-  even — otherwise it cannot sit on whole pixels and looks half a pixel off
+  ImGui's oversampling) and give the box the parity whose centre matches
+  the ink centre's fraction (whole or half pixel; never the ink width) —
+  otherwise it cannot sit on whole pixels and looks half a pixel off
   at some text sizes (memo M132; `badge_geometry` in the memo note-list
   slice; moves into trailkit-ui on a second use).
 - Tooltips: plain ImGui tooltips; `StyleScope` moves them right of the real
