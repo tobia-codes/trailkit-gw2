@@ -142,7 +142,8 @@ Last updated: 2026-11-04 (session 15: PR #83 merged; new window layout M136–M1
    one at a time), Q78 selection after delete (below, else above, else
    empty), Q79 purge after 30 days at start + hourly, Q80 drafts stay with
    a trashed note. The user may want mockups for Q74/Q75 first. Next ids:
-   **M143+, R80+, questions from 89**.
+   **M145+, R80+, questions from 91**. Also on the branch: M143 (rounded
+   row fills, round selection bar ends) and M144 (full-width rows).
 4. **Open questions raised by the implementation:**
    - R79 vs the editor toolbar: the formatting buttons still light up in
      brass for the formatting at the cursor (M69) — apply R79 there too?
