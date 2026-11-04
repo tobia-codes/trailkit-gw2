@@ -149,7 +149,7 @@ fn draw_title_row(
     if !state.collapsed {
         for (index, toggle) in toggles.iter().enumerate() {
             if index > 0 {
-                ui.same_line_with_spacing(0.0, theme.spacing.extra_small);
+                ui.same_line_with_spacing(0.0, theme.spacing.small);
             }
             if draw_icon_toggle(ui, theme, toggle.icon, toggle.tooltip, toggle.active) {
                 clicks.toggle = Some(index);
@@ -185,5 +185,8 @@ fn draw_title_row(
     if draw_icon_button(ui, theme, Icon::X, texts.close) {
         *open = false;
     }
+    // The toggles keep `spacing.small` to each other and the regular item
+    // spacing (also `spacing.small`) to the tool rail below, so the gaps
+    // match in both directions.
     clicks
 }
