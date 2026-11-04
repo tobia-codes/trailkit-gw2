@@ -33,6 +33,7 @@ Latin up to Extended-B plus punctuation, the icon font only the icons in
 | `title_bar` | `draw_window` — a window with the trailkit title bar (collapse chevron, bold title, close `x`) instead of ImGui's (R71) | Windows |
 | `toolbar` | `begin_toolbar_group` (thin separator line, wraps when the group does not fit), `move_to_toolbar_end` (right-aligned items, wrap in narrow windows; `lay-responsive`) | Windows |
 | `splitter` | `draw_vertical_splitter` — resizable gap between two panes (accent line on hover/drag) | Windows |
+| `text_layout` | `centered_text`, `indent_to_center`, `truncate_to_width` ("…", `lay-truncation`), `format_count` (allocation-free count labels) | Windows |
 | `separator` | `draw_separator` — horizontal line that ends at the window/pane padding | Windows |
 | `style_scope` | `StyleScope` — RAII guard that pushes a theme onto the shared ImGui context and pops it on drop (no per-frame allocation) | Windows |
 | `font_registry` | registers the shared fonts and glyphs with Nexus, follows the `FontUI` size, `FontScope` guard | Windows |

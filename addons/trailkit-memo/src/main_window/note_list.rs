@@ -18,6 +18,7 @@ use trailkit_ui::{
     menu::{begin_submenu, draw_menu_item},
     selection_bar::draw_selection_bar,
     separator::draw_separator,
+    text_layout::{centered_text, format_count, indent_to_center, truncate_to_width},
     text_search::SearchQuery,
     theme::Theme,
     tree_arrow::draw_tree_arrow,
@@ -40,13 +41,10 @@ use trailkit_memo_shared::{
     row_badge::RowBadge,
 };
 
+use super::note_pane::note_list_icon;
 use super::{
     DRAG_SCROLL_ROWS_PER_SECOND, DRAGGED_ROW_ALPHA, MemoWindow, TreeContext, TreeDrag,
     WindowAction, find_title,
-};
-use super::{
-    layout::{centered_text, format_count, indent_to_center, truncate_to_width},
-    note_pane::note_list_icon,
 };
 
 impl MemoWindow {

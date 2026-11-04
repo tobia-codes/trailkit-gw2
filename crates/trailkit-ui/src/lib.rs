@@ -52,6 +52,8 @@ pub mod splitter;
 #[cfg(windows)]
 pub mod style_scope;
 #[cfg(windows)]
+pub mod text_layout;
+#[cfg(windows)]
 pub mod title_bar;
 #[cfg(windows)]
 pub mod toolbar;
