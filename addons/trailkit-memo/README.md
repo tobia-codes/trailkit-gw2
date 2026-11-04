@@ -38,10 +38,13 @@ cargo xtask ui-test           # window snapshots (tests/snapshots/) via the head
 | `slices/note-view/` | crate `trailkit-memo-note-view`: title (with a trailing widget) and rendered content of the selected note |
 | `slices/reset-schedule/` | crate `trailkit-memo-reset-schedule`: reset times, due resets, reset badge, kind dropdown and their texts |
 | `slices/search/` | crate `trailkit-memo-search`: search index, results, search field, empty search result and its texts |
-| `src/main_window.rs` | main window: state, drawing entry point, applying user actions (Windows only) |
+| `src/main_window.rs` | main window: state, drawing entry point, closing, drafts on unload, due resets (Windows only) |
+| `src/main_window/actions.rs` | `WindowAction` and applying it: unsaved-edit guard, then tree, editor and view actions |
+| `src/main_window/search.rs` | search cache (index + results), Ctrl+F, Escape in the search field |
+| `src/main_window/text_scale.rs` | text size: Ctrl+mouse wheel, Ctrl+0, delayed apply, percentage tooltip |
 | `src/main_window/note_list.rs` | note list wiring: search field, menu button, hands search and reset extras to the note-list slice and maps its actions |
 | `src/main_window/note_pane.rs` | note pane: toolbar end (Edit / Cancel / Save); wires editor, note view, kind dropdown and draft hint |
-| `src/main_window/dialogs.rs` | dialog card, unsaved-changes question, storage problems |
+| `src/main_window/dialogs.rs` | dialog card and window, unsaved-changes question, storage problems |
 | `src/main_window/layout.rs` | two panes or drawer, empty state |
 | `src/main_window/tests.rs` | snapshot and interaction tests of the main window |
 | `src/addon.rs` | Nexus export, load/unload, quick access, render (Windows only) |

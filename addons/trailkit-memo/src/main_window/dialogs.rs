@@ -1,7 +1,7 @@
 //! In-window dialogs and problem hints of the memo main window: the
 //! dialog card, the unsaved-changes question (M70) and storage problems.
 
-use nexus::imgui::{Key, Ui};
+use nexus::imgui::{Condition, Key, MouseButton, StyleColor, StyleVar, Ui, Window, WindowFlags};
 use trailkit_ui::{
     button::{
         button_width, draw_button, draw_button_with_size, draw_primary_button,
@@ -182,5 +182,61 @@ pub(super) fn draw_unsaved_changes_card(
         max,
         height: measured,
         answer,
+    }
+}
+
+impl MemoWindow {
+    /// Draws the unsaved changes dialog while an answer is pending (M54,
+    /// M56, `overlay-dialog-scope`) and applies the answer. Call it after the
+    /// main window is finished: the dialog is its own borderless window
+    /// exactly over the main window, so it dims only that window (title bar
+    /// included) while the game and other windows stay usable. Clicking the
+    /// main window brings the dialog back to the front; a click on the dimmed
+    /// area keeps editing, like Escape. "Discard" sits apart
+    /// from "Keep editing" and the primary "Save" (`lay-one-primary`); Enter
+    /// saves, Escape keeps editing.
+    pub fn draw_dialog(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+        if self.leave_prompt.is_none() {
+            self.dialog_height = None;
+            return;
+        }
+        let _body_font = FontScope::push(ui, FontRole::Body);
+        let Some(window_rect) = self.window_rect else {
+            return;
+        };
+        let _background =
+            ui.push_style_color(StyleColor::WindowBg, theme.surface.modal_overlay.to_array());
+        let _border = ui.push_style_var(StyleVar::WindowBorderSize(0.0));
+        let mut answer = None;
+        Window::new("###trailkit-memo-dialog")
+            .position(window_rect[0], Condition::Always)
+            .size(window_rect[1], Condition::Always)
+            .flags(
+                WindowFlags::NO_DECORATION
+                    | WindowFlags::NO_MOVE
+                    | WindowFlags::NO_SAVED_SETTINGS
+                    | WindowFlags::NO_NAV,
+            )
+            .focused(self.window_focused)
+            .build(ui, || {
+                let card = draw_unsaved_changes_card(ui, language, theme, self.dialog_height);
+                self.dialog_height = Some(card.height);
+                answer = card.answer;
+                // A click on the dimmed area picks the harmless answer
+                // (`overlay-dialog-layout`).
+                let mouse = ui.io().mouse_pos;
+                let on_card = (card.min[0]..=card.max[0]).contains(&mouse[0])
+                    && (card.min[1]..=card.max[1]).contains(&mouse[1]);
+                if answer.is_none()
+                    && !on_card
+                    && ui.is_window_hovered()
+                    && ui.is_mouse_clicked(MouseButton::Left)
+                {
+                    answer = Some(WindowAction::LeaveCancelled);
+                }
+            });
+        if let Some(answer) = answer {
+            self.apply(&answer, language);
+        }
     }
 }
