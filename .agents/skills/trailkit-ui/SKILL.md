@@ -83,10 +83,17 @@ in the crate, document here):
 Build once, use everywhere. Planned:
 
 - Title bar — **exists**: `title_bar::draw_window` replaces ImGui's title
-  bar on every trailkit window (R71): on the window background, Lucide
-  chevron to collapse, bold title, Lucide `x` to close; the addon passes the
-  texts and keeps a `TitleBarState`. A menu (Settings, Help, About) joins it
-  later
+  bar on every trailkit window (R71, R78): on the window background; on the
+  left the addon's own toggles (`TitleBarToggle`, e.g. memo's tools ⋮ and
+  note list) and the bold title, on the right the Lucide chevron to
+  collapse and the Lucide `x` to close. The row uses the window padding, so
+  the first and the last button line up with the panes below. The addon
+  passes texts and toggles, keeps a `TitleBarState` and applies the clicked
+  toggle index it gets back. A menu (Settings, Help, About) joins it later
+- Tool rail — **exists**: `tool_rail::draw_tool_rail`, a narrow vertical
+  strip of icon toggles on the left edge (like VS Code's activity bar,
+  memo M136): tools at the top, window-wide entries (settings) at the
+  bottom; never wraps; shown or hidden by a title bar toggle
 - `SettingsWindow` scaffold (left navigation list, right content, search)
 - `HelpWindow` (renders bundled markdown help in active language)
 - Buttons — **exist**: `button::draw_button` (secondary, `bg.hover` fill),

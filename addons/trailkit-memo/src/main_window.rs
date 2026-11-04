@@ -18,8 +18,13 @@ use std::{collections::HashSet, path::PathBuf};
 use jiff::Timestamp;
 use nexus::imgui::{Ui, WindowFocusedFlags};
 use trailkit_ui::{
-    font_registry::FontScope, fonts::FontRole, pane::draw_pane, theme::Theme,
-    title_bar::TitleBarTexts,
+    font_registry::FontScope,
+    fonts::FontRole,
+    icons::Icon,
+    pane::draw_pane,
+    theme::Theme,
+    title_bar::{TitleBarTexts, TitleBarToggle},
+    tool_rail::{ToolRailClick, ToolRailItem, draw_tool_rail},
 };
 
 use trailkit_memo_drafts::draft_hint::DraftHint;
@@ -302,6 +307,31 @@ impl MemoWindow {
         self.update_text_scale(ui, language);
         self.draw_problem(ui, language, theme);
 
+        if self.ui_state.tool_rail_visible {
+            self.draw_tool_rail(ui, language, theme);
+            ui.same_line_with_spacing(0.0, theme.pane.gap);
+        }
+        // A group keeps every line of the content right of the rail.
+        ui.group(|| self.draw_content(ui, language, theme));
+
+        if let Some(action) = self.note_list.finish_drag(ui, theme, &self.document) {
+            self.actions.push(action.into());
+        }
+        let actions = std::mem::take(&mut self.actions);
+        for action in &actions {
+            self.apply(action, language);
+        }
+        // Finishing an edit or discarding a draft may unblock a waiting
+        // reset (M89); a kind change may make one due. Check next frame.
+        if !actions.is_empty() {
+            self.next_reset_check = None;
+        }
+        self.actions = actions;
+    }
+
+    /// Draws the notes area: the empty state, two panes, or the note pane
+    /// with the drawer in a narrow window.
+    fn draw_content(&mut self, ui: &Ui, language: Language, theme: &Theme) {
         if self.document.root.is_empty() {
             draw_empty_state(ui, language, theme, &mut self.actions);
         } else {
@@ -326,7 +356,7 @@ impl MemoWindow {
             } else {
                 let area_start = ui.cursor_screen_pos();
                 draw_pane(ui, theme, "note", [0.0, 0.0], || {
-                    self.draw_note_pane(ui, language, theme, Text::ShowNoteList);
+                    self.draw_note_pane(ui, language, theme);
                 });
                 // Without a selected note there is nothing to show but the list.
                 if self.is_narrow && (self.drawer_open || self.selected_note().is_none()) {
@@ -334,20 +364,66 @@ impl MemoWindow {
                 }
             }
         }
+    }
 
-        if let Some(action) = self.note_list.finish_drag(ui, theme, &self.document) {
-            self.actions.push(action.into());
+    /// Draws the tool rail (M136) and applies its clicks: the search toggle
+    /// (M138); the trash and settings follow in their steps.
+    fn draw_tool_rail(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+        let search_visible = self.ui_state.search_visible;
+        let top = [ToolRailItem {
+            icon: Icon::SEARCH,
+            tooltip: if search_visible {
+                Text::HideSearch.get(language)
+            } else {
+                Text::ShowSearch.get(language)
+            },
+            active: search_visible,
+        }];
+        if let Some(ToolRailClick::Top(0)) = draw_tool_rail(ui, theme, &top, &[]) {
+            self.actions.push(WindowAction::ToggleSearch);
         }
-        let actions = std::mem::take(&mut self.actions);
-        for action in &actions {
-            self.apply(action, language);
-        }
-        // Finishing an edit or discarding a draft may unblock a waiting
-        // reset (M89); a kind change may make one due. Check next frame.
-        if !actions.is_empty() {
-            self.next_reset_check = None;
-        }
-        self.actions = actions;
+    }
+
+    /// The memo toggles of the title bar (R78): the tool rail (M136) and the
+    /// note list (M137). Empty while the notes are not loaded.
+    #[must_use]
+    pub fn title_bar_toggles(&self, language: Language) -> [TitleBarToggle<'static>; 2] {
+        let list_visible = if self.is_narrow {
+            self.drawer_open
+        } else {
+            !self.ui_state.note_list_hidden
+        };
+        [
+            TitleBarToggle {
+                icon: Icon::ELLIPSIS_VERTICAL,
+                tooltip: if self.ui_state.tool_rail_visible {
+                    Text::HideTools.get(language)
+                } else {
+                    Text::ShowTools.get(language)
+                },
+                active: self.ui_state.tool_rail_visible,
+            },
+            TitleBarToggle {
+                icon: Icon::LIST,
+                tooltip: if list_visible {
+                    Text::HideNoteList.get(language)
+                } else {
+                    Text::ShowNoteList.get(language)
+                },
+                active: list_visible,
+            },
+        ]
+    }
+
+    /// Applies a click on the title bar toggle at `index` (see
+    /// [`Self::title_bar_toggles`]).
+    pub fn apply_title_bar_toggle(&mut self, index: usize, language: Language) {
+        let action = match index {
+            0 => WindowAction::ToggleToolRail,
+            1 => WindowAction::ToggleNoteList,
+            _ => return,
+        };
+        self.apply(&action, language);
     }
 
     /// Applies due resets (M88–M90) once a reset time has passed; notes in

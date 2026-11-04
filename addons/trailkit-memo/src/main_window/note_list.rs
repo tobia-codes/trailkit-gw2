@@ -1,12 +1,11 @@
 //! Wires the note-list slice into the memo main window (ROADMAP R76,
-//! questions 48–53): the app draws the search field and the menu button,
+//! questions 48–53): the app draws the search field (while shown, M138),
 //! hands the search and the reset-schedule extras to the list and maps its
 //! actions.
 
 use jiff::Timestamp;
 use nexus::imgui::{ChildWindow, Ui};
 use trailkit_ui::{
-    button::draw_icon_button,
     menu::{begin_submenu, draw_menu_item},
     theme::Theme,
 };
@@ -22,11 +21,11 @@ use trailkit_memo_search::{
     i18n::SearchText, no_search_results::draw_no_search_results, search_field::SearchFieldTexts,
 };
 use trailkit_memo_shared::{
-    i18n::{Language, LocalizedText, Text},
+    i18n::{Language, LocalizedText},
     note_tree::Note,
 };
 
-use super::{MemoWindow, WindowAction, note_pane::note_list_icon};
+use super::{MemoWindow, WindowAction};
 
 impl From<NoteListAction> for WindowAction {
     /// Maps an action of the note list to the window's own action.
@@ -46,29 +45,18 @@ impl From<NoteListAction> for WindowAction {
 }
 
 impl MemoWindow {
-    /// Draws the fixed header (search field, toolbar) and below it the
-    /// scrolling tree (M129). `menu` is the tooltip of a leading menu button
-    /// (drawer only, so it closes where it opened).
-    pub(super) fn draw_tree_pane(
-        &mut self,
-        ui: &Ui,
-        language: Language,
-        theme: &Theme,
-        menu: Option<Text>,
-    ) {
-        let search_texts = SearchFieldTexts {
-            hint: SearchText::SearchHint.get(language),
-            clear: SearchText::ClearSearch.get(language),
-        };
-        if self.search_field.draw(ui, theme, search_texts) {
-            // Apply the new text in this frame already.
-            self.update_search();
-        }
-        if let Some(tooltip) = menu {
-            if draw_icon_button(ui, theme, note_list_icon(tooltip), tooltip.get(language)) {
-                self.actions.push(WindowAction::ToggleNoteList);
+    /// Draws the fixed header (search field while shown, M138; toolbar) and
+    /// below it the scrolling tree (M129).
+    pub(super) fn draw_tree_pane(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+        if self.ui_state.search_visible {
+            let search_texts = SearchFieldTexts {
+                hint: SearchText::SearchHint.get(language),
+                clear: SearchText::ClearSearch.get(language),
+            };
+            if self.search_field.draw(ui, theme, search_texts) {
+                // Apply the new text in this frame already.
+                self.update_search();
             }
-            ui.same_line();
         }
         if let Some(action) = NoteList::draw_header(ui, language, theme) {
             self.actions.push(action.into());

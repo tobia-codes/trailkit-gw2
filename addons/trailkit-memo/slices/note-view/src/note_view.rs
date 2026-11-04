@@ -38,6 +38,9 @@ struct ParsedNote {
 pub struct TitleTrailing<'a> {
     /// The widget's size, measured before drawing.
     pub size: [f32; 2],
+    /// Whether the widget sits at the right end of the title row instead of
+    /// right behind the title (the compact view toggle, memo M139).
+    pub at_row_end: bool,
     /// Draws the widget at the cursor.
     pub draw: &'a mut dyn FnMut(&Ui),
 }
@@ -208,9 +211,9 @@ impl NoteView {
     }
 }
 
-/// Draws the note title with `trailing` right behind it, centered on the
-/// title's capitals (M102); the widget moves below a title that leaves no
-/// room.
+/// Draws the note title with `trailing` right behind it (or at the row end),
+/// centered on the title's capitals (M102); the widget moves below a title
+/// that leaves no room.
 fn draw_title(ui: &Ui, theme: &Theme, title: &str, trailing: Option<TitleTrailing<'_>>) {
     let trailing_size = trailing.as_ref().map_or([0.0, 0.0], |widget| widget.size);
     let gap = theme.spacing.medium;
@@ -233,7 +236,11 @@ fn draw_title(ui: &Ui, theme: &Theme, title: &str, trailing: Option<TitleTrailin
     };
     if is_beside {
         ui.same_line_with_spacing(0.0, gap);
-        let x = ui.cursor_screen_pos()[0];
+        let x = if trailing.at_row_end {
+            left + available - trailing_size[0]
+        } else {
+            ui.cursor_screen_pos()[0]
+        };
         ui.set_cursor_screen_pos([x, (top + title_middle - trailing_size[1] / 2.0).round()]);
     }
     (trailing.draw)(ui);

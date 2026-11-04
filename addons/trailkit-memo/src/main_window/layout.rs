@@ -38,7 +38,7 @@ impl MemoWindow {
             .clamp(widths.tree_minimum, tree_maximum);
 
         draw_pane(ui, theme, "tree", [tree_width, 0.0], || {
-            self.draw_tree_pane(ui, language, theme, None);
+            self.draw_tree_pane(ui, language, theme);
         });
 
         ui.same_line_with_spacing(0.0, 0.0);
@@ -59,7 +59,7 @@ impl MemoWindow {
 
         ui.same_line_with_spacing(0.0, 0.0);
         draw_pane(ui, theme, "note", [0.0, 0.0], || {
-            self.draw_note_pane(ui, language, theme, Text::HideNoteList);
+            self.draw_note_pane(ui, language, theme);
         });
     }
 
@@ -100,7 +100,7 @@ impl MemoWindow {
             .build();
         let width = pane_minimum.min(size[0] * DRAWER_MAXIMUM_FRACTION);
         draw_pane(ui, theme, "drawer", [width, 0.0], || {
-            self.draw_tree_pane(ui, language, theme, Some(Text::HideNoteList));
+            self.draw_tree_pane(ui, language, theme);
         });
         if ui.is_window_hovered() && ui.is_mouse_clicked(MouseButton::Left) {
             self.actions.push(WindowAction::CloseDrawer);

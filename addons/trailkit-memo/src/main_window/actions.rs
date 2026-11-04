@@ -38,9 +38,15 @@ pub(super) enum WindowAction {
     NewNote(Option<InsertionPoint>),
     /// Create a group at a point, or by the selection for `None`.
     NewGroup(Option<InsertionPoint>),
-    /// The menu button: hide/show the note list column, or open/close the
-    /// drawer in a narrow window (M48).
+    /// The note list toggle in the title bar: hide/show the note list
+    /// column, or open/close the drawer in a narrow window (M48, M137).
     ToggleNoteList,
+    /// The tool rail toggle in the title bar (M136).
+    ToggleToolRail,
+    /// The search toggle in the tool rail (M138).
+    ToggleSearch,
+    /// The compact note view toggle (M139).
+    ToggleCompactNoteView,
     /// Close the drawer (click on the dimmed note).
     CloseDrawer,
     /// Toggle a task checkbox in the shown note.
@@ -145,9 +151,20 @@ impl MemoWindow {
             | WindowAction::LeaveCancelled => self.apply_editor_action(action, language, now),
             WindowAction::ClearSearch
             | WindowAction::ToggleNoteList
+            | WindowAction::ToggleToolRail
+            | WindowAction::ToggleSearch
+            | WindowAction::ToggleCompactNoteView
             | WindowAction::CloseDrawer
             | WindowAction::Markdown(_)
             | WindowAction::OpenFolder => self.apply_view_action(action, now),
+        }
+        // Whatever opens the editor, and creating an entry, leaves the
+        // compact note view (M139).
+        let leaves_compact = self.editor.is_some()
+            || matches!(action, WindowAction::NewNote(_) | WindowAction::NewGroup(_));
+        if self.ui_state.compact_note_view && leaves_compact {
+            self.ui_state.compact_note_view = false;
+            self.saver.save_ui_state(self.ui_state);
         }
     }
 
@@ -294,6 +311,24 @@ impl MemoWindow {
                     self.ui_state.note_list_hidden = !self.ui_state.note_list_hidden;
                     self.saver.save_ui_state(self.ui_state);
                 }
+            }
+            WindowAction::ToggleToolRail => {
+                self.ui_state.tool_rail_visible = !self.ui_state.tool_rail_visible;
+                self.saver.save_ui_state(self.ui_state);
+            }
+            WindowAction::ToggleSearch => {
+                if self.ui_state.search_visible {
+                    // A hidden field must not keep filtering the list (M138).
+                    self.search_field.clear(false);
+                    self.ui_state.search_visible = false;
+                    self.saver.save_ui_state(self.ui_state);
+                } else {
+                    self.show_search_field();
+                }
+            }
+            WindowAction::ToggleCompactNoteView => {
+                self.ui_state.compact_note_view = !self.ui_state.compact_note_view;
+                self.saver.save_ui_state(self.ui_state);
             }
             WindowAction::CloseDrawer => self.drawer_open = false,
             WindowAction::Markdown(MarkdownAction::ToggleTask(marker)) => {

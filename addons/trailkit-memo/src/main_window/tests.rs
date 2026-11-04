@@ -94,17 +94,22 @@ fn draw(ui: &Ui, memo: &mut MemoWindow, size: [f32; 2], theme: ThemeKind) {
     let _style = StyleScope::push_with_cursor_extent(ui, &theme, None);
     let mut title_bar = TitleBarState::default();
     let mut open = true;
-    draw_window(
+    let toggles = memo.title_bar_toggles(Language::English);
+    let clicked = draw_window(
         ui,
         &theme,
         Window::new("Notes###memo")
             .position([0.0, 0.0], Condition::Always)
             .size(size, Condition::Always),
         title_bar_texts(Language::English),
+        &toggles,
         &mut title_bar,
         &mut open,
         || memo.draw(ui, Language::English, &theme),
     );
+    if let Some(index) = clicked {
+        memo.apply_title_bar_toggle(index, Language::English);
+    }
     memo.draw_dialog(ui, Language::English, &theme);
 }
 
@@ -131,6 +136,15 @@ fn selected_first(document: &NotesDocument) -> UiState {
     UiState {
         selected: first_note(document),
         ..UiState::default()
+    }
+}
+
+/// Like [`selected_first`] with the search field shown (M138), the layout
+/// the tests with fixed list coordinates were measured in.
+fn selected_first_with_search(document: &NotesDocument) -> UiState {
+    UiState {
+        search_visible: true,
+        ..selected_first(document)
     }
 }
 
@@ -433,7 +447,7 @@ fn kind_dropdown_lists_the_kinds_and_changes_the_note() {
 fn right_click_on_an_empty_list_spot_creates_a_root_note() {
     let document = sample_document();
     let root_count = document.root.len();
-    let ui_state = selected_first(&document);
+    let ui_state = selected_first_with_search(&document);
     let (mut memo, _worker, _directory) = memo_window(document, ui_state);
     let size = [640.0, 360.0];
     let mut harness = UiHarness::new(size);
@@ -460,7 +474,7 @@ fn right_click_on_an_empty_list_spot_creates_a_root_note() {
 #[test]
 fn reset_type_submenu_opens_beside_the_context_menu() {
     let document = sample_document();
-    let ui_state = selected_first(&document);
+    let ui_state = selected_first_with_search(&document);
     let (mut memo, _worker, _directory) = memo_window(document, ui_state);
     let size = [640.0, 360.0];
     let mut harness = UiHarness::new(size);
@@ -535,7 +549,7 @@ fn outline(memo: &MemoWindow) -> String {
 #[test]
 fn dragging_a_note_into_an_expanded_group_moves_it_to_the_line() {
     let document = sample_document();
-    let ui_state = selected_first(&document);
+    let ui_state = selected_first_with_search(&document);
     let (mut memo, _worker, _directory) = memo_window(document, ui_state);
     let size = [640.0, 360.0];
     let mut harness = UiHarness::new(size);
@@ -559,7 +573,7 @@ fn dragging_a_note_into_an_expanded_group_moves_it_to_the_line() {
 #[test]
 fn a_group_cannot_be_dropped_into_itself() {
     let document = sample_document();
-    let ui_state = selected_first(&document);
+    let ui_state = selected_first_with_search(&document);
     let (mut memo, _worker, _directory) = memo_window(document, ui_state);
     let size = [640.0, 360.0];
     let mut harness = UiHarness::new(size);
@@ -689,7 +703,7 @@ fn only_the_tree_scrolls_below_the_fixed_list_header() {
             NoteKind::Normal,
         )));
     }
-    let ui_state = selected_first(&document);
+    let ui_state = selected_first_with_search(&document);
     let (mut memo, _worker, _directory) = memo_window(document, ui_state);
     let size = [640.0, 360.0];
     let mut harness = UiHarness::new(size);
@@ -704,4 +718,76 @@ fn only_the_tree_scrolls_below_the_fixed_list_header() {
     // Search field and buttons stay at the top (M129).
     let image = harness.settle(3, &over_list(0.0), &mut draw_dark);
     assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-list-scrolled", &image);
+}
+
+#[test]
+fn tool_rail_and_search_field_stay_shown() {
+    let document = sample_document();
+    let ui_state = UiState {
+        tool_rail_visible: true,
+        ..selected_first_with_search(&document)
+    };
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    assert_window(
+        &mut memo,
+        [640.0, 360.0],
+        ThemeKind::Dark,
+        "memo-tool-rail-search",
+    );
+}
+
+#[test]
+fn compact_note_view_shows_only_the_note() {
+    let document = sample_document();
+    let ui_state = UiState {
+        compact_note_view: true,
+        note_list_hidden: true,
+        ..selected_first(&document)
+    };
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    assert_window(&mut memo, [640.0, 360.0], ThemeKind::Dark, "memo-compact");
+}
+
+#[test]
+fn title_bar_toggles_switch_tool_rail_and_note_list() {
+    let document = sample_document();
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    let toggles = memo.title_bar_toggles(Language::English);
+    assert!(!toggles[0].active, "the tool rail starts hidden (M136)");
+    assert!(toggles[1].active, "the note list starts shown");
+    memo.apply_title_bar_toggle(0, Language::English);
+    memo.apply_title_bar_toggle(1, Language::English);
+    assert!(memo.ui_state.tool_rail_visible);
+    assert!(memo.ui_state.note_list_hidden);
+    let toggles = memo.title_bar_toggles(Language::English);
+    assert!(toggles[0].active && !toggles[1].active);
+}
+
+#[test]
+fn hiding_the_search_field_clears_the_search() {
+    let document = sample_document();
+    let (mut memo, _worker, _directory) =
+        memo_window(document.clone(), selected_first_with_search(&document));
+    memo.search_field.text = "ecto".to_owned();
+    memo.apply(&WindowAction::ToggleSearch, Language::English);
+    assert!(!memo.ui_state.search_visible);
+    assert!(memo.search_field.text.is_empty(), "no hidden filter (M138)");
+    memo.apply(&WindowAction::ToggleSearch, Language::English);
+    assert!(memo.ui_state.search_visible);
+}
+
+#[test]
+fn editing_leaves_the_compact_note_view() {
+    let document = sample_document();
+    let ui_state = UiState {
+        compact_note_view: true,
+        ..selected_first(&document)
+    };
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    memo.apply(&WindowAction::StartEditing, Language::English);
+    assert!(memo.editor.is_some());
+    assert!(
+        !memo.ui_state.compact_note_view,
+        "the editor ends it (M139)"
+    );
 }

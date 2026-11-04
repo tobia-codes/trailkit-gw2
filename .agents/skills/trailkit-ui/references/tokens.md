@@ -46,13 +46,23 @@ Brass (`accent`, `accent.text`, `accent.highlight`) marks exactly four things:
    (Save while editing, Edit while reading). Secondary actions use
    `draw_button`, icon actions `draw_icon_button`.
 2. **Keyboard focus** (`border.focus`).
-3. **The current selection or active state**: the selection bar, active
-   toggles, check marks, the drop line while dragging.
+3. **The current selection**: the selection bar, check marks, the drop
+   line while dragging.
 4. **Search hits** (R73, memo M122): `accent.highlight` behind matching
    text, an `accent.text` frame around a matching chip.
 
 Brass never fills large areas, never decorates, and never marks a category.
 If a design needs a fifth use, it needs a decision first (grill-me).
+
+**Toggles that keep a state are never brass (R79).** A button that switches
+something on and off and stays that way (show tools, show the note list,
+show the search field, compact view, …) is drawn with
+`button::draw_icon_toggle`: while on it sits on `bg.active` with a
+`text.primary` icon, while off it is a plain icon button (`text.secondary`
+icon, `bg.hover` only on hover). Several such toggles side by side would
+otherwise light up like a christmas tree (user decision 2026-11-04). The
+editor's formatting buttons that light up for the formatting at the cursor
+(memo M69) still use `accent.text` until that is decided.
 
 ## 4. Chat-link chips
 

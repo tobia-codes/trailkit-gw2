@@ -214,10 +214,22 @@ pub enum Text {
     NoNotesYet,
     /// Primary empty-state button.
     CreateFirstNote,
-    /// Tooltip of the menu button while the note list is hidden (M48).
+    /// Tooltip of the note list toggle while the list is hidden (M48, M137).
     ShowNoteList,
-    /// Tooltip of the menu button while the note list is shown (M48).
+    /// Tooltip of the note list toggle while the list is shown (M48, M137).
     HideNoteList,
+    /// Tooltip of the tool rail toggle while the rail is hidden (M136).
+    ShowTools,
+    /// Tooltip of the tool rail toggle while the rail is shown (M136).
+    HideTools,
+    /// Tooltip of the search toggle while the field is hidden (M138).
+    ShowSearch,
+    /// Tooltip of the search toggle while the field is shown (M138).
+    HideSearch,
+    /// Tooltip of the button that makes the note view compact (M139).
+    CompactNoteView,
+    /// Tooltip of the button that ends the compact note view (M139).
+    RegularNoteView,
     /// Label of the primary edit button (M51; a brass text button, R71).
     EditNote,
     /// Button committing an edit (M51).
@@ -259,6 +271,12 @@ impl LocalizedText for Text {
         Self::CreateFirstNote,
         Self::ShowNoteList,
         Self::HideNoteList,
+        Self::ShowTools,
+        Self::HideTools,
+        Self::ShowSearch,
+        Self::HideSearch,
+        Self::CompactNoteView,
+        Self::RegularNoteView,
         Self::EditNote,
         Self::Save,
         Self::SaveTooltip,
@@ -332,6 +350,18 @@ impl LocalizedText for Text {
             (Self::ShowNoteList, Language::German) => "Notizliste einblenden",
             (Self::HideNoteList, Language::English) => "Hide note list",
             (Self::HideNoteList, Language::German) => "Notizliste ausblenden",
+            (Self::ShowTools, Language::English) => "Show tools",
+            (Self::ShowTools, Language::German) => "Werkzeuge einblenden",
+            (Self::HideTools, Language::English) => "Hide tools",
+            (Self::HideTools, Language::German) => "Werkzeuge ausblenden",
+            (Self::ShowSearch, Language::English) => "Show search (Ctrl+F)",
+            (Self::ShowSearch, Language::German) => "Suche einblenden (Strg+F)",
+            (Self::HideSearch, Language::English) => "Hide search",
+            (Self::HideSearch, Language::German) => "Suche ausblenden",
+            (Self::CompactNoteView, Language::English) => "Compact view",
+            (Self::CompactNoteView, Language::German) => "Kompakte Ansicht",
+            (Self::RegularNoteView, Language::English) => "Leave compact view",
+            (Self::RegularNoteView, Language::German) => "Kompakte Ansicht beenden",
             (Self::EditNote, Language::English) => "Edit",
             (Self::EditNote, Language::German) => "Bearbeiten",
             (Self::Save, Language::English) => "Save",

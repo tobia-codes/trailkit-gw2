@@ -10,10 +10,18 @@ Während Ladebildschirmen, Zwischensequenzen und der Charakterauswahl wird das F
 
 ## Deine Notizen
 
-Das Fenster zeigt links die Notizliste und rechts die ausgewählte Notiz. Der Pfeil links vom Titel klappt das Fenster auf seine Titelleiste ein (erneut klicken zum Ausklappen), das **×** rechts schließt es. Ziehe den Spalt zwischen beiden Seiten, um ihre Breite zu ändern (beim Darüberfahren erscheint eine Linie). Die Notizliste behält ihre Breite, wenn du das Fenster größer oder kleiner ziehst; der zusätzliche Platz geht an die Notiz.
+Das Fenster zeigt links die Notizliste und rechts die ausgewählte Notiz. Ziehe den Spalt zwischen beiden Seiten, um ihre Breite zu ändern (beim Darüberfahren erscheint eine Linie). Die Notizliste behält ihre Breite, wenn du das Fenster größer oder kleiner ziehst; der zusätzliche Platz geht an die Notiz.
 
-- **Seitenleisten-Button** (Fenster-Symbol, oben links in der Notiz): blendet die Notizliste aus, damit die Notiz die ganze Breite bekommt; ein weiterer Klick blendet sie wieder ein. memo merkt sich deine Wahl.
-- **Schmales Fenster:** Die Notiz füllt das Fenster, und der Seitenleisten-Button öffnet die Notizliste darüber. Wähle eine Notiz, klicke auf die abgedunkelte Notiz oder erneut auf den Seitenleisten-Button, um die Liste zu schließen. Beim Bearbeiten mit offener Vorschau schaltet memo schon früher um, damit Text und Vorschau Platz behalten.
+In der Titelleiste sitzen vier Buttons:
+
+- **Werkzeuge** (drei Punkte), oben links: blendet die Werkzeugleiste am linken Rand mit *Suchen* ein oder aus. Sie ist anfangs ausgeblendet; memo merkt sich deine Wahl.
+- **Listen-Button** daneben: blendet die Notizliste aus, damit die Notiz die ganze Breite bekommt; ein weiterer Klick blendet sie wieder ein. memo merkt sich deine Wahl.
+- **Pfeil** rechts: klappt das Fenster auf seine Titelleiste ein (erneut klicken zum Ausklappen); **×** schließt es.
+
+Ein hinterlegter Button bedeutet: Was er schaltet, ist gerade eingeblendet.
+
+- **Kompakte Ansicht** (Pfeile-Button, oben links in der Notiz): blendet die Leiste mit *Bearbeiten* und das Typ-Feld aus, damit die Notiz mehr Platz bekommt. Der Button hinter dem Titel beendet sie wieder. Andere Notizen auswählen und Kästchen abhaken geht weiter; eine Notiz bearbeiten (auch per Doppelklick) oder eine neue anlegen beendet die kompakte Ansicht. memo merkt sie sich. Zusammen mit ausgeblendeter Notizliste bleibt nur die Notiz übrig.
+- **Schmales Fenster:** Die Notiz füllt das Fenster, und der Listen-Button öffnet die Notizliste darüber. Wähle eine Notiz, klicke auf die abgedunkelte Notiz oder erneut auf den Listen-Button, um die Liste zu schließen. Beim Bearbeiten mit offener Vorschau schaltet memo schon früher um, damit Text und Vorschau Platz behalten.
 
 - **Neue Notiz / neue Gruppe:** die beiden Buttons über der Liste. Der neue Eintrag landet in der ausgewählten Gruppe (bzw. der Gruppe der ausgewählten Notiz), ganz am Ende. Tippe gleich einen Namen ein und drücke Enter.
 - **Rechtsklick** auf eine Gruppe oder eine leere Stelle der Liste bietet dasselbe: auf einer Gruppe kommt der neue Eintrag in sie hinein, auf einer leeren Stelle ans Ende der Liste.
@@ -25,14 +33,14 @@ Das Fenster zeigt links die Notizliste und rechts die ausgewählte Notiz. Der Pf
 
 ## Suchen
 
-Tippe in das Feld **Suchen** oben über der Notizliste (oder drücke **Strg+F**). Die Liste zeigt dann nur Notizen, die jedes eingegebene Wort enthalten — im Titel oder im Text, egal ob groß oder klein geschrieben. Umlaute zählen als eigene Buchstaben: „ä“ findet „Ä“, aber nicht „a“.
+Blende das Feld **Suchen** mit der Lupe in der Werkzeugleiste ein (drei Punkte in der Titelleiste) oder drücke **Strg+F**; es bleibt über der Notizliste, bis du es mit der Lupe wieder ausblendest, auch nach einem Neustart. Tippe hinein: Die Liste zeigt dann nur Notizen, die jedes eingegebene Wort enthalten — im Titel oder im Text, egal ob groß oder klein geschrieben. Umlaute zählen als eigene Buchstaben: „ä“ findet „Ä“, aber nicht „a“.
 
 - Gruppen mit Treffern klappen von selbst auf; ihre Zahl zeigt, wie viele Notizen passen. Passt der Name einer Gruppe, erscheint alles darin.
 - Treffer sind in den Titeln und in der geöffneten Notiz markiert; die Notiz springt zum ersten Treffer. Notizen, die nur über ihren Text passen, zeigen am Ende der Zeile die Zahl der Treffer.
 - Linktexte und Chat-Codes werden durchsucht, Linkadressen nicht. Ein Chip, dessen Code passt, bekommt einen Rahmen.
 - Die geöffnete Notiz bleibt immer in der Liste, auch wenn sie nach einer Änderung nicht mehr passt.
 - Während einer Suche kannst du nichts verschieben; leere zuerst die Suche. Umbenennen, das Rechtsklick-Menü und *Verschieben nach* gehen wie gewohnt. Eine neue Notiz oder Gruppe leert die Suche.
-- **×** im Feld oder **Escape** (während du im Feld tippst) leert die Suche; ein zweites Escape schließt das Fenster. Die Suche bleibt beim Schließen und Öffnen des Fensters erhalten, bis das Spiel neu startet.
+- **×** im Feld oder **Escape** (während du im Feld tippst) leert die Suche; ein zweites Escape schließt das Fenster. Auch das Ausblenden des Felds leert die Suche. Die Suche bleibt beim Schließen und Öffnen des Fensters erhalten, bis das Spiel neu startet.
 
 ## Tägliche und wöchentliche Notizen
 
