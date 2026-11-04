@@ -125,18 +125,18 @@ Last updated: 2026-11-04 (session 14, slice conversion steps 1–7 done and depl
      traversal}.rs`; text helpers → `trailkit_ui::text_layout`; `ListFilter`
      trait in shared; empty search result in the search slice; step 7
      **`note-list`** done (commit `b936dc8`). All checks green, snapshots
-     pixel-identical, **deployed — waiting for the user's in-game test**.
+     pixel-identical; tested in game and **merged as PR #81** (2026-11-04).
    - Release DLL: 2 084 352 bytes vs `develop` 2 024 960 (+59 KB, +2.9 %,
      whole branch steps 1–7). Not investigated further: the user ranks
      performance above size (R72), and the slices add no runtime work.
-   - After the OK: push, PR into `develop`, auto-merge (R74).
-   - Open (Q55): `main_window.rs` still has ~940 code lines (> 600) →
-     ask a grill question about splitting it; `trailkit-ui`
-     `editor/view.rs` (676) later.
+   - Q57/Q58 settled and done on branch `chore/split-memo-window`:
+     `main_window.rs` 940 → ~430 lines (`actions`, `search`, `text_scale`);
+     deployed, waiting for the in-game OK. `trailkit-ui` `editor/view.rs`
+     (676) stays on the list for later.
 2. **Then grill trash & undo** (M12: trash, purged after 30 days,
    "Deleted — Undo" toast, confirm deleting a non-empty group with its
    note count; M25/M34 mention delete in step 7) — as a new slice
-   `trash`. Next decision ids: M132+, R77+, questions from 56.
+   `trash`. Next decision ids: M132+, R77+, questions from 59.
 3. In-game test status: search, list header, draft time, title bar, Save
    icon (floppy, M130) and button min width (M131) were all confirmed by
    the user in session 11.
