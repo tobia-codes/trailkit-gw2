@@ -14,7 +14,7 @@ use trailkit_ui::{
     font_registry::FontScope,
     fonts::FontRole,
     glyph_metrics::{draw_glyph_at, glyph_ink_box, glyph_visible_ink},
-    selection_bar::draw_selection_bar,
+    selection_bar::{draw_row_highlight, draw_selection_bar, hide_square_row_highlight},
     text_layout::{format_count, truncate_to_width},
     text_search::SearchQuery,
     theme::Theme,
@@ -90,12 +90,14 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut RowContext<'_, '_>) {
         // Lucide chevron and the title are drawn over it (R71).
         let token = {
             let _hidden_triangle = ui.push_style_color(StyleColor::Text, [0.0; 4]);
+            let _square_highlight = hide_square_row_highlight(ui);
             TreeNode::new("group")
                 .label::<&str, _>("")
                 .flags(flags)
                 .opened(expanded, Condition::Always)
                 .push(ui)
         };
+        draw_row_highlight(ui, context.theme, context.selected == Some(node));
         if context.selected == Some(node) {
             draw_selection_bar(ui, context.theme);
         }
@@ -183,11 +185,16 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut RowContext<'_, '_>) {
     if context.selected == Some(node) {
         flags |= TreeNodeFlags::SELECTED;
     }
-    // The node draws selection and hover; badge and title are drawn after it.
-    let _token = TreeNode::new("note")
-        .label::<&str, _>("")
-        .flags(flags)
-        .push(ui);
+    // The node takes hover and clicks; its rounded highlight, badge and
+    // title are drawn after it.
+    let _token = {
+        let _square_highlight = hide_square_row_highlight(ui);
+        TreeNode::new("note")
+            .label::<&str, _>("")
+            .flags(flags)
+            .push(ui)
+    };
+    draw_row_highlight(ui, context.theme, context.selected == Some(node));
     if context.selected == Some(node) {
         draw_selection_bar(ui, context.theme);
     }

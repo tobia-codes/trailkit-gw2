@@ -11,7 +11,7 @@
 //! pixel, so a 3 px bar drawn with `rounding` stays square; the round ends
 //! are drawn as circles instead.
 
-use nexus::imgui::Ui;
+use nexus::imgui::{ColorStackToken, StyleColor, Ui};
 
 use crate::theme::Theme;
 
@@ -49,6 +49,37 @@ pub fn draw_selection_bar(ui: &Ui, theme: &Theme) {
             .num_segments(12)
             .build();
     }
+}
+
+/// Makes ImGui's own row highlight (the `Header*` colors of tree nodes and
+/// selectables) transparent while the returned tokens live: ImGui 1.80
+/// draws it with square corners. Push it around the row's item, then call
+/// [`draw_row_highlight`].
+pub fn hide_square_row_highlight<'ui>(ui: &'ui Ui) -> [ColorStackToken<'ui>; 3] {
+    [
+        ui.push_style_color(StyleColor::Header, [0.0; 4]),
+        ui.push_style_color(StyleColor::HeaderHovered, [0.0; 4]),
+        ui.push_style_color(StyleColor::HeaderActive, [0.0; 4]),
+    ]
+}
+
+/// Draws the hover or selection fill of the last drawn row item with
+/// `radius.md` corners (rows, R71): `bg.active` while selected or pressed,
+/// `bg.hover` while hovered. Call it right after the item, before the
+/// selection bar and the row's text.
+pub fn draw_row_highlight(ui: &Ui, theme: &Theme, selected: bool) {
+    let color = if selected || ui.is_item_active() {
+        theme.surface.active
+    } else if ui.is_item_hovered() {
+        theme.surface.hover
+    } else {
+        return;
+    };
+    ui.get_window_draw_list()
+        .add_rect(ui.item_rect_min(), ui.item_rect_max(), color.to_array())
+        .filled(true)
+        .rounding(theme.radius.medium)
+        .build();
 }
 
 /// The top and bottom of the bar in a row from `top` to `bottom`: the bar
