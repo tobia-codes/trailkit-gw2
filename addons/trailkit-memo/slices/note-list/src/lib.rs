@@ -8,6 +8,7 @@
 //! ([`note_list::NoteRowExtras`]). The drop zones are ImGui-free and tested
 //! on any host; the list compiles for Windows.
 
+pub mod badge_geometry;
 pub mod i18n;
 pub mod tree_drag;
 

@@ -13,7 +13,7 @@ use trailkit_memo_shared::{
 use trailkit_ui::{
     font_registry::FontScope,
     fonts::FontRole,
-    glyph_metrics::glyph_ink_box,
+    glyph_metrics::{glyph_ink_box, glyph_visible_ink},
     selection_bar::draw_selection_bar,
     text_layout::{format_count, truncate_to_width},
     text_search::SearchQuery,
@@ -22,7 +22,10 @@ use trailkit_ui::{
 };
 
 use super::{DRAGGED_ROW_ALPHA, NoteListAction, RenameStep, RowContext, context_menu};
-use crate::tree_drag::{RowKind, RowRect};
+use crate::{
+    badge_geometry::{centered_pen, parity_matched_size},
+    tree_drag::{RowKind, RowRect},
+};
 
 /// Draws `nodes` and, recursively, the children of expanded groups; during a
 /// search only the rows it shows (M118).
@@ -365,14 +368,24 @@ fn draw_row_badge(ui: &Ui, badge: RowBadge, anchor: [f32; 2], theme: &Theme) -> 
     let RowBadge { letter, color } = badge;
     let line_height = ui.text_line_height();
     let padding = theme.spacing.extra_small;
-    // Whole pixels, so the outline stays sharp and the letter can be
-    // centered exactly.
-    let width = (ui.calc_text_size("W")[0] + 2.0 * padding).round();
+    let room = ui.calc_text_size("W")[0] + 2.0 * padding;
+    // A bold letter, centered by its own ink box, not by its advance width
+    // or the line box (the text font sits low in it, M85, M105).
+    let _bold = FontScope::push(ui, FontRole::BodyBold);
+    let letter_size = ui.calc_text_size(letter);
+    let character = letter.chars().next();
+    let ink = character
+        .and_then(glyph_visible_ink)
+        .or_else(|| character.and_then(glyph_ink_box))
+        .unwrap_or([0.0, 0.0, letter_size[0], letter_size[1]]);
+    // Whole pixels, so the outline stays sharp, sized so the space beside
+    // the letter is even and it sits exactly in the middle (question 56).
+    let width = parity_matched_size(room, ink[2] - ink[0]);
+    let height = parity_matched_size(line_height, ink[3] - ink[1]);
     let start = [
         (anchor[0] - width).round(),
-        (anchor[1] + ((ui.frame_height() - line_height) / 2.0).max(0.0)).round(),
+        (anchor[1] + ((ui.frame_height() - height) / 2.0).max(0.0)).round(),
     ];
-    let height = line_height.round();
     // Lucide style (`lay-icons`): round corners, stroke ≈ 2/24 of the size;
     // a faint fill of the kind color makes it readable on dark panes (M105).
     // Whole pixels, so the outline stays sharp instead of a soft band.
@@ -389,27 +402,14 @@ fn draw_row_badge(ui: &Ui, badge: RowBadge, anchor: [f32; 2], theme: &Theme) -> 
         .rounding(line_height * 0.25)
         .thickness(stroke)
         .build();
-    // A bold letter, centered by its own ink box, not by its advance width
-    // or the line box (the text font sits low in it, M85, M105).
-    {
-        let _bold = FontScope::push(ui, FontRole::BodyBold);
-        let letter_size = ui.calc_text_size(letter);
-        let ink = letter.chars().next().and_then(glyph_ink_box).unwrap_or([
-            0.0,
-            0.0,
-            letter_size[0],
-            letter_size[1],
-        ]);
-        let center = [start[0] + width / 2.0, start[1] + height / 2.0];
-        draw_list.add_text(
-            [
-                (center[0] - (ink[0] + ink[2]) / 2.0).round(),
-                (center[1] - (ink[1] + ink[3]) / 2.0).round(),
-            ],
-            color.to_array(),
-            letter,
-        );
-    }
+    draw_list.add_text(
+        [
+            centered_pen(start[0], width, ink[0], ink[2]),
+            centered_pen(start[1], height, ink[1], ink[3]),
+        ],
+        color.to_array(),
+        letter,
+    );
     (start[0], ui.is_mouse_hovering_rect(start, max))
 }
 
