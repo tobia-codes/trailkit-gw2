@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-04 (session 15: PR #83 merged; new window layout M136–M139 on branch `feature/memo-sidebar-layout`, deployed, awaiting in-game OK; trash & undo half grilled).
+Last updated: 2026-11-04 (session 15: PR #83 merged; new window layout M136–M144 and trash & undo M133–M152 on branch `feature/memo-sidebar-layout`, deployed, awaiting in-game OK).
 
 ## Where we are
 
@@ -129,26 +129,26 @@ Last updated: 2026-11-04 (session 15: PR #83 merged; new window layout M136–M1
    - Mockups of every variant and state: Claude Design canvas
      https://claude.ai/artifact/5cVQAjdFNuuWHfP5Nz36Q5 (the chosen layout is
      the row "Beide Schalter im Fensterkopf").
-2. **Trash & undo — settled** (M133–M135, M140–M142): delete via right-click
-   and Delete key; empty groups without asking, non-empty with note count;
-   undo for delete + move, 20 steps in memory, Ctrl+Z / Ctrl+Y; restore to
-   the former place; the edited note cannot be deleted; toast in trailkit-ui.
-3. **Trash & undo — still open, ask first (questions 74–80, recommended
-   "yes" each):** Q74 trash view (rail icon switches the list; newest first,
-   "27 d left", read-only preview with Restore / Delete forever), Q75
-   actions (right-click, "Empty trash" button replaces New note/group,
-   confirm, not undoable, stay in the view), Q76 deleted groups restore only
-   as a whole, Q77 toast (bottom centre in the window, 5 s, hover pauses,
-   one at a time), Q78 selection after delete (below, else above, else
-   empty), Q79 purge after 30 days at start + hourly, Q80 drafts stay with
-   a trashed note. The user may want mockups for Q74/Q75 first. Next ids:
-   **M145+, R80+, questions from 91**. Also on the branch: M143 (rounded
-   row fills, round selection bar ends) and M144 (full-width rows).
+2. **Trash & undo — implemented on the same branch** (M133–M152, grill
+   questions 63–80 all answered; M152 lists details decided while
+   building, shown to the user): "Delete" in the row context menu and the
+   Delete key; groups with notes ask; the edited note is blocked; undo of
+   delete + move (20 steps, Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z) in
+   `shared/src/undo.rs`; trash operations in `shared/src/note_tree/trash.rs`;
+   new slice `slices/trash` (trash column, preview toolbar, texts); app
+   glue `main_window/trash.rs` + `trash_pane.rs`; generic dialog card
+   (`DialogContent`) in `dialogs.rs`; trailkit-ui gained `toast`, danger
+   buttons, `menu::draw_menu_item_with_icon`, `selection_bar::*_in`,
+   icons `trash-2`, `rotate-ccw`. Deployed 22:00, not yet tested in game.
+   Next ids: **M153+, R80+, questions from 91**.
+3. **Still open after the trash step:** M142's second user (the chat-link
+   chip's "Copied" as a toast) is not migrated yet.
 4. **Open questions raised by the implementation:**
    - R79 vs the editor toolbar: the formatting buttons still light up in
      brass for the formatting at the cursor (M69) — apply R79 there too?
-   - R77 hint: `shared/src/i18n.rs` `Text::get` has 86 code lines (a flat
-     string table) — propose: no split (lookup table), or split per area.
+   - R77 hints to ask about: `shared/src/i18n.rs` `Text::get` (86 lines,
+     flat string table, propose no split); `note-list/src/note_list.rs`
+     (410 code lines, `draw` 83); `note_list/rows.rs` `draw_group` (105).
 5. Earlier R77 candidates (`--all`, untouched): `editor/view.rs`,
    `markdown_view.rs`, long `draw_*` functions (see session 14 notes).
 6. Optional, offer once: update the Claude Design system "Trailkit"
@@ -175,7 +175,9 @@ Last updated: 2026-11-04 (session 15: PR #83 merged; new window layout M136–M1
   to a whole layout round (Q68–Q88) with ~30 mockups on a Claude Design
   canvas: tool rail like VS Code, both layout toggles in the title bar,
   hideable search, compact note view, neutral toggles (user: "perfekt").
-- Implemented and deployed on `feature/memo-sidebar-layout`.
+- Implemented and deployed on `feature/memo-sidebar-layout`; then the
+  trash round (Q74–Q80, mockups on the same canvas) and the whole trash &
+  undo step on the same branch.
 
 ## Session 14 summary (2026-11-04, PRs #81–#82)
 
