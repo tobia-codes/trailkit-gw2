@@ -163,15 +163,29 @@ pub fn draw_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str) -> bo
     draw_icon_toggle(ui, theme, icon, tooltip, false)
 }
 
-/// Like [`draw_icon_button`], but the icon is drawn in `accent.text` when
-/// `active` (toggles whose state is on, memo M69).
+/// Like [`draw_icon_button`], but a toggle that keeps a state: while
+/// `active` it sits on `bg.active` with a `text.primary` icon, otherwise it
+/// looks like a plain icon button. Toggles never use the brass accent
+/// (ROADMAP R79, tokens.md §3).
 pub fn draw_icon_toggle(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str, active: bool) -> bool {
-    let _active_color =
-        active.then(|| ui.push_style_color(StyleColor::Text, theme.accent.text.to_array()));
+    let _active_text =
+        active.then(|| ui.push_style_color(StyleColor::Text, theme.text.primary.to_array()));
+    let resting = if active {
+        theme.surface.active.to_array()
+    } else {
+        [0.0; 4]
+    };
     let clicked = {
         let _colors = [
-            ui.push_style_color(StyleColor::Button, [0.0; 4]),
-            ui.push_style_color(StyleColor::ButtonHovered, theme.surface.hover.to_array()),
+            ui.push_style_color(StyleColor::Button, resting),
+            ui.push_style_color(
+                StyleColor::ButtonHovered,
+                if active {
+                    resting
+                } else {
+                    theme.surface.hover.to_array()
+                },
+            ),
             ui.push_style_color(StyleColor::ButtonActive, theme.surface.active.to_array()),
         ];
         let _icons = FontScope::push(ui, FontRole::Icons);
