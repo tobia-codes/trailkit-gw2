@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-04 (session 14, slice conversion steps 1–7 done and deployed; awaiting in-game OK).
+Last updated: 2026-11-04 (session 14: slice conversion merged as PRs #81/#82; blueprint + R77 on an unpushed branch; next: trash & undo).
 
 ## Where we are
 
@@ -104,39 +104,29 @@ Last updated: 2026-11-04 (session 14, slice conversion steps 1–7 done and depl
 
 ## ▶ Resume here
 
-1. **Continue the slice-crate conversion of memo (ROADMAP R76)** on the
-   local, **unpushed** branch `chore/memo-slice-crates`
-   (`git switch chore/memo-slice-crates` first).
-   - Done (session 12, one commit each, all checks green, snapshots
-     pixel-identical): step 1 `shared`, step 2 `search`, step 3
-     `reset-schedule`, step 4 `drafts`, `LocalizedText` trait, toolbar
-     helpers → `trailkit-ui::toolbar` / `button::icon_button_width`,
-     `chip_context` in shared, step 5 `note-view`.
-   - Settled in session 12: questions 36–47 (ROADMAP R76 "Details" and the
-     slice convention in nexus-addon-dev skill §0). Q25 confirmed (texts per
-     slice, no central catalog).
-   - Step 6 **`editor`** done (session 13, commit `8812510`): edit session,
-     formatting, toolbar, title/body inputs, preview and `EditorText` live in
-     `trailkit-memo-editor`. Deviation from the earlier sketch: the editor
-     gets the clamped split fraction and reports `preview_split_fraction:
-     Option<f32>` + `split_released` (no `&mut f32`); the app writes and saves.
-   - Session 14 (2026-11-04): questions 48–55 settled (ROADMAP R76
-     "Questions 48–55"); `note_tree.rs` split into `note_tree/{ids,node,
-     traversal}.rs`; text helpers → `trailkit_ui::text_layout`; `ListFilter`
-     trait in shared; empty search result in the search slice; step 7
-     **`note-list`** done (commit `b936dc8`). All checks green, snapshots
-     pixel-identical; tested in game and **merged as PR #81** (2026-11-04).
-   - Release DLL: 2 084 352 bytes vs `develop` 2 024 960 (+59 KB, +2.9 %,
-     whole branch steps 1–7). Not investigated further: the user ranks
-     performance above size (R72), and the slices add no runtime work.
-   - Q57/Q58 settled and done on branch `chore/split-memo-window`:
-     `main_window.rs` 940 → ~430 lines (`actions`, `search`, `text_scale`);
-     deployed, waiting for the in-game OK. `trailkit-ui` `editor/view.rs`
-     (676) stays on the list for later.
-2. **Then grill trash & undo** (M12: trash, purged after 30 days,
+0. **Open branch first:** `chore/addon-structure-and-length-hints` (local,
+   **unpushed**, 2 commits: addon structure blueprint + R77 length hints).
+   Docs/xtask only, nothing to test in game. The user has **not** yet said
+   OK to merge — ask "darf ich mergen?"; after the OK: push, PR into
+   `develop`, `gh pr merge --auto --merge --delete-branch`.
+1. **Slice conversion of memo is complete** (ROADMAP R76, questions
+   22–58): PR #81 (steps 1–7, `note_tree` split, badge fix M132) and PR #82
+   (`main_window` split into `actions`/`search`/`text_scale`, `apply`
+   dispatcher) are merged into `develop`. How to build a new addon the same
+   way: `.agents/skills/nexus-addon-dev/references/addon-structure.md`.
+2. **Next: grill trash & undo** (M12: trash, purged after 30 days,
    "Deleted — Undo" toast, confirm deleting a non-empty group with its
-   note count; M25/M34 mention delete in step 7) — as a new slice
-   `trash`. Next decision ids: M132+, R77+, questions from 59.
+   note count; M25/M34 mention delete) — as a new slice `trash` following
+   the blueprint. Next decision ids: **M133+, R78+, questions from 63**.
+2b. **R77 length hints** (new rule in AGENTS.md): at the end of every task
+   that changed Rust code run `cargo xtask check-file-length` (silent when
+   fine); for hints on touched files propose a split as a grill question,
+   never split unasked. Current candidates (`--all`, not touched yet):
+   files `trailkit-ui` `editor/view.rs` (543 code lines) and
+   `markdown_view.rs` (440); functions ≥ 80 code lines: `draw_spans` (111),
+   `draw_lines` (104), `draw_group` (103), `draw_unsaved_changes_card`
+   (101), `draw_markdown` (100), `draw_dropdown` (98), editor `draw` (94),
+   `run_worker` (89), search field `draw` (82), `handle_keyboard` (81).
 3. In-game test status: search, list header, draft time, title bar, Save
    icon (floppy, M130) and button min width (M131) were all confirmed by
    the user in session 11.
@@ -164,6 +154,26 @@ Last updated: 2026-11-04 (session 14, slice conversion steps 1–7 done and depl
      small Python search script. Run `source ~/.cargo/env` before cargo.
    - Never leave an `eprintln!` debug line before `cargo fmt`: fmt splits
      it over lines and `sed '/marker/d'` then leaves a broken remnant.
+
+## Session 14 summary (2026-11-04, PRs #81–#82)
+
+- R76 questions 48–58: note-list slice (`ListFilter` trait, closures for
+  reset extras, empty search result in the search slice), `note_tree`
+  split, `trailkit_ui::text_layout`, `main_window` split with an `apply`
+  dispatcher.
+- **M132** row badge letters pixel-centred: visible ink measured from the
+  font atlas (`glyph_metrics::glyph_visible_ink`), letter drawn at the
+  sub-pixel centre (`draw_glyph_at`), all badges one width, height by
+  ink-centre parity (rule in the trailkit-ui skill). Took three in-game
+  rounds — measure in-game screenshots, the test renderer is 16 px and
+  samples textures nearest-neighbour.
+- **R77** advisory length hints (`cargo xtask check-file-length`).
+- Addon structure blueprint (`references/addon-structure.md`).
+- Nexus hot reload stopped once in a game session (see below); a game
+  restart fixed it. If a deploy shows no "Loaded addon" line in
+  `Nexus.log`, ask the user to reload or restart.
+- The user is learning Rust (asked about `self.0`, derives, tuple structs,
+  test placement, closures): explain with TypeScript comparisons.
 
 ## Session 11 summary (2026-11-03, PRs #77–#80)
 
@@ -297,7 +307,7 @@ Last updated: 2026-11-04 (session 14, slice conversion steps 1–7 done and depl
 ## Recurring checks
 
 - GW2 wiki (2026-10-31): still behind Cognito login → Wayback workaround stays.
-- C-703/25 P (checked 2026-11-04, session 14 — check again next session): still
+- C-703/25 P (checked 2026-11-04, session 14 — still pending, DPF in force; check again next session): still
   pending, no hearing date or judgment reported; DPF in force. Microsoft intervened for the
   Commission; noyb asked for repeal (2026-06-30) but has not sued yet.
 - DPF reminder workflow: the 2026-11-01 08:00 cron was silently skipped by
