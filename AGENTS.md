@@ -192,3 +192,8 @@ Third-party skills keep their upstream `LICENSE` file; see
   `clippy::undocumented_unsafe_blocks`) so rule 4 is enforced by the compiler.
 - Before considering work done: `cargo fmt --all`, `cargo clippy --all-targets
   -- -D warnings`, `cargo test`.
+- **File length hints (R77):** at the end of every task that changed Rust
+  code, run `cargo xtask check-file-length` (silent when all is fine). For
+  each hint on a file the task touched, propose a split to the user as a
+  grill question with a recommendation (split by concern, see
+  `addon-structure.md`); never split unasked.

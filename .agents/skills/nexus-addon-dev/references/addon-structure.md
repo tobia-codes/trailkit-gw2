@@ -99,9 +99,10 @@ the same change.
 
 ## 5. Size limits
 
-Files and functions stay small enough to read in one go; see the file
-length check (`cargo xtask check-file-length`, once settled) and split by
-concern as in §1 when a file grows past it.
+Files and functions stay small enough to read in one go. `cargo xtask
+check-file-length` (ROADMAP R77) hints at files with ≥ 400 code lines and
+functions with ≥ 80; the agent then proposes a split by concern as in §1
+(grill question, never unasked).
 
 ## 6. Checklist for a new addon
 
