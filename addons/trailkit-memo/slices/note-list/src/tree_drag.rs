@@ -1,6 +1,6 @@
 //! Drop zones of the note list's drag & drop (memo plan M106–M111).
 //!
-//! The window records one [`RowRect`] per drawn row; [`resolve_drop`] turns
+//! The list records one [`RowRect`] per drawn row; [`resolve_drop`] turns
 //! the mouse position into the [`InsertionPoint`] the drop goes to and the
 //! indicator that shows it. Platform-independent so it can be unit-tested
 //! on any host (ROADMAP R23).

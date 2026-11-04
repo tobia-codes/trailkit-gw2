@@ -210,8 +210,6 @@ pub enum Text {
     NewNote,
     /// Tooltip of the "new group" button, empty-state button and title of a new group.
     NewGroup,
-    /// Context menu entry to rename a note or group.
-    Rename,
     /// Empty state headline when there are no notes.
     NoNotesYet,
     /// Primary empty-state button.
@@ -240,10 +238,6 @@ pub enum Text {
     KeepEditing,
     /// Label of the text size shown while changing it (M80).
     TextSize,
-    /// Context menu submenu that moves a note or group (M112).
-    MoveTo,
-    /// "Move to" target: the root level of the note list (M112).
-    TopLevel,
 }
 
 impl LocalizedText for Text {
@@ -261,7 +255,6 @@ impl LocalizedText for Text {
         Self::OpenFolder,
         Self::NewNote,
         Self::NewGroup,
-        Self::Rename,
         Self::NoNotesYet,
         Self::CreateFirstNote,
         Self::ShowNoteList,
@@ -276,8 +269,6 @@ impl LocalizedText for Text {
         Self::DiscardChanges,
         Self::KeepEditing,
         Self::TextSize,
-        Self::MoveTo,
-        Self::TopLevel,
     ];
 
     /// Chat-link chip texts and the characters of the number and time
@@ -333,8 +324,6 @@ impl LocalizedText for Text {
             (Self::NewNote, Language::German) => "Neue Notiz",
             (Self::NewGroup, Language::English) => "New group",
             (Self::NewGroup, Language::German) => "Neue Gruppe",
-            (Self::Rename, Language::English) => "Rename",
-            (Self::Rename, Language::German) => "Umbenennen",
             (Self::NoNotesYet, Language::English) => "No notes yet",
             (Self::NoNotesYet, Language::German) => "Noch keine Notizen",
             (Self::CreateFirstNote, Language::English) => "Create your first note",
@@ -367,10 +356,6 @@ impl LocalizedText for Text {
             (Self::KeepEditing, Language::German) => "Weiter bearbeiten",
             (Self::TextSize, Language::English) => "Text size",
             (Self::TextSize, Language::German) => "Textgröße",
-            (Self::MoveTo, Language::English) => "Move to",
-            (Self::MoveTo, Language::German) => "Verschieben nach",
-            (Self::TopLevel, Language::English) => "Top level",
-            (Self::TopLevel, Language::German) => "Oberste Ebene",
         }
     }
 }

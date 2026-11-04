@@ -6,8 +6,6 @@
 //! `trailkit-memo-shared`. Platform-independent logic stays testable on any
 //! host (R23); the Nexus glue in `addon` only compiles for Windows.
 
-pub mod tree_drag;
-
 #[cfg(windows)]
 mod addon;
 #[cfg(windows)]
@@ -15,6 +13,7 @@ mod main_window;
 
 use trailkit_memo_drafts::i18n::DraftText;
 use trailkit_memo_editor::i18n::EditorText;
+use trailkit_memo_note_list::i18n::NoteListText;
 use trailkit_memo_note_view::i18n::NoteViewText;
 use trailkit_memo_reset_schedule::i18n::ResetText;
 use trailkit_memo_search::i18n::SearchText;
@@ -29,6 +28,7 @@ pub fn all_texts() -> String {
     Text::all_texts()
         + &DraftText::all_texts()
         + &EditorText::all_texts()
+        + &NoteListText::all_texts()
         + &NoteViewText::all_texts()
         + &ResetText::all_texts()
         + &SearchText::all_texts()

@@ -1488,6 +1488,7 @@ dependencies = [
  "tempfile",
  "trailkit-memo-drafts",
  "trailkit-memo-editor",
+ "trailkit-memo-note-list",
  "trailkit-memo-note-view",
  "trailkit-memo-reset-schedule",
  "trailkit-memo-search",
@@ -1514,6 +1515,15 @@ name = "trailkit-memo-editor"
 version = "0.0.0"
 dependencies = [
  "jiff",
+ "nexus",
+ "trailkit-memo-shared",
+ "trailkit-ui",
+]
+
+[[package]]
+name = "trailkit-memo-note-list"
+version = "0.0.0"
+dependencies = [
  "nexus",
  "trailkit-memo-shared",
  "trailkit-ui",
