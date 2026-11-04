@@ -160,11 +160,11 @@ move it into `crates/trailkit-ui` (see AGENTS.md "Code sharing").
 - A single glyph centered in a box (badge letters, later icons in boxes):
   measure its *visible* ink with `glyph_metrics::glyph_visible_ink` (font
   atlas pixels; the quad from `glyph_ink_box` is widened unevenly by
-  ImGui's oversampling) and give the box the parity whose centre matches
-  the ink centre's fraction (whole or half pixel; never the ink width) —
-  otherwise it cannot sit on whole pixels and looks half a pixel off
-  at some text sizes (memo M132; `badge_geometry` in the memo note-list
-  slice; moves into trailkit-ui on a second use).
+  ImGui's oversampling). Horizontally draw it with `draw_glyph_at` at the
+  exact sub-pixel centre (`add_text` floors to whole pixels); vertically
+  give the box the parity whose centre matches the ink centre's fraction
+  (never round the ink size). Boxes of one kind keep one width so they line
+  up (memo M132; `badge_geometry` in the memo note-list slice).
 - Tooltips: plain ImGui tooltips; `StyleScope` moves them right of the real
   cursor (GW2's cursor is large, memo M84) — never position them by hand.
 - Overlays inside a window (scrims): ImGui renders a child window's

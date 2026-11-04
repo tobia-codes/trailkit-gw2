@@ -156,3 +156,49 @@ fn log_missing_atlas_pixels() {
         log::warn!("font atlas pixels are not in memory; glyphs are centered by their quads");
     }
 }
+
+/// Draws `character` of the current font at the current size into the
+/// current window's draw list with its pen at `pen`, which may be
+/// fractional (memo M132).
+///
+/// `add_text` floors the pen to whole pixels, so a letter can only move in
+/// whole-pixel steps; drawing the glyph's atlas quad directly places it to
+/// the sub-pixel, which the font's horizontal oversampling keeps sharp. For
+/// single centred glyphs only — running text stays with `add_text`.
+/// Returns `false` (drawing nothing) if the glyph is unknown.
+pub fn draw_glyph_at(character: char, pen: [f32; 2], color: [f32; 4]) -> bool {
+    let Ok(character) = u16::try_from(u32::from(character)) else {
+        return false;
+    };
+    // SAFETY: as in `glyph_bounds`: render thread inside a window, so the
+    // current font, its atlas and the window draw list are valid;
+    // `ImFont_FindGlyph` only reads, `ImDrawList_AddImage` appends vertices
+    // to the draw list ImGui owns. No `DrawListMut` borrow is violated: the
+    // raw list is only appended to, like ImGui's own widgets do.
+    unsafe {
+        let font = nexus::imgui::sys::igGetFont();
+        let Some(glyph) = nexus::imgui::sys::ImFont_FindGlyph(font, character).as_ref() else {
+            return false;
+        };
+        let Some(atlas) = (*font).ContainerAtlas.as_ref() else {
+            return false;
+        };
+        let scale = nexus::imgui::sys::igGetFontSize() / (*font).FontSize;
+        let vector = |x: f32, y: f32| nexus::imgui::sys::ImVec2 { x, y };
+        nexus::imgui::sys::ImDrawList_AddImage(
+            nexus::imgui::sys::igGetWindowDrawList(),
+            atlas.TexID,
+            vector(pen[0] + glyph.X0 * scale, pen[1] + glyph.Y0 * scale),
+            vector(pen[0] + glyph.X1 * scale, pen[1] + glyph.Y1 * scale),
+            vector(glyph.U0, glyph.V0),
+            vector(glyph.U1, glyph.V1),
+            nexus::imgui::sys::igColorConvertFloat4ToU32(nexus::imgui::sys::ImVec4 {
+                x: color[0],
+                y: color[1],
+                z: color[2],
+                w: color[3],
+            }),
+        );
+    }
+    true
+}

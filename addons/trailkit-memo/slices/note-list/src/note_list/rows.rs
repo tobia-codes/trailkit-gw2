@@ -13,7 +13,7 @@ use trailkit_memo_shared::{
 use trailkit_ui::{
     font_registry::FontScope,
     fonts::FontRole,
-    glyph_metrics::{glyph_ink_box, glyph_visible_ink},
+    glyph_metrics::{draw_glyph_at, glyph_ink_box, glyph_visible_ink},
     selection_bar::draw_selection_bar,
     text_layout::{format_count, truncate_to_width},
     text_search::SearchQuery,
@@ -378,10 +378,11 @@ fn draw_row_badge(ui: &Ui, badge: RowBadge, anchor: [f32; 2], theme: &Theme) -> 
         .and_then(glyph_visible_ink)
         .or_else(|| character.and_then(glyph_ink_box))
         .unwrap_or([0.0, 0.0, letter_size[0], letter_size[1]]);
-    // Whole pixels, so the outline stays sharp; the box centre takes the
-    // fraction of the letter's centre, so the letter sits exactly in the
-    // middle (M132).
-    let width = center_matched_size(room, f32::midpoint(ink[0], ink[2]));
+    // Whole pixels, so the outline stays sharp. Every badge has the same
+    // width, so badges line up; the letter is placed to the sub-pixel below
+    // instead (M132). Capitals share their height, so the height takes the
+    // parity of the ink centre and the letter sits on whole pixels.
+    let width = room.round();
     let height = center_matched_size(line_height, f32::midpoint(ink[1], ink[3]));
     let start = [
         (anchor[0] - width).round(),
@@ -403,14 +404,13 @@ fn draw_row_badge(ui: &Ui, badge: RowBadge, anchor: [f32; 2], theme: &Theme) -> 
         .rounding(line_height * 0.25)
         .thickness(stroke)
         .build();
-    draw_list.add_text(
-        [
-            centered_pen(start[0], width, ink[0], ink[2]),
-            centered_pen(start[1], height, ink[1], ink[3]),
-        ],
-        color.to_array(),
-        letter,
-    );
+    let pen = [
+        start[0] + width / 2.0 - f32::midpoint(ink[0], ink[2]),
+        centered_pen(start[1], height, ink[1], ink[3]),
+    ];
+    if !character.is_some_and(|character| draw_glyph_at(character, pen, color.to_array())) {
+        draw_list.add_text([pen[0].round(), pen[1]], color.to_array(), letter);
+    }
     (start[0], ui.is_mouse_hovering_rect(start, max))
 }
 

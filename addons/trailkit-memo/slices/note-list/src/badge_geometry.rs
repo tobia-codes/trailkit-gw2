@@ -1,13 +1,15 @@
 //! Whole-pixel geometry of a row badge, so its letter sits exactly in the
 //! middle at every text size (memo plan M105, M132).
 //!
-//! ImGui draws text at whole-pixel pen positions, so a letter's ink centre
-//! keeps the fraction it has relative to the pen (e.g. 0.5 px). The box's
-//! centre lies on a whole pixel for an even size and on a half pixel for an
-//! odd one; the box therefore takes the parity that matches the ink centre.
-//! The ink *width* is no guide: oversampling makes the measured width
-//! fractional, and rounding it flips the parity. ImGui-free, so it is tested
-//! on any host (ROADMAP R23).
+//! Vertically, ImGui draws text at whole-pixel positions (no vertical
+//! oversampling), so a letter's ink centre keeps the fraction it has
+//! relative to the pen (e.g. 0.5 px). The box's centre lies on a whole pixel
+//! for an even size and on a half pixel for an odd one; the box therefore
+//! takes the parity that matches the ink centre. The ink *size* is no
+//! guide: its measured value is fractional and flips parity when rounded.
+//! Horizontally the letter is placed to the sub-pixel instead, so all
+//! badges keep one width. ImGui-free, so it is tested on any host
+//! (ROADMAP R23).
 
 /// The box size in whole pixels: at least `minimum` (rounded), one pixel
 /// more if needed so that the box centre has the same fraction as
