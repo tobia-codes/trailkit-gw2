@@ -19,6 +19,7 @@ jiff.workspace = true
 log.workspace = true
 serde.workspace = true
 trailkit-memo-drafts.workspace = true
+trailkit-memo-trash.workspace = true
 trailkit-memo-editor.workspace = true
 trailkit-memo-note-list.workspace = true
 trailkit-memo-note-view.workspace = true

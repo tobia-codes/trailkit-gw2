@@ -100,7 +100,13 @@ Build once, use everywhere. Planned:
   `draw_primary_button`, `draw_primary_button_with_icon` (Lucide icon +
   label, R71; primary toolbar actions, `lay-button-icon`), all text
   buttons at least `button.min_width` wide (M131), `draw_icon_button` / `draw_icon_toggle` (borderless icon
-  buttons with tooltip). Planned: danger
+  buttons with tooltip), danger variants for destructive actions that ask
+  first (memo M146): `draw_danger_button` (`danger` label),
+  `draw_danger_icon_button`, `draw_danger_fill_button_with_size` (the
+  confirm button of a destructive dialog: `danger` fill)
+- Toast — **exists**: `toast::draw_toast`, one message with an optional
+  action button at the bottom centre of the window, 5 s, the timer pauses
+  while hovered, a new one replaces the old (memo M142, M148, `ix-toasts`)
 - `Popover` / `Tooltip`, `ConfirmDialog`, `UnsavedChangesDialog`
 - `DependencyHint` (greyed feature + explanation + "Open core settings"/
   "Get trailkit-core" button)
@@ -123,13 +129,17 @@ Build once, use everywhere. Planned:
   `tint` colors frame, text, chevron and check mark (e.g. the reset kind,
   M104). No compact or other variants. Never ImGui's plain combo
 - Selection bar — **exists**: `selection_bar::draw_selection_bar`, called
-  right after the selected row's tree node or selectable (R71)
+  right after the selected row's tree node (R71), with the rounded row fill
+  `draw_row_highlight`; the `_in` variants take the row rect for
+  selectables, whose item rect reaches beyond the row
 - Tree arrow — **exists**: `tree_arrow::draw_tree_arrow`, the Lucide chevron
   (`chevron-down` / `chevron-right` in `text.disabled`) over ImGui's hidden
   triangle; never ImGui's filled triangle in lists (R71)
 - Menu entries — **exist**: `menu::draw_menu_item` (check mark = Lucide
   `check` in `accent.text`) and `menu::begin_submenu` (Lucide `chevron-right`,
-  flush beside the parent); never ImGui's own check mark/arrow (memo M99)
+  flush beside the parent); never ImGui's own check mark/arrow (memo M99);
+  `menu::draw_menu_item_with_icon` (Lucide icon before the label, regular
+  or `danger` tone, disabled with a tooltip, memo M133, M141)
 - `Pane` and inset separator — **exist**: `pane::draw_pane`,
   `separator::draw_separator`; every sub-region of a window and every
   separator uses them (`lay-pane-padding`, decided 2026-11-01)

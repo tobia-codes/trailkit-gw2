@@ -2,7 +2,7 @@
 //! M102), separator and the rendered content in its own scroll region, so
 //! the title stays in place (M81). Search hits are marked (M122).
 
-use nexus::imgui::{ChildWindow, MouseButton, Ui};
+use nexus::imgui::{ChildWindow, MouseButton, StyleColor, Ui};
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText},
     note_tree::{Note, NoteId},
@@ -55,6 +55,16 @@ pub struct NoteViewInput<'a> {
     pub chips: ChipContext<'a>,
     /// The widget behind the title.
     pub title_trailing: Option<TitleTrailing<'a>>,
+    /// A read-only note (in the trash, memo M145): the title is muted, the
+    /// `subtitle` line follows it and a double-click does not edit.
+    pub read_only: Option<ReadOnly<'a>>,
+}
+
+/// How a read-only note is shown (memo M145).
+#[derive(Debug, Clone, Copy)]
+pub struct ReadOnly<'a> {
+    /// The line below the title, e.g. "In the trash · deleted today".
+    pub subtitle: &'a str,
 }
 
 /// What the user did in the view.
@@ -141,9 +151,18 @@ impl NoteView {
             });
         }
 
-        draw_title(ui, theme, &note.title, input.title_trailing);
+        {
+            let _muted = input
+                .read_only
+                .map(|_| ui.push_style_color(StyleColor::Text, theme.text.secondary.to_array()));
+            draw_title(ui, theme, &note.title, input.title_trailing);
+        }
+        if let Some(read_only) = input.read_only {
+            ui.text_colored(theme.text.secondary.to_array(), read_only.subtitle);
+        }
         draw_separator(ui, theme);
-        if ui.is_window_hovered() && ui.is_mouse_double_clicked(MouseButton::Left) {
+        let editable = input.read_only.is_none();
+        if editable && ui.is_window_hovered() && ui.is_mouse_double_clicked(MouseButton::Left) {
             output.actions.push(NoteViewAction::StartEditing);
         }
         // Title and separator stay at the top; only the content scrolls, so
@@ -156,7 +175,7 @@ impl NoteView {
                     ui,
                     language,
                     theme,
-                    (input.search, input.chips),
+                    (input.search, input.chips, editable),
                     note_scroll,
                     &mut output,
                 );
@@ -170,11 +189,11 @@ impl NoteView {
         ui: &Ui,
         language: Language,
         theme: &Theme,
-        (search, chips): (Option<&SearchQuery>, ChipContext<'_>),
+        (search, chips, editable): (Option<&SearchQuery>, ChipContext<'_>, bool),
         note_scroll: &mut f32,
         output: &mut NoteViewOutput,
     ) {
-        if ui.is_window_hovered() && ui.is_mouse_double_clicked(MouseButton::Left) {
+        if editable && ui.is_window_hovered() && ui.is_mouse_double_clicked(MouseButton::Left) {
             output.actions.push(NoteViewAction::StartEditing);
         }
         if self.restore_scroll {

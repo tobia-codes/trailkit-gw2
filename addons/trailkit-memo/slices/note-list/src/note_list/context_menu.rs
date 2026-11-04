@@ -7,9 +7,12 @@ use trailkit_memo_shared::{
     i18n::{Language, LocalizedText, Text},
     note_tree::{GroupId, InsertionPoint, NodeId, Note, TreeNode as Node},
 };
-use trailkit_ui::menu::{begin_submenu, draw_menu_item};
+use trailkit_ui::{
+    icons::Icon,
+    menu::{MenuItemTone, begin_submenu, draw_menu_item, draw_menu_item_with_icon},
+};
 
-use super::{NoteListAction, RenameStep, RowContext};
+use super::{NoteListAction, RenameStep, RowContext, delete::blocks_delete};
 use crate::i18n::NoteListText;
 
 /// Draws the context menu of a row if it is open (must run every frame).
@@ -42,6 +45,20 @@ pub(super) fn draw_context_menu(
                 InsertionPoint::End(Some(group)),
                 context.actions,
             );
+        }
+        // Deleting comes last, set off by a separator (M133); the edited
+        // note and its groups wait until the editor is left (M141).
+        ui.separator();
+        let blocked = blocks_delete(context.document, node, context.edited);
+        if draw_menu_item_with_icon(
+            ui,
+            theme,
+            Icon::TRASH_2,
+            NoteListText::Delete.get(language),
+            MenuItemTone::Regular,
+            blocked.then(|| NoteListText::SaveOrCancelFirst.get(language)),
+        ) {
+            context.actions.push(NoteListAction::Delete(node));
         }
     });
 }

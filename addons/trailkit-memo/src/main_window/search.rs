@@ -64,6 +64,8 @@ impl MemoWindow {
     /// Shows the search field (M138) with the note list or the drawer it
     /// sits in, and moves the keyboard focus into it.
     pub(super) fn show_search_field(&mut self) {
+        // The search filters the notes, so the trash makes way (M136).
+        self.trash.visible = false;
         self.ui_state.search_visible = true;
         if self.is_narrow {
             self.drawer_open = true;

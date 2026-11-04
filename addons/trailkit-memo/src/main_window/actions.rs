@@ -21,7 +21,9 @@ use trailkit_memo_shared::{
         TreeNode as Node,
     },
     settings::UnsavedChanges,
+    undo::UndoStep,
 };
+use trailkit_memo_trash::trash_view::TrashAction;
 
 use super::{CopiedChatLink, MemoWindow};
 
@@ -83,6 +85,23 @@ pub(super) enum WindowAction {
     SetCollapsedInSearch(GroupId, bool),
     /// Empty the search field (empty search result, M126).
     ClearSearch,
+    /// Delete a note or group: to the trash, a group with notes asks first
+    /// (M133, M134).
+    Delete(NodeId),
+    /// Take the latest delete or move back (Ctrl+Z, the toast, M135).
+    Undo,
+    /// Do the latest undone step again (Ctrl+Y, Ctrl+Shift+Z, M135).
+    Redo,
+    /// The toast's time is up (M148).
+    DismissToast,
+    /// The trash tool in the tool rail (M136).
+    ToggleTrash,
+    /// Something done in the trash view (M145–M147).
+    Trash(TrashAction),
+    /// The open delete question was confirmed (M134, M146).
+    ConfirmAccepted,
+    /// The open delete question was cancelled.
+    ConfirmCancelled,
 }
 
 impl WindowAction {
@@ -91,7 +110,7 @@ impl WindowAction {
     pub(super) fn leaves_editor_of(&self, note: NoteId) -> bool {
         match self {
             Self::Select(node) => *node != NodeId::Note(note),
-            Self::NewNote(_) | Self::NewGroup(_) => true,
+            Self::NewNote(_) | Self::NewGroup(_) | Self::ToggleTrash => true,
             _ => false,
         }
     }
@@ -157,6 +176,14 @@ impl MemoWindow {
             | WindowAction::CloseDrawer
             | WindowAction::Markdown(_)
             | WindowAction::OpenFolder => self.apply_view_action(action, now),
+            WindowAction::Delete(_)
+            | WindowAction::Undo
+            | WindowAction::Redo
+            | WindowAction::DismissToast
+            | WindowAction::ToggleTrash
+            | WindowAction::Trash(_)
+            | WindowAction::ConfirmAccepted
+            | WindowAction::ConfirmCancelled => self.apply_trash_action(action, language),
         }
         // Whatever opens the editor, and creating an entry, leaves the
         // compact note view (M139).
@@ -182,7 +209,16 @@ impl MemoWindow {
                 }
             }
             WindowAction::Move(node, point) => {
+                let from = self.document.place(*node);
                 if self.document.move_node(*node, *point) {
+                    // Moves are undoable (M114, M135).
+                    if let (Some(from), Some(to)) = (from, self.document.place(*node)) {
+                        self.undo.record(UndoStep::Move {
+                            node: *node,
+                            from,
+                            to,
+                        });
+                    }
                     self.save_notes();
                 }
             }
@@ -317,7 +353,7 @@ impl MemoWindow {
                 self.saver.save_ui_state(self.ui_state);
             }
             WindowAction::ToggleSearch => {
-                if self.ui_state.search_visible {
+                if self.ui_state.search_visible && !self.trash.visible {
                     // A hidden field must not keep filtering the list (M138).
                     self.search_field.clear(false);
                     self.ui_state.search_visible = false;

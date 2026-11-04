@@ -7,6 +7,7 @@
 //! ([`ListSearch`], [`NoteRowExtras`], ROADMAP R76 questions 48–53).
 
 mod context_menu;
+mod delete;
 mod rows;
 
 use std::collections::HashSet;
@@ -15,7 +16,7 @@ use nexus::imgui::{MouseButton, StyleColor, Ui, WindowHoveredFlags};
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText, Text},
     list_filter::ListFilter,
-    note_tree::{GroupId, InsertionPoint, MoveCheck, NodeId, Note, NotesDocument},
+    note_tree::{GroupId, InsertionPoint, MoveCheck, NodeId, Note, NoteId, NotesDocument},
     row_badge::RowBadge,
 };
 use trailkit_ui::{
@@ -72,6 +73,9 @@ pub struct NoteListInput<'a> {
     pub document: &'a NotesDocument,
     /// The selected note or group.
     pub selected: Option<NodeId>,
+    /// The note open in the editor: it and the groups holding it cannot be
+    /// deleted (M141).
+    pub edited: Option<NoteId>,
     /// The active search, if any.
     pub search: Option<ListSearch<'a>>,
     /// Badges and menu items of other slices.
@@ -96,6 +100,9 @@ pub enum NoteListAction {
     /// Collapse (`true`) or expand a group only for the current search
     /// (M124).
     SetCollapsedInSearch(GroupId, bool),
+    /// Move a note or group to the trash ("Delete" in the context menu or
+    /// the Delete key, M133).
+    Delete(NodeId),
 }
 
 /// The result of drawing the list for one frame.
@@ -167,6 +174,8 @@ struct RowContext<'frame, 'input> {
     document: &'input NotesDocument,
     /// The selected note or group.
     selected: Option<NodeId>,
+    /// The note open in the editor (M141).
+    edited: Option<NoteId>,
     /// The note or group being dragged; it is drawn faded (M106).
     dragged: Option<NodeId>,
     /// The row pressed with the left button in this frame.
@@ -282,6 +291,7 @@ impl NoteList {
         let NoteListInput {
             document,
             selected,
+            edited,
             search,
             mut extras,
         } = input;
@@ -290,6 +300,7 @@ impl NoteList {
         let mut context = RowContext {
             document,
             selected,
+            edited,
             dragged: self
                 .drag
                 .as_ref()
@@ -349,6 +360,11 @@ impl NoteList {
             );
         });
         self.apply_rename_steps(document);
+        if self.rename.is_none()
+            && let Some(action) = delete::delete_key_action(ui, document, selected, edited)
+        {
+            output.actions.push(action);
+        }
         output
     }
 

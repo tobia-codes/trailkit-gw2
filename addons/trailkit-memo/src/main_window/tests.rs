@@ -1,6 +1,8 @@
 //! Snapshot tests of the memo main window (memo plan M65), run with
 //! `cargo xtask ui-test` (`--update` rewrites `tests/snapshots/`).
 
+mod trash;
+
 use std::time::Duration;
 
 use nexus::imgui::{Condition, Ui, Window};

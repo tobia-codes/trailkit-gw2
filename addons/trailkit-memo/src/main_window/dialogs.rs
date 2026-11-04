@@ -1,10 +1,11 @@
 //! In-window dialogs and problem hints of the memo main window: the
-//! dialog card, the unsaved-changes question (M70) and storage problems.
+//! dialog card, the unsaved-changes question (M70), the delete questions
+//! (M134, M146) and storage problems.
 
 use nexus::imgui::{Condition, Key, MouseButton, StyleColor, StyleVar, Ui, Window, WindowFlags};
 use trailkit_ui::{
     button::{
-        button_width, draw_button, draw_button_with_size, draw_primary_button,
+        button_width, draw_button, draw_button_with_size, draw_danger_fill_button_with_size,
         draw_primary_button_with_size,
     },
     font_registry::FontScope,
@@ -17,7 +18,7 @@ use trailkit_ui::{
 use trailkit_memo_shared::i18n::LocalizedText;
 use trailkit_memo_shared::i18n::{Language, Text};
 
-use super::{MemoWindow, NotesProblem, WindowAction};
+use super::{MemoWindow, NotesProblem, WindowAction, trash::Confirmation};
 
 impl MemoWindow {
     /// Draws the storage problem hint, if any (M31).
@@ -74,36 +75,80 @@ pub(super) const DIALOG_MINIMUM_CHARACTERS: f32 = 28.0;
 /// Largest share of the window a dialog card may take.
 pub(super) const DIALOG_MAXIMUM_FRACTION: f32 = 0.9;
 
-/// Draws the card of the unsaved changes dialog centered in the current
-/// window (M54, M56, M70, `overlay-dialog-layout`): `bg.panel` with a
-/// `border` frame and `space.lg` padding; heading, wrapped question, then
-/// "Discard" on the left and "Keep editing" plus the primary "Save" on the
-/// right, stacked full width (Save, Keep editing, Discard) when they do not
-/// fit. `last_height` is the card height measured in the previous frame.
-/// Enter saves, Escape keeps editing.
-pub(super) fn draw_unsaved_changes_card(
+/// How a dialog button looks.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum DialogButtonStyle {
+    /// A regular button.
+    Regular,
+    /// The one primary (brass) button (`lay-one-primary`).
+    Primary,
+    /// The `danger` button that confirms a destructive action (M146).
+    Danger,
+}
+
+/// A button of a dialog card and the answer it gives.
+#[derive(Debug, Clone)]
+pub(super) struct DialogButton<'a> {
+    /// The label.
+    pub(super) label: &'a str,
+    /// How it looks.
+    pub(super) style: DialogButtonStyle,
+    /// The answer applied when it is clicked.
+    pub(super) answer: WindowAction,
+}
+
+/// What a dialog card shows and how keys answer it.
+#[derive(Debug, Clone)]
+pub(super) struct DialogContent<'a> {
+    /// The heading.
+    pub(super) title: &'a str,
+    /// The wrapped question below it.
+    pub(super) question: &'a str,
+    /// A button set apart on the left (e.g. "Discard").
+    pub(super) apart: Option<DialogButton<'a>>,
+    /// The buttons at the right end, the main one last.
+    pub(super) buttons: Vec<DialogButton<'a>>,
+    /// The harmless answer: Escape and a click on the dimmed area.
+    pub(super) escape: WindowAction,
+    /// The answer of Enter, if Enter answers at all.
+    pub(super) enter: Option<WindowAction>,
+}
+
+/// Draws one dialog button at `size` (ImGui sizing).
+fn draw_dialog_button(ui: &Ui, theme: &Theme, button: &DialogButton<'_>, size: [f32; 2]) -> bool {
+    match button.style {
+        DialogButtonStyle::Regular => draw_button_with_size(ui, theme, button.label, size),
+        DialogButtonStyle::Primary => draw_primary_button_with_size(ui, theme, button.label, size),
+        DialogButtonStyle::Danger => {
+            draw_danger_fill_button_with_size(ui, theme, button.label, size)
+        }
+    }
+}
+
+/// Draws a dialog card centered in the current window (M54, M56, M70,
+/// `overlay-dialog-layout`): `bg.panel` with a `border` frame and
+/// `space.lg` padding; heading, wrapped question, then the button set apart
+/// on the left and the others at the right end, stacked full width (main
+/// button first, the one set apart last) when they do not fit.
+/// `last_height` is the card height measured in the previous frame.
+pub(super) fn draw_dialog_card(
     ui: &Ui,
-    language: Language,
     theme: &Theme,
+    content: &DialogContent<'_>,
     last_height: Option<f32>,
 ) -> DialogCard {
-    let title = Text::UnsavedChangesTitle.get(language);
-    let question = Text::UnsavedChangesQuestion.get(language);
-    let discard = Text::DiscardChanges.get(language);
-    let keep_editing = Text::KeepEditing.get(language);
-    let save = Text::KeepChanges.get(language);
     let spacing = ui.clone_style().item_spacing;
     let padding = theme.spacing.large;
     let window_position = ui.window_pos();
     let window_size = ui.window_size();
-    let row_width = button_width(ui, theme, discard)
-        + theme.spacing.extra_large
-        + button_width(ui, theme, keep_editing)
-        + spacing[0]
-        + button_width(ui, theme, save);
+    let right_group = right_group_width(ui, theme, content);
+    let apart_width = content.apart.as_ref().map_or(0.0, |button| {
+        button_width(ui, theme, button.label) + theme.spacing.extra_large
+    });
+    let row_width = apart_width + right_group;
     let maximum_content = (window_size[0] * DIALOG_MAXIMUM_FRACTION - 2.0 * padding).max(1.0);
     let content_width = row_width
-        .max(ui.calc_text_size(question)[0])
+        .max(ui.calc_text_size(content.question)[0])
         .max(ui.calc_text_size("n")[0] * DIALOG_MINIMUM_CHARACTERS)
         .min(maximum_content);
     let stacked = row_width > content_width;
@@ -129,51 +174,23 @@ pub(super) fn draw_unsaved_changes_card(
     ui.set_cursor_screen_pos([left, min[1] + padding]);
     {
         let _heading = FontScope::push(ui, FontRole::Heading3);
-        ui.text(title);
+        let _wrap = ui.push_text_wrap_pos_with_pos(left - window_position[0] + content_width);
+        ui.text_wrapped(content.title);
     }
     {
         // Every new line starts at the window padding; move into the card.
         ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
         let _wrap = ui.push_text_wrap_pos_with_pos(left - window_position[0] + content_width);
-        ui.text_wrapped(question);
+        ui.text_wrapped(content.question);
     }
     ui.dummy([0.0, theme.spacing.small]);
-    let mut answer = None;
-    if stacked {
-        let full = [content_width, 0.0];
-        ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
-        if draw_primary_button_with_size(ui, theme, save, full) {
-            answer = Some(WindowAction::LeaveSaving);
-        }
-        ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
-        if draw_button_with_size(ui, theme, keep_editing, full) {
-            answer = Some(WindowAction::LeaveCancelled);
-        }
-        ui.dummy([0.0, theme.spacing.small]);
-        ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
-        if draw_button_with_size(ui, theme, discard, full) {
-            answer = Some(WindowAction::LeaveDiscarding);
-        }
-    } else {
-        ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
-        if draw_button(ui, theme, discard) {
-            answer = Some(WindowAction::LeaveDiscarding);
-        }
-        let right_group =
-            button_width(ui, theme, keep_editing) + spacing[0] + button_width(ui, theme, save);
-        ui.same_line_with_pos(left + content_width - right_group - window_position[0]);
-        if draw_button(ui, theme, keep_editing) {
-            answer = Some(WindowAction::LeaveCancelled);
-        }
-        ui.same_line();
-        if draw_primary_button(ui, theme, save) {
-            answer = Some(WindowAction::LeaveSaving);
-        }
-    }
+    let mut answer = draw_dialog_buttons(ui, theme, content, [left, content_width], stacked);
     if ui.is_key_pressed(Key::Escape) {
-        answer = Some(WindowAction::LeaveCancelled);
-    } else if ui.is_key_pressed(Key::Enter) {
-        answer = Some(WindowAction::LeaveSaving);
+        answer = Some(content.escape.clone());
+    } else if let Some(enter) = &content.enter
+        && ui.is_key_pressed(Key::Enter)
+    {
+        answer = Some(enter.clone());
     }
     // The last item adds item spacing below itself; the card ends there plus padding.
     let measured = ui.cursor_screen_pos()[1] - spacing[1] - min[1] + padding;
@@ -185,21 +202,144 @@ pub(super) fn draw_unsaved_changes_card(
     }
 }
 
+/// The width of the buttons at the right end of a dialog card.
+fn right_group_width(ui: &Ui, theme: &Theme, content: &DialogContent<'_>) -> f32 {
+    let spacing = ui.clone_style().item_spacing[0];
+    content
+        .buttons
+        .iter()
+        .map(|button| button_width(ui, theme, button.label))
+        .sum::<f32>()
+        + spacing * content.buttons.len().saturating_sub(1) as f32
+}
+
+/// Draws the buttons of a dialog card in the column starting at
+/// `[left, width]` (screen x, width): side by side, or stacked full width
+/// (main button first, the one set apart last). Returns the clicked answer.
+fn draw_dialog_buttons(
+    ui: &Ui,
+    theme: &Theme,
+    content: &DialogContent<'_>,
+    [left, content_width]: [f32; 2],
+    stacked: bool,
+) -> Option<WindowAction> {
+    let mut answer = None;
+    let right_group = right_group_width(ui, theme, content);
+    if stacked {
+        let full = [content_width, 0.0];
+        for button in content.buttons.iter().rev() {
+            ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
+            if draw_dialog_button(ui, theme, button, full) {
+                answer = Some(button.answer.clone());
+            }
+        }
+        if let Some(button) = &content.apart {
+            ui.dummy([0.0, theme.spacing.small]);
+            ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
+            if draw_dialog_button(ui, theme, button, full) {
+                answer = Some(button.answer.clone());
+            }
+        }
+    } else {
+        ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
+        if let Some(button) = &content.apart {
+            if draw_dialog_button(ui, theme, button, [0.0, 0.0]) {
+                answer = Some(button.answer.clone());
+            }
+            ui.same_line();
+        }
+        ui.set_cursor_screen_pos([
+            left + content_width - right_group,
+            ui.cursor_screen_pos()[1],
+        ]);
+        for (index, button) in content.buttons.iter().enumerate() {
+            if index > 0 {
+                ui.same_line();
+            }
+            if draw_dialog_button(ui, theme, button, [0.0, 0.0]) {
+                answer = Some(button.answer.clone());
+            }
+        }
+    }
+    answer
+}
+
+/// The unsaved changes dialog (M54, M56, M70): "Discard" set apart on the
+/// left, "Keep editing" and the primary "Save" on the right. Enter saves,
+/// Escape keeps editing.
+pub(super) fn unsaved_changes_dialog(language: Language) -> DialogContent<'static> {
+    DialogContent {
+        title: Text::UnsavedChangesTitle.get(language),
+        question: Text::UnsavedChangesQuestion.get(language),
+        apart: Some(DialogButton {
+            label: Text::DiscardChanges.get(language),
+            style: DialogButtonStyle::Regular,
+            answer: WindowAction::LeaveDiscarding,
+        }),
+        buttons: vec![
+            DialogButton {
+                label: Text::KeepEditing.get(language),
+                style: DialogButtonStyle::Regular,
+                answer: WindowAction::LeaveCancelled,
+            },
+            DialogButton {
+                label: Text::KeepChanges.get(language),
+                style: DialogButtonStyle::Primary,
+                answer: WindowAction::LeaveSaving,
+            },
+        ],
+        escape: WindowAction::LeaveCancelled,
+        enter: Some(WindowAction::LeaveSaving),
+    }
+}
+
+/// The delete question `confirmation` (M134, M146): "Cancel" and the
+/// `danger` confirm button. Enter confirms only what can be undone.
+fn confirmation_dialog<'a>(
+    confirmation: &'a Confirmation,
+    language: Language,
+) -> DialogContent<'a> {
+    DialogContent {
+        title: &confirmation.title,
+        question: &confirmation.text,
+        apart: None,
+        buttons: vec![
+            DialogButton {
+                label: Text::Cancel.get(language),
+                style: DialogButtonStyle::Regular,
+                answer: WindowAction::ConfirmCancelled,
+            },
+            DialogButton {
+                label: confirmation.confirm_label,
+                style: DialogButtonStyle::Danger,
+                answer: WindowAction::ConfirmAccepted,
+            },
+        ],
+        escape: WindowAction::ConfirmCancelled,
+        enter: confirmation
+            .is_undoable()
+            .then_some(WindowAction::ConfirmAccepted),
+    }
+}
+
 impl MemoWindow {
-    /// Draws the unsaved changes dialog while an answer is pending (M54,
-    /// M56, `overlay-dialog-scope`) and applies the answer. Call it after the
-    /// main window is finished: the dialog is its own borderless window
-    /// exactly over the main window, so it dims only that window (title bar
-    /// included) while the game and other windows stay usable. Clicking the
-    /// main window brings the dialog back to the front; a click on the dimmed
-    /// area keeps editing, like Escape. "Discard" sits apart
-    /// from "Keep editing" and the primary "Save" (`lay-one-primary`); Enter
-    /// saves, Escape keeps editing.
+    /// Draws the open dialog (the unsaved changes question, M54, or a
+    /// delete question, M134, M146) and applies the answer
+    /// (`overlay-dialog-scope`). Call it after the main window is finished:
+    /// the dialog is its own borderless window exactly over the main window,
+    /// so it dims only that window (title bar included) while the game and
+    /// other windows stay usable. Clicking the main window brings the dialog
+    /// back to the front; a click on the dimmed area picks the harmless
+    /// answer, like Escape.
     pub fn draw_dialog(&mut self, ui: &Ui, language: Language, theme: &Theme) {
-        if self.leave_prompt.is_none() {
+        let content = if self.leave_prompt.is_some() {
+            unsaved_changes_dialog(language)
+        } else if let Some(confirmation) = &self.confirmation {
+            confirmation_dialog(confirmation, language)
+        } else {
             self.dialog_height = None;
             return;
-        }
+        };
         let _body_font = FontScope::push(ui, FontRole::Body);
         let Some(window_rect) = self.window_rect else {
             return;
@@ -208,6 +348,7 @@ impl MemoWindow {
             ui.push_style_color(StyleColor::WindowBg, theme.surface.modal_overlay.to_array());
         let _border = ui.push_style_var(StyleVar::WindowBorderSize(0.0));
         let mut answer = None;
+        let mut measured = self.dialog_height;
         Window::new("###trailkit-memo-dialog")
             .position(window_rect[0], Condition::Always)
             .size(window_rect[1], Condition::Always)
@@ -219,8 +360,8 @@ impl MemoWindow {
             )
             .focused(self.window_focused)
             .build(ui, || {
-                let card = draw_unsaved_changes_card(ui, language, theme, self.dialog_height);
-                self.dialog_height = Some(card.height);
+                let card = draw_dialog_card(ui, theme, &content, measured);
+                measured = Some(card.height);
                 answer = card.answer;
                 // A click on the dimmed area picks the harmless answer
                 // (`overlay-dialog-layout`).
@@ -232,9 +373,10 @@ impl MemoWindow {
                     && ui.is_window_hovered()
                     && ui.is_mouse_clicked(MouseButton::Left)
                 {
-                    answer = Some(WindowAction::LeaveCancelled);
+                    answer = Some(content.escape.clone());
                 }
             });
+        self.dialog_height = measured;
         if let Some(answer) = answer {
             self.apply(&answer, language);
         }

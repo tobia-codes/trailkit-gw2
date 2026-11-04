@@ -14,7 +14,7 @@ Das Fenster zeigt links die Notizliste und rechts die ausgewählte Notiz. Ziehe 
 
 In der Titelleiste sitzen vier Buttons:
 
-- **Werkzeuge** (drei Punkte), oben links: blendet die Werkzeugleiste am linken Rand mit *Suchen* ein oder aus. Sie ist anfangs ausgeblendet; memo merkt sich deine Wahl.
+- **Werkzeuge** (drei Punkte), oben links: blendet die Werkzeugleiste am linken Rand mit *Suchen* und dem *Papierkorb* ein oder aus. Sie ist anfangs ausgeblendet; memo merkt sich deine Wahl.
 - **Listen-Button** daneben: blendet die Notizliste aus, damit die Notiz die ganze Breite bekommt; ein weiterer Klick blendet sie wieder ein. memo merkt sich deine Wahl.
 - **Pfeil** rechts: klappt das Fenster auf seine Titelleiste ein (erneut klicken zum Ausklappen); **×** schließt es.
 
@@ -29,7 +29,18 @@ Ein hinterlegter Button bedeutet: Was er schaltet, ist gerade eingeblendet.
 - **Sortieren:** Ziehe eine Notiz oder Gruppe an eine neue Stelle. Eine Linie zeigt, wo sie landet; auf der unteren Hälfte einer offenen Gruppe wird sie deren erster Eintrag, unter dem letzten Eintrag kommt sie ans Ende der Liste. Auf der Mitte einer geschlossenen Gruppe landet sie an deren Ende; bleibst du kurz darauf, öffnet sich die Gruppe. Ein rotes Verbotszeichen heißt: Dort geht es nicht hin (eine Gruppe kann nicht in sich selbst). Am oberen oder unteren Rand scrollt die Liste. Escape bricht ab.
 - **Verschieben nach:** Rechtsklick › *Verschieben nach* › *Oberste Ebene* oder eine Gruppe verschiebt den Eintrag an deren Ende, ohne zu ziehen.
 - **Gruppen** haben fett gedruckte Namen und zeigen rechts, wie viele Notizen sie enthalten.
+- **Löschen:** Rechtsklick › *Löschen*, oder den Eintrag auswählen und **Entf** drücken, während die Liste den Fokus hat. Der Eintrag kommt in den Papierkorb; eine Gruppe mit Notizen fragt vorher nach. Die Notiz, die du gerade bearbeitest, lässt sich erst löschen, wenn du speicherst oder abbrichst.
+- **Rückgängig:** Nach dem Löschen bietet eine Meldung unten im Fenster ein paar Sekunden lang *Rückgängig* an (solange die Maus darauf zeigt, bleibt sie stehen). **Strg+Z** macht das letzte Löschen oder Verschieben rückgängig, **Strg+Y** (oder Strg+Umschalt+Z) stellt es wieder her – bis zu 20 Schritte, bis zum Neustart des Spiels. Während du tippst, macht Strg+Z stattdessen dein Tippen rückgängig.
 - **Abzeichen** am rechten Ende einer Zeile: **T** kennzeichnet eine tägliche Notiz (Reset um 00:00 UTC), **W** eine wöchentliche (Reset montags um 07:30 UTC). Fahre mit der Maus darüber, um zu sehen, wie lange es bis zum nächsten Reset dauert.
+
+## Papierkorb
+
+Klicke auf den **Papierkorb** in der Werkzeugleiste (drei Punkte in der Titelleiste), um statt der Notizliste den Papierkorb zu sehen; ein zweiter Klick bringt dich zurück zu deinen Notizen. Gelöschte Notizen und Gruppen bleiben dort **30 Tage** und werden dann endgültig entfernt. Jeder Eintrag zeigt, wie viele Tage noch bleiben – in der letzten Woche rot.
+
+- Klicke einen Eintrag an, um ihn rechts zu lesen. Bearbeiten lässt er sich dort nicht.
+- **Wiederherstellen** (oder Rechtsklick › *Wiederherstellen*) legt ihn dorthin zurück, wo er war. Gibt es seine Gruppe nicht mehr, landet er am Ende der Liste. Eine Gruppe kommt mit allem darin zurück.
+- Der rote **Papierkorb** neben *Wiederherstellen* (oder Rechtsklick › *Endgültig löschen*) löscht ihn endgültig, **Leeren** löscht alles im Papierkorb. Beides fragt vorher nach und lässt sich nicht rückgängig machen.
+- Ungespeicherte Änderungen einer Notiz bleiben im Papierkorb bei ihr und kommen beim Wiederherstellen mit zurück.
 
 ## Suchen
 

@@ -17,6 +17,7 @@ trailkit-ui-testing = { path = "crates/trailkit-ui-testing" }
 # Addon-internal crates (ROADMAP R76).
 trailkit-memo-shared = { path = "addons/trailkit-memo/shared" }
 trailkit-memo-drafts = { path = "addons/trailkit-memo/slices/drafts" }
+trailkit-memo-trash = { path = "addons/trailkit-memo/slices/trash" }
 trailkit-memo-editor = { path = "addons/trailkit-memo/slices/editor" }
 trailkit-memo-note-list = { path = "addons/trailkit-memo/slices/note-list" }
 trailkit-memo-note-view = { path = "addons/trailkit-memo/slices/note-view" }

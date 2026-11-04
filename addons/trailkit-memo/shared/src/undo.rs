@@ -62,6 +62,12 @@ impl UndoHistory {
         self.undo.back().copied()
     }
 
+    /// The step the next redo does again, if any.
+    #[must_use]
+    pub fn next_redo(&self) -> Option<UndoStep> {
+        self.redo.last().copied()
+    }
+
     /// Takes the latest step back in `document` and returns it. Steps that
     /// no longer apply (e.g. the entry was deleted for good) are dropped.
     pub fn undo(&mut self, document: &mut NotesDocument, now: Timestamp) -> Option<UndoStep> {

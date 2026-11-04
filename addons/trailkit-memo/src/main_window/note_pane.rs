@@ -28,6 +28,10 @@ impl MemoWindow {
     /// scroll region so the toolbar stays in place. The compact note view
     /// (M139) has no toolbar; its toggle sits behind the note title.
     pub(super) fn draw_note_pane(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+        if self.trash.visible {
+            self.draw_trash_preview(ui, language, theme);
+            return;
+        }
         if self.ui_state.compact_note_view && self.editor.is_none() {
             self.draw_note_body(ui, language, theme);
             return;
@@ -185,6 +189,7 @@ impl MemoWindow {
                     .as_ref()
                     .map(|copied| copied.code.as_str()),
             ),
+            read_only: None,
             title_trailing: Some(TitleTrailing {
                 size: trailing_size,
                 at_row_end: compact,

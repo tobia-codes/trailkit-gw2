@@ -40,6 +40,7 @@ impl From<NoteListAction> for WindowAction {
             NoteListAction::SetCollapsedInSearch(group, collapsed) => {
                 Self::SetCollapsedInSearch(group, collapsed)
             }
+            NoteListAction::Delete(node) => Self::Delete(node),
         }
     }
 }
@@ -48,6 +49,11 @@ impl MemoWindow {
     /// Draws the fixed header (search field while shown, M138; toolbar) and
     /// below it the scrolling tree (M129).
     pub(super) fn draw_tree_pane(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+        // The trash tool shows the trash in place of the notes (M136).
+        if self.trash.visible {
+            self.draw_trash_column(ui, language, theme);
+            return;
+        }
         if self.ui_state.search_visible {
             let search_texts = SearchFieldTexts {
                 hint: SearchText::SearchHint.get(language),
@@ -124,6 +130,7 @@ impl MemoWindow {
             NoteListInput {
                 document: &self.document,
                 selected: self.ui_state.selected,
+                edited: self.editor.as_ref().map(|editor| editor.session().note),
                 search,
                 extras: NoteRowExtras {
                     badge: &badge,
