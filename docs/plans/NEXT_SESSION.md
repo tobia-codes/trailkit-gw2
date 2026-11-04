@@ -105,11 +105,31 @@ Last updated: 2026-11-04 (session 15: PR #83 merged; new window layout M136–M1
 ## ▶ Resume here
 
 0. **Open branch first:** `feature/memo-sidebar-layout` (local, **unpushed**,
-   2 commits, **deployed** into the game). The user has **not** yet tested
-   it in game nor said OK — ask for the in-game test, then "darf ich
-   mergen?"; after the OK: push, PR into `develop`, auto-merge (R74). The
-   trash & undo implementation continues **on the same branch** unless the
-   user wants the layout merged first.
+   12 commits, last deploy 2026-11-04 22:00, "Loaded addon" in
+   Nexus.log). It holds **both** the new layout (M136–M144) **and** trash &
+   undo (M133–M152). The user has **not** yet tested either in game nor
+   said OK. First ask: "Hast du Layout und Papierkorb im Spiel getestet?"
+   — fix feedback on the same branch, redeploy — then "darf ich mergen?";
+   after the OK: `git push -u`, PR into `develop` (one PR for the whole
+   branch), `gh pr merge --auto --merge --delete-branch` (R74, R70).
+   **Waiting for the user's answers** (asked at the end of session 15):
+   - **M152 review** — details decided while building, the user may object:
+     (1) trash view not remembered across restarts, Ctrl+F / magnifier leave
+     it; (2) toast only after deleting, moves undo via Ctrl+Z only; (3) Enter
+     confirms only the undoable group delete, permanent delete needs a
+     click; (4) restoring from the trash is no undo step; (5) chat-link
+     chip "Copied" not yet on the toast (M142 open).
+   - **Q91** (R77): split `note-list/src/note_list.rs` (410 code lines,
+     `draw` 83) and `note_list/rows.rs` `draw_group` (105)? Recommended:
+     yes, as a small own step after the merge.
+   - **Q92** (R77): `shared/src/i18n.rs` `Text::get` (86 lines, flat text
+     table)? Recommended: no split.
+   - Still open from before: apply R79 (neutral toggles) to the editor
+     formatting toolbar, which still lights up brass (M69)?
+   - The user asked whether trashed notes keep id etc.: answered — the
+     whole node (id, dates, kind, checks) moves into `trash` in
+     `notes.json`; `TrashEntry` holds `deleted_at` + former place, the note
+     has no own `deleted_at`.
 1. **What the branch contains** (session 15, questions 63–88):
    - Title bar (R78): addon toggles left — **⋮ tools** (`ellipsis-vertical`)
      and **list** (note list) — bold title, then collapse chevron + `x` on
@@ -140,15 +160,11 @@ Last updated: 2026-11-04 (session 15: PR #83 merged; new window layout M136–M1
    (`DialogContent`) in `dialogs.rs`; trailkit-ui gained `toast`, danger
    buttons, `menu::draw_menu_item_with_icon`, `selection_bar::*_in`,
    icons `trash-2`, `rotate-ccw`. Deployed 22:00, not yet tested in game.
-   Next ids: **M153+, R80+, questions from 91**.
+   Next ids: **M153+, R80+, questions from 93** (Q91, Q92 asked).
 3. **Still open after the trash step:** M142's second user (the chat-link
    chip's "Copied" as a toast) is not migrated yet.
 4. **Open questions raised by the implementation:**
-   - R79 vs the editor toolbar: the formatting buttons still light up in
-     brass for the formatting at the cursor (M69) — apply R79 there too?
-   - R77 hints to ask about: `shared/src/i18n.rs` `Text::get` (86 lines,
-     flat string table, propose no split); `note-list/src/note_list.rs`
-     (410 code lines, `draw` 83); `note_list/rows.rs` `draw_group` (105).
+   - R77 hints: asked as Q91/Q92 (see step 0).
 5. Earlier R77 candidates (`--all`, untouched): `editor/view.rs`,
    `markdown_view.rs`, long `draw_*` functions (see session 14 notes).
 6. Optional, offer once: update the Claude Design system "Trailkit"
