@@ -5,13 +5,13 @@ use super::ids::{GroupId, NodeId, NoteId};
 use super::node::{Group, Note, TreeNode};
 
 /// A place in the tree: the parent (`None` = root level) and the index in
-/// its children.
+/// its children. Undo remembers where a moved or deleted entry was (M135).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) struct Place {
+pub struct Place {
     /// The parent group, or `None` for the root level.
-    pub(super) parent: Option<GroupId>,
+    pub parent: Option<GroupId>,
     /// The position in the parent's children.
-    pub(super) index: usize,
+    pub index: usize,
 }
 
 /// Inserts `node` next to `sibling` (`offset` 0 = before, 1 = after) in

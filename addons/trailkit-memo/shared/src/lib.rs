@@ -13,3 +13,4 @@ pub mod row_badge;
 pub mod settings;
 pub mod storage_worker;
 pub mod ui_state;
+pub mod undo;

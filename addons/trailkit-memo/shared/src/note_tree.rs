@@ -8,6 +8,7 @@
 
 mod ids;
 mod node;
+mod trash;
 mod traversal;
 
 use jiff::Timestamp;
@@ -16,8 +17,10 @@ use trailkit_storage::{SchemaVersion, VersionedDocument};
 
 pub use ids::{GroupId, NodeId, NoteId};
 pub use node::{Group, Note, NoteKind, ResetPeriod, TrashEntry, TreeNode};
+pub use trash::TRASH_RETENTION;
+pub use traversal::Place;
 use traversal::{
-    Place, find_group, find_group_mut, find_note, find_note_mut, for_each_note_mut, insert_next_to,
+    find_group, find_group_mut, find_note, find_note_mut, for_each_note_mut, insert_next_to,
     parent_of, place_in,
 };
 
