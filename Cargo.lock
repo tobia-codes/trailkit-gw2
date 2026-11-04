@@ -1486,9 +1486,89 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "trailkit-memo-drafts",
+ "trailkit-memo-editor",
+ "trailkit-memo-note-list",
+ "trailkit-memo-note-view",
+ "trailkit-memo-reset-schedule",
+ "trailkit-memo-search",
+ "trailkit-memo-shared",
  "trailkit-storage",
  "trailkit-ui",
  "trailkit-ui-testing",
+ "uuid",
+ "windows",
+]
+
+[[package]]
+name = "trailkit-memo-drafts"
+version = "0.0.0"
+dependencies = [
+ "jiff",
+ "nexus",
+ "trailkit-memo-shared",
+ "trailkit-ui",
+]
+
+[[package]]
+name = "trailkit-memo-editor"
+version = "0.0.0"
+dependencies = [
+ "jiff",
+ "nexus",
+ "trailkit-memo-shared",
+ "trailkit-ui",
+]
+
+[[package]]
+name = "trailkit-memo-note-list"
+version = "0.0.0"
+dependencies = [
+ "nexus",
+ "trailkit-memo-shared",
+ "trailkit-ui",
+]
+
+[[package]]
+name = "trailkit-memo-note-view"
+version = "0.0.0"
+dependencies = [
+ "nexus",
+ "trailkit-memo-shared",
+ "trailkit-ui",
+]
+
+[[package]]
+name = "trailkit-memo-reset-schedule"
+version = "0.0.0"
+dependencies = [
+ "jiff",
+ "nexus",
+ "trailkit-memo-shared",
+ "trailkit-ui",
+]
+
+[[package]]
+name = "trailkit-memo-search"
+version = "0.0.0"
+dependencies = [
+ "jiff",
+ "nexus",
+ "trailkit-memo-shared",
+ "trailkit-ui",
+]
+
+[[package]]
+name = "trailkit-memo-shared"
+version = "0.0.0"
+dependencies = [
+ "jiff",
+ "log",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "trailkit-storage",
+ "trailkit-ui",
  "uuid",
  "windows",
 ]

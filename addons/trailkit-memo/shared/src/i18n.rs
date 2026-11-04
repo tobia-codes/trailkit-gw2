@@ -58,6 +58,67 @@ impl Language {
     }
 }
 
+/// A typed set of user-facing strings (ROADMAP R76, question 42a): shared
+/// i18n and every slice implement it for their text enum, so registering
+/// characters and checking translations work the same everywhere.
+pub trait LocalizedText: Sized + Copy + std::fmt::Debug + 'static {
+    /// Every string of the set.
+    const ALL: &'static [Self];
+
+    /// Returns the translation of this string in `language`.
+    fn get(self, language: Language) -> &'static str;
+
+    /// Further characters to register besides the strings themselves, e.g.
+    /// the digits and units of a number format. Empty by default.
+    #[must_use]
+    fn extra_characters() -> String {
+        String::new()
+    }
+
+    /// All strings in all languages concatenated, plus
+    /// [`extra_characters`](Self::extra_characters), so the app can register
+    /// every character with Nexus' font atlas (nexus-addon-dev skill §1).
+    #[must_use]
+    fn all_texts() -> String {
+        Self::ALL
+            .iter()
+            .flat_map(|text| Language::ALL.map(|language| text.get(language)))
+            .collect::<String>()
+            + &Self::extra_characters()
+    }
+}
+
+/// Checks that every string of `T` is translated into every language and
+/// part of [`LocalizedText::all_texts`]; called from each set's tests.
+///
+/// # Panics
+///
+/// Panics naming the first string that is empty or not registered.
+pub fn assert_all_translated<T: LocalizedText>() {
+    let all = T::all_texts();
+    for text in T::ALL {
+        for language in Language::ALL {
+            assert!(!text.get(language).is_empty(), "{text:?} {language:?}");
+            assert!(all.contains(text.get(language)), "{text:?} {language:?}");
+        }
+    }
+}
+
+/// What chat-link chips need from memo (M75): chip texts in `language` and
+/// the code copied last (`copied`), shared by note view and editor.
+#[cfg(windows)]
+#[must_use]
+pub fn chip_context(
+    language: Language,
+    copied: Option<&str>,
+) -> trailkit_ui::chat_link_chip::ChipContext<'_> {
+    let text: &'static dyn Fn(ChipText) -> &'static str = match language {
+        Language::English => &|text| chip_text(text, Language::English),
+        Language::German => &|text| chip_text(text, Language::German),
+    };
+    trailkit_ui::chat_link_chip::ChipContext { text, copied }
+}
+
 /// The translation of a chat-link chip text (memo plan M75).
 #[must_use]
 pub const fn chip_text(text: ChipText, language: Language) -> &'static str {
@@ -149,8 +210,6 @@ pub enum Text {
     NewNote,
     /// Tooltip of the "new group" button, empty-state button and title of a new group.
     NewGroup,
-    /// Context menu entry to rename a note or group.
-    Rename,
     /// Empty state headline when there are no notes.
     NoNotesYet,
     /// Primary empty-state button.
@@ -167,24 +226,6 @@ pub enum Text {
     SaveTooltip,
     /// Button cancelling an edit (M51).
     Cancel,
-    /// Placeholder of the title input (M51).
-    TitleHint,
-    /// Tooltip of the heading 1 button (M100).
-    FormatHeading1,
-    /// Tooltip of the heading 2 button (M100).
-    FormatHeading2,
-    /// Tooltip of the bold button (M53).
-    FormatBold,
-    /// Tooltip of the italic button (M53).
-    FormatItalic,
-    /// Tooltip of the bulleted list button (M53).
-    FormatBulletList,
-    /// Tooltip of the checkbox button (M53).
-    FormatCheckbox,
-    /// Tooltip of the link button (M53).
-    FormatLink,
-    /// Tooltip of the disabled event button without trailkit-core (M53).
-    InsertEventRequiresCore,
     /// Title of the unsaved changes dialog (M54).
     UnsavedChangesTitle,
     /// Text of the unsaved changes dialog (M54).
@@ -195,54 +236,12 @@ pub enum Text {
     DiscardChanges,
     /// Stay in the editor (unsaved changes dialog).
     KeepEditing,
-    /// Draft hint, followed by the date and time of the draft (M54).
-    DraftFound,
-    /// Draft hint addition when the note changed after the draft (M54).
-    DraftNoteChangedSince,
-    /// Restore a draft into the editor (M54).
-    RestoreDraft,
-    /// Tooltip of the preview button while the preview is hidden (M60).
-    ShowPreview,
-    /// Tooltip of the preview button while the preview is shown (M60).
-    HidePreview,
-    /// Shown instead of an empty note's content.
-    EmptyNote,
-    /// Shown in the note pane when no note is selected.
-    SelectNote,
-    /// Letter on the badge of daily reset notes.
-    DailyBadge,
-    /// Letter on the badge of weekly reset notes.
-    WeeklyBadge,
     /// Label of the text size shown while changing it (M80).
     TextSize,
-    /// Context menu submenu and dropdown tooltip for the note kind (M86).
-    ResetType,
-    /// Context menu submenu that moves a note or group (M112).
-    MoveTo,
-    /// "Move to" target: the root level of the note list (M112).
-    TopLevel,
-    /// Note kind option: no reset.
-    KindNormal,
-    /// Note kind option: daily reset.
-    KindDaily,
-    /// Note kind option: weekly reset.
-    KindWeekly,
-    /// Placeholder of the search field (M123).
-    SearchHint,
-    /// Clear button of the search field and of the empty search result
-    /// (M118, M126).
-    ClearSearch,
-    /// Empty search result; `{query}` is replaced by the search text (M126).
-    NoSearchResults,
-    /// Tooltip while dragging during a search, which cannot move (M125).
-    ClearSearchToMove,
-    /// Tooltip of a row's content hit count; `{count}` is replaced (M122).
-    ContentHits,
 }
 
-impl Text {
-    /// Every string, for registering their characters with Nexus' font atlas.
-    pub const ALL: [Self; 57] = [
+impl LocalizedText for Text {
+    const ALL: &'static [Self] = &[
         Self::MainWindowTitle,
         Self::CollapseWindow,
         Self::ExpandWindow,
@@ -256,7 +255,6 @@ impl Text {
         Self::OpenFolder,
         Self::NewNote,
         Self::NewGroup,
-        Self::Rename,
         Self::NoNotesYet,
         Self::CreateFirstNote,
         Self::ShowNoteList,
@@ -265,53 +263,19 @@ impl Text {
         Self::Save,
         Self::SaveTooltip,
         Self::Cancel,
-        Self::TitleHint,
-        Self::FormatHeading1,
-        Self::FormatHeading2,
-        Self::FormatBold,
-        Self::FormatItalic,
-        Self::FormatBulletList,
-        Self::FormatCheckbox,
-        Self::FormatLink,
-        Self::InsertEventRequiresCore,
         Self::UnsavedChangesTitle,
         Self::UnsavedChangesQuestion,
         Self::KeepChanges,
         Self::DiscardChanges,
         Self::KeepEditing,
-        Self::DraftFound,
-        Self::DraftNoteChangedSince,
-        Self::RestoreDraft,
-        Self::ShowPreview,
-        Self::HidePreview,
-        Self::EmptyNote,
-        Self::SelectNote,
-        Self::DailyBadge,
-        Self::WeeklyBadge,
         Self::TextSize,
-        Self::ResetType,
-        Self::MoveTo,
-        Self::TopLevel,
-        Self::KindNormal,
-        Self::KindDaily,
-        Self::KindWeekly,
-        Self::SearchHint,
-        Self::ClearSearch,
-        Self::NoSearchResults,
-        Self::ClearSearchToMove,
-        Self::ContentHits,
     ];
 
-    /// All strings in all languages concatenated, so Nexus puts every
-    /// character they use into the font atlas (nexus-addon-dev skill §1).
-    #[must_use]
-    pub fn all_texts() -> String {
-        let chip_texts = ChipText::all()
-            .flat_map(|text| Language::ALL.map(|language| chip_text(text, language)));
-        Self::ALL
-            .iter()
-            .flat_map(|text| Language::ALL.map(|language| text.get(language)))
-            .chain(chip_texts)
+    /// Chat-link chip texts and the characters of the number and time
+    /// formats.
+    fn extra_characters() -> String {
+        ChipText::all()
+            .flat_map(|text| Language::ALL.map(|language| chip_text(text, language)))
             .chain([
                 CHIP_DETAIL_CHARACTERS,
                 PERCENT_CHARACTERS,
@@ -320,9 +284,7 @@ impl Text {
             .collect()
     }
 
-    /// Returns the translation of this string in `language`.
-    #[must_use]
-    pub const fn get(self, language: Language) -> &'static str {
+    fn get(self, language: Language) -> &'static str {
         match (self, language) {
             (Self::MainWindowTitle, Language::English) => "Notes",
             (Self::MainWindowTitle, Language::German) => "Notizen",
@@ -362,8 +324,6 @@ impl Text {
             (Self::NewNote, Language::German) => "Neue Notiz",
             (Self::NewGroup, Language::English) => "New group",
             (Self::NewGroup, Language::German) => "Neue Gruppe",
-            (Self::Rename, Language::English) => "Rename",
-            (Self::Rename, Language::German) => "Umbenennen",
             (Self::NoNotesYet, Language::English) => "No notes yet",
             (Self::NoNotesYet, Language::German) => "Noch keine Notizen",
             (Self::CreateFirstNote, Language::English) => "Create your first note",
@@ -380,28 +340,6 @@ impl Text {
             (Self::SaveTooltip, Language::German) => "Änderungen speichern (Strg+Enter, Strg+S)",
             (Self::Cancel, Language::English) => "Cancel",
             (Self::Cancel, Language::German) => "Abbrechen",
-            (Self::TitleHint, Language::English) => "Title",
-            (Self::TitleHint, Language::German) => "Titel",
-            (Self::FormatHeading1, Language::English) => "Heading 1",
-            (Self::FormatHeading1, Language::German) => "Überschrift 1",
-            (Self::FormatHeading2, Language::English) => "Heading 2",
-            (Self::FormatHeading2, Language::German) => "Überschrift 2",
-            (Self::FormatBold, Language::English) => "Bold (Ctrl+B)",
-            (Self::FormatBold, Language::German) => "Fett (Strg+B)",
-            (Self::FormatItalic, Language::English) => "Italic (Ctrl+I)",
-            (Self::FormatItalic, Language::German) => "Kursiv (Strg+I)",
-            (Self::FormatBulletList, Language::English) => "Bulleted list",
-            (Self::FormatBulletList, Language::German) => "Aufzählung",
-            (Self::FormatCheckbox, Language::English) => "Checkbox",
-            (Self::FormatCheckbox, Language::German) => "Checkbox",
-            (Self::FormatLink, Language::English) => "Link",
-            (Self::FormatLink, Language::German) => "Link",
-            (Self::InsertEventRequiresCore, Language::English) => {
-                "Insert event — requires trailkit-core"
-            }
-            (Self::InsertEventRequiresCore, Language::German) => {
-                "Event einfügen – benötigt trailkit-core"
-            }
             (Self::UnsavedChangesTitle, Language::English) => "Unsaved changes",
             (Self::UnsavedChangesTitle, Language::German) => "Ungespeicherte Änderungen",
             (Self::UnsavedChangesQuestion, Language::English) => {
@@ -416,46 +354,8 @@ impl Text {
             (Self::DiscardChanges, Language::German) => "Verwerfen",
             (Self::KeepEditing, Language::English) => "Keep editing",
             (Self::KeepEditing, Language::German) => "Weiter bearbeiten",
-            (Self::DraftFound, Language::English) => "Unsaved changes from",
-            (Self::DraftFound, Language::German) => "Ungespeicherte Änderungen vom",
-            (Self::DraftNoteChangedSince, Language::English) => "The note was changed since.",
-            (Self::DraftNoteChangedSince, Language::German) => "Die Notiz wurde seitdem geändert.",
-            (Self::RestoreDraft, Language::English) => "Restore",
-            (Self::RestoreDraft, Language::German) => "Wiederherstellen",
-            (Self::ShowPreview, Language::English) => "Show preview",
-            (Self::ShowPreview, Language::German) => "Vorschau einblenden",
-            (Self::HidePreview, Language::English) => "Hide preview",
-            (Self::HidePreview, Language::German) => "Vorschau ausblenden",
-            (Self::EmptyNote, Language::English) => "This note is empty.",
-            (Self::EmptyNote, Language::German) => "Diese Notiz ist leer.",
-            (Self::SelectNote, Language::English) => "Select a note in the list.",
-            (Self::SelectNote, Language::German) => "Wähle eine Notiz in der Liste aus.",
-            (Self::DailyBadge, Language::English) => "D",
-            (Self::DailyBadge, Language::German) => "T",
-            (Self::WeeklyBadge, Language::English | Language::German) => "W",
             (Self::TextSize, Language::English) => "Text size",
             (Self::TextSize, Language::German) => "Textgröße",
-            (Self::ResetType, Language::English) => "Reset type",
-            (Self::ResetType, Language::German) => "Reset-Art",
-            (Self::MoveTo, Language::English) => "Move to",
-            (Self::MoveTo, Language::German) => "Verschieben nach",
-            (Self::TopLevel, Language::English) => "Top level",
-            (Self::TopLevel, Language::German) => "Oberste Ebene",
-            (Self::KindNormal, Language::English | Language::German) => "Normal",
-            (Self::KindDaily, Language::English) => "Daily reset",
-            (Self::KindDaily, Language::German) => "Täglicher Reset",
-            (Self::KindWeekly, Language::English) => "Weekly reset",
-            (Self::KindWeekly, Language::German) => "Wöchentlicher Reset",
-            (Self::SearchHint, Language::English) => "Search …",
-            (Self::SearchHint, Language::German) => "Suchen …",
-            (Self::ClearSearch, Language::English) => "Clear search",
-            (Self::ClearSearch, Language::German) => "Suche leeren",
-            (Self::NoSearchResults, Language::English) => "No notes for “{query}”",
-            (Self::NoSearchResults, Language::German) => "Keine Notizen für „{query}“",
-            (Self::ClearSearchToMove, Language::English) => "Clear the search to move",
-            (Self::ClearSearchToMove, Language::German) => "Suche leeren zum Verschieben",
-            (Self::ContentHits, Language::English) => "Matches in the text: {count}",
-            (Self::ContentHits, Language::German) => "Treffer im Text: {count}",
         }
     }
 }
@@ -477,29 +377,9 @@ pub fn label_with_percent(label: &str, percent: f32, language: Language) -> Stri
     }
 }
 
-/// Characters of [`reset_countdown`] and [`format_local_time`] besides
-/// words that are already in [`Text`].
+/// Characters of [`format_local_time`] and of the slices' number formats
+/// (e.g. the reset countdown) besides words that are already in a text.
 const COUNTDOWN_CHARACTERS: &str = "0123456789 hminTd.,:-";
-
-/// The time until the next reset, in whole minutes rounded up (M91), e.g.
-/// "Resets in 5 h 12 min", "Resets in 12 min", "Resets in 3 d 4 h";
-/// German "Reset in …" with "T" for days.
-#[must_use]
-pub fn reset_countdown(minutes: i64, language: Language) -> String {
-    let (prefix, day_unit) = match language {
-        Language::English => ("Resets in", "d"),
-        Language::German => ("Reset in", "T"),
-    };
-    let minutes = minutes.max(1);
-    let (days, hours, minutes) = (minutes / 1_440, minutes % 1_440 / 60, minutes % 60);
-    if days > 0 {
-        format!("{prefix} {days} {day_unit} {hours} h")
-    } else if hours > 0 {
-        format!("{prefix} {hours} h {minutes} min")
-    } else {
-        format!("{prefix} {minutes} min")
-    }
-}
 
 /// `time` as a date and time in the player's local time zone, formatted for
 /// `language` (`data-formatting`), e.g. "2026-11-03 01:00" or
@@ -599,17 +479,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn countdown_uses_the_largest_two_units() {
-        assert_eq!(
-            reset_countdown(312, Language::English),
-            "Resets in 5 h 12 min"
-        );
-        assert_eq!(reset_countdown(12, Language::German), "Reset in 12 min");
-        assert_eq!(reset_countdown(4_560, Language::German), "Reset in 3 T 4 h");
-        assert_eq!(reset_countdown(0, Language::English), "Resets in 1 min");
-    }
-
-    #[test]
     fn setting_wins_over_nexus_language() {
         assert_eq!(
             Language::resolve(Some(Language::German), Some("en")),
@@ -629,39 +498,8 @@ mod tests {
     }
 
     #[test]
-    fn every_character_is_in_the_subset_fonts() {
-        use trailkit_ui::fonts::{
-            OPEN_SANS_BOLD, OPEN_SANS_BOLD_ITALIC, OPEN_SANS_ITALIC, OPEN_SANS_REGULAR, covers,
-        };
-        // UI strings plus the help pages (rendered with the same fonts).
-        let texts =
-            Text::all_texts() + include_str!("../help/en.md") + include_str!("../help/de.md");
-        for font in [
-            OPEN_SANS_REGULAR,
-            OPEN_SANS_BOLD,
-            OPEN_SANS_ITALIC,
-            OPEN_SANS_BOLD_ITALIC,
-        ] {
-            let missing: String = texts
-                .chars()
-                .filter(|character| !character.is_control() && !covers(font, *character))
-                .collect();
-            assert!(
-                missing.is_empty(),
-                "missing in the subset fonts (run `cargo xtask subset-fonts`): {missing}"
-            );
-        }
-    }
-
-    #[test]
     fn every_text_is_translated_and_registered() {
-        let all = Text::all_texts();
-        for text in Text::ALL {
-            for language in Language::ALL {
-                assert!(!text.get(language).is_empty(), "{text:?} {language:?}");
-                assert!(all.contains(text.get(language)));
-            }
-        }
+        assert_all_translated::<Text>();
     }
 
     #[test]

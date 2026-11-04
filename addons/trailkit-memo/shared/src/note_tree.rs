@@ -6,94 +6,20 @@
 //!
 //! Platform-independent so it can be unit-tested on any host (ROADMAP R23).
 
+mod ids;
+mod node;
+mod traversal;
+
 use jiff::Timestamp;
 use serde::{Deserialize, Serialize};
 use trailkit_storage::{SchemaVersion, VersionedDocument};
-use trailkit_ui::markdown::uncheck_all_tasks;
-use uuid::Uuid;
 
-use crate::reset_schedule::ResetPeriod;
-
-/// Stable unique id of a note (UUID v7, time-ordered).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct NoteId(Uuid);
-
-/// Stable unique id of a group (UUID v7, time-ordered).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct GroupId(Uuid);
-
-impl NoteId {
-    /// Creates a new, unique note id.
-    #[must_use]
-    pub fn new_unique() -> Self {
-        Self(Uuid::now_v7())
-    }
-
-    /// A stable 32-bit id for ImGui's id stack (collisions are harmless and
-    /// practically impossible within one tree).
-    #[must_use]
-    pub const fn imgui_id(self) -> i32 {
-        fold_to_i32(self.0)
-    }
-}
-
-impl GroupId {
-    /// Creates a new, unique group id.
-    #[must_use]
-    pub fn new_unique() -> Self {
-        Self(Uuid::now_v7())
-    }
-
-    /// A stable 32-bit id for ImGui's id stack, see [`NoteId::imgui_id`].
-    #[must_use]
-    pub const fn imgui_id(self) -> i32 {
-        fold_to_i32(self.0)
-    }
-}
-
-/// Folds a UUID into 32 bits by XOR-ing its four 32-bit words.
-#[expect(
-    clippy::cast_possible_truncation,
-    clippy::cast_possible_wrap,
-    reason = "deliberate folding into a hash"
-)]
-const fn fold_to_i32(uuid: Uuid) -> i32 {
-    let value = uuid.as_u128();
-    (value ^ (value >> 32) ^ (value >> 64) ^ (value >> 96)) as u32 as i32
-}
-
-/// A reference to a note or a group in the tree.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(tag = "type", content = "id", rename_all = "snake_case")]
-pub enum NodeId {
-    /// A note.
-    Note(NoteId),
-    /// A group.
-    Group(GroupId),
-}
-
-/// What happens to a note's checkboxes at the game's reset times (M13).
-///
-/// Stored flat in the note as `"kind"` plus, for reset kinds,
-/// `"last_reset_applied_at"`; a normal note cannot carry a reset time.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "snake_case")]
-pub enum NoteKind {
-    /// A plain note; nothing is reset.
-    Normal,
-    /// All checkboxes are unchecked at the daily reset (00:00 UTC).
-    DailyReset {
-        /// The reset that was last applied to this note.
-        last_reset_applied_at: Timestamp,
-    },
-    /// All checkboxes are unchecked at the weekly reset (Monday 07:30 UTC).
-    WeeklyReset {
-        /// The reset that was last applied to this note.
-        last_reset_applied_at: Timestamp,
-    },
-}
+pub use ids::{GroupId, NodeId, NoteId};
+pub use node::{Group, Note, NoteKind, ResetPeriod, TrashEntry, TreeNode};
+use traversal::{
+    Place, find_group, find_group_mut, find_note, find_note_mut, for_each_note_mut, insert_next_to,
+    parent_of, place_in,
+};
 
 /// Where a new or moved note or group goes in the tree (M43, M96,
 /// M106–M112).
@@ -122,71 +48,6 @@ pub enum MoveCheck {
     Impossible,
 }
 
-/// A place in the tree: the parent (`None` = root level) and the index in
-/// its children.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct Place {
-    /// The parent group, or `None` for the root level.
-    parent: Option<GroupId>,
-    /// The position in the parent's children.
-    index: usize,
-}
-
-/// A markdown note.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Note {
-    /// Stable unique id.
-    pub id: NoteId,
-    /// Title shown in the note list.
-    pub title: String,
-    /// The note content as markdown.
-    pub body: String,
-    /// Normal or reset note, with its reset state.
-    #[serde(flatten)]
-    pub kind: NoteKind,
-    /// When the note was created.
-    pub created_at: Timestamp,
-    /// When the note's title or content was last changed by the user; kind
-    /// changes and resets do not count (M86, M88).
-    pub updated_at: Timestamp,
-}
-
-/// A group of notes and subgroups.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Group {
-    /// Stable unique id.
-    pub id: GroupId,
-    /// Title shown in the note list.
-    pub title: String,
-    /// Notes and subgroups in display order.
-    pub children: Vec<TreeNode>,
-    /// Whether the group is expanded in the note list (kept across sessions).
-    pub expanded: bool,
-}
-
-/// One entry of the tree: a note or a group.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
-pub enum TreeNode {
-    /// A note.
-    Note(Note),
-    /// A group with its own children.
-    Group(Group),
-}
-
-/// A deleted note or group waiting in the trash (M12, M25).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct TrashEntry {
-    /// The deleted note or group, including all its children.
-    pub node: TreeNode,
-    /// When it was deleted; it is purged 30 days later (M12).
-    pub deleted_at: Timestamp,
-    /// The group it was in, or `None` if it was on the root level.
-    pub former_parent: Option<GroupId>,
-    /// Its position within the former parent's children.
-    pub former_index: usize,
-}
-
 /// Everything stored in `notes.json`.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NotesDocument {
@@ -199,112 +60,6 @@ pub struct NotesDocument {
 impl VersionedDocument for NotesDocument {
     const FILE_STEM: &'static str = "notes";
     const CURRENT_SCHEMA_VERSION: SchemaVersion = SchemaVersion::FIRST;
-}
-
-impl NoteKind {
-    /// A note kind with `period` (`None` = normal note) whose reset state
-    /// starts at `now`, so checks made before `now` stay until the next
-    /// reset (M90).
-    #[must_use]
-    pub const fn with_period(period: Option<ResetPeriod>, now: Timestamp) -> Self {
-        match period {
-            None => Self::Normal,
-            Some(ResetPeriod::Daily) => Self::DailyReset {
-                last_reset_applied_at: now,
-            },
-            Some(ResetPeriod::Weekly) => Self::WeeklyReset {
-                last_reset_applied_at: now,
-            },
-        }
-    }
-
-    /// The reset period, or `None` for a normal note.
-    #[must_use]
-    pub const fn period(self) -> Option<ResetPeriod> {
-        match self {
-            Self::Normal => None,
-            Self::DailyReset { .. } => Some(ResetPeriod::Daily),
-            Self::WeeklyReset { .. } => Some(ResetPeriod::Weekly),
-        }
-    }
-
-    /// The reset state, or `None` for a normal note.
-    #[must_use]
-    pub const fn last_reset_applied_at(self) -> Option<Timestamp> {
-        match self {
-            Self::Normal => None,
-            Self::DailyReset {
-                last_reset_applied_at,
-            }
-            | Self::WeeklyReset {
-                last_reset_applied_at,
-            } => Some(last_reset_applied_at),
-        }
-    }
-}
-
-impl Note {
-    /// Creates a new, empty note of `kind` created at `now`.
-    ///
-    /// For reset kinds, the reset state starts at `now`, so the first reset
-    /// after creation is applied.
-    #[must_use]
-    pub fn new(title: String, kind: NoteKind, now: Timestamp) -> Self {
-        Self {
-            id: NoteId::new_unique(),
-            title,
-            body: String::new(),
-            kind,
-            created_at: now,
-            updated_at: now,
-        }
-    }
-}
-
-impl Group {
-    /// Creates a new, empty and expanded group.
-    #[must_use]
-    pub fn new(title: String) -> Self {
-        Self {
-            id: GroupId::new_unique(),
-            title,
-            children: Vec::new(),
-            expanded: true,
-        }
-    }
-
-    /// Number of notes in this group, including those in nested groups
-    /// (shown next to the group title, M50).
-    #[must_use]
-    pub fn note_count(&self) -> usize {
-        self.children
-            .iter()
-            .map(|child| match child {
-                TreeNode::Note(_) => 1,
-                TreeNode::Group(group) => group.note_count(),
-            })
-            .sum()
-    }
-}
-
-impl TreeNode {
-    /// The id of this note or group.
-    #[must_use]
-    pub const fn id(&self) -> NodeId {
-        match self {
-            Self::Note(note) => NodeId::Note(note.id),
-            Self::Group(group) => NodeId::Group(group.id),
-        }
-    }
-
-    /// The title shown in the note list.
-    #[must_use]
-    pub fn title(&self) -> &str {
-        match self {
-            Self::Note(note) => &note.title,
-            Self::Group(group) => &group.title,
-        }
-    }
 }
 
 impl NotesDocument {
@@ -546,148 +301,17 @@ impl NotesDocument {
         })
     }
 
-    /// Applies every due reset at `now` (M88–M90): unchecks all tasks of a
-    /// reset note whose reset passed and records `now` as its reset state.
-    /// Notes for which `is_being_edited` is true wait (M89). `updated_at`
-    /// stays. Returns whether anything changed and must be saved.
-    pub fn apply_due_resets(
-        &mut self,
-        now: Timestamp,
-        is_being_edited: impl Fn(NoteId) -> bool,
-    ) -> bool {
-        let mut changed = false;
-        for_each_note_mut(&mut self.root, &mut |note| {
-            let (Some(period), Some(last_reset_applied_at)) =
-                (note.kind.period(), note.kind.last_reset_applied_at())
-            else {
-                return;
-            };
-            if !period.is_due(last_reset_applied_at, now) || is_being_edited(note.id) {
-                return;
-            }
-            if let Some(body) = uncheck_all_tasks(&note.body) {
-                note.body = body;
-            }
-            note.kind = NoteKind::with_period(Some(period), now);
-            changed = true;
-        });
-        changed
+    /// Calls `visit` for every note in the tree, nested ones included (the
+    /// trash is not part of the tree).
+    pub fn for_each_note_mut(&mut self, mut visit: impl FnMut(&mut Note)) {
+        for_each_note_mut(&mut self.root, &mut visit);
     }
-}
-
-/// Inserts `node` next to `sibling` (`offset` 0 = before, 1 = after) in
-/// whichever list of `nodes` (or their descendants) holds it; hands `node`
-/// back if `sibling` is missing.
-fn insert_next_to(
-    nodes: &mut Vec<TreeNode>,
-    sibling: NodeId,
-    offset: usize,
-    node: TreeNode,
-) -> Result<(), TreeNode> {
-    if let Some(index) = nodes.iter().position(|candidate| candidate.id() == sibling) {
-        nodes.insert(index + offset, node);
-        return Ok(());
-    }
-    let mut node = node;
-    for candidate in nodes.iter_mut() {
-        if let TreeNode::Group(group) = candidate {
-            match insert_next_to(&mut group.children, sibling, offset, node) {
-                Ok(()) => return Ok(()),
-                Err(returned) => node = returned,
-            }
-        }
-    }
-    Err(node)
-}
-
-/// Calls `visit` for every note in `nodes`, nested ones included.
-fn for_each_note_mut(nodes: &mut [TreeNode], visit: &mut impl FnMut(&mut Note)) {
-    for node in nodes {
-        match node {
-            TreeNode::Note(note) => visit(note),
-            TreeNode::Group(group) => for_each_note_mut(&mut group.children, visit),
-        }
-    }
-}
-
-/// Searches `nodes` recursively for the note `id`.
-fn find_note(nodes: &[TreeNode], id: NoteId) -> Option<&Note> {
-    nodes.iter().find_map(|node| match node {
-        TreeNode::Note(note) if note.id == id => Some(note),
-        TreeNode::Note(_) => None,
-        TreeNode::Group(group) => find_note(&group.children, id),
-    })
-}
-
-/// Searches `nodes` recursively for the note `id`, mutably.
-fn find_note_mut(nodes: &mut [TreeNode], id: NoteId) -> Option<&mut Note> {
-    nodes.iter_mut().find_map(|node| match node {
-        TreeNode::Note(note) if note.id == id => Some(note),
-        TreeNode::Note(_) => None,
-        TreeNode::Group(group) => find_note_mut(&mut group.children, id),
-    })
-}
-
-/// Searches `nodes` recursively for the group `id`.
-fn find_group(nodes: &[TreeNode], id: GroupId) -> Option<&Group> {
-    nodes.iter().find_map(|node| match node {
-        TreeNode::Note(_) => None,
-        TreeNode::Group(group) if group.id == id => Some(group),
-        TreeNode::Group(group) => find_group(&group.children, id),
-    })
-}
-
-/// Finds the place of `id` in `nodes` (the children of `parent`) or their
-/// descendants.
-fn place_in(nodes: &[TreeNode], parent: Option<GroupId>, id: NodeId) -> Option<Place> {
-    if let Some(index) = nodes.iter().position(|node| node.id() == id) {
-        return Some(Place { parent, index });
-    }
-    nodes.iter().find_map(|node| match node {
-        TreeNode::Note(_) => None,
-        TreeNode::Group(group) => place_in(&group.children, Some(group.id), id),
-    })
-}
-
-/// Searches `nodes` recursively for the group `id`, mutably.
-fn find_group_mut(nodes: &mut [TreeNode], id: GroupId) -> Option<&mut Group> {
-    for node in nodes {
-        let TreeNode::Group(group) = node else {
-            continue;
-        };
-        if group.id == id {
-            return Some(group);
-        }
-        if let Some(found) = find_group_mut(&mut group.children, id) {
-            return Some(found);
-        }
-    }
-    None
-}
-
-/// Finds the parent of `id`: `Some(None)` = root level, `Some(Some(group))`
-/// = inside `group`, `None` = not in the tree.
-fn parent_of(nodes: &[TreeNode], id: NodeId) -> Option<Option<GroupId>> {
-    if nodes.iter().any(|node| node.id() == id) {
-        return Some(None);
-    }
-    nodes.iter().find_map(|node| match node {
-        TreeNode::Note(_) => None,
-        TreeNode::Group(group) => match parent_of(&group.children, id)? {
-            None => Some(Some(group.id)),
-            inner => Some(inner),
-        },
-    })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    /// A fixed point in time.
-    fn noon() -> Timestamp {
-        "2026-11-01T12:00:00Z".parse().unwrap_or_default()
-    }
+    use node::tests::noon;
 
     /// A small tree with every node and kind variant.
     fn sample_document() -> NotesDocument {
@@ -749,36 +373,6 @@ mod tests {
     }
 
     #[test]
-    fn due_resets_uncheck_tasks_except_while_editing() {
-        let mut document = sample_document();
-        let weekly = note_id(&document, "Weekly clears").expect("sample note");
-        let ideas = note_id(&document, "Ideas").expect("sample note");
-        for id in [weekly, ideas] {
-            if let Some(note) = document.note_mut(id) {
-                "- [x] boss\n".clone_into(&mut note.body);
-            }
-        }
-        let next_week = "2026-11-02T08:00:00Z".parse().unwrap_or_default();
-        assert!(!document.apply_due_resets(next_week, |id| id == weekly));
-        assert_eq!(
-            document.note(weekly).map(|note| note.body.as_str()),
-            Some("- [x] boss\n")
-        );
-
-        assert!(document.apply_due_resets(next_week, |_| false));
-        let note = document.note(weekly).expect("sample note");
-        assert_eq!(note.body, "- [ ] boss\n");
-        assert_eq!(note.kind.last_reset_applied_at(), Some(next_week));
-        assert_eq!(note.updated_at, noon());
-        // Normal notes are never reset; a second run finds nothing due.
-        assert_eq!(
-            document.note(ideas).map(|note| note.body.as_str()),
-            Some("- [x] boss\n")
-        );
-        assert!(!document.apply_due_resets(next_week, |_| false));
-    }
-
-    #[test]
     fn insert_after_a_nested_note_and_fall_back_to_the_root() {
         let mut document = sample_document();
         let weekly = note_id(&document, "Weekly clears").expect("sample note");
@@ -817,38 +411,6 @@ mod tests {
     }
 
     #[test]
-    fn note_is_stored_flat_with_kind_and_type_tags() -> serde_json::Result<()> {
-        let note = Note::new(
-            "Dailies".to_owned(),
-            NoteKind::DailyReset {
-                last_reset_applied_at: noon(),
-            },
-            noon(),
-        );
-        let value = serde_json::to_value(TreeNode::Note(note))?;
-        assert_eq!(value["type"], "note");
-        assert_eq!(value["kind"], "daily_reset");
-        assert_eq!(value["last_reset_applied_at"], "2026-11-01T12:00:00Z");
-        assert_eq!(value["created_at"], "2026-11-01T12:00:00Z");
-        Ok(())
-    }
-
-    #[test]
-    fn normal_note_has_no_reset_time() -> serde_json::Result<()> {
-        let note = Note::new("Ideas".to_owned(), NoteKind::Normal, noon());
-        let value = serde_json::to_value(note)?;
-        assert_eq!(value["kind"], "normal");
-        assert!(value.get("last_reset_applied_at").is_none());
-        Ok(())
-    }
-
-    #[test]
-    fn ids_are_unique() {
-        assert_ne!(NoteId::new_unique(), NoteId::new_unique());
-        assert_ne!(GroupId::new_unique(), GroupId::new_unique());
-    }
-
-    #[test]
     fn finds_and_renames_nested_nodes() {
         let mut document = sample_document();
         let TreeNode::Group(group) = &document.root[1] else {
@@ -871,28 +433,6 @@ mod tests {
         );
         assert!(document.rename(NodeId::Group(group_id), "Raids & strikes", later));
         assert!(!document.rename(NodeId::Group(GroupId::new_unique()), "x", later));
-    }
-
-    #[test]
-    fn note_count_includes_nested_groups() {
-        let mut outer = Group::new("Outer".to_owned());
-        assert_eq!(outer.note_count(), 0);
-        let mut inner = Group::new("Inner".to_owned());
-        inner.children.push(TreeNode::Note(Note::new(
-            "A".to_owned(),
-            NoteKind::Normal,
-            noon(),
-        )));
-        inner
-            .children
-            .push(TreeNode::Group(Group::new("Empty".to_owned())));
-        outer.children.push(TreeNode::Group(inner));
-        outer.children.push(TreeNode::Note(Note::new(
-            "B".to_owned(),
-            NoteKind::Normal,
-            noon(),
-        )));
-        assert_eq!(outer.note_count(), 2);
     }
 
     #[test]
@@ -950,15 +490,6 @@ mod tests {
 
         document.append(None, TreeNode::Group(Group::new("Root".to_owned())));
         assert_eq!(document.root.last().map(TreeNode::title), Some("Root"));
-    }
-
-    #[test]
-    fn node_id_serializes_tagged() -> serde_json::Result<()> {
-        let id = NodeId::Group(GroupId::new_unique());
-        let value = serde_json::to_value(id)?;
-        assert_eq!(value["type"], "group");
-        assert_eq!(serde_json::from_value::<NodeId>(value)?, id);
-        Ok(())
     }
 
     /// The tree `A G1[B G2[C]] D` with G2 collapsed, plus the ids of

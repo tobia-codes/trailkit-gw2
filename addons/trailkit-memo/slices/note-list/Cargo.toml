@@ -1,0 +1,21 @@
+[package]
+name = "trailkit-memo-note-list"
+version = "0.0.0"
+description = "Note-list slice of trailkit-memo: tree rows, rename, context menu and drag & drop"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+trailkit-memo-shared.workspace = true
+
+# The list draws with the Nexus ImGui bindings, which only build for Windows.
+[target.'cfg(windows)'.dependencies]
+nexus.workspace = true
+trailkit-ui.workspace = true
+
+[lints]
+workspace = true

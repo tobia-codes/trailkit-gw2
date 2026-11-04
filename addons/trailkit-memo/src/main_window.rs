@@ -18,10 +18,9 @@ use nexus::imgui::{
     WindowHoveredFlags,
 };
 use trailkit_ui::{
-    editor::view::TextEditor,
     font_registry::FontScope,
     fonts::FontRole,
-    markdown::{self, MarkdownDocument},
+    markdown,
     markdown_view::{MarkdownAction, open_web_link},
     pane::draw_pane,
     text_search::SearchQuery,
@@ -29,48 +28,40 @@ use trailkit_ui::{
     title_bar::TitleBarTexts,
 };
 
-use crate::{
+use trailkit_memo_drafts::draft_hint::DraftHint;
+use trailkit_memo_editor::{
+    editor::Editor,
+    note_editing::{EditSession, FormatCommand},
+};
+use trailkit_memo_note_list::note_list::NoteList;
+use trailkit_memo_note_view::note_view::NoteView;
+use trailkit_memo_reset_schedule::{
+    due_resets::apply_due_resets, schedule::next_reset_of_any_period,
+};
+use trailkit_memo_search::{
+    note_search::{NoteSearchIndex, SearchResults},
+    search_field::SearchField,
+};
+use trailkit_memo_shared::i18n::LocalizedText;
+use trailkit_memo_shared::{
     drafts::DraftsDocument,
     i18n::{Language, Text, label_with_percent},
-    note_editing::{ActiveFormats, EditSession, FormatCommand, active_formats, format_edit},
-    note_search::{NoteSearchIndex, SearchResults},
     note_tree::{
-        Group, GroupId, InsertionPoint, MoveCheck, NodeId, Note, NoteId, NoteKind, NotesDocument,
+        Group, GroupId, InsertionPoint, NodeId, Note, NoteId, NoteKind, NotesDocument, ResetPeriod,
         TreeNode as Node,
     },
-    reset_schedule::{ResetPeriod, next_reset_of_any_period},
-    search_field::SearchField,
     settings::{Settings, TextScale, UnsavedChanges},
     storage_worker::StorageSaver,
-    tree_drag::{DropTarget, RowRect},
     ui_state::UiState,
 };
 
 use self::{dialogs::draw_unsaved_changes_card, layout::draw_empty_state};
-
-/// Opacity of the dragged row and its children while dragging (M106).
-const DRAGGED_ROW_ALPHA: f32 = 0.4;
-
-/// Auto-scroll speed while dragging near the list's edge, in rows per
-/// second at the very edge (M111).
-const DRAG_SCROLL_ROWS_PER_SECOND: f32 = 12.0;
 
 /// Minimum content width of each pane in average characters (M40).
 const MINIMUM_PANE_CHARACTERS: f32 = 22.0;
 /// Minimum content width of the note list in average characters (M73): the
 /// user may drag it narrower than the other panes.
 const MINIMUM_TREE_CHARACTERS: f32 = 10.0;
-/// Width in characters (of `n`) that editor and preview each keep, so the
-/// splitter between them stays usable (M72).
-const MINIMUM_PREVIEW_SPLIT_CHARACTERS: f32 = 3.0;
-
-/// The note kinds in menu and dropdown order with their labels (M86).
-const KIND_OPTIONS: [(Option<ResetPeriod>, Text); 3] = [
-    (None, Text::KindNormal),
-    (Some(ResetPeriod::Daily), Text::KindDaily),
-    (Some(ResetPeriod::Weekly), Text::KindWeekly),
-];
-
 /// How long the text size waits after the last Ctrl+mouse wheel step before
 /// the fonts are rebuilt (M80): rebuilding on every step flickers.
 const TEXT_SCALE_APPLY_DELAY_SECONDS: f64 = 0.4;
@@ -104,20 +95,12 @@ struct PaneWidths {
 /// of the dimmed note stays visible to click away (M48, `lay-drawer`).
 const DRAWER_MAXIMUM_FRACTION: f32 = 0.85;
 
-/// Windows virtual-key code of `B` (Nexus feeds ImGui with virtual-key codes).
-const VIRTUAL_KEY_B: i32 = 0x42;
-
-/// Windows virtual-key code of `0` (Ctrl+0 resets the text size, M79).
+/// Windows virtual-key code of `0` (Nexus feeds ImGui with virtual-key
+/// codes; Ctrl+0 resets the text size, M79).
 const VIRTUAL_KEY_0: i32 = 0x30;
 
 /// Windows virtual-key code of `F` (Ctrl+F focuses the search, M124).
 const VIRTUAL_KEY_F: i32 = 0x46;
-
-/// Windows virtual-key code of `I`.
-const VIRTUAL_KEY_I: i32 = 0x49;
-
-/// Windows virtual-key code of `S` (Ctrl+S finishes editing, M93).
-const VIRTUAL_KEY_S: i32 = 0x53;
 
 /// A problem with `notes.json` shown above the notes (M31).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -138,12 +121,8 @@ enum WindowAction {
     Select(NodeId),
     /// A group was expanded or collapsed.
     SetExpanded(GroupId, bool),
-    /// Start renaming a note or group.
-    StartRename(NodeId),
-    /// Commit the rename with the edited title.
-    CommitRename,
-    /// Leave rename mode without changes.
-    CancelRename,
+    /// Rename a note or group (inline rename committed, M44).
+    Rename(NodeId, String),
     /// Create a note at a point, or by the selection for `None` (M43, M96).
     NewNote(Option<InsertionPoint>),
     /// Create a group at a point, or by the selection for `None`.
@@ -212,115 +191,6 @@ enum LeaveReason {
     Cancel,
 }
 
-/// The editor of one note (M51–M53, M58).
-#[derive(Debug)]
-struct Editor {
-    /// Uncommitted title and body.
-    session: EditSession,
-    /// The word-wrapping body editor; its text is mirrored into
-    /// `session.body` on every change.
-    body: TextEditor,
-    /// The parsed preview of the body (M60); `None` when it must be parsed
-    /// again because the text changed.
-    preview: Option<MarkdownDocument>,
-    /// Whether the title input was active in the last frame.
-    title_was_active: bool,
-    /// Formatting active at the cursor, cached per text revision and
-    /// selection (M69).
-    active: Option<(u64, std::ops::Range<usize>, ActiveFormats)>,
-}
-
-impl Editor {
-    /// Opens an editor for `session`, focused on the body.
-    fn new(session: EditSession) -> Self {
-        let body = TextEditor::new(session.body.clone());
-        Self {
-            session,
-            body,
-            preview: None,
-            title_was_active: false,
-            active: None,
-        }
-    }
-
-    /// Applies a formatting command to the body at its selection (M53).
-    fn format(&mut self, command: FormatCommand) {
-        let edit = format_edit(self.body.text(), self.body.selection(), command);
-        self.body
-            .apply_edit(edit.range, &edit.replacement, edit.selection);
-        self.body.focus();
-        self.sync_body();
-    }
-
-    /// The formatting active at the cursor (recomputed only when the text or
-    /// the selection changed).
-    fn active_formats(&mut self) -> ActiveFormats {
-        let revision = self.body.revision();
-        let selection = self.body.selection();
-        match &self.active {
-            Some((cached_revision, cached_selection, formats))
-                if *cached_revision == revision && *cached_selection == selection =>
-            {
-                *formats
-            }
-            _ => {
-                let formats = active_formats(self.body.text(), selection.clone());
-                self.active = Some((revision, selection, formats));
-                formats
-            }
-        }
-    }
-
-    /// Copies the editor text into the session and marks the preview stale.
-    fn sync_body(&mut self) {
-        self.session.body.clear();
-        self.session.body.push_str(self.body.text());
-        self.preview = None;
-    }
-}
-
-/// An inline rename in progress (M44).
-#[derive(Debug)]
-struct RenameState {
-    /// The note or group being renamed.
-    node: NodeId,
-    /// The edited title.
-    buffer: String,
-    /// Whether keyboard focus was already given to the input.
-    focused: bool,
-}
-
-/// A press on a note list row that may become a drag (M106).
-#[derive(Debug)]
-struct TreeDrag {
-    /// The pressed note or group.
-    node: NodeId,
-    /// Mouse position of the press.
-    pressed_at: [f32; 2],
-    /// Whether the mouse moved far enough to drag; until then a release
-    /// selects the row.
-    is_dragging: bool,
-    /// Where a drop would go in this frame, if the mouse is over the list.
-    target: Option<DropTarget>,
-    /// Whether the move to `target` is possible, changes nothing or changes
-    /// the tree.
-    check: MoveCheck,
-    /// The collapsed group hovered in its middle and since when (ImGui
-    /// time); it expands after [`EXPAND_DELAY_SECONDS`] (M108).
-    collapsed_hover: Option<(GroupId, f64)>,
-}
-
-/// The parsed markdown of the shown note, re-parsed only when it changes.
-#[derive(Debug)]
-struct ParsedNote {
-    /// The note the cache belongs to.
-    note: NoteId,
-    /// The body the document was parsed from.
-    source: String,
-    /// The parsed body.
-    document: MarkdownDocument,
-}
-
 /// State of the main window, owned by the render thread.
 pub struct MemoWindow {
     /// The note tree (M30).
@@ -333,10 +203,10 @@ pub struct MemoWindow {
     saver: StorageSaver,
     /// The addon folder, for "Open folder".
     addon_directory: PathBuf,
-    /// Inline rename in progress.
-    rename: Option<RenameState>,
-    /// Markdown cache of the shown note.
-    parsed: Option<ParsedNote>,
+    /// The note list: rows, rename, drag & drop (R76 slice).
+    note_list: NoteList,
+    /// The reading view of the selected note.
+    note_view: NoteView,
     /// Narrow window: whether the note list drawer is open (M48).
     drawer_open: bool,
     /// The chat code copied last, while its chip says "Copied" (M75).
@@ -344,8 +214,6 @@ pub struct MemoWindow {
     /// Whether the window was too narrow for two panes in the last frame;
     /// decides what the menu button does.
     is_narrow: bool,
-    /// Whether the saved scroll position still has to be applied.
-    restore_scroll: bool,
     /// Actions collected while drawing; reused every frame.
     actions: Vec<WindowAction>,
     /// Drafts kept from earlier unloads (M54, M55).
@@ -374,14 +242,10 @@ pub struct MemoWindow {
     close_approved: bool,
     /// Cached draft hint label (note, language, text), so it is not
     /// formatted every frame.
-    draft_hint: Option<(NoteId, Language, String)>,
+    draft_hint: DraftHint,
     /// When reset notes must be checked next (M90); `None` checks at once,
     /// e.g. after an action that may have unblocked a waiting reset (M89).
     next_reset_check: Option<Timestamp>,
-    /// A press on a list row, possibly a drag (M106).
-    drag: Option<TreeDrag>,
-    /// Rectangles of the list rows drawn in this frame; reused every frame.
-    tree_rows: Vec<RowRect>,
     /// The search field above the note list (M118); its text survives
     /// closing the window, not a game restart (M124).
     search_field: SearchField,
@@ -390,10 +254,6 @@ pub struct MemoWindow {
     /// Groups collapsed during the current search; the saved expand state
     /// stays untouched and returns when the search is cleared (M124).
     collapsed_in_search: HashSet<GroupId>,
-    /// Scroll the note view to its first search hit on the next draw (M122).
-    scroll_to_first_hit: bool,
-    /// A row was pressed while searching: dragging cannot move it (M125).
-    drag_blocked_by_search: bool,
     /// Counts saves of the notes; a changed value invalidates the search
     /// index.
     document_revision: u64,
@@ -422,35 +282,6 @@ struct CurrentSearch {
     keep_visible: Option<NodeId>,
     /// What the note list shows.
     results: SearchResults,
-}
-
-/// Everything the tree drawing functions need besides the nodes.
-struct TreeContext<'state> {
-    /// The whole tree ("Move to" lists its groups, M112).
-    document: &'state NotesDocument,
-    /// The selected note or group.
-    selected: Option<NodeId>,
-    /// The note or group being dragged; it is drawn faded (M106).
-    dragged: Option<NodeId>,
-    /// The row pressed with the left button in this frame.
-    pressed: Option<NodeId>,
-    /// Collects the rectangle of every drawn row.
-    rows: &'state mut Vec<RowRect>,
-    /// Inline rename in progress.
-    rename: &'state mut Option<RenameState>,
-    /// Collected actions.
-    actions: &'state mut Vec<WindowAction>,
-    /// UI language.
-    language: Language,
-    /// Active theme.
-    theme: &'state Theme,
-    /// ImGui frame padding; rows use it so they are as tall as the rename
-    /// input and titles line up with the input text.
-    frame_padding: [f32; 2],
-    /// The active search and its results (M118).
-    search: Option<(&'state SearchQuery, &'state SearchResults)>,
-    /// Groups collapsed during the search (M124).
-    collapsed_in_search: &'state HashSet<GroupId>,
 }
 
 impl MemoWindow {
@@ -482,12 +313,11 @@ impl MemoWindow {
             ui_state,
             saver,
             addon_directory,
-            rename: None,
-            parsed: None,
+            note_list: NoteList::default(),
+            note_view: NoteView::default(),
             drawer_open: false,
             copied_chat_link: None,
             is_narrow: false,
-            restore_scroll: true,
             actions: Vec::new(),
             drafts,
             editor: None,
@@ -498,16 +328,12 @@ impl MemoWindow {
             text_scale_changed_at: None,
             settings,
             close_approved: false,
-            draft_hint: None,
+            draft_hint: DraftHint::default(),
             dialog_height: None,
             next_reset_check: None,
-            drag: None,
-            tree_rows: Vec::new(),
             search_field: SearchField::default(),
             search: SearchCache::default(),
             collapsed_in_search: HashSet::new(),
-            scroll_to_first_hit: false,
-            drag_blocked_by_search: false,
             document_revision: 0,
         }
     }
@@ -594,7 +420,7 @@ impl MemoWindow {
             self.saver.save_ui_state(self.ui_state);
         }
         if let Some(editor) = &mut self.editor {
-            editor.body.unfocus();
+            editor.unfocus_body();
         }
         self.search_field.request_focus();
     }
@@ -637,7 +463,7 @@ impl MemoWindow {
             // A new search starts with every matching group expanded and
             // jumps to the first hit of the open note (M122).
             self.collapsed_in_search.clear();
-            self.scroll_to_first_hit = true;
+            self.note_view.jump_to_first_hit();
         }
         let results = SearchResults::compute(&self.document, index, &query, keep_visible);
         self.search.current = Some(CurrentSearch {
@@ -654,7 +480,7 @@ impl MemoWindow {
     pub fn has_unsaved_changes(&self) -> bool {
         self.editor
             .as_ref()
-            .is_some_and(|editor| editor.session.has_changes())
+            .is_some_and(|editor| editor.session().has_changes())
     }
 
     /// Asks to close the window (close button, keybind, quick access icon,
@@ -663,8 +489,7 @@ impl MemoWindow {
     /// answer later (M54).
     pub fn request_close(&mut self) -> bool {
         // Escape while dragging cancels the drag (trailkit-ui skill §4).
-        if self.drag.as_ref().is_some_and(|drag| drag.is_dragging) {
-            self.drag = None;
+        if self.note_list.cancel_drag() {
             return false;
         }
         // Escape (sent by Nexus as a close request) while the dialog is shown
@@ -700,13 +525,13 @@ impl MemoWindow {
         let Some(editor) = &self.editor else {
             return;
         };
-        if !editor.session.has_changes() {
+        if !editor.session().has_changes() {
             return;
         }
-        let Some(note) = self.document.note(editor.session.note) else {
+        let Some(note) = self.document.note(editor.session().note) else {
             return;
         };
-        let draft = editor.session.to_draft(Timestamp::now(), note.updated_at);
+        let draft = editor.session().to_draft(Timestamp::now(), note.updated_at);
         self.drafts.upsert(draft);
         self.saver.save_drafts(self.drafts.clone());
     }
@@ -766,7 +591,9 @@ impl MemoWindow {
             }
         }
 
-        self.finish_drag(ui, theme);
+        if let Some(action) = self.note_list.finish_drag(ui, theme, &self.document) {
+            self.actions.push(action.into());
+        }
         let actions = std::mem::take(&mut self.actions);
         for action in &actions {
             self.apply(action, language);
@@ -785,9 +612,9 @@ impl MemoWindow {
         if self.next_reset_check.is_some_and(|check| now < check) {
             return;
         }
-        let edited = self.editor.as_ref().map(|editor| editor.session.note);
+        let edited = self.editor.as_ref().map(|editor| editor.session().note);
         let drafts = &self.drafts;
-        let changed = self.document.apply_due_resets(now, |note| {
+        let changed = apply_due_resets(&mut self.document, now, |note| {
             Some(note) == edited || drafts.get(note).is_some()
         });
         if changed {
@@ -859,12 +686,15 @@ impl MemoWindow {
     fn apply(&mut self, action: &WindowAction, language: Language) {
         let now = Timestamp::now();
         if let Some(editor) = &self.editor
-            && action.leaves_editor_of(editor.session.note)
+            && action.leaves_editor_of(editor.session().note)
         {
             if self.leave_prompt.is_some() {
                 return;
             }
-            match (editor.session.has_changes(), self.settings.unsaved_changes) {
+            match (
+                editor.session().has_changes(),
+                self.settings.unsaved_changes,
+            ) {
                 (true, UnsavedChanges::Ask) => {
                     self.leave_prompt = Some(LeaveReason::Action(action.clone()));
                     return;
@@ -888,27 +718,11 @@ impl MemoWindow {
                     self.save_notes();
                 }
             }
-            WindowAction::StartRename(node) => {
-                let title = match node {
-                    NodeId::Note(id) => self.document.note(*id).map(|note| note.title.clone()),
-                    NodeId::Group(_) => find_title(&self.document.root, *node).map(str::to_owned),
-                };
-                if let Some(title) = title {
-                    self.rename = Some(RenameState {
-                        node: *node,
-                        buffer: title,
-                        focused: false,
-                    });
-                }
-            }
-            WindowAction::CommitRename => {
-                if let Some(rename) = self.rename.take()
-                    && self.document.rename(rename.node, &rename.buffer, now)
-                {
+            WindowAction::Rename(node, title) => {
+                if self.document.rename(*node, title, now) {
                     self.save_notes();
                 }
             }
-            WindowAction::CancelRename => self.rename = None,
             WindowAction::NewNote(point) => {
                 // The new entry must be visible: creating clears the search (M126).
                 self.search_field.clear(false);
@@ -1049,7 +863,7 @@ impl MemoWindow {
         let Some(editor) = self.editor.take() else {
             return;
         };
-        let session = editor.session;
+        let session = editor.into_session();
         let mut changed = self
             .document
             .rename(NodeId::Note(session.note), &session.title, now);
@@ -1073,8 +887,8 @@ impl MemoWindow {
         if self.ui_state.selected != Some(node) {
             self.ui_state.selected = Some(node);
             self.ui_state.note_scroll = 0.0;
-            self.restore_scroll = true;
-            self.scroll_to_first_hit = self.search.current.is_some();
+            self.note_view
+                .show_other_note(self.search.current.is_some());
             self.saver.save_ui_state(self.ui_state);
         }
         // Choosing a note closes the drawer; groups keep it open (M48).
@@ -1095,11 +909,7 @@ impl MemoWindow {
     fn start_rename_of_new(&mut self, node: NodeId, title: &str) {
         // The rename happens in the list, so a narrow window shows it.
         self.drawer_open = true;
-        self.rename = Some(RenameState {
-            node,
-            buffer: title.to_owned(),
-            focused: false,
-        });
+        self.note_list.start_rename(node, title.to_owned());
     }
 
     /// Hands a copy of the note tree to the storage worker and marks the
@@ -1116,19 +926,6 @@ fn selected_note_in(document: &NotesDocument, selected: Option<NodeId>) -> Optio
         NodeId::Note(id) => document.note(id),
         NodeId::Group(_) => None,
     }
-}
-
-/// Finds the title of any node in the tree.
-fn find_title(nodes: &[Node], id: NodeId) -> Option<&str> {
-    nodes.iter().find_map(|node| {
-        if node.id() == id {
-            return Some(node.title());
-        }
-        match node {
-            Node::Group(group) => find_title(&group.children, id),
-            Node::Note(_) => None,
-        }
-    })
 }
 
 /// The localized title and tooltips of the main window's title bar (R71).

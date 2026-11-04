@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-03 (end of session 10, after PR #75).
+Last updated: 2026-11-04 (session 14, slice conversion steps 1–7 done and deployed; awaiting in-game OK).
 
 ## Where we are
 
@@ -104,29 +104,42 @@ Last updated: 2026-11-03 (end of session 10, after PR #75).
 
 ## ▶ Resume here
 
-1. **Check that PR #75 (fixed list header, M129) merged** with green CI
-   (`gh pr view 75 --json state`); if not, fix or wait. All other
-   session-10 PRs (#71–#74) are merged.
-2. **In-game test by the user** (everything is deployed; nothing of this
-   was confirmed in game yet). Ask for screenshots and measure them
-   pixel-wise before changing anything:
-   - Search (M118–M129): typing filters live; Ctrl+F focuses the field
-     (also while editing and with the list hidden / drawer closed);
-     Escape in the field clears it, a second Escape closes the window;
-     the `x` sits centered and mirrors the magnifier (fixed in #74 —
-     the user's last screenshot was before that fix); hit marks in list
-     titles, note view and preview; content hit count at the row end;
-     jump to the first hit; drag blocked with tooltip; empty result with
-     "Clear search"; creating a note clears the search.
-   - List header (M128/M129): New note/New group buttons full width and
-     equal; field taller; only the tree scrolls in a long list.
-   - Draft time (R72): restore a draft — the time must be local time.
-   - Title bar (#69): drag the header to move, chevron collapses,
-     `x`/Escape close (unsaved changes still ask).
-3. **Next feature: grill trash & undo** (M12: trash, purged after 30 days,
+1. **Continue the slice-crate conversion of memo (ROADMAP R76)** on the
+   local, **unpushed** branch `chore/memo-slice-crates`
+   (`git switch chore/memo-slice-crates` first).
+   - Done (session 12, one commit each, all checks green, snapshots
+     pixel-identical): step 1 `shared`, step 2 `search`, step 3
+     `reset-schedule`, step 4 `drafts`, `LocalizedText` trait, toolbar
+     helpers → `trailkit-ui::toolbar` / `button::icon_button_width`,
+     `chip_context` in shared, step 5 `note-view`.
+   - Settled in session 12: questions 36–47 (ROADMAP R76 "Details" and the
+     slice convention in nexus-addon-dev skill §0). Q25 confirmed (texts per
+     slice, no central catalog).
+   - Step 6 **`editor`** done (session 13, commit `8812510`): edit session,
+     formatting, toolbar, title/body inputs, preview and `EditorText` live in
+     `trailkit-memo-editor`. Deviation from the earlier sketch: the editor
+     gets the clamped split fraction and reports `preview_split_fraction:
+     Option<f32>` + `split_released` (no `&mut f32`); the app writes and saves.
+   - Session 14 (2026-11-04): questions 48–55 settled (ROADMAP R76
+     "Questions 48–55"); `note_tree.rs` split into `note_tree/{ids,node,
+     traversal}.rs`; text helpers → `trailkit_ui::text_layout`; `ListFilter`
+     trait in shared; empty search result in the search slice; step 7
+     **`note-list`** done (commit `b936dc8`). All checks green, snapshots
+     pixel-identical, **deployed — waiting for the user's in-game test**.
+   - Release DLL: 2 084 352 bytes vs `develop` 2 024 960 (+59 KB, +2.9 %,
+     whole branch steps 1–7). Not investigated further: the user ranks
+     performance above size (R72), and the slices add no runtime work.
+   - After the OK: push, PR into `develop`, auto-merge (R74).
+   - Open (Q55): `main_window.rs` still has ~940 code lines (> 600) →
+     ask a grill question about splitting it; `trailkit-ui`
+     `editor/view.rs` (676) later.
+2. **Then grill trash & undo** (M12: trash, purged after 30 days,
    "Deleted — Undo" toast, confirm deleting a non-empty group with its
-   note count; M25/M34 mention delete in step 7). Use the grilling skill:
-   numbered questions with recommendations, record answers as M130+.
+   note count; M25/M34 mention delete in step 7) — as a new slice
+   `trash`. Next decision ids: M132+, R77+, questions from 56.
+3. In-game test status: search, list header, draft time, title bar, Save
+   icon (floppy, M130) and button min width (M131) were all confirmed by
+   the user in session 11.
 4. Optional, offer once: update the Claude Design system "Trailkit"
    (https://claude.ai/artifact/G7sNVZe1JYTgxbUE5mhS33) to R71–R73
    (no Inter, no `border-highlight`, one dropdown, title bar, search
@@ -146,10 +159,25 @@ Last updated: 2026-11-03 (end of session 10, after PR #75).
      mergen?"; push + PR + auto-merge only after the OK.
    - Changing UI layout above the list shifts rows: the drag tests in
      `main_window/tests.rs` use fixed mouse coordinates — shift them.
-   - In this WSL shell, plain `grep` fails (a broken wrapper); use
-     `command grep`. Run `source ~/.cargo/env` before cargo.
+   - In this WSL shell, plain `grep` fails (a broken wrapper; in session 14
+     also `find`/`sort` in pipes, intermittently); use `command grep` or a
+     small Python search script. Run `source ~/.cargo/env` before cargo.
    - Never leave an `eprintln!` debug line before `cargo fmt`: fmt splits
      it over lines and `sed '/marker/d'` then leaves a broken remnant.
+
+## Session 11 summary (2026-11-03, PRs #77–#80)
+
+- **M130/M131** (#77, #78): primary toolbar buttons carry a Lucide icon
+  (Save = floppy `save`, Edit = pencil); text buttons are at least
+  `button.min_width` = 4 × font size wide, icon buttons stay square.
+- **R74** (#79): merge into `develop` only after the user's in-game OK.
+- **R75** (#79): three type layers — `trailkit-gw2-api-types` (boundary
+  only), `trailkit-model` (our refined domain types, shared by addons,
+  datagen, backend), `trailkit-protocol` (`#[repr(C)]`).
+- **#80**: `main_window.rs` split into `main_window/{note_list,note_pane,
+  dialogs,layout,tests}.rs`; check-names allows snake_case module dirs
+  below `src/`.
+- **R76** (local branch): addons are built from slice crates; step 1 done.
 
 ## Session 10 summary (2026-11-03, PRs #71–#75)
 
@@ -254,10 +282,22 @@ Last updated: 2026-11-03 (end of session 10, after PR #75).
   PieOrCake also has a `flip_out` addon (not looked at).
 - Nexus hover-cursor issue: user may post the drafted Discord message.
 
+## Nexus hot reload stopped once (session 14, 2026-11-04)
+
+- In the game session started 13:40 no deploy was hot-reloaded; manual
+  unload/load in the Nexus addons menu works. Tested: WSL rename-over,
+  WSL move-aside + copy, and a native PowerShell rename + copy — Nexus logged
+  nothing for any of them, so its directory watcher did not fire; not a
+  deploy-script bug. Nexus 2026.10.25.60 (installed 2026-10-25, hot reload
+  still worked on 2026-11-03). After a game restart the watcher fired again
+  on the next deploy ("Processing changes" in the log): a Nexus hiccup in
+  that game session. If it recurs: restart the game; if it persists, ask
+  in the Raidcore Discord.
+
 ## Recurring checks
 
 - GW2 wiki (2026-10-31): still behind Cognito login → Wayback workaround stays.
-- C-703/25 P (checked 2026-11-03, session 10 — check again next session): still
+- C-703/25 P (checked 2026-11-04, session 14 — check again next session): still
   pending, no hearing date or judgment reported; DPF in force. Microsoft intervened for the
   Commission; noyb asked for repeal (2026-06-30) but has not sued yet.
 - DPF reminder workflow: the 2026-11-01 08:00 cron was silently skipped by

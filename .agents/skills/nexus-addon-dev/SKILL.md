@@ -9,6 +9,31 @@ Facts below were researched on 2026-10-31 against Nexus API v6
 (`RCGG-lib-nexus-api/Nexus.h`, Nexus source, `zerthox/nexus-rs` 0.12).
 Re-verify when bumping `NEXUS_API_VERSION` or `nexus-rs`.
 
+## 0. Addon structure (ROADMAP R76)
+
+- An addon = app crate (`addons/<addon>/`, builds the DLL, wires slices)
+  + slice crates (`addons/<addon>/slices/<slice>/`, crate
+  `trailkit-<addon>-<slice>`) + `trailkit-<addon>-shared`.
+- A slice **never** depends on another slice; shared needs go to the
+  shared crate (addon-internal) or `crates/` (cross-addon). The app passes
+  neutral shared types between slices.
+- A slice owns its state, `draw` function, text enum and help section;
+  removing a feature = removing its folder, dependency and wiring.
+- **Slice convention** (a convention, not a trait — inputs differ per
+  slice and the app calls each slice directly):
+  - state struct owned by the slice, held by the app as a field, drawn
+    with `draw(&mut self, ui, language, theme, …)`;
+  - returns `Option<XyzAction>` (one user action per frame) or a small
+    output struct when more comes back (e.g. action + "UI state
+    changed"); the app maps it to its own `WindowAction`;
+  - never touches the storage worker: persisted values come in as
+    `&mut` to the single fields it needs (not the whole `UiState`), the
+    app saves when the slice reports a change;
+  - texts: one enum implementing `trailkit_<addon>_shared::i18n::LocalizedText`
+    (`ALL`, `get`, optional `extra_characters`); its test calls
+    `assert_all_translated::<T>()`; the app's `all_texts()` concatenates
+    every set for the font atlas.
+
 ## 1. Platform facts
 
 - An addon is a Windows DLL exporting `GetAddonDef()`. In Rust: the

@@ -11,7 +11,7 @@ use std::ops::Range;
 use jiff::Timestamp;
 use trailkit_ui::markdown::{InlineKind, inline_ranges};
 
-use crate::{
+use trailkit_memo_shared::{
     drafts::Draft,
     note_tree::{Note, NoteId},
 };
@@ -407,7 +407,7 @@ fn floor_char_boundary(text: &str, index: usize) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::note_tree::NoteKind;
+    use trailkit_memo_shared::note_tree::NoteKind;
 
     /// Applies `command` to `text` with `selection` and returns the new text
     /// and selection.

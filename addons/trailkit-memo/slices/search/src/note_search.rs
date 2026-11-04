@@ -9,7 +9,10 @@ use std::collections::{HashMap, HashSet};
 
 use trailkit_ui::{markdown, text_search::SearchQuery};
 
-use crate::note_tree::{Group, GroupId, NodeId, Note, NoteId, NotesDocument, TreeNode};
+use trailkit_memo_shared::list_filter::ListFilter;
+use trailkit_memo_shared::note_tree::{
+    Group, GroupId, NodeId, Note, NoteId, NotesDocument, TreeNode,
+};
 
 /// Lower-cased title and visible text of every note and group title, built
 /// once per change of the notes.
@@ -100,29 +103,24 @@ impl SearchResults {
         results
     }
 
-    /// Whether the row of `node` is shown.
-    #[must_use]
-    pub fn is_visible(&self, node: NodeId) -> bool {
-        self.visible.contains(&node)
-    }
-
-    /// Matching notes inside `group`, nested groups included.
-    #[must_use]
-    pub fn group_count(&self, group: GroupId) -> usize {
-        self.group_counts.get(&group).copied().unwrap_or(0)
-    }
-
-    /// How often the content of `note` matches, if the note matches through
-    /// its content (not through its title alone).
-    #[must_use]
-    pub fn content_hits(&self, note: NoteId) -> Option<usize> {
-        self.content_hits.get(&note).copied()
-    }
-
     /// Whether anything matches.
     #[must_use]
     pub const fn has_hits(&self) -> bool {
         self.has_hits
+    }
+}
+
+impl ListFilter for SearchResults {
+    fn is_visible(&self, node: NodeId) -> bool {
+        self.visible.contains(&node)
+    }
+
+    fn group_count(&self, group: GroupId) -> usize {
+        self.group_counts.get(&group).copied().unwrap_or(0)
+    }
+
+    fn content_hits(&self, note: NoteId) -> Option<usize> {
+        self.content_hits.get(&note).copied()
     }
 }
 
@@ -220,7 +218,7 @@ mod tests {
     use jiff::Timestamp;
 
     use super::*;
-    use crate::note_tree::NoteKind;
+    use trailkit_memo_shared::note_tree::NoteKind;
 
     /// A note with `title` and `body`.
     fn note(title: &str, body: &str) -> Note {

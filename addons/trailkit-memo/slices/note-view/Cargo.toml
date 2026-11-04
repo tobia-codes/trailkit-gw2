@@ -1,0 +1,21 @@
+[package]
+name = "trailkit-memo-note-view"
+version = "0.0.0"
+description = "Note-view slice of trailkit-memo: the selected note's title and rendered content"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+trailkit-memo-shared.workspace = true
+
+# The view draws with the Nexus ImGui bindings, which only build for Windows.
+[target.'cfg(windows)'.dependencies]
+nexus.workspace = true
+trailkit-ui.workspace = true
+
+[lints]
+workspace = true

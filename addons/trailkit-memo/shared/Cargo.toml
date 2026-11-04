@@ -1,0 +1,29 @@
+[package]
+name = "trailkit-memo-shared"
+version = "0.0.0"
+description = "Types and services shared by the slices of trailkit-memo: note tree, documents, storage worker, localization"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+jiff.workspace = true
+log.workspace = true
+serde.workspace = true
+trailkit-storage.workspace = true
+trailkit-ui.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+tempfile.workspace = true
+
+# Local time conversion through the Windows API (ROADMAP R72).
+[target.'cfg(windows)'.dependencies]
+windows.workspace = true
+
+[lints]
+workspace = true

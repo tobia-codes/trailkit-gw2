@@ -16,7 +16,7 @@ use trailkit_ui_testing::{
 };
 
 use super::*;
-use crate::storage_worker::{SavingAllowed, StorageWorker};
+use trailkit_memo_shared::storage_worker::{SavingAllowed, StorageWorker};
 
 /// A fixed point in time, so rendered dates never change.
 fn fixed_time() -> Timestamp {
@@ -171,7 +171,7 @@ fn editor_with_preview() {
     let (mut memo, _worker, _directory) = memo_window(document, ui_state);
     memo.apply(&WindowAction::StartEditing, Language::English);
     if let Some(editor) = memo.editor.as_mut() {
-        editor.body.unfocus();
+        editor.unfocus_body();
     }
     assert_window(
         &mut memo,
@@ -192,7 +192,7 @@ fn narrow_editor_keeps_editor_and_preview_side_by_side() {
     let (mut memo, _worker, _directory) = memo_window(document, ui_state);
     memo.apply(&WindowAction::StartEditing, Language::English);
     if let Some(editor) = memo.editor.as_mut() {
-        editor.body.unfocus();
+        editor.unfocus_body();
     }
     assert_window(
         &mut memo,
@@ -212,9 +212,9 @@ fn toolbar_highlights_the_formatting_at_the_cursor() {
         panic!("editing did not start");
     };
     // Cursor inside the bold "250" of a task line: bold + checkbox active.
-    let position = editor.body.text().find("250").map_or(0, |index| index + 1);
-    editor.body.select(position..position);
-    editor.body.unfocus();
+    let position = editor.body_text().find("250").map_or(0, |index| index + 1);
+    editor.select_in_body(position..position);
+    editor.unfocus_body();
     assert_window(
         &mut memo,
         [640.0, 300.0],
@@ -232,7 +232,7 @@ fn unsaved_changes_dialog() {
     let Some(editor) = memo.editor.as_mut() else {
         panic!("editing did not start");
     };
-    editor.session.title.push_str(" (changed)");
+    editor.title_mut().push_str(" (changed)");
     assert!(!memo.request_close(), "closing must ask first");
     assert_window(
         &mut memo,
@@ -251,7 +251,7 @@ fn unsaved_changes_dialog_stacks_buttons_in_a_narrow_window() {
     let Some(editor) = memo.editor.as_mut() else {
         panic!("editing did not start");
     };
-    editor.session.title.push_str(" (changed)");
+    editor.title_mut().push_str(" (changed)");
     assert!(!memo.request_close(), "closing must ask first");
     assert_window(
         &mut memo,
@@ -302,7 +302,7 @@ fn editing_with_preview_turns_the_note_list_into_a_drawer_earlier() {
     let (mut memo, _worker, _directory) = memo_window(document, ui_state);
     memo.apply(&WindowAction::StartEditing, Language::English);
     if let Some(editor) = memo.editor.as_mut() {
-        editor.body.unfocus();
+        editor.unfocus_body();
     }
     assert_window(
         &mut memo,
