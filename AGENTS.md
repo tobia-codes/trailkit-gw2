@@ -158,6 +158,9 @@ Fundamental design decisions are recorded so any agent can pick them up:
 
 - Addon runtime, threading, inter-addon protocol, i18n, help pages, API key
   handling → `.agents/skills/nexus-addon-dev/SKILL.md`
+- How an addon is structured (app, shared and slice crates; template and
+  checklist for new addons) →
+  `.agents/skills/nexus-addon-dev/references/addon-structure.md`
 - Theme, design tokens, shared components, UX rules →
   `.agents/skills/trailkit-ui/SKILL.md`
 - Per-component decisions → the "Decisions" table in `docs/plans/**`

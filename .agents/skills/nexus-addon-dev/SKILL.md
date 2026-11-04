@@ -11,6 +11,9 @@ Re-verify when bumping `NEXUS_API_VERSION` or `nexus-rs`.
 
 ## 0. Addon structure (ROADMAP R76)
 
+Practical template with directory tree, slice contract and a checklist
+for new addons: [`references/addon-structure.md`](references/addon-structure.md).
+
 - An addon = app crate (`addons/<addon>/`, builds the DLL, wires slices)
   + slice crates (`addons/<addon>/slices/<slice>/`, crate
   `trailkit-<addon>-<slice>`) + `trailkit-<addon>-shared`.
