@@ -91,6 +91,42 @@ pub fn draw_primary_button_with_size(ui: &Ui, theme: &Theme, label: &str, size: 
     draw_button_with_size(ui, theme, label, size)
 }
 
+/// Draws a button for a destructive action that asks first (memo M146):
+/// the regular button background with a `danger` label, e.g. "Empty trash".
+pub fn draw_danger_button(ui: &Ui, theme: &Theme, label: &str) -> bool {
+    let _text = ui.push_style_color(StyleColor::Text, theme.status.danger.to_array());
+    draw_button(ui, theme, label)
+}
+
+/// Draws the confirming button of a destructive dialog (memo M146): a
+/// `danger` fill with a label in the window color, at `size` (ImGui sizing,
+/// `0.0` fits the label).
+pub fn draw_danger_fill_button_with_size(
+    ui: &Ui,
+    theme: &Theme,
+    label: &str,
+    size: [f32; 2],
+) -> bool {
+    let danger = theme.status.danger;
+    let _colors = [
+        ui.push_style_color(StyleColor::Button, danger.to_array()),
+        ui.push_style_color(
+            StyleColor::ButtonHovered,
+            danger.with_alpha(0.85).to_array(),
+        ),
+        ui.push_style_color(StyleColor::ButtonActive, danger.with_alpha(0.7).to_array()),
+        ui.push_style_color(StyleColor::Text, theme.surface.window.to_array()),
+    ];
+    draw_button_with_size(ui, theme, label, size)
+}
+
+/// Like [`draw_icon_button`] with a `danger` icon, for a destructive action
+/// that asks first (memo M145, "Delete permanently").
+pub fn draw_danger_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str) -> bool {
+    let _text = ui.push_style_color(StyleColor::Text, theme.status.danger.to_array());
+    draw_icon_button(ui, theme, icon, tooltip)
+}
+
 /// Draws a primary button with a Lucide `icon` before `label` (accent
 /// background, `text.on_accent` icon and label; R71) and returns whether it
 /// was clicked.

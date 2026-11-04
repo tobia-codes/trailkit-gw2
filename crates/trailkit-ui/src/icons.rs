@@ -94,8 +94,15 @@ impl Icon {
     pub const MAXIMIZE_2: Self = Self('\u{e113}');
     /// `minimize-2`: turns the compact note view off again (memo M139).
     pub const MINIMIZE_2: Self = Self('\u{e11b}');
+    /// `trash-2`: deletes to the trash, the trash tool, permanent delete
+    /// (memo M133, M145).
+    pub const TRASH_2: Self = Self('\u{e18e}');
+    /// `rotate-ccw`: restores an entry from the trash (memo M145).
+    pub const ROTATE_CCW: Self = Self('\u{e148}');
     /// Every icon above; keep in sync when adding one.
-    pub const ALL: [Self; 41] = [
+    pub const ALL: [Self; 43] = [
+        Self::TRASH_2,
+        Self::ROTATE_CCW,
         Self::ELLIPSIS_VERTICAL,
         Self::MAXIMIZE_2,
         Self::MINIMIZE_2,

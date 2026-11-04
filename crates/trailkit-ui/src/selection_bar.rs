@@ -22,8 +22,15 @@ const MINIMUM_BAR_HEIGHT: f32 = 4.0;
 /// Draws the selection bar on the left edge of the last drawn item (the
 /// row's tree node or selectable). Call it right after that item.
 pub fn draw_selection_bar(ui: &Ui, theme: &Theme) {
-    let [left, top] = ui.item_rect_min();
-    let bottom = ui.item_rect_max()[1];
+    draw_selection_bar_in(ui, theme, [ui.item_rect_min(), ui.item_rect_max()]);
+}
+
+/// Like [`draw_selection_bar`] for the row `[min, max]` (screen), e.g. a
+/// selectable, whose item rect reaches half the item spacing beyond the
+/// row on both sides.
+pub fn draw_selection_bar_in(ui: &Ui, theme: &Theme, [min, max]: [[f32; 2]; 2]) {
+    let [left, top] = min;
+    let bottom = max[1];
     let width = theme.list.selection_bar_width;
     let [bar_top, bar_bottom] = bar_span(
         top,
@@ -68,6 +75,17 @@ pub fn hide_square_row_highlight<'ui>(ui: &'ui Ui) -> [ColorStackToken<'ui>; 3] 
 /// `bg.hover` while hovered. Call it right after the item, before the
 /// selection bar and the row's text.
 pub fn draw_row_highlight(ui: &Ui, theme: &Theme, selected: bool) {
+    draw_row_highlight_in(
+        ui,
+        theme,
+        selected,
+        [ui.item_rect_min(), ui.item_rect_max()],
+    );
+}
+
+/// Like [`draw_row_highlight`] for the row `[min, max]` (screen) of the
+/// last drawn item (see [`draw_selection_bar_in`]).
+pub fn draw_row_highlight_in(ui: &Ui, theme: &Theme, selected: bool, [min, max]: [[f32; 2]; 2]) {
     let color = if selected || ui.is_item_active() {
         theme.surface.active
     } else if ui.is_item_hovered() {
@@ -76,7 +94,7 @@ pub fn draw_row_highlight(ui: &Ui, theme: &Theme, selected: bool) {
         return;
     };
     ui.get_window_draw_list()
-        .add_rect(ui.item_rect_min(), ui.item_rect_max(), color.to_array())
+        .add_rect(min, max, color.to_array())
         .filled(true)
         .rounding(theme.radius.medium)
         .build();
