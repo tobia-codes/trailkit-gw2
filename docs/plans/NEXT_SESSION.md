@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-03 (session 13, slice conversion steps 1–6 done; note-list questions 48–53 open).
+Last updated: 2026-11-04 (session 14, slice conversion steps 1–7 done and deployed; awaiting in-game OK).
 
 ## Where we are
 
@@ -120,58 +120,23 @@ Last updated: 2026-11-03 (session 13, slice conversion steps 1–6 done; note-li
      `trailkit-memo-editor`. Deviation from the earlier sketch: the editor
      gets the clamped split fraction and reports `preview_split_fraction:
      Option<f32>` + `split_released` (no `&mut f32`); the app writes and saves.
-   - Next: step 7 **`note-list`** — first answer the open grill round
-     (questions 48–53 below), then extract.
-
-   **Open grill round (note-list slice boundaries), recommendations ➡️:**
-
-   - **Q48 Search data to the list:** the list needs per row "visible?",
-     "group note count", "content hits", plus the `SearchQuery` for title
-     highlights. (a) trait `ListFilter` in shared (`is_visible(NodeId)`,
-     `group_count(GroupId)`, `content_hits(NoteId)`) implemented by
-     `SearchResults`; the list gets `Option<ListSearch { query, filter:
-     &dyn ListFilter, collapsed: &HashSet<GroupId>, texts }>`; (b) move
-     `SearchResults` into shared; (c) app precomputes per row.
-     ➡️ (a): no copying, typed, search keeps its result structure.
-   - **Q49 Empty search result:** "No results for …" + clear button moves
-     into the search slice; the app draws either it or the list.
-     ➡️ yes.
-   - **Q50 Search texts in the list:** the tooltips "{count} hits in the
-     content" and "clear the search to move" come in as a neutral
-     `ListSearchTexts { content_hits, clear_search_to_move }` inside
-     `ListSearch`, filled by the app from `SearchText` (like
-     `SearchFieldTexts`). ➡️ yes.
-   - **Q51 Reset things on note rows:** badge, badge tooltip (countdown)
-     and the "Reset type" submenu come as closures in the list input
-     (`NoteRowExtras`): `badge: &dyn Fn(&Note) -> Option<RowBadge>`,
-     `badge_tooltip: &mut dyn FnMut(&Ui, &Note)` (only while hovered),
-     `context_menu: &mut dyn FnMut(&Ui, &Note)` (extra items after
-     "Rename"; the app collects the chosen period itself, like the note
-     view's `TitleTrailing`). ➡️ yes, closures — a trait would be the only
-     deviation from the existing convention.
-   - **Q52 List header:** the app draws the menu (drawer) button and the
-     search field; the slice draws only "New note / New group" (equal
-     widths, stacking, M128) and the separator; `note_list_icon` stays in
-     the app. ➡️ yes.
-   - **Q53 What moves into the slice:** tree rows, rename (`RenameState`),
-     context menu with "Move to…" and "New…", drag & drop incl.
-     `tree_drag.rs` (`TreeDrag`, drop line, auto-scroll, drag label),
-     `DRAGGED_ROW_ALPHA`, `DRAG_SCROLL_ROWS_PER_SECOND`; output
-     `NoteListOutput { actions: Vec<NoteListAction> }`, mapped by the app.
-     `truncate_to_width`, `format_count`, `centered_text` (`layout.rs`) move
-     to `trailkit-ui` because app and slice both need them (rule 7).
-     ➡️ yes, all of it, except `collapsed_in_search` stays in the app (reset
-     per search).
-   - Per step: fmt, clippy (Linux + `cargo xwin clippy` Windows), tests,
-     `cargo xtask ui-test` (never `--update`), `check-names`. At the end:
-     memo README, measure the release DLL size against `develop` (user
-     asked whether the slices cost performance — expected: no, thin LTO +
-     codegen-units 1), deploy, ask the user to test, merge only after the
-     OK (R74).
+   - Session 14 (2026-11-04): questions 48–55 settled (ROADMAP R76
+     "Questions 48–55"); `note_tree.rs` split into `note_tree/{ids,node,
+     traversal}.rs`; text helpers → `trailkit_ui::text_layout`; `ListFilter`
+     trait in shared; empty search result in the search slice; step 7
+     **`note-list`** done (commit `b936dc8`). All checks green, snapshots
+     pixel-identical, **deployed — waiting for the user's in-game test**.
+   - Release DLL: 2 084 352 bytes vs `develop` 2 024 960 (+59 KB, +2.9 %,
+     whole branch steps 1–7). Not investigated further: the user ranks
+     performance above size (R72), and the slices add no runtime work.
+   - After the OK: push, PR into `develop`, auto-merge (R74).
+   - Open (Q55): `main_window.rs` still has ~940 code lines (> 600) →
+     ask a grill question about splitting it; `trailkit-ui`
+     `editor/view.rs` (676) later.
 2. **Then grill trash & undo** (M12: trash, purged after 30 days,
    "Deleted — Undo" toast, confirm deleting a non-empty group with its
    note count; M25/M34 mention delete in step 7) — as a new slice
-   `trash`. Next decision ids: M132+, R77+, questions from 54 (48–53 open, above).
+   `trash`. Next decision ids: M132+, R77+, questions from 56.
 3. In-game test status: search, list header, draft time, title bar, Save
    icon (floppy, M130) and button min width (M131) were all confirmed by
    the user in session 11.
@@ -194,8 +159,9 @@ Last updated: 2026-11-03 (session 13, slice conversion steps 1–6 done; note-li
      mergen?"; push + PR + auto-merge only after the OK.
    - Changing UI layout above the list shifts rows: the drag tests in
      `main_window/tests.rs` use fixed mouse coordinates — shift them.
-   - In this WSL shell, plain `grep` fails (a broken wrapper); use
-     `command grep`. Run `source ~/.cargo/env` before cargo.
+   - In this WSL shell, plain `grep` fails (a broken wrapper; in session 14
+     also `find`/`sort` in pipes, intermittently); use `command grep` or a
+     small Python search script. Run `source ~/.cargo/env` before cargo.
    - Never leave an `eprintln!` debug line before `cargo fmt`: fmt splits
      it over lines and `sed '/marker/d'` then leaves a broken remnant.
 
@@ -319,7 +285,7 @@ Last updated: 2026-11-03 (session 13, slice conversion steps 1–6 done; note-li
 ## Recurring checks
 
 - GW2 wiki (2026-10-31): still behind Cognito login → Wayback workaround stays.
-- C-703/25 P (checked 2026-11-03, session 12 — check again next session): still
+- C-703/25 P (checked 2026-11-04, session 14 — check again next session): still
   pending, no hearing date or judgment reported; DPF in force. Microsoft intervened for the
   Commission; noyb asked for repeal (2026-06-30) but has not sued yet.
 - DPF reminder workflow: the 2026-11-01 08:00 cron was silently skipped by
