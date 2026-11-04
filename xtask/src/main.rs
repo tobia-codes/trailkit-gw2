@@ -8,6 +8,8 @@
 //! - `check-branch [--head <branch>] [--base <branch>]` — verify branch names
 //!   (ROADMAP R14); defaults to the current branch.
 //! - `install-hooks` — enable the versioned git hooks in `.githooks/` (R48).
+//! - `check-file-length [--all]` — advisory hints for long Rust files and
+//!   functions changed on the branch (ROADMAP R77); never fails.
 //! - `check-names` — verify file and directory names against the naming
 //!   conventions in AGENTS.md (ROADMAP R46).
 //! - `sync-versions [--check]` — copy each addon's `package.json` version
@@ -19,6 +21,7 @@
 
 mod build_icons;
 mod check_branch;
+mod check_file_length;
 mod check_names;
 mod deploy;
 mod install_hooks;
@@ -38,6 +41,7 @@ commands:
   deploy <addon> [--release]   build an addon for Windows and copy it into the GW2 addons folder
   check-branch [--head B] [--base B]  verify the branch name (default: current branch)
   install-hooks                enable the git hooks in .githooks/
+  check-file-length [--all]    hint at long Rust files/functions changed on this branch (advisory)
   check-names                  verify file/directory names against the naming conventions
   sync-versions [--check]      copy package.json versions into Cargo.toml (--check: only verify)
   subset-fonts [--check]       cut the embedded fonts to the shown characters (--check: only verify)
@@ -62,6 +66,8 @@ fn main() -> Result<()> {
         }
         ["build-icons"] => build_icons::run(build_icons::Mode::Write),
         ["build-icons", "--check"] => build_icons::run(build_icons::Mode::Check),
+        ["check-file-length"] => check_file_length::run(check_file_length::Scope::Changed),
+        ["check-file-length", "--all"] => check_file_length::run(check_file_length::Scope::All),
         ["check-names"] => check_names::run(),
         ["check-branch", options @ ..] => {
             let (head, base) = parse_branch_options(options)?;

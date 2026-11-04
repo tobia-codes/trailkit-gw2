@@ -158,6 +158,9 @@ Fundamental design decisions are recorded so any agent can pick them up:
 
 - Addon runtime, threading, inter-addon protocol, i18n, help pages, API key
   handling → `.agents/skills/nexus-addon-dev/SKILL.md`
+- How an addon is structured (app, shared and slice crates; template and
+  checklist for new addons) →
+  `.agents/skills/nexus-addon-dev/references/addon-structure.md`
 - Theme, design tokens, shared components, UX rules →
   `.agents/skills/trailkit-ui/SKILL.md`
 - Per-component decisions → the "Decisions" table in `docs/plans/**`
@@ -189,3 +192,8 @@ Third-party skills keep their upstream `LICENSE` file; see
   `clippy::undocumented_unsafe_blocks`) so rule 4 is enforced by the compiler.
 - Before considering work done: `cargo fmt --all`, `cargo clippy --all-targets
   -- -D warnings`, `cargo test`.
+- **File length hints (R77):** at the end of every task that changed Rust
+  code, run `cargo xtask check-file-length` (silent when all is fine). For
+  each hint on a file the task touched, propose a split to the user as a
+  grill question with a recommendation (split by concern, see
+  `addon-structure.md`); never split unasked.
