@@ -282,6 +282,16 @@ Last updated: 2026-11-04 (session 14, slice conversion steps 1–7 done and depl
   PieOrCake also has a `flip_out` addon (not looked at).
 - Nexus hover-cursor issue: user may post the drafted Discord message.
 
+## Open: Nexus hot reload stopped (session 14, 2026-11-04)
+
+- In the game session started 13:40 no deploy was hot-reloaded; manual
+  unload/load in the Nexus addons menu works. Tested: WSL rename-over,
+  WSL move-aside + copy, and a native PowerShell rename + copy — Nexus logged
+  nothing for any of them, so its directory watcher did not fire; not a
+  deploy-script bug. Nexus 2026.10.25.60 (installed 2026-10-25, hot reload
+  still worked on 2026-11-03). Next: check whether hot reload works again
+  after a game restart; if not, ask in the Raidcore Discord.
+
 ## Recurring checks
 
 - GW2 wiki (2026-10-31): still behind Cognito login → Wayback workaround stays.
