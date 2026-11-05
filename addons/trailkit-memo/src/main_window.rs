@@ -63,16 +63,14 @@ const MINIMUM_PANE_CHARACTERS: f32 = 22.0;
 /// user may drag it narrower than the other panes.
 const MINIMUM_TREE_CHARACTERS: f32 = 10.0;
 
-/// How long a chat-link chip says "Copied" after a click (M75).
-const COPIED_FEEDBACK_SECONDS: f64 = 1.5;
-
-/// The chat code copied by the last chip click (M75).
+/// A toast of the window and what it offers.
 #[derive(Debug)]
-struct CopiedChatLink {
-    /// The copied code.
-    code: String,
-    /// When "Copied" started to show (ImGui time); set on the next frame.
-    shown_since: Option<f64>,
+struct WindowToast {
+    /// The shared toast.
+    toast: Toast,
+    /// Whether it offers to undo the last delete (M148); a "Copied" message
+    /// does not (M142).
+    offers_undo: bool,
 }
 
 /// Minimum widths of the two-pane layout in pixels (M40, M73).
@@ -119,8 +117,6 @@ pub struct MemoWindow {
     note_view: NoteView,
     /// Narrow window: whether the note list drawer is open (M48).
     drawer_open: bool,
-    /// The chat code copied last, while its chip says "Copied" (M75).
-    copied_chat_link: Option<CopiedChatLink>,
     /// Whether the window was too narrow for two panes in the last frame;
     /// decides what the menu button does.
     is_narrow: bool,
@@ -169,8 +165,8 @@ pub struct MemoWindow {
     document_revision: u64,
     /// Deletes and moves that can be undone (M135); memory only.
     undo: UndoHistory,
-    /// The toast offering to undo the last delete (M148).
-    toast: Option<Toast>,
+    /// The toast at the bottom of the window (M142, M148).
+    toast: Option<WindowToast>,
     /// The trash view (M136, M145).
     trash: TrashState,
     /// An open delete question (M134, M146).
@@ -212,7 +208,6 @@ impl MemoWindow {
             note_list: NoteList::default(),
             note_view: NoteView::default(),
             drawer_open: false,
-            copied_chat_link: None,
             is_narrow: false,
             actions: Vec::new(),
             drafts,
@@ -312,12 +307,6 @@ impl MemoWindow {
         // `FontUI` size (M35, M62); the window's default font differs.
         let _body_font = FontScope::push(ui, FontRole::Body);
         self.actions.clear();
-        if let Some(copied) = &mut self.copied_chat_link {
-            let since = *copied.shown_since.get_or_insert(ui.time());
-            if ui.time() - since > COPIED_FEEDBACK_SECONDS {
-                self.copied_chat_link = None;
-            }
-        }
         self.window_rect = Some([ui.window_pos(), ui.window_size()]);
         self.window_focused =
             ui.is_window_focused_with_flags(WindowFocusedFlags::ROOT_AND_CHILD_WINDOWS);
@@ -337,7 +326,7 @@ impl MemoWindow {
         // A group keeps every line of the content right of the rail.
         ui.group(|| self.draw_content(ui, language, theme));
         // Last, so it lies above the content (M148).
-        self.draw_undo_toast(ui, language, theme);
+        self.draw_toast_message(ui, language, theme);
 
         if let Some(action) = self.note_list.finish_drag(ui, theme, &self.document) {
             self.actions.push(action.into());

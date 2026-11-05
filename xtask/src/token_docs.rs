@@ -89,6 +89,7 @@ fn surface_group(colors: SurfaceColors) -> TokenGroup {
         input,
         hover,
         active,
+        pressed,
         popup,
         popup_hover,
         modal_overlay,
@@ -107,14 +108,15 @@ fn surface_group(colors: SurfaceColors) -> TokenGroup {
             color(
                 "bg.active",
                 active,
-                "Selected and pressed rows, hovered regular buttons",
+                "Selected and pressed list rows, hovered regular buttons",
+            ),
+            color(
+                "bg.pressed",
+                pressed,
+                "Pressed regular buttons, dropdowns and menu rows",
             ),
             color("bg.popup", popup, "Popups, tooltips, menus"),
-            color(
-                "bg.popup_hover",
-                popup_hover,
-                "Hovered and pressed rows inside popups",
-            ),
+            color("bg.popup_hover", popup_hover, "Hovered rows inside popups"),
             color(
                 "overlay.modal",
                 modal_overlay,

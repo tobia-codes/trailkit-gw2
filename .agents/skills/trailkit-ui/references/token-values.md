@@ -12,9 +12,10 @@ use which token is binding in [`tokens.md`](tokens.md).
 | `bg.panel` | #151A21 | #FAF9F6 | Panes and other content regions |
 | `bg.input` | #0C1015 | #FFFFFF | Input fields |
 | `bg.hover` | #1D232C | #F0EEE9 | Hovered rows and inputs, fill of regular buttons |
-| `bg.active` | #232A35 | #E7E3DB | Selected and pressed rows, hovered regular buttons |
+| `bg.active` | #232A35 | #E7E3DB | Selected and pressed list rows, hovered regular buttons |
+| `bg.pressed` | #323B49 | #DDD8CE | Pressed regular buttons, dropdowns and menu rows |
 | `bg.popup` | #1A2029 | #FFFFFF | Popups, tooltips, menus |
-| `bg.popup_hover` | #2A323E | #E7E3DB | Hovered and pressed rows inside popups |
+| `bg.popup_hover` | #2A323E | #E7E3DB | Hovered rows inside popups |
 | `overlay.modal` | #05070A at 72 % | #141008 at 45 % | Dimming behind dialogs and drawers |
 
 ## Text

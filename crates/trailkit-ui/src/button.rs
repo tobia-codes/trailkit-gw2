@@ -5,7 +5,7 @@
 use nexus::imgui::{ImColor32, StyleColor, Ui};
 
 use crate::{
-    dropdown::{draw_icon_into, icon_width},
+    dropdown::{draw_border, draw_icon_into, icon_width},
     font_registry::FontScope,
     fonts::FontRole,
     glyph_metrics::capital_middle,
@@ -25,6 +25,21 @@ pub fn draw_button(ui: &Ui, theme: &Theme, label: &str) -> bool {
 /// label but keeps `button.min_width`, negative values fill the available
 /// space).
 pub fn draw_button_with_size(ui: &Ui, theme: &Theme, label: &str, size: [f32; 2]) -> bool {
+    let clicked = draw_filled_button(ui, theme, label, size);
+    // The fill alone can vanish on `bg.window` (R85), like on a dropdown.
+    draw_border(
+        ui.item_rect_min(),
+        ui.item_rect_max(),
+        theme.border.color,
+        theme.border.width,
+        theme.radius.medium,
+    );
+    clicked
+}
+
+/// Draws a button without a frame, in the current `Button*` colors, for
+/// [`draw_button_with_size`] and the fills that stand out on their own.
+fn draw_filled_button(ui: &Ui, theme: &Theme, label: &str, size: [f32; 2]) -> bool {
     let padding = ui.clone_style().frame_padding;
     let text_size = ui.calc_text_size(label);
     let size = [
@@ -88,7 +103,7 @@ pub fn draw_primary_button_with_size(ui: &Ui, theme: &Theme, label: &str, size: 
         ui.push_style_color(StyleColor::ButtonActive, theme.accent.active.to_array()),
         ui.push_style_color(StyleColor::Text, theme.text.on_accent.to_array()),
     ];
-    draw_button_with_size(ui, theme, label, size)
+    draw_filled_button(ui, theme, label, size)
 }
 
 /// Draws a button for a destructive action that asks first (memo M146):
@@ -117,7 +132,7 @@ pub fn draw_danger_fill_button_with_size(
         ui.push_style_color(StyleColor::ButtonActive, danger.with_alpha(0.7).to_array()),
         ui.push_style_color(StyleColor::Text, theme.surface.window.to_array()),
     ];
-    draw_button_with_size(ui, theme, label, size)
+    draw_filled_button(ui, theme, label, size)
 }
 
 /// Like [`draw_icon_button`] with a `danger` icon, for a destructive action

@@ -201,7 +201,13 @@ pub(crate) fn draw_icon_into(
 }
 
 /// Draws a rectangle outline from `min` to `max` (the field's border).
-fn draw_border(min: [f32; 2], max: [f32; 2], color: Color, thickness: f32, rounding: f32) {
+pub(crate) fn draw_border(
+    min: [f32; 2],
+    max: [f32; 2],
+    color: Color,
+    thickness: f32,
+    rounding: f32,
+) {
     // SAFETY: called on the render thread inside a frame, so the current
     // window's draw list is valid; the call only adds a rectangle.
     unsafe {

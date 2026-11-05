@@ -117,12 +117,7 @@ impl MemoWindow {
             // change what the dialog asks about.
             is_dialog_open: self.leave_prompt.is_some(),
             search: self.search.current.as_ref().map(|current| &current.query),
-            chips: chip_context(
-                language,
-                self.copied_chat_link
-                    .as_ref()
-                    .map(|copied| copied.code.as_str()),
-            ),
+            chips: chip_context(language),
         };
         let output = editor.draw(ui, language, theme, input);
         for action in output.actions {
@@ -186,12 +181,7 @@ impl MemoWindow {
         let input = NoteViewInput {
             note,
             search: self.search.current.as_ref().map(|current| &current.query),
-            chips: chip_context(
-                language,
-                self.copied_chat_link
-                    .as_ref()
-                    .map(|copied| copied.code.as_str()),
-            ),
+            chips: chip_context(language),
             read_only: None,
             title_trailing: Some(TitleTrailing {
                 size: trailing_size,

@@ -57,10 +57,13 @@ unsafe fn fill_menu_row(
 }
 
 /// Draws the rounded highlight of the menu row that was just drawn:
-/// `bg.popup_hover` while hovered or pressed, else `bg.active` while
-/// `selected` (R80, R81). Call it right after the item, before its label.
+/// `bg.pressed` while pressed, `bg.popup_hover` while hovered, else
+/// `bg.active` while `selected` (R80, R81, R85). Call it right after the item,
+/// before its label.
 pub(crate) fn draw_menu_row_highlight(ui: &Ui, theme: &Theme, selected: bool) {
-    let color = if ui.is_item_active() || ui.is_item_hovered() {
+    let color = if ui.is_item_active() {
+        theme.surface.pressed
+    } else if ui.is_item_hovered() {
         theme.surface.popup_hover
     } else if selected {
         theme.surface.active

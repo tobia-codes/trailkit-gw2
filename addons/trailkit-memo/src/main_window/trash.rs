@@ -14,7 +14,7 @@ use trailkit_memo_shared::{
 };
 use trailkit_memo_trash::{i18n::TrashText, labels, trash_view::TrashAction};
 
-use super::{MemoWindow, WindowAction};
+use super::{MemoWindow, WindowAction, WindowToast};
 
 /// How often the trash is checked for expired entries (M150).
 const PURGE_INTERVAL: SignedDuration = SignedDuration::from_hours(1);
@@ -129,7 +129,10 @@ impl MemoWindow {
             self.change_selection(selection);
         }
         self.undo.record(UndoStep::Delete(node));
-        self.toast = Some(Toast::new(labels::deleted_message(&title, language)));
+        self.toast = Some(WindowToast {
+            toast: Toast::new(labels::deleted_message(&title, language)),
+            offers_undo: true,
+        });
         self.save_notes();
     }
 

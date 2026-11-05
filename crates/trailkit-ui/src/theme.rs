@@ -78,6 +78,8 @@ pub struct SurfaceColors {
     pub hover: Color,
     /// `bg.active`: pressed / selected elements.
     pub active: Color,
+    /// `bg.pressed`: pressed regular buttons, dropdowns and menu rows (R85).
+    pub pressed: Color,
     /// `bg.popup`: popups, tooltips, menus.
     pub popup: Color,
     /// `bg.popup_hover`: hovered and pressed rows inside popups, where
@@ -368,6 +370,7 @@ impl Theme {
             input: Color::from_rgb_hex(0x0C1015),
             hover: Color::from_rgb_hex(0x1D232C),
             active: Color::from_rgb_hex(0x232A35),
+            pressed: Color::from_rgb_hex(0x323B49),
             popup: Color::from_rgb_hex(0x1A2029),
             popup_hover: Color::from_rgb_hex(0x2A323E),
             modal_overlay: Color::from_rgba_hex(0x0507_0AB8),
@@ -449,6 +452,7 @@ impl Theme {
             input: Color::from_rgb_hex(0xFFFFFF),
             hover: Color::from_rgb_hex(0xF0EEE9),
             active: Color::from_rgb_hex(0xE7E3DB),
+            pressed: Color::from_rgb_hex(0xDDD8CE),
             popup: Color::from_rgb_hex(0xFFFFFF),
             popup_hover: Color::from_rgb_hex(0xE7E3DB),
             modal_overlay: Color::from_rgba_hex(0x1410_0873),
@@ -620,6 +624,25 @@ mod tests {
                         highlight,
                     );
                 }
+            }
+        }
+    }
+
+    /// `bg.pressed` is shown only while a control is held and carries only
+    /// button and menu labels, so only those need the minimum on it (R85).
+    #[test]
+    fn labels_meet_contrast_minimum_on_the_pressed_fill() {
+        for kind in ThemeKind::ALL {
+            let theme = kind.theme();
+            for (name, label) in [
+                ("text.primary", theme.text.primary),
+                ("danger", theme.status.danger),
+            ] {
+                let contrast = label.contrast_ratio(theme.surface.pressed);
+                assert!(
+                    contrast >= 4.5,
+                    "{kind:?}: {name} has contrast {contrast:.2}"
+                );
             }
         }
     }

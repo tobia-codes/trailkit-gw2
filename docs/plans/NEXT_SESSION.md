@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-04 (session 15: PR #83 merged; new window layout M136–M144 and trash & undo M133–M152 on branch `feature/memo-sidebar-layout`, deployed, awaiting in-game OK).
+Last updated: 2026-11-05 (session 16: layout, trash & undo and the UI state round merged into `develop` from `feature/memo-sidebar-layout`).
 
 ## Where we are
 
@@ -104,71 +104,29 @@ Last updated: 2026-11-04 (session 15: PR #83 merged; new window layout M136–M1
 
 ## ▶ Resume here
 
-0. **Open branch first:** `feature/memo-sidebar-layout` (local, **unpushed**,
-   12 commits, last deploy 2026-11-04 22:00, "Loaded addon" in
-   Nexus.log). It holds **both** the new layout (M136–M144) **and** trash &
-   undo (M133–M152). The user has **not** yet tested either in game nor
-   said OK. First ask: "Hast du Layout und Papierkorb im Spiel getestet?"
-   — fix feedback on the same branch, redeploy — then "darf ich mergen?";
-   after the OK: `git push -u`, PR into `develop` (one PR for the whole
-   branch), `gh pr merge --auto --merge --delete-branch` (R74, R70).
-   **Waiting for the user's answers** (asked at the end of session 15):
-   - **M152 review** — details decided while building, the user may object:
-     (1) trash view not remembered across restarts, Ctrl+F / magnifier leave
-     it; (2) toast only after deleting, moves undo via Ctrl+Z only; (3) Enter
-     confirms only the undoable group delete, permanent delete needs a
-     click; (4) restoring from the trash is no undo step; (5) chat-link
-     chip "Copied" not yet on the toast (M142 open).
-   - **Q91** (R77): split `note-list/src/note_list.rs` (410 code lines,
-     `draw` 83) and `note_list/rows.rs` `draw_group` (105)? Recommended:
-     yes, as a small own step after the merge.
-   - **Q92** (R77): `shared/src/i18n.rs` `Text::get` (86 lines, flat text
-     table)? Recommended: no split.
-   - Still open from before: apply R79 (neutral toggles) to the editor
-     formatting toolbar, which still lights up brass (M69)?
-   - The user asked whether trashed notes keep id etc.: answered — the
-     whole node (id, dates, kind, checks) moves into `trash` in
-     `notes.json`; `TrashEntry` holds `deleted_at` + former place, the note
-     has no own `deleted_at`.
-1. **What the branch contains** (session 15, questions 63–88):
-   - Title bar (R78): addon toggles left — **⋮ tools** (`ellipsis-vertical`)
-     and **list** (note list) — bold title, then collapse chevron + `x` on
-     the right; first/last button flush with the panes below.
-   - **Tool rail** (M136, `trailkit_ui::tool_rail`): hidden by default,
-     holds Search now; Trash comes with the trash step, Settings later at
-     the bottom.
-   - Note list toggle moved to the title bar (M137); `panel-left` in the
-     note toolbar and the drawer close button are gone.
-   - **Search field only while shown** (M138): magnifier in the rail or
-     Ctrl+F; stays (also across restarts) until hidden; hiding clears it.
-   - **Compact note view** (M139): `maximize-2` in the note toolbar hides
-     toolbar + kind dropdown, `minimize-2` at the title row end; editing or
-     creating ends it.
-   - **R79:** toggles that keep a state are neutral (`bg.active` +
-     `text.primary`), never brass (`draw_icon_toggle`, tokens.md §3).
-   - Mockups of every variant and state: Claude Design canvas
-     https://claude.ai/artifact/5cVQAjdFNuuWHfP5Nz36Q5 (the chosen layout is
-     the row "Beide Schalter im Fensterkopf").
-2. **Trash & undo — implemented on the same branch** (M133–M152, grill
-   questions 63–80 all answered; M152 lists details decided while
-   building, shown to the user): "Delete" in the row context menu and the
-   Delete key; groups with notes ask; the edited note is blocked; undo of
-   delete + move (20 steps, Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z) in
-   `shared/src/undo.rs`; trash operations in `shared/src/note_tree/trash.rs`;
-   new slice `slices/trash` (trash column, preview toolbar, texts); app
-   glue `main_window/trash.rs` + `trash_pane.rs`; generic dialog card
-   (`DialogContent`) in `dialogs.rs`; trailkit-ui gained `toast`, danger
-   buttons, `menu::draw_menu_item_with_icon`, `selection_bar::*_in`,
-   icons `trash-2`, `rotate-ccw`. Deployed 22:00, not yet tested in game.
-   Next ids: **M153+, R80+, questions from 93** (Q91, Q92 asked).
-3. **Still open after the trash step:** M142's second user (the chat-link
-   chip's "Copied" as a toast) is not migrated yet.
-4. **Open questions raised by the implementation:**
-   - R77 hints: asked as Q91/Q92 (see step 0).
-5. Earlier R77 candidates (`--all`, untouched): `editor/view.rs`,
-   `markdown_view.rs`, long `draw_*` functions (see session 14 notes).
-6. Optional, offer once: update the Claude Design system "Trailkit"
-   (https://claude.ai/artifact/G7sNVZe1JYTgxbUE5mhS33) to R71–R79.
+Next ids: **M157+, R86+, questions from 107.**
+
+1. **Next branch: the UX round the user accepted on 2026-11-05** (mockups:
+   https://claude.ai/artifact/J6oQVVs2u6fZ1zWfMscKef). Record the decisions in
+   `docs/plans/addons/trailkit-memo.md`, amending M136 and M153/M154 where needed:
+   - Row 1: the tool rail is always visible, `⋮` goes away.
+   - Row 2: the delete toast says "Moved to the trash" and offers "Open trash"
+     next to "Undo".
+   - Row 3: a `⋯` button next to Edit offers Rename, Move to, Reset type, Delete;
+     right-click stays.
+   - Row 5: arrow keys in the note list with a visible focus; tooltips name
+     their shortcut.
+   - Row 4 (editor that hides markdown outside the active line) is **not** agreed
+     for building: it needs its own grill round, it is the biggest change.
+2. **Splits after that (R77), each a small own step:** Q91 `note_list.rs` +
+   `draw_group`, Q95 `draw_dropdown`, Q96 `editor/view.rs`, Q105 `markdown_view.rs`.
+   All answered yes. Q92 `Text::get`: my recommendation is no, the user has not
+   objected.
+3. **Then the M28 order continues:** settings window, export/import, backups,
+   help page, release preparation.
+4. Optional, offer once: Light contrast of `reset.daily` on `bg.pressed` is
+   4.16:1 while a tinted dropdown is held (see R85's test scope).
+
 7. Working rules that proved useful:
    - UI tests: `cargo xtask ui-test [--update]`; look at PNGs only when
      they change. Tests with fixed list coordinates use
@@ -183,6 +141,37 @@ Last updated: 2026-11-04 (session 15: PR #83 merged; new window layout M136–M1
    - In this WSL shell plain `grep` may fail; use `command grep`. Run
      `source ~/.cargo/env` before cargo.
    - Never leave an `eprintln!` debug line before `cargo fmt`.
+
+## Session 16 summary (2026-11-05)
+
+- Merged branch `feature/memo-sidebar-layout`: layout M136-M144, trash & undo
+  M133-M152, sidebar toggle M153, back arrow M154, neutral editor toolbar M155,
+  chip "Copied" on the toast M156.
+- Rules: R80 `bg.popup_hover`, R81 nothing is square, **R82 every state has a
+  snapshot and every changed snapshot is reviewed against `tokens.md` §10**, R83
+  two kinds of dividers, R84 generated token reference, R85 control states with
+  `bg.pressed` and a `border` frame on regular buttons.
+- `crates/trailkit-ui/tests/component_states.rs` and
+  `addons/trailkit-memo/src/main_window/tests/states.rs` hold about 240 snapshots;
+  `UiHarness::step` skips rasterizing, the run takes about 3.5 minutes.
+- Mockup canvases: dividers https://claude.ai/artifact/98pE7YeQzXxxugr1kW5VEa,
+  sidebar toggle and way back https://claude.ai/artifact/34t732EdC4hpsY3Tjp1aaz,
+  tokens and states https://claude.ai/artifact/Hn23Uh5RkchXZ57NaX1MP5.
+
+## Facts learned in session 16
+
+- Host `cargo clippy` does not compile the addon's Windows-only code: run
+  `cargo xwin clippy --target x86_64-pc-windows-msvc --all-targets` as well.
+- A killed `ui-test` can leave its test process running under `/init`, which
+  overwrites snapshots with old code. Stop it with
+  `pkill -f '^/init .*debug/deps/'`; a pattern that also matches the calling
+  shell's own command line kills that shell.
+- A hover that misses its element looks like a rest state: compare the hover
+  snapshot with the rest snapshot by pixels (0 differing pixels = missed or no
+  hover). Coordinates in `states.rs` shift when the layout above them changes.
+- ImGui 1.80: `Selectable`/`MenuItem` highlights have radius 0; their item rect
+  reaches half the item spacing outwards; disabled items draw their label in
+  `TextDisabled`, and `IsItemHovered` is true for them once the item has ended.
 
 ## Session 15 summary (2026-11-04, PR #83 + branch)
 
@@ -347,7 +336,7 @@ Last updated: 2026-11-04 (session 15: PR #83 merged; new window layout M136–M1
 ## Recurring checks
 
 - GW2 wiki (2026-10-31): still behind Cognito login → Wayback workaround stays.
-- C-703/25 P (checked 2026-11-04, sessions 14/15 — still pending, DPF in force; check again next session): still
+- C-703/25 P (checked 2026-11-05, session 16: search found no judgment or hearing, sources only from 2025; check again next session): still
   pending, no hearing date or judgment reported; DPF in force. Microsoft intervened for the
   Commission; noyb asked for repeal (2026-06-30) but has not sued yet.
 - DPF reminder workflow: the 2026-11-01 08:00 cron was silently skipped by

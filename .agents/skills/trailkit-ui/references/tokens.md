@@ -28,7 +28,8 @@ and `theme.rs` disagree, `theme.rs` wins and the difference is a bug to report.
 | Text field, search | `bg.input` | |
 | Hovered row or ghost button | `bg.hover` | a brass hover |
 | Hovered row inside a popup | `bg.popup_hover` via `menu::draw_popup` | `bg.hover`, invisible on `bg.popup` |
-| Selected row, pressed button | `bg.active` + selection bar | a brass fill |
+| Selected or pressed list row | `bg.active` + selection bar | a brass fill |
+| Pressed regular button, dropdown, menu row | `bg.pressed` | the same color as its hover |
 | Body text, headings | `text.primary` | |
 | Counts, ids, hints, placeholders | `text.secondary` | `text.disabled` for readable text |
 | Bullets, chevrons, disabled controls | `text.disabled` | |
@@ -99,6 +100,8 @@ editor's formatting buttons that light up for the formatting at the cursor
   + `draw_row_highlight`, popups use `menu::draw_popup` with the `menu` entries
   (never a bare `MenuItem` or `ui.popup`).
 - Every window, pane, popup and dialog has the 1 px `border.subtle` outline.
+- Regular buttons and dropdowns have a 1 px `border` frame (R85): their fill
+  alone can vanish on `bg.window`. Primary and `danger` fills stand out alone.
 - **Dividers (R83)** come from `separator`, never `ui.separator()`, and have the
   same gap above and below, measured to the visible content (letters, an icon,
   a button edge); the fill of a hovered row may come closer:

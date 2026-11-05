@@ -25,7 +25,10 @@ use trailkit_memo_shared::{
 };
 use trailkit_memo_trash::trash_view::TrashAction;
 
-use super::{CopiedChatLink, MemoWindow};
+use trailkit_memo_shared::i18n::chip_text;
+use trailkit_ui::{chat_link::ChipText, toast::Toast};
+
+use super::{MemoWindow, WindowToast};
 
 /// Something the user did while the window was drawn.
 #[derive(Debug, Clone, PartialEq)]
@@ -175,7 +178,7 @@ impl MemoWindow {
             | WindowAction::ToggleCompactNoteView
             | WindowAction::CloseDrawer
             | WindowAction::Markdown(_)
-            | WindowAction::OpenFolder => self.apply_view_action(action, now),
+            | WindowAction::OpenFolder => self.apply_view_action(action, now, language),
             WindowAction::Delete(_)
             | WindowAction::Undo
             | WindowAction::Redo
@@ -337,7 +340,7 @@ impl MemoWindow {
 
     /// Applies an action of the window's view: search, note list, drawer,
     /// clicks on rendered markdown and the addon folder.
-    fn apply_view_action(&mut self, action: &WindowAction, now: Timestamp) {
+    fn apply_view_action(&mut self, action: &WindowAction, now: Timestamp, language: Language) {
         match action {
             WindowAction::ClearSearch => self.search_field.clear(false),
             WindowAction::ToggleNoteList => {
@@ -381,10 +384,10 @@ impl MemoWindow {
                 }
             }
             WindowAction::Markdown(MarkdownAction::OpenLink(url)) => open_web_link(url),
-            WindowAction::Markdown(MarkdownAction::ChatLinkCopied(code)) => {
-                self.copied_chat_link = Some(CopiedChatLink {
-                    code: code.clone(),
-                    shown_since: None,
+            WindowAction::Markdown(MarkdownAction::ChatLinkCopied(_)) => {
+                self.toast = Some(WindowToast {
+                    toast: Toast::new(chip_text(ChipText::Copied, language).to_owned()),
+                    offers_undo: false,
                 });
             }
             WindowAction::OpenFolder => {

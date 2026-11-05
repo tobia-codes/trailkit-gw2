@@ -80,7 +80,7 @@ impl MemoWindow {
         let input = NoteViewInput {
             note: Some(note),
             search: None,
-            chips: chip_context(language, None),
+            chips: chip_context(language),
             title_trailing: None,
             read_only: Some(ReadOnly { subtitle: &info }),
         };
@@ -95,12 +95,14 @@ impl MemoWindow {
         }
     }
 
-    /// Draws the undo toast at the bottom of the window (M148).
-    pub(super) fn draw_undo_toast(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+    /// Draws the toast at the bottom of the window, with "Undo" if it offers
+    /// that (M142, M148).
+    pub(super) fn draw_toast_message(&mut self, ui: &Ui, language: Language, theme: &Theme) {
         let Some(toast) = &mut self.toast else {
             return;
         };
-        let outcome = draw_toast(ui, theme, toast, Some(TrashText::Undo.get(language)));
+        let action = toast.offers_undo.then(|| TrashText::Undo.get(language));
+        let outcome = draw_toast(ui, theme, &mut toast.toast, action);
         if outcome.action_clicked {
             self.actions.push(WindowAction::Undo);
         } else if outcome.expired {

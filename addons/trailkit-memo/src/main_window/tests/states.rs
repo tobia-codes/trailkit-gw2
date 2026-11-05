@@ -5,6 +5,7 @@
 
 use trailkit_memo_shared::{drafts::Draft, note_tree::TrashEntry};
 use trailkit_memo_trash::trash_view::TrashAction;
+use trailkit_ui::markdown_view::MarkdownAction;
 
 use super::{trash::document_with_trash, *};
 
@@ -384,6 +385,7 @@ fn note_content_hovers() {
     ] {
         assert_state(name, WIDE, selected, &hover(position));
     }
+    assert_state("pressed-checkbox", WIDE, selected, &press([228.0, 225.0]));
 }
 
 #[test]
@@ -603,6 +605,15 @@ fn toast() {
         fixture
     };
     assert_state("toast", WIDE, deleted, &[]);
+    let copied = || {
+        let mut fixture = selected();
+        fixture.0.apply(
+            &WindowAction::Markdown(MarkdownAction::ChatLinkCopied("[&BDgAAAA=]".to_owned())),
+            Language::English,
+        );
+        fixture
+    };
+    assert_state("toast-copied", WIDE, copied, &[]);
 }
 
 #[test]
