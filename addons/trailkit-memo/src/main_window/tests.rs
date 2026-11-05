@@ -490,6 +490,9 @@ fn reset_type_submenu_opens_beside_the_context_menu() {
     harness.settle(2, &input(row, false), &mut draw_dark);
     harness.frame(&input(row, true), &mut draw_dark);
     harness.frame(&input(row, false), &mut draw_dark);
+    let rename_item = [row[0] + 30.0, row[1] + 14.0];
+    let image = harness.settle(3, &input(rename_item, false), &mut draw_dark);
+    assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-menu-item-hover", &image);
     let reset_type_item = [row[0] + 30.0, row[1] + 38.0];
     let image = harness.settle(6, &input(reset_type_item, false), &mut draw_dark);
     assert_snapshot(

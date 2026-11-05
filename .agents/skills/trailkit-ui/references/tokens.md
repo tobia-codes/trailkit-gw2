@@ -90,6 +90,14 @@ editor's formatting buttons that light up for the formatting at the cursor
   for buttons, inputs, dropdowns, rows, menu items and the drop highlight;
   `radius.lg` 10 for windows, panes, popups and dialogs. Custom-drawn shapes
   pick the radius of the thing they look like.
+- **Nothing is square (R81, all addons).** Every filled or outlined surface
+  has rounded corners, including every hover, pressed and selected state.
+  Only lines too thin to show a radius (separators, the text caret) are
+  exempt. ImGui 1.80 draws the highlight of `Selectable`, `MenuItem`,
+  `BeginMenu` and tree nodes with radius 0, whatever `FrameRounding` says, so
+  never use its highlight: rows use `selection_bar::hide_square_row_highlight`
+  + `draw_row_highlight`, popups use `menu::draw_popup` with the `menu` entries
+  (never a bare `MenuItem` or `ui.popup`).
 - Every window, pane, popup and dialog has the 1 px `border.subtle` outline.
 - Text buttons are at least `button.min_width` × font size wide (M131);
   measure rows with `button_width` / `icon_label_button_width`, never with
@@ -136,5 +144,5 @@ test fails otherwise.
 - [ ] At most one primary (brass) button per view
 - [ ] Selected rows use the selection bar, not a colored fill
 - [ ] Chips use their category colors; invalid links are warnings
-- [ ] Radius matches the element (§5)
+- [ ] Radius matches the element, nothing is square, hover states included (§5, R81)
 - [ ] Readable in Dark and Light; new text tokens are in the contrast test

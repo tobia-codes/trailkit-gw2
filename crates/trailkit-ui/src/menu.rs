@@ -7,28 +7,109 @@
 use nexus::imgui::{ItemHoveredFlags, MenuItem, MenuToken, StyleColor, StyleVar, Ui};
 
 use crate::{
+    color::Color,
     dropdown::{draw_icon_into, icon_width, packed},
     icons::Icon,
+    selection_bar::hide_square_row_highlight,
     theme::Theme,
 };
 
 /// Draws the popup `id` if it is open, with `content` inside it. Every popup
-/// goes through here so that its rows hover in `bg.popup_hover` (ROADMAP R80).
-pub fn draw_popup(ui: &Ui, theme: &Theme, id: &str, content: impl FnOnce()) {
+/// goes through here: ImGui's own square row highlight is hidden, and the
+/// entries of this module draw a rounded one in `bg.popup_hover` instead
+/// (ROADMAP R80, R81).
+pub fn draw_popup(ui: &Ui, id: &str, content: impl FnOnce()) {
     ui.popup(id, || {
-        let hover = theme.surface.popup_hover.to_array();
-        let _colors = [
-            ui.push_style_color(StyleColor::HeaderHovered, hover),
-            ui.push_style_color(StyleColor::HeaderActive, hover),
-        ];
+        let _square = hide_square_row_highlight(ui);
         content();
     });
+}
+
+/// Fills the menu row `[min, max]` (screen) in `color` with `radius.md`
+/// corners into `draw_list`.
+///
+/// # Safety
+/// `draw_list` must be a draw list of the current frame, used on the render
+/// thread.
+unsafe fn fill_menu_row(
+    draw_list: *mut nexus::imgui::sys::ImDrawList,
+    theme: &Theme,
+    [min, max]: [[f32; 2]; 2],
+    color: Color,
+) {
+    // SAFETY: guaranteed by the caller; the call only adds a rectangle.
+    unsafe {
+        nexus::imgui::sys::ImDrawList_AddRectFilled(
+            draw_list,
+            nexus::imgui::sys::ImVec2 {
+                x: min[0],
+                y: min[1],
+            },
+            nexus::imgui::sys::ImVec2 {
+                x: max[0],
+                y: max[1],
+            },
+            packed(color),
+            theme.radius.medium,
+            nexus::imgui::sys::ImDrawCornerFlags_All as i32,
+        );
+    }
+}
+
+/// Draws the rounded highlight of the menu row that was just drawn:
+/// `bg.popup_hover` while hovered or pressed, else `bg.active` while
+/// `selected` (R80, R81). Call it right after the item, before its label.
+pub(crate) fn draw_menu_row_highlight(ui: &Ui, theme: &Theme, selected: bool) {
+    let color = if ui.is_item_active() || ui.is_item_hovered() {
+        theme.surface.popup_hover
+    } else if selected {
+        theme.surface.active
+    } else {
+        return;
+    };
+    // SAFETY: called on the render thread inside a frame, so the current
+    // window's draw list is valid.
+    unsafe {
+        fill_menu_row(
+            nexus::imgui::sys::igGetWindowDrawList(),
+            theme,
+            [ui.item_rect_min(), ui.item_rect_max()],
+            color,
+        );
+    }
+}
+
+/// Draws the label of a menu row at `origin` (screen). ImGui's own label is
+/// hidden because it would lie below the rounded highlight.
+pub(crate) fn draw_menu_row_label(origin: [f32; 2], color: Color, label: &str) {
+    let begin = label.as_ptr().cast::<std::ffi::c_char>();
+    // SAFETY: called on the render thread inside a frame, so the current
+    // window's draw list is valid; `begin..begin + len` is the UTF-8 label,
+    // which ImGui only reads.
+    unsafe {
+        nexus::imgui::sys::ImDrawList_AddText_Vec2(
+            nexus::imgui::sys::igGetWindowDrawList(),
+            nexus::imgui::sys::ImVec2 {
+                x: origin[0],
+                y: origin[1],
+            },
+            packed(color),
+            begin,
+            begin.add(label.len()),
+        );
+    }
 }
 
 /// Draws a menu item and returns whether it was clicked. A `checked` item
 /// shows a check mark in the accent color at its right end.
 pub fn draw_menu_item(ui: &Ui, theme: &Theme, label: &str, checked: bool) -> bool {
-    let clicked = MenuItem::new(label).build(ui);
+    let origin = ui.cursor_screen_pos();
+    let clicked = {
+        let _hidden = ui.push_style_color(StyleColor::Text, [0.0; 4]);
+        MenuItem::new(label).build(ui)
+    };
+    draw_menu_row_highlight(ui, theme, false);
+    draw_menu_row_label(origin, theme.text.primary, label);
     if checked {
         let [min, max] = [ui.item_rect_min(), ui.item_rect_max()];
         // SAFETY: called on the render thread inside a frame, so the
@@ -77,6 +158,7 @@ pub fn draw_menu_item_with_icon(
         let _hidden = ui.push_style_color(StyleColor::Text, [0.0; 4]);
         MenuItem::new(label).enabled(enabled).build(ui)
     };
+    draw_menu_row_highlight(ui, theme, false);
     let color = match (enabled, tone) {
         (false, _) => theme.text.disabled,
         (true, MenuItemTone::Regular) => theme.text.primary,
@@ -88,22 +170,7 @@ pub fn draw_menu_item_with_icon(
     let line = [origin[1], origin[1] + ui.text_line_height()];
     draw_icon_into(draw_list, ui, icon, origin[0], line, packed(color));
     let label_x = origin[0] + icon_width(ui) + theme.spacing.extra_small * 1.5;
-    let begin = label.as_ptr().cast::<std::ffi::c_char>();
-    // SAFETY: render thread inside a frame; `draw_list` is the current
-    // window's; `begin..begin + len` is the UTF-8 label, which ImGui only
-    // reads.
-    unsafe {
-        nexus::imgui::sys::ImDrawList_AddText_Vec2(
-            draw_list,
-            nexus::imgui::sys::ImVec2 {
-                x: label_x,
-                y: origin[1],
-            },
-            packed(color),
-            begin,
-            begin.add(label.len()),
-        );
-    }
+    draw_menu_row_label([label_x, origin[1]], color, label);
     if let Some(tooltip) = disabled_tooltip
         && ui.is_item_hovered_with_flags(ItemHoveredFlags::ALLOW_WHEN_DISABLED)
     {
@@ -134,6 +201,25 @@ pub fn begin_submenu<'ui>(ui: &'ui Ui, theme: &Theme, label: &str) -> Option<Men
         let _hidden = ui.push_style_color(StyleColor::Text, [0.0; 4]);
         ui.begin_menu(label)
     };
+    // While the submenu is open the current window is the submenu, so the
+    // row's rect cannot be read from the last item: it is the same rect
+    // ImGui gives a selectable, reaching half the item spacing outwards.
+    if token.is_some() || ui.is_item_hovered() {
+        let half_spacing = [
+            (style.item_spacing[0] * 0.5).floor(),
+            (style.item_spacing[1] * 0.5).floor(),
+        ];
+        let row = [
+            [x - half_spacing[0], y - half_spacing[1]],
+            [
+                right_edge + style.item_spacing[0] - half_spacing[0],
+                bottom + style.item_spacing[1] - half_spacing[1],
+            ],
+        ];
+        // SAFETY: render thread inside a frame; `draw_list` belongs to the
+        // parent menu of this frame.
+        unsafe { fill_menu_row(draw_list, theme, row, theme.surface.popup_hover) };
+    }
     let begin = label.as_ptr().cast::<std::ffi::c_char>();
     // SAFETY: render thread inside a frame; `draw_list` belongs to the
     // parent menu of this frame; `begin..begin + len` is the UTF-8 label,

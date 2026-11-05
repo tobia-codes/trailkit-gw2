@@ -19,7 +19,7 @@ generic web/mobile UI guidelines (touch targets, breakpoints, CSS, …) here.
 
 1. **Consistency over novelty** — same component, same look, same place, in
    every addon.
-2. **Calm, flat, slightly rounded** — ink-tinted dark and parchment-warm
+2. **Calm, flat, always rounded (nothing is square, hover states included: R81)** — ink-tinted dark and parchment-warm
    light surfaces with one brass accent spent sparingly (R71); radii 4 / 6 /
    10 by element size; windows, panes, popups and dialogs get a faint 1 px
    `border.subtle` outline (memo M103); no highlight edges, no shadows.

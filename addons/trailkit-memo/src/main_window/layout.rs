@@ -97,6 +97,7 @@ impl MemoWindow {
                 theme.surface.modal_overlay.to_array(),
             )
             .filled(true)
+            .rounding(theme.radius.large)
             .build();
         let width = pane_minimum.min(size[0] * DRAWER_MAXIMUM_FRACTION);
         draw_pane(ui, theme, "drawer", [width, 0.0], || {

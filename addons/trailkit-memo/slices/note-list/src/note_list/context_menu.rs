@@ -2,7 +2,7 @@
 //! of other slices, "Move to…" and, on groups and empty spots, "New note" /
 //! "New group" (M86, M96–M99, M112).
 
-use nexus::imgui::{MenuItem, Ui};
+use nexus::imgui::Ui;
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText, Text},
     note_tree::{GroupId, InsertionPoint, NodeId, Note, TreeNode as Node},
@@ -10,6 +10,7 @@ use trailkit_memo_shared::{
 use trailkit_ui::{
     icons::Icon,
     menu::{MenuItemTone, begin_submenu, draw_menu_item, draw_menu_item_with_icon, draw_popup},
+    theme::Theme,
 };
 
 use super::{NoteListAction, RenameStep, RowContext, delete::blocks_delete};
@@ -24,8 +25,8 @@ pub(super) fn draw_context_menu(
     context: &mut RowContext<'_, '_>,
 ) {
     let (language, theme) = (context.language, context.theme);
-    draw_popup(ui, theme, "context", || {
-        if MenuItem::new(NoteListText::Rename.get(language)).build(ui) {
+    draw_popup(ui, "context", || {
+        if draw_menu_item(ui, theme, NoteListText::Rename.get(language), false) {
             context.rename_steps.push(RenameStep::Start(node));
         }
         // Other slices add their items to notes, e.g. the reset type
@@ -42,6 +43,7 @@ pub(super) fn draw_context_menu(
             draw_create_menu_items(
                 ui,
                 language,
+                theme,
                 InsertionPoint::End(Some(group)),
                 context.actions,
             );
@@ -120,13 +122,14 @@ fn draw_move_target_groups(
 pub(super) fn draw_create_menu_items(
     ui: &Ui,
     language: Language,
+    theme: &Theme,
     point: InsertionPoint,
     actions: &mut Vec<NoteListAction>,
 ) {
-    if MenuItem::new(Text::NewNote.get(language)).build(ui) {
+    if draw_menu_item(ui, theme, Text::NewNote.get(language), false) {
         actions.push(NoteListAction::NewNote(Some(point)));
     }
-    if MenuItem::new(Text::NewGroup.get(language)).build(ui) {
+    if draw_menu_item(ui, theme, Text::NewGroup.get(language), false) {
         actions.push(NoteListAction::NewGroup(Some(point)));
     }
 }

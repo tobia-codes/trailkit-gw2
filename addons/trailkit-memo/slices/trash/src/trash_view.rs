@@ -133,7 +133,7 @@ fn draw_entry_row(
         action = Some(TrashAction::Select(id));
         ui.open_popup("trash_context");
     }
-    draw_popup(ui, theme, "trash_context", || {
+    draw_popup(ui, "trash_context", || {
         if let Some(chosen) = draw_entry_menu(ui, language, theme, id) {
             action = Some(chosen);
         }
