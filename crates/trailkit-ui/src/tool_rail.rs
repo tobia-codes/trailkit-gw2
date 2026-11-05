@@ -59,8 +59,8 @@ pub fn draw_tool_rail(
         .scroll_bar(false)
         .movable(false)
         .build(ui, || {
-            let _spacing =
-                ui.push_style_var(StyleVar::ItemSpacing([0.0, theme.spacing.extra_small]));
+            // The same gap as the title bar toggles above the rail.
+            let _spacing = ui.push_style_var(StyleVar::ItemSpacing([0.0, theme.spacing.small]));
             let _muted = ui.push_style_color(StyleColor::Text, theme.text.secondary.to_array());
             for (index, item) in top.iter().enumerate() {
                 if draw_icon_toggle(ui, theme, item.icon, item.tooltip, item.active) {
@@ -71,7 +71,7 @@ pub fn draw_tool_rail(
                 return;
             }
             let bottom_height = bottom.len() as f32 * ui.frame_height()
-                + (bottom.len() - 1) as f32 * theme.spacing.extra_small;
+                + (bottom.len() - 1) as f32 * theme.spacing.small;
             let bottom_start = (height - bottom_height).max(ui.cursor_pos()[1]);
             ui.set_cursor_pos([ui.cursor_pos()[0], bottom_start]);
             for (index, item) in bottom.iter().enumerate() {

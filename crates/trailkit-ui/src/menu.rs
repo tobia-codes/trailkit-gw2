@@ -55,13 +55,15 @@ pub fn draw_menu_item_with_icon(
     disabled_tooltip: Option<&str>,
 ) -> bool {
     let enabled = disabled_tooltip.is_none();
+    // ImGui draws the label at the cursor; the item rect is no substitute
+    // because it reaches half the item spacing further up and left.
+    let origin = ui.cursor_screen_pos();
     // ImGui keeps room for a check mark after the label; the label moves
     // right by the icon, which fits into that room.
     let clicked = {
         let _hidden = ui.push_style_color(StyleColor::Text, [0.0; 4]);
         MenuItem::new(label).enabled(enabled).build(ui)
     };
-    let min = ui.item_rect_min();
     let color = match (enabled, tone) {
         (false, _) => theme.text.disabled,
         (true, MenuItemTone::Regular) => theme.text.primary,
@@ -70,11 +72,9 @@ pub fn draw_menu_item_with_icon(
     // SAFETY: called on the render thread inside a frame, so the current
     // window's draw list is valid.
     let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
-    // The item rect reaches into the spacing below; center on the label's
-    // line, where ImGui draws the label.
-    let line = [min[1], min[1] + ui.text_line_height()];
-    draw_icon_into(draw_list, ui, icon, min[0], line, packed(color));
-    let label_x = min[0] + icon_width(ui) + theme.spacing.extra_small * 1.5;
+    let line = [origin[1], origin[1] + ui.text_line_height()];
+    draw_icon_into(draw_list, ui, icon, origin[0], line, packed(color));
+    let label_x = origin[0] + icon_width(ui) + theme.spacing.extra_small * 1.5;
     let begin = label.as_ptr().cast::<std::ffi::c_char>();
     // SAFETY: render thread inside a frame; `draw_list` is the current
     // window's; `begin..begin + len` is the UTF-8 label, which ImGui only
@@ -84,7 +84,7 @@ pub fn draw_menu_item_with_icon(
             draw_list,
             nexus::imgui::sys::ImVec2 {
                 x: label_x,
-                y: min[1],
+                y: origin[1],
             },
             packed(color),
             begin,
