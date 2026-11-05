@@ -1,5 +1,5 @@
-//! A toast: a short message with an optional action at the bottom centre of
-//! the current window (memo M142, M148, `ix-toasts`).
+//! A toast: a short message with optional actions at the bottom centre of
+//! the current window (memo M142, M148, M158, M159, `ix-toasts`).
 //!
 //! One toast at a time; a new one replaces the old. It stays
 //! [`TOAST_SECONDS`] and its timer pauses while the mouse is over it. It is
@@ -27,11 +27,45 @@ pub struct Toast {
     hovered: bool,
 }
 
+/// An action button of a toast.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ToastAction<'text> {
+    /// The button's label.
+    pub label: &'text str,
+    /// The tooltip, e.g. naming the action's shortcut (M162).
+    pub tooltip: Option<&'text str>,
+}
+
+/// How a toast arranges its message and action buttons (M159).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ToastLayout {
+    /// All in one row.
+    Inline,
+    /// The buttons in one row below the message, at its right end.
+    ActionsBelow,
+    /// Every button in its own row below the message.
+    ActionsStacked,
+}
+
+impl ToastLayout {
+    /// The layout for a message of `text_width` and buttons that together
+    /// take `actions_width` (with their gaps), within `content_width`.
+    fn choose(text_width: f32, actions_width: f32, gap: f32, content_width: f32) -> Self {
+        if actions_width <= 0.0 || text_width + gap + actions_width <= content_width {
+            Self::Inline
+        } else if actions_width <= content_width {
+            Self::ActionsBelow
+        } else {
+            Self::ActionsStacked
+        }
+    }
+}
+
 /// What happened to the toast in this frame.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct ToastOutcome {
-    /// The action button was clicked.
-    pub action_clicked: bool,
+    /// The index of the action button that was clicked.
+    pub clicked_action: Option<usize>,
     /// The toast's time is up; the caller drops it.
     pub expired: bool,
 }
@@ -63,10 +97,16 @@ impl Toast {
     }
 }
 
-/// Draws `toast` at the bottom centre of the current window with an
-/// `action` button (a regular button, e.g. "Undo") and advances its timer.
-/// Call it after the window's content, so it lies on top.
-pub fn draw_toast(ui: &Ui, theme: &Theme, toast: &mut Toast, action: Option<&str>) -> ToastOutcome {
+/// Draws `toast` at the bottom centre of the current window with its
+/// `actions` (regular buttons, e.g. "Undo") and advances its timer. The buttons
+/// move below the message when the window is too narrow (M159). Call it after
+/// the window's content, so it lies on top.
+pub fn draw_toast(
+    ui: &Ui,
+    theme: &Theme,
+    toast: &mut Toast,
+    actions: &[ToastAction<'_>],
+) -> ToastOutcome {
     let mut outcome = ToastOutcome {
         expired: toast.advance(ui.io().delta_time),
         ..ToastOutcome::default()
@@ -74,11 +114,33 @@ pub fn draw_toast(ui: &Ui, theme: &Theme, toast: &mut Toast, action: Option<&str
     let padding = theme.spacing.small;
     let gap = theme.spacing.medium;
     let text_width = ui.calc_text_size(&toast.message)[0];
-    let action_width = action.map_or(0.0, |label| gap + button_width(ui, theme, label));
+    let widest_action = actions
+        .iter()
+        .map(|action| button_width(ui, theme, action.label))
+        .fold(0.0, f32::max);
+    let actions_width = actions
+        .iter()
+        .map(|action| button_width(ui, theme, action.label))
+        .sum::<f32>()
+        + gap * actions.len().saturating_sub(1) as f32;
     let window_size = ui.window_size();
     let maximum_width = (window_size[0] - 2.0 * theme.spacing.large).max(1.0);
-    let width = (2.0 * padding + text_width + action_width).min(maximum_width);
-    let height = ui.frame_height() + 2.0 * padding;
+    let layout = ToastLayout::choose(
+        text_width,
+        actions_width,
+        gap,
+        maximum_width - 2.0 * padding,
+    );
+    let row_height = ui.frame_height();
+    let row_step = row_height + theme.spacing.small;
+    let (content_width, rows) = match layout {
+        ToastLayout::Inline if actions.is_empty() => (text_width, 1),
+        ToastLayout::Inline => (text_width + gap + actions_width, 1),
+        ToastLayout::ActionsBelow => (text_width.max(actions_width), 2),
+        ToastLayout::ActionsStacked => (text_width.max(widest_action), 1 + actions.len()),
+    };
+    let width = (2.0 * padding + content_width).min(maximum_width);
+    let height = row_height + row_step * (rows - 1) as f32 + 2.0 * padding;
     let window_position = ui.window_pos();
     let bottom_gap = ui.clone_style().window_padding[1] + theme.spacing.large;
     ui.set_cursor_screen_pos([
@@ -102,14 +164,36 @@ pub fn draw_toast(ui: &Ui, theme: &Theme, toast: &mut Toast, action: Option<&str
         return outcome;
     };
     toast.hovered = ui.is_window_hovered_with_flags(WindowHoveredFlags::CHILD_WINDOWS);
-    let top = ui.cursor_screen_pos()[1];
-    let line_offset = (ui.frame_height() - ui.text_line_height()) / 2.0;
-    ui.set_cursor_screen_pos([ui.cursor_screen_pos()[0], top + line_offset]);
+    let [left, top] = ui.cursor_screen_pos();
+    let right = left + width - 2.0 * padding;
+    let line_offset = (row_height - ui.text_line_height()) / 2.0;
+    ui.set_cursor_screen_pos([left, top + line_offset]);
     ui.text(&toast.message);
-    if let Some(label) = action {
-        ui.same_line_with_spacing(0.0, gap);
-        ui.set_cursor_screen_pos([ui.cursor_screen_pos()[0], top]);
-        outcome.action_clicked = draw_button(ui, theme, label);
+    let mut position = match layout {
+        ToastLayout::Inline => [left + text_width + gap, top],
+        ToastLayout::ActionsBelow | ToastLayout::ActionsStacked => {
+            [right - actions_width, top + row_step]
+        }
+    };
+    for (index, action) in actions.iter().enumerate() {
+        let button = button_width(ui, theme, action.label);
+        if layout == ToastLayout::ActionsStacked {
+            position[0] = right - button;
+        }
+        ui.set_cursor_screen_pos(position);
+        if draw_button(ui, theme, action.label) {
+            outcome.clicked_action = Some(index);
+        }
+        if let Some(tooltip) = action.tooltip
+            && ui.is_item_hovered()
+        {
+            ui.tooltip_text(tooltip);
+        }
+        if layout == ToastLayout::ActionsStacked {
+            position[1] += row_step;
+        } else {
+            position[0] += button + gap;
+        }
     }
     outcome
 }
@@ -123,6 +207,30 @@ mod tests {
         let mut toast = Toast::new("Deleted".to_owned());
         assert!(!toast.advance(TOAST_SECONDS - 1.0));
         assert!(toast.advance(1.0));
+    }
+
+    #[test]
+    fn actions_move_below_the_message_when_the_window_is_narrow() {
+        assert_eq!(
+            ToastLayout::choose(100.0, 80.0, 10.0, 190.0),
+            ToastLayout::Inline
+        );
+        assert_eq!(
+            ToastLayout::choose(100.0, 80.0, 10.0, 189.0),
+            ToastLayout::ActionsBelow
+        );
+        assert_eq!(
+            ToastLayout::choose(100.0, 80.0, 10.0, 79.0),
+            ToastLayout::ActionsStacked
+        );
+    }
+
+    #[test]
+    fn a_message_without_actions_stays_in_one_row() {
+        assert_eq!(
+            ToastLayout::choose(100.0, 0.0, 10.0, 50.0),
+            ToastLayout::Inline
+        );
     }
 
     #[test]

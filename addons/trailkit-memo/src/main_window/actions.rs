@@ -28,7 +28,7 @@ use trailkit_memo_trash::trash_view::TrashAction;
 use trailkit_memo_shared::i18n::chip_text;
 use trailkit_ui::{chat_link::ChipText, toast::Toast};
 
-use super::{MemoWindow, WindowToast};
+use super::{MemoWindow, WindowToast, WindowToastKind};
 
 /// Something the user did while the window was drawn.
 #[derive(Debug, Clone, PartialEq)]
@@ -46,8 +46,6 @@ pub(super) enum WindowAction {
     /// The note list toggle in the title bar: hide/show the note list
     /// column, or open/close the drawer in a narrow window (M48, M137).
     ToggleNoteList,
-    /// The tool rail toggle in the title bar (M136).
-    ToggleToolRail,
     /// The search toggle in the tool rail (M138).
     ToggleSearch,
     /// The compact note view toggle (M139).
@@ -60,6 +58,8 @@ pub(super) enum WindowAction {
     OpenFolder,
     /// Start editing the selected note (M51).
     StartEditing,
+    /// Start editing the selected note in its title, selected (M161).
+    StartRenaming,
     /// Commit the edit ("Save", Ctrl+Enter).
     FinishEditing,
     /// Leave the editor without saving; asks first if something changed.
@@ -91,6 +91,8 @@ pub(super) enum WindowAction {
     /// Delete a note or group: to the trash, a group with notes asks first
     /// (M133, M134).
     Delete(NodeId),
+    /// Show the trash from the toast (M158).
+    OpenTrash,
     /// Take the latest delete or move back (Ctrl+Z, the toast, M135).
     Undo,
     /// Do the latest undone step again (Ctrl+Y, Ctrl+Shift+Z, M135).
@@ -113,7 +115,7 @@ impl WindowAction {
     pub(super) fn leaves_editor_of(&self, note: NoteId) -> bool {
         match self {
             Self::Select(node) => *node != NodeId::Note(note),
-            Self::NewNote(_) | Self::NewGroup(_) | Self::ToggleTrash => true,
+            Self::NewNote(_) | Self::NewGroup(_) | Self::ToggleTrash | Self::OpenTrash => true,
             _ => false,
         }
     }
@@ -162,6 +164,7 @@ impl MemoWindow {
             | WindowAction::SetCollapsedInSearch(..)
             | WindowAction::SetResetPeriod(..) => self.apply_tree_action(action, language, now),
             WindowAction::StartEditing
+            | WindowAction::StartRenaming
             | WindowAction::FinishEditing
             | WindowAction::CancelEditing
             | WindowAction::Format(_)
@@ -173,7 +176,6 @@ impl MemoWindow {
             | WindowAction::LeaveCancelled => self.apply_editor_action(action, language, now),
             WindowAction::ClearSearch
             | WindowAction::ToggleNoteList
-            | WindowAction::ToggleToolRail
             | WindowAction::ToggleSearch
             | WindowAction::ToggleCompactNoteView
             | WindowAction::CloseDrawer
@@ -184,6 +186,7 @@ impl MemoWindow {
             | WindowAction::Redo
             | WindowAction::DismissToast
             | WindowAction::ToggleTrash
+            | WindowAction::OpenTrash
             | WindowAction::Trash(_)
             | WindowAction::ConfirmAccepted
             | WindowAction::ConfirmCancelled => self.apply_trash_action(action, language),
@@ -277,11 +280,15 @@ impl MemoWindow {
     /// formatting, the preview, drafts and the unsaved changes dialog.
     fn apply_editor_action(&mut self, action: &WindowAction, language: Language, now: Timestamp) {
         match action {
-            WindowAction::StartEditing => {
+            WindowAction::StartEditing | WindowAction::StartRenaming => {
                 if self.editor.is_none()
                     && let Some(note) = self.selected_note()
                 {
-                    self.editor = Some(Editor::new(EditSession::start(note)));
+                    let mut editor = Editor::new(EditSession::start(note));
+                    if *action == WindowAction::StartRenaming {
+                        editor.focus_title();
+                    }
+                    self.editor = Some(editor);
                 }
             }
             WindowAction::FinishEditing => self.commit_editor(now),
@@ -351,10 +358,6 @@ impl MemoWindow {
                     self.saver.save_ui_state(self.ui_state);
                 }
             }
-            WindowAction::ToggleToolRail => {
-                self.ui_state.tool_rail_visible = !self.ui_state.tool_rail_visible;
-                self.saver.save_ui_state(self.ui_state);
-            }
             WindowAction::ToggleSearch => {
                 if self.ui_state.search_visible && !self.trash.visible {
                     // A hidden field must not keep filtering the list (M138).
@@ -387,7 +390,7 @@ impl MemoWindow {
             WindowAction::Markdown(MarkdownAction::ChatLinkCopied(_)) => {
                 self.toast = Some(WindowToast {
                     toast: Toast::new(chip_text(ChipText::Copied, language).to_owned()),
-                    offers_undo: false,
+                    kind: WindowToastKind::Message,
                 });
             }
             WindowAction::OpenFolder => {

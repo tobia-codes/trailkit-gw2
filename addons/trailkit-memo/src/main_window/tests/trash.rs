@@ -171,11 +171,7 @@ fn the_back_arrow_leaves_the_trash() {
 fn the_trash_shows_its_entries_and_the_selected_one() {
     let document = document_with_trash([0, 25]);
     let selected = document.trash[0].id();
-    let ui_state = UiState {
-        tool_rail_visible: true,
-        ..UiState::default()
-    };
-    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    let (mut memo, _worker, _directory) = memo_window(document, UiState::default());
     memo.apply(&WindowAction::ToggleTrash, Language::English);
     memo.apply(
         &WindowAction::Trash(TrashAction::Select(selected)),
@@ -213,5 +209,25 @@ fn deleting_shows_the_undo_toast() {
         [640.0, 360.0],
         ThemeKind::Dark,
         "memo-delete-toast",
+    );
+}
+
+#[test]
+fn the_toast_opens_the_trash_and_shows_the_hidden_list() {
+    let document = sample_document();
+    let ui_state = UiState {
+        note_list_hidden: true,
+        ..selected_first(&document)
+    };
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), ui_state);
+    let first = first_note(&document).unwrap_or_else(|| panic!("the sample has a note"));
+    memo.apply(&WindowAction::Delete(first), Language::English);
+    assert!(memo.toast.is_some());
+    memo.apply(&WindowAction::OpenTrash, Language::English);
+    assert!(memo.trash.visible, "the way to the trash (M158)");
+    assert!(memo.toast.is_none(), "the toast has done its job");
+    assert!(
+        !memo.ui_state.note_list_hidden,
+        "the trash needs its column"
     );
 }

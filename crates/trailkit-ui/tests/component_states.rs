@@ -24,7 +24,7 @@ use trailkit_ui::{
     style_scope::StyleScope,
     theme::{Theme, ThemeKind},
     title_bar::{TitleBarState, TitleBarTexts, TitleBarToggle, draw_window as draw_title_bar},
-    toast::{Toast, draw_toast},
+    toast::{Toast, ToastAction, draw_toast},
     tool_rail::{ToolRailItem, draw_tool_rail},
 };
 use trailkit_ui_testing::{
@@ -283,7 +283,15 @@ fn every_toast_state() {
         let mut harness = UiHarness::new(size);
         let mut draw = |ui: &Ui| {
             in_window(ui, &theme, size, || {
-                draw_toast(ui, &theme, &mut toast, Some("Undo"));
+                draw_toast(
+                    ui,
+                    &theme,
+                    &mut toast,
+                    &[ToastAction {
+                        label: "Undo",
+                        tooltip: None,
+                    }],
+                );
             });
         };
         let names = |state| ("toast", state, theme_name);
@@ -305,6 +313,44 @@ fn every_toast_state() {
             &mouse(over_action, true),
             &mut draw,
         );
+    }
+}
+
+#[test]
+fn toast_with_two_actions_in_every_width() {
+    let actions = [
+        ToastAction {
+            label: "Undo",
+            tooltip: None,
+        },
+        ToastAction {
+            label: "Open trash",
+            tooltip: None,
+        },
+    ];
+    // Wide enough for one row, for the buttons in a row below the message
+    // and only for one button per row (M159).
+    for (state, size) in [
+        ("two-actions", [420.0, 140.0]),
+        ("two-actions-below", [250.0, 140.0]),
+        ("two-actions-stacked", [150.0, 180.0]),
+    ] {
+        for (kind, theme_name) in THEMES {
+            let theme = kind.theme();
+            let mut toast = Toast::new("Moved to the trash".to_owned());
+            let mut harness = UiHarness::new(size);
+            let mut draw = |ui: &Ui| {
+                in_window(ui, &theme, size, || {
+                    draw_toast(ui, &theme, &mut toast, &actions);
+                });
+            };
+            assert_state(
+                &mut harness,
+                ("toast", state, theme_name),
+                &mouse([4.0, 4.0], false),
+                &mut draw,
+            );
+        }
     }
 }
 

@@ -68,9 +68,17 @@ const MINIMUM_TREE_CHARACTERS: f32 = 10.0;
 struct WindowToast {
     /// The shared toast.
     toast: Toast,
-    /// Whether it offers to undo the last delete (M148); a "Copied" message
-    /// does not (M142).
-    offers_undo: bool,
+    /// What the toast is about, which decides its actions.
+    kind: WindowToastKind,
+}
+
+/// What a toast of the window is about.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum WindowToastKind {
+    /// A plain message without actions, e.g. "Copied" (M142).
+    Message,
+    /// An entry went to the trash: offers undo and the trash (M158).
+    MovedToTrash,
 }
 
 /// Minimum widths of the two-pane layout in pixels (M40, M73).
@@ -319,10 +327,9 @@ impl MemoWindow {
         self.update_text_scale(ui, language);
         self.draw_problem(ui, language, theme);
 
-        if self.ui_state.tool_rail_visible {
-            self.draw_tool_rail(ui, language, theme);
-            ui.same_line_with_spacing(0.0, theme.pane.gap);
-        }
+        // Always there, so the tools can be found (M157).
+        self.draw_tool_rail(ui, language, theme);
+        ui.same_line_with_spacing(0.0, theme.pane.gap);
         // A group keeps every line of the content right of the rail.
         ui.group(|| self.draw_content(ui, language, theme));
         // Last, so it lies above the content (M148).
@@ -411,46 +418,32 @@ impl MemoWindow {
         }
     }
 
-    /// The memo toggles of the title bar (R78): the tool rail (M136) and the
-    /// note list (M137). Empty while the notes are not loaded.
+    /// The memo toggle of the title bar (R78): the note list (M137, M153). The
+    /// caller shows none while the notes are not loaded.
     #[must_use]
-    pub fn title_bar_toggles(&self, language: Language) -> [TitleBarToggle<'static>; 2] {
+    pub fn title_bar_toggles(&self, language: Language) -> [TitleBarToggle<'static>; 1] {
         let list_visible = if self.is_narrow {
             self.drawer_open
         } else {
             !self.ui_state.note_list_hidden
         };
-        [
-            TitleBarToggle {
-                icon: Icon::ELLIPSIS_VERTICAL,
-                tooltip: if self.ui_state.tool_rail_visible {
-                    Text::HideTools.get(language)
-                } else {
-                    Text::ShowTools.get(language)
-                },
-                active: self.ui_state.tool_rail_visible,
+        [TitleBarToggle {
+            icon: Icon::PANEL_LEFT,
+            tooltip: if list_visible {
+                Text::HideSidebar.get(language)
+            } else {
+                Text::ShowSidebar.get(language)
             },
-            TitleBarToggle {
-                icon: Icon::PANEL_LEFT,
-                tooltip: if list_visible {
-                    Text::HideSidebar.get(language)
-                } else {
-                    Text::ShowSidebar.get(language)
-                },
-                active: list_visible,
-            },
-        ]
+            active: list_visible,
+        }]
     }
 
     /// Applies a click on the title bar toggle at `index` (see
     /// [`Self::title_bar_toggles`]).
     pub fn apply_title_bar_toggle(&mut self, index: usize, language: Language) {
-        let action = match index {
-            0 => WindowAction::ToggleToolRail,
-            1 => WindowAction::ToggleNoteList,
-            _ => return,
-        };
-        self.apply(&action, language);
+        if index == 0 {
+            self.apply(&WindowAction::ToggleNoteList, language);
+        }
     }
 
     /// Applies due resets (M88–M90) once a reset time has passed; notes in

@@ -44,7 +44,7 @@ cargo xtask ui-test           # window snapshots (tests/snapshots/) via the head
 | `src/main_window/search.rs` | search cache (index + results), Ctrl+F, Escape in the search field |
 | `src/main_window/text_scale.rs` | text size: Ctrl+mouse wheel, Ctrl+0, delayed apply, percentage tooltip |
 | `src/main_window/note_list.rs` | note list wiring: search field, menu button, hands search and reset extras to the note-list slice and maps its actions |
-| `src/main_window/note_pane.rs` | note pane: toolbar end (Edit / Cancel / Save); wires editor, note view, kind dropdown and draft hint |
+| `src/main_window/note_pane.rs` | note pane: toolbar end (`⋯` menu, Edit / Cancel / Save); wires editor, note view, kind dropdown and draft hint |
 | `src/main_window/dialogs.rs` | dialog card and window, unsaved-changes and delete questions, storage problems |
 | `src/main_window/trash.rs` | deleting (questions, selection after it), trash view actions, Ctrl+Z / Ctrl+Y, hourly purge |
 | `src/main_window/trash_pane.rs` | drawing the trash column, the read-only trash preview and the undo toast |

@@ -354,7 +354,7 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
     let mut title_bar = TITLE_BAR
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
-    // The memo toggles (tool rail, note list; R78) exist once notes are loaded.
+    // The memo toggle (note list; R78) exists once notes are loaded.
     let toggles = match &*notes {
         NotesState::Ready(window) => Some(window.title_bar_toggles(language)),
         NotesState::Loading { .. } | NotesState::Unavailable => None,

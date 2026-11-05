@@ -14,7 +14,7 @@ use trailkit_memo_shared::{
 };
 use trailkit_memo_trash::{i18n::TrashText, labels, trash_view::TrashAction};
 
-use super::{MemoWindow, WindowAction, WindowToast};
+use super::{MemoWindow, WindowAction, WindowToast, WindowToastKind};
 
 /// How often the trash is checked for expired entries (M150).
 const PURGE_INTERVAL: SignedDuration = SignedDuration::from_hours(1);
@@ -118,9 +118,6 @@ impl MemoWindow {
     /// Moves `node` to the trash, records the undo step, moves the
     /// selection on (M149) and shows the toast (M148).
     fn move_to_trash(&mut self, node: NodeId, language: Language) {
-        let Some(title) = self.node_title(node) else {
-            return;
-        };
         let next_selection = self.selection_after_removing(node);
         if !self.document.move_to_trash(node, Timestamp::now()) {
             return;
@@ -130,18 +127,10 @@ impl MemoWindow {
         }
         self.undo.record(UndoStep::Delete(node));
         self.toast = Some(WindowToast {
-            toast: Toast::new(labels::deleted_message(&title, language)),
-            offers_undo: true,
+            toast: Toast::new(TrashText::MovedToTrash.get(language).to_owned()),
+            kind: WindowToastKind::MovedToTrash,
         });
         self.save_notes();
-    }
-
-    /// The title of `node` in the tree.
-    fn node_title(&self, node: NodeId) -> Option<String> {
-        match node {
-            NodeId::Note(id) => self.document.note(id).map(|note| note.title.clone()),
-            NodeId::Group(id) => self.document.group(id).map(|group| group.title.clone()),
-        }
     }
 
     /// The selection once `node` is gone (M149), if the selection is `node`
@@ -237,6 +226,17 @@ impl MemoWindow {
         }
     }
 
+    /// Shows the trash in place of the note list, which must show for that.
+    fn show_trash(&mut self) {
+        self.trash.visible = true;
+        if self.is_narrow {
+            self.drawer_open = true;
+        } else if self.ui_state.note_list_hidden {
+            self.ui_state.note_list_hidden = false;
+            self.saver.save_ui_state(self.ui_state);
+        }
+    }
+
     /// Applies an action of the trash view or a delete question.
     pub(super) fn apply_trash_action(&mut self, action: &WindowAction, language: Language) {
         match action {
@@ -245,16 +245,15 @@ impl MemoWindow {
             WindowAction::Redo => self.redo_last_step(),
             WindowAction::DismissToast => self.toast = None,
             WindowAction::ToggleTrash => {
-                self.trash.visible = !self.trash.visible;
                 if self.trash.visible {
-                    // The trash replaces the list, so the list must show.
-                    if self.is_narrow {
-                        self.drawer_open = true;
-                    } else if self.ui_state.note_list_hidden {
-                        self.ui_state.note_list_hidden = false;
-                        self.saver.save_ui_state(self.ui_state);
-                    }
+                    self.trash.visible = false;
+                } else {
+                    self.show_trash();
                 }
+            }
+            WindowAction::OpenTrash => {
+                self.toast = None;
+                self.show_trash();
             }
             WindowAction::Trash(TrashAction::Select(node)) => {
                 if self.trash.selected != Some(*node) {

@@ -215,10 +215,8 @@ pub enum Text {
     ShowSidebar,
     /// Tooltip of the left column toggle while the column is shown (M153).
     HideSidebar,
-    /// Tooltip of the tool rail toggle while the rail is hidden (M136).
-    ShowTools,
-    /// Tooltip of the tool rail toggle while the rail is shown (M136).
-    HideTools,
+    /// Tooltip of the note toolbar's menu button (M160).
+    MoreActions,
     /// Tooltip of the search toggle while the field is hidden (M138).
     ShowSearch,
     /// Tooltip of the search toggle while the field is shown (M138).
@@ -268,8 +266,7 @@ impl LocalizedText for Text {
         Self::CreateFirstNote,
         Self::ShowSidebar,
         Self::HideSidebar,
-        Self::ShowTools,
-        Self::HideTools,
+        Self::MoreActions,
         Self::ShowSearch,
         Self::HideSearch,
         Self::CompactNoteView,
@@ -347,10 +344,8 @@ impl LocalizedText for Text {
             (Self::ShowSidebar, Language::German) => "Seitenleiste einblenden",
             (Self::HideSidebar, Language::English) => "Hide sidebar",
             (Self::HideSidebar, Language::German) => "Seitenleiste ausblenden",
-            (Self::ShowTools, Language::English) => "Show tools",
-            (Self::ShowTools, Language::German) => "Werkzeuge einblenden",
-            (Self::HideTools, Language::English) => "Hide tools",
-            (Self::HideTools, Language::German) => "Werkzeuge ausblenden",
+            (Self::MoreActions, Language::English) => "More actions",
+            (Self::MoreActions, Language::German) => "Weitere Aktionen",
             (Self::ShowSearch, Language::English) => "Show search (Ctrl+F)",
             (Self::ShowSearch, Language::German) => "Suche einblenden (Strg+F)",
             (Self::HideSearch, Language::English) => "Hide search",

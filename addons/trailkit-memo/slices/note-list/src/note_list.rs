@@ -7,6 +7,7 @@
 //! ([`ListSearch`], [`NoteRowExtras`], ROADMAP R76 questions 48–53).
 
 mod context_menu;
+pub use context_menu::{EntryMenu, draw_note_menu};
 mod delete;
 mod rows;
 
@@ -63,7 +64,7 @@ pub struct NoteRowExtras<'a> {
     pub badge: &'a dyn Fn(&Note) -> Option<RowBadge>,
     /// Draws the tooltip of a hovered badge.
     pub badge_tooltip: &'a mut dyn FnMut(&Ui, &Note),
-    /// Draws extra items of a note's context menu, after "Rename".
+    /// Draws extra items of a note's context menu, after "Move to" (M160).
     pub context_menu: &'a mut dyn FnMut(&Ui, &Note),
 }
 

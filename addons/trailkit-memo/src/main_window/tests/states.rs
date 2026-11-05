@@ -26,7 +26,7 @@ const RAIDS_ROW: [f32; 2] = [100.0, 170.0];
 /// An empty spot of the note list.
 const EMPTY_LIST_SPOT: [f32; 2] = [100.0, 300.0];
 /// The kind dropdown of the selected note.
-const KIND_FIELD: [f32; 2] = [400.0, 106.0];
+const KIND_FIELD: [f32; 2] = [440.0, 114.0];
 /// A spot that shows nothing on hover.
 const NOWHERE: [f32; 2] = [420.0, 330.0];
 
@@ -193,11 +193,7 @@ fn with_body(body: &str, ui_state_change: impl Fn(&mut UiState)) -> Fixture {
 /// The trash view with entries, the first entry selected if `select`.
 fn trash_view(document: NotesDocument, select: bool) -> Fixture {
     let selected = document.trash.first().map(TrashEntry::id);
-    let ui_state = UiState {
-        tool_rail_visible: true,
-        ..UiState::default()
-    };
-    let mut fixture = memo_window(document, ui_state);
+    let mut fixture = memo_window(document, UiState::default());
     fixture
         .0
         .apply(&WindowAction::ToggleTrash, Language::English);
@@ -241,20 +237,9 @@ fn views() {
     assert_state("note", WIDE, selected, &[]);
     assert_state("daily-note", WIDE, || selected_titled("Dailies"), &[]);
     assert_state(
-        "rail",
-        WIDE,
-        || selected_with(|state| state.tool_rail_visible = true),
-        &[],
-    );
-    assert_state(
         "rail-search",
         WIDE,
-        || {
-            selected_with(|state| {
-                state.tool_rail_visible = true;
-                state.search_visible = true;
-            })
-        },
+        || selected_with(|state| state.search_visible = true),
         &[],
     );
     assert_state(
@@ -302,23 +287,22 @@ fn views() {
 #[test]
 fn window_chrome_hovers() {
     for (name, position) in [
-        ("hover-toggle-tools", [28.0, 25.0]),
-        ("hover-toggle-list", [68.0, 25.0]),
+        ("hover-toggle-list", [28.0, 25.0]),
         ("hover-collapse", [576.0, 25.0]),
         ("hover-close", [612.0, 25.0]),
-        ("hover-new-note", [62.0, 65.0]),
-        ("hover-new-group", [153.0, 65.0]),
-        ("hover-compact", [236.0, 65.0]),
+        ("hover-new-note", [102.0, 65.0]),
+        ("hover-new-group", [193.0, 65.0]),
+        ("hover-compact", [276.0, 65.0]),
         ("hover-edit", [590.0, 65.0]),
     ] {
         assert_state(name, WIDE, selected, &hover(position));
     }
     assert_state("pressed-edit", WIDE, selected, &press([590.0, 65.0]));
-    assert_state("pressed-new-note", WIDE, selected, &press([62.0, 65.0]));
+    assert_state("pressed-new-note", WIDE, selected, &press([102.0, 65.0]));
     assert_state(
         "hover-rail",
         WIDE,
-        || selected_with(|state| state.tool_rail_visible = true),
+        || selected_with(|_| {}),
         &hover([28.0, 57.0]),
     );
 }
@@ -329,15 +313,15 @@ fn list_rows() {
         ("hover-selected-row", SHOPPING_ROW),
         ("hover-row", DAILIES_ROW),
         ("hover-group", RAIDS_ROW),
-        ("hover-group-arrow", [36.0, RAIDS_ROW[1]]),
+        ("hover-group-arrow", [76.0, RAIDS_ROW[1]]),
         ("hover-child-row", [100.0, 202.0]),
-        ("hover-badge-count", [184.0, RAIDS_ROW[1]]),
+        ("hover-badge-count", [224.0, RAIDS_ROW[1]]),
     ] {
         assert_state(name, WIDE, selected, &hover(position));
     }
     assert_state("pressed-row", WIDE, selected, &press(DAILIES_ROW));
     assert_state("collapsed-group", WIDE, selected, &{
-        let mut steps = click([36.0, RAIDS_ROW[1]]);
+        let mut steps = click([76.0, RAIDS_ROW[1]]);
         steps.extend(hover(NOWHERE));
         steps
     });
@@ -386,13 +370,13 @@ fn list_rows() {
 #[test]
 fn note_content_hovers() {
     for (name, position) in [
-        ("hover-checkbox", [228.0, 225.0]),
-        ("hover-task-text", [300.0, 225.0]),
-        ("hover-link", [310.0, 249.0]),
+        ("hover-checkbox", [268.0, 225.0]),
+        ("hover-task-text", [340.0, 225.0]),
+        ("hover-link", [350.0, 249.0]),
     ] {
         assert_state(name, WIDE, selected, &hover(position));
     }
-    assert_state("pressed-checkbox", WIDE, selected, &press([228.0, 225.0]));
+    assert_state("pressed-checkbox", WIDE, selected, &press([268.0, 225.0]));
 }
 
 #[test]
@@ -494,12 +478,7 @@ fn editing_narrow() -> Fixture {
 
 #[test]
 fn search() {
-    let searching = || {
-        selected_with(|state| {
-            state.tool_rail_visible = true;
-            state.search_visible = true;
-        })
-    };
+    let searching = || selected_with(|state| state.search_visible = true);
     let field = [120.0, 68.0];
     assert_state("search-focused", WIDE, searching, &click(field));
     assert_state("search-hover-field", WIDE, searching, &hover(field));
@@ -569,16 +548,6 @@ fn trash() {
     );
     assert_state("trash-nothing-selected", WIDE, entries, &[]);
     assert_state("trash-selected", WIDE, chosen, &[]);
-    assert_state(
-        "trash-without-rail",
-        WIDE,
-        || {
-            let mut fixture = trash_view(document_with_trash([0, 25]), false);
-            fixture.0.ui_state.tool_rail_visible = false;
-            fixture
-        },
-        &[],
-    );
     for (name, position) in [
         ("trash-hover-note", [148.0, 160.0]),
         ("trash-hover-group", [148.0, 112.0]),
@@ -612,6 +581,8 @@ fn toast() {
         fixture
     };
     assert_state("toast", WIDE, deleted, &[]);
+    // The buttons move below the message in a narrow window (M159).
+    assert_state("toast-narrow", NARROW, deleted, &[]);
     let copied = || {
         let mut fixture = selected();
         fixture.0.apply(
@@ -621,6 +592,21 @@ fn toast() {
         fixture
     };
     assert_state("toast-copied", WIDE, copied, &[]);
+}
+
+/// Center of the note toolbar's `⋯` button (M160).
+const NOTE_MENU_BUTTON: [f32; 2] = [532.0, 65.0];
+
+#[test]
+fn note_menu() {
+    assert_state("note-menu-hover", WIDE, selected, &hover(NOTE_MENU_BUTTON));
+    assert_state(
+        "note-menu-pressed",
+        WIDE,
+        selected,
+        &press(NOTE_MENU_BUTTON),
+    );
+    assert_state("note-menu", WIDE, selected, &click(NOTE_MENU_BUTTON));
 }
 
 #[test]

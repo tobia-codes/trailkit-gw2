@@ -12,10 +12,11 @@ Während Ladebildschirmen, Zwischensequenzen und der Charakterauswahl wird das F
 
 Das Fenster zeigt links die Notizliste und rechts die ausgewählte Notiz. Ziehe den Spalt zwischen beiden Seiten, um ihre Breite zu ändern (beim Darüberfahren erscheint eine Linie). Die Notizliste behält ihre Breite, wenn du das Fenster größer oder kleiner ziehst; der zusätzliche Platz geht an die Notiz.
 
-In der Titelleiste sitzen vier Buttons:
+Die **Werkzeugleiste** am linken Rand ist immer da, mit *Suchen* und dem *Papierkorb*.
 
-- **Werkzeuge** (drei Punkte), oben links: blendet die Werkzeugleiste am linken Rand mit *Suchen* und dem *Papierkorb* ein oder aus. Sie ist anfangs ausgeblendet; memo merkt sich deine Wahl.
-- **Seitenleisten-Button** daneben: blendet die linke Spalte (Notizliste oder Papierkorb) aus, damit die Notiz die ganze Breite bekommt; ein weiterer Klick blendet sie wieder ein. memo merkt sich deine Wahl.
+In der Titelleiste sitzen drei Buttons:
+
+- **Seitenleisten-Button**, oben links: blendet die linke Spalte (Notizliste oder Papierkorb) aus, damit die Notiz die ganze Breite bekommt; ein weiterer Klick blendet sie wieder ein. memo merkt sich deine Wahl.
 - **Pfeil** rechts: klappt das Fenster auf seine Titelleiste ein (erneut klicken zum Ausklappen); **×** schließt es.
 
 Ein hinterlegter Button bedeutet: Was er schaltet, ist gerade eingeblendet.
@@ -26,16 +27,17 @@ Ein hinterlegter Button bedeutet: Was er schaltet, ist gerade eingeblendet.
 - **Neue Notiz / neue Gruppe:** die beiden Buttons über der Liste. Der neue Eintrag landet in der ausgewählten Gruppe (bzw. der Gruppe der ausgewählten Notiz), ganz am Ende. Tippe gleich einen Namen ein und drücke Enter.
 - **Rechtsklick** auf eine Gruppe oder eine leere Stelle der Liste bietet dasselbe: auf einer Gruppe kommt der neue Eintrag in sie hinein, auf einer leeren Stelle ans Ende der Liste.
 - **Umbenennen:** Doppelklick auf einen Eintrag oder Rechtsklick › *Umbenennen*. Enter oder ein Klick daneben übernimmt den Namen, Escape bricht ab.
+- **Notizmenü:** Der Button mit den drei Punkten neben *Bearbeiten* bietet *Umbenennen*, *Verschieben nach*, *Reset-Art* und *Löschen* für die offene Notiz. *Umbenennen* öffnet den Editor mit markiertem Titel; beende ihn mit *Speichern*.
 - **Sortieren:** Ziehe eine Notiz oder Gruppe an eine neue Stelle. Eine Linie zeigt, wo sie landet; auf der unteren Hälfte einer offenen Gruppe wird sie deren erster Eintrag, unter dem letzten Eintrag kommt sie ans Ende der Liste. Auf der Mitte einer geschlossenen Gruppe landet sie an deren Ende; bleibst du kurz darauf, öffnet sich die Gruppe. Ein rotes Verbotszeichen heißt: Dort geht es nicht hin (eine Gruppe kann nicht in sich selbst). Am oberen oder unteren Rand scrollt die Liste. Escape bricht ab.
 - **Verschieben nach:** Rechtsklick › *Verschieben nach* › *Oberste Ebene* oder eine Gruppe verschiebt den Eintrag an deren Ende, ohne zu ziehen.
 - **Gruppen** haben fett gedruckte Namen und zeigen rechts, wie viele Notizen sie enthalten.
 - **Löschen:** Rechtsklick › *Löschen*, oder den Eintrag auswählen und **Entf** drücken, während die Liste den Fokus hat. Der Eintrag kommt in den Papierkorb; eine Gruppe mit Notizen fragt vorher nach. Die Notiz, die du gerade bearbeitest, lässt sich erst löschen, wenn du speicherst oder abbrichst.
-- **Rückgängig:** Nach dem Löschen bietet eine Meldung unten im Fenster ein paar Sekunden lang *Rückgängig* an (solange die Maus darauf zeigt, bleibt sie stehen). **Strg+Z** macht das letzte Löschen oder Verschieben rückgängig, **Strg+Y** (oder Strg+Umschalt+Z) stellt es wieder her – bis zu 20 Schritte, bis zum Neustart des Spiels. Während du tippst, macht Strg+Z stattdessen dein Tippen rückgängig.
+- **Rückgängig:** Nach dem Löschen bietet die Meldung *In den Papierkorb verschoben* unten im Fenster ein paar Sekunden lang *Rückgängig* und *Papierkorb öffnen* an (solange die Maus darauf zeigt, bleibt sie stehen). **Strg+Z** macht das letzte Löschen oder Verschieben rückgängig, **Strg+Y** (oder Strg+Umschalt+Z) stellt es wieder her – bis zu 20 Schritte, bis zum Neustart des Spiels. Während du tippst, macht Strg+Z stattdessen dein Tippen rückgängig.
 - **Abzeichen** am rechten Ende einer Zeile: **T** kennzeichnet eine tägliche Notiz (Reset um 00:00 UTC), **W** eine wöchentliche (Reset montags um 07:30 UTC). Fahre mit der Maus darüber, um zu sehen, wie lange es bis zum nächsten Reset dauert.
 
 ## Papierkorb
 
-Klicke auf den **Papierkorb** in der Werkzeugleiste (drei Punkte in der Titelleiste), um statt der Notizliste den Papierkorb zu sehen; ein zweiter Klick oder der **Zurück-Pfeil** neben *Papierkorb* bringt dich zurück zu deinen Notizen. Gelöschte Notizen und Gruppen bleiben dort **30 Tage** und werden dann endgültig entfernt. Jeder Eintrag zeigt, wie viele Tage noch bleiben – in der letzten Woche rot.
+Klicke auf den **Papierkorb** in der Werkzeugleiste, um statt der Notizliste den Papierkorb zu sehen; ein zweiter Klick oder der **Zurück-Pfeil** neben *Papierkorb* bringt dich zurück zu deinen Notizen. Gelöschte Notizen und Gruppen bleiben dort **30 Tage** und werden dann endgültig entfernt. Jeder Eintrag zeigt, wie viele Tage noch bleiben – in der letzten Woche rot.
 
 - Klicke einen Eintrag an, um ihn rechts zu lesen. Bearbeiten lässt er sich dort nicht.
 - **Wiederherstellen** (oder Rechtsklick › *Wiederherstellen*) legt ihn dorthin zurück, wo er war. Gibt es seine Gruppe nicht mehr, landet er am Ende der Liste. Eine Gruppe kommt mit allem darin zurück.
@@ -44,7 +46,7 @@ Klicke auf den **Papierkorb** in der Werkzeugleiste (drei Punkte in der Titellei
 
 ## Suchen
 
-Blende das Feld **Suchen** mit der Lupe in der Werkzeugleiste ein (drei Punkte in der Titelleiste) oder drücke **Strg+F**; es bleibt über der Notizliste, bis du es mit der Lupe wieder ausblendest, auch nach einem Neustart. Tippe hinein: Die Liste zeigt dann nur Notizen, die jedes eingegebene Wort enthalten — im Titel oder im Text, egal ob groß oder klein geschrieben. Umlaute zählen als eigene Buchstaben: „ä“ findet „Ä“, aber nicht „a“.
+Blende das Feld **Suchen** mit der Lupe in der Werkzeugleiste ein oder drücke **Strg+F**; es bleibt über der Notizliste, bis du es mit der Lupe wieder ausblendest, auch nach einem Neustart. Tippe hinein: Die Liste zeigt dann nur Notizen, die jedes eingegebene Wort enthalten — im Titel oder im Text, egal ob groß oder klein geschrieben. Umlaute zählen als eigene Buchstaben: „ä“ findet „Ä“, aber nicht „a“.
 
 - Gruppen mit Treffern klappen von selbst auf; ihre Zahl zeigt, wie viele Notizen passen. Passt der Name einer Gruppe, erscheint alles darin.
 - Treffer sind in den Titeln und in der geöffneten Notiz markiert; die Notiz springt zum ersten Treffer. Notizen, die nur über ihren Text passen, zeigen am Ende der Zeile die Zahl der Treffer.

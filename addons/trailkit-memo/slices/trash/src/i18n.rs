@@ -70,10 +70,14 @@ pub enum TrashText {
     BackToNotes,
     /// Confirm button of the group delete dialog.
     Delete,
-    /// Toast after deleting (M148); `{title}` is replaced.
-    Deleted,
+    /// Toast after deleting (M158).
+    MovedToTrash,
     /// Action of the toast and the undo step (M135).
     Undo,
+    /// Tooltip of the toast's undo action, naming its shortcut (M162).
+    UndoTooltip,
+    /// Toast action that opens the trash (M158).
+    OpenTrash,
 }
 
 impl LocalizedText for TrashText {
@@ -108,8 +112,10 @@ impl LocalizedText for TrashText {
         Self::OneEntry,
         Self::BackToNotes,
         Self::Delete,
-        Self::Deleted,
+        Self::MovedToTrash,
         Self::Undo,
+        Self::UndoTooltip,
+        Self::OpenTrash,
     ];
 
     fn get(self, language: Language) -> &'static str {
@@ -165,8 +171,10 @@ const fn english(text: TrashText) -> &'static str {
             "The group and the {count} notes in it move to the trash. You can restore them for 30 days."
         }
         TrashText::Delete => "Delete",
-        TrashText::Deleted => "\u{201c}{title}\u{201d} deleted",
+        TrashText::MovedToTrash => "Moved to the trash",
         TrashText::Undo => "Undo",
+        TrashText::UndoTooltip => "Undo (Ctrl+Z)",
+        TrashText::OpenTrash => "Open trash",
     }
 }
 
@@ -215,8 +223,10 @@ const fn german(text: TrashText) -> &'static str {
             "Die Gruppe und die {count} Notizen darin kommen in den Papierkorb. Du kannst sie 30 Tage lang wiederherstellen."
         }
         TrashText::Delete => "Löschen",
-        TrashText::Deleted => "\u{201e}{title}\u{201c} gelöscht",
+        TrashText::MovedToTrash => "In den Papierkorb verschoben",
         TrashText::Undo => "Rückgängig",
+        TrashText::UndoTooltip => "Rückgängig (Strg+Z)",
+        TrashText::OpenTrash => "Papierkorb öffnen",
     }
 }
 

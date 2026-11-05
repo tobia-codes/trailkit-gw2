@@ -12,10 +12,11 @@ The window hides during loading screens, cutscenes and character select and reap
 
 The window shows the note list on the left and the selected note on the right. Drag the gap between both sides to change their widths (a line appears when you point at it). The note list keeps its width when you resize the window; the note gets the extra room.
 
-The title bar holds four buttons:
+The **tool bar** on the left edge is always there, with *Search* and the *Trash*.
 
-- **Tools** (three dots), top left: shows or hides the tool bar on the left edge with *Search* and the *Trash*. It starts hidden; memo remembers your choice.
-- **Sidebar button** next to it: hides the left column (the note list or the trash) so the note gets the full width; click it again to show it. memo remembers your choice.
+The title bar holds three buttons:
+
+- **Sidebar button**, top left: hides the left column (the note list or the trash) so the note gets the full width; click it again to show it. memo remembers your choice.
 - **Arrow** on the right: collapses the window to its title bar (click it again to expand); **×** closes it.
 
 A highlighted button means that what it switches is shown.
@@ -26,16 +27,17 @@ A highlighted button means that what it switches is shown.
 - **New note / new group:** the two buttons above the list. The new entry goes into the selected group (or the group of the selected note), at the end. Type a name right away and press Enter.
 - **Right-click** a group or an empty spot of the list for the same actions: on a group the new entry goes into it, on an empty spot at the end of the list.
 - **Rename:** double-click an entry, or right-click › *Rename*. Enter or clicking elsewhere keeps the new name, Escape cancels.
+- **Note menu:** the button with three dots next to *Edit* offers *Rename*, *Move to*, *Reset type* and *Delete* for the open note. *Rename* opens the editor with the title selected; finish with *Save*.
 - **Reorder:** drag a note or group to a new place. A line shows where it lands; on the lower half of an open group it becomes the group's first entry, below the last entry it goes to the end of the list. Drop on the middle of a closed group to put it at its end; rest there a moment and the group opens. A red "no entry" sign means it cannot go there (a group cannot go into itself). Near the top or bottom edge the list scrolls. Escape cancels.
 - **Move to:** right-click › *Move to* › *Top level* or a group moves the entry to the end of it, without dragging.
 - **Groups** have bold names and show how many notes they contain on the right.
 - **Delete:** right-click › *Delete*, or select the entry and press **Delete** while the list has the focus. The entry goes to the trash; a group with notes asks first. The note you are editing cannot be deleted until you save or cancel.
-- **Undo:** after deleting, a message at the bottom of the window offers *Undo* for a few seconds (pointing at it keeps it open). **Ctrl+Z** undoes the last delete or move, **Ctrl+Y** (or Ctrl+Shift+Z) does it again — up to 20 steps, until the game restarts. While you type, Ctrl+Z undoes your typing instead.
+- **Undo:** after deleting, a message at the bottom of the window says *Moved to the trash* and offers *Undo* and *Open trash* for a few seconds (pointing at it keeps it open). **Ctrl+Z** undoes the last delete or move, **Ctrl+Y** (or Ctrl+Shift+Z) does it again — up to 20 steps, until the game restarts. While you type, Ctrl+Z undoes your typing instead.
 - **Badges** at the right end of a row: **D** marks a daily note (reset at 00:00 UTC), **W** a weekly note (reset on Mondays at 07:30 UTC). Hover a badge to see how long it is until the next reset.
 
 ## Trash
 
-Click the **trash can** in the tool bar (three dots in the title bar) to see the trash in place of the note list; click it again, or the **back arrow** next to *Trash*, to go back to your notes. Deleted notes and groups stay there for **30 days** and are then removed for good. Each entry shows how many days are left — red in the last week.
+Click the **trash can** in the tool bar to see the trash in place of the note list; click it again, or the **back arrow** next to *Trash*, to go back to your notes. Deleted notes and groups stay there for **30 days** and are then removed for good. Each entry shows how many days are left — red in the last week.
 
 - Click an entry to read it on the right. It cannot be edited there.
 - **Restore** (or right-click › *Restore*) puts it back where it was. If its group no longer exists, it goes to the end of the list. A group comes back with everything inside.
@@ -44,7 +46,7 @@ Click the **trash can** in the tool bar (three dots in the title bar) to see the
 
 ## Searching
 
-Show the **Search** field with the magnifier in the tool bar (three dots in the title bar) or press **Ctrl+F**; it stays above the note list until you hide it with the magnifier again, also after a restart. Type into it: The list shows only notes that contain every word you typed — in their title or text, upper or lower case alike. Umlauts count as their own letters: "ä" finds "Ä", but not "a".
+Show the **Search** field with the magnifier in the tool bar or press **Ctrl+F**; it stays above the note list until you hide it with the magnifier again, also after a restart. Type into it: The list shows only notes that contain every word you typed — in their title or text, upper or lower case alike. Umlauts count as their own letters: "ä" finds "Ä", but not "a".
 
 - Groups with hits open by themselves; their number shows how many notes match. A group whose name matches shows everything inside.
 - Hits are marked in the titles and in the open note, which jumps to the first hit. Notes that match only through their text show the number of hits at the end of the row.

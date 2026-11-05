@@ -112,16 +112,7 @@ impl MemoWindow {
         // The reset type submenu with the current kind checked (M86).
         let window_actions = &mut self.actions;
         let mut context_menu = |ui: &Ui, note: &Note| {
-            let Some(_submenu) = begin_submenu(ui, theme, ResetText::ResetType.get(language))
-            else {
-                return;
-            };
-            for (period, text) in KIND_OPTIONS {
-                let is_current = note.kind.period() == period;
-                if draw_menu_item(ui, theme, text.get(language), is_current) && !is_current {
-                    window_actions.push(WindowAction::SetResetPeriod(note.id, period));
-                }
-            }
+            draw_reset_type_submenu(ui, theme, language, note, window_actions);
         };
         let output = self.note_list.draw(
             ui,
@@ -141,5 +132,25 @@ impl MemoWindow {
         );
         self.actions
             .extend(output.actions.into_iter().map(WindowAction::from));
+    }
+}
+
+/// Draws the reset type submenu of `note` with its current kind checked (M86),
+/// used by the row's context menu and the note pane's `⋯` menu (M160).
+pub(super) fn draw_reset_type_submenu(
+    ui: &Ui,
+    theme: &Theme,
+    language: Language,
+    note: &Note,
+    actions: &mut Vec<WindowAction>,
+) {
+    let Some(_submenu) = begin_submenu(ui, theme, ResetText::ResetType.get(language)) else {
+        return;
+    };
+    for (period, text) in KIND_OPTIONS {
+        let is_current = note.kind.period() == period;
+        if draw_menu_item(ui, theme, text.get(language), is_current) && !is_current {
+            actions.push(WindowAction::SetResetPeriod(note.id, period));
+        }
     }
 }

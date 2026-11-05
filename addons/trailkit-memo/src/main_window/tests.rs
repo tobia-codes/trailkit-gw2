@@ -655,7 +655,7 @@ fn search_for(
     // Rest the mouse on the clear button: its hover square must sit
     // centered on the `x` (M128).
     let over_clear = FrameInput {
-        mouse_position: [185.0, 70.0],
+        mouse_position: [225.0, 70.0],
         ..FrameInput::default()
     };
     let mut image = draw_frame(&mut harness, &over_clear);
@@ -729,10 +729,7 @@ fn only_the_tree_scrolls_below_the_fixed_list_header() {
 #[test]
 fn tool_rail_and_search_field_stay_shown() {
     let document = sample_document();
-    let ui_state = UiState {
-        tool_rail_visible: true,
-        ..selected_first_with_search(&document)
-    };
+    let ui_state = selected_first_with_search(&document);
     let (mut memo, _worker, _directory) = memo_window(document, ui_state);
     assert_window(
         &mut memo,
@@ -755,18 +752,36 @@ fn compact_note_view_shows_only_the_note() {
 }
 
 #[test]
-fn title_bar_toggles_switch_tool_rail_and_note_list() {
+fn title_bar_toggle_switches_the_note_list() {
     let document = sample_document();
     let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
     let toggles = memo.title_bar_toggles(Language::English);
-    assert!(!toggles[0].active, "the tool rail starts hidden (M136)");
-    assert!(toggles[1].active, "the note list starts shown");
+    assert!(toggles[0].active, "the note list starts shown");
     memo.apply_title_bar_toggle(0, Language::English);
-    memo.apply_title_bar_toggle(1, Language::English);
-    assert!(memo.ui_state.tool_rail_visible);
     assert!(memo.ui_state.note_list_hidden);
-    let toggles = memo.title_bar_toggles(Language::English);
-    assert!(toggles[0].active && !toggles[1].active);
+    assert!(!memo.title_bar_toggles(Language::English)[0].active);
+}
+
+#[test]
+fn rename_from_the_note_menu_opens_the_editor_in_the_title() {
+    let document = sample_document();
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    let list_hidden = memo.ui_state.note_list_hidden;
+    memo.apply(&WindowAction::StartRenaming, Language::English);
+    assert!(
+        memo.editor.is_some(),
+        "renaming happens in the editor (M161)"
+    );
+    assert_eq!(
+        memo.ui_state.note_list_hidden, list_hidden,
+        "the sidebar stays as it is (M161)"
+    );
+    assert_window(
+        &mut memo,
+        [640.0, 360.0],
+        ThemeKind::Dark,
+        "memo-rename-title-focus",
+    );
 }
 
 #[test]

@@ -88,8 +88,9 @@ impl Icon {
     pub const SEARCH: Self = Self('\u{e151}');
     /// `save` (floppy disk): the Save button of an editor (memo M130).
     pub const SAVE: Self = Self('\u{e14d}');
-    /// `ellipsis-vertical` (⋮): title bar toggle of the tool rail (memo M136).
-    pub const ELLIPSIS_VERTICAL: Self = Self('\u{e0b7}');
+    /// `ellipsis` (⋯): the menu of more actions next to a primary button
+    /// (memo M160).
+    pub const ELLIPSIS: Self = Self('\u{e0b6}');
     /// `maximize-2`: turns the compact note view on (memo M139).
     pub const MAXIMIZE_2: Self = Self('\u{e113}');
     /// `minimize-2`: turns the compact note view off again (memo M139).
@@ -103,7 +104,7 @@ impl Icon {
     pub const ALL: [Self; 43] = [
         Self::TRASH_2,
         Self::ROTATE_CCW,
-        Self::ELLIPSIS_VERTICAL,
+        Self::ELLIPSIS,
         Self::MAXIMIZE_2,
         Self::MINIMIZE_2,
         Self::SAVE,
