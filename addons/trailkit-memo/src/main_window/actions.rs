@@ -435,8 +435,9 @@ impl MemoWindow {
         }
     }
 
-    /// Makes `node` the selected entry, shows it from its top and remembers it.
-    fn change_selected(&mut self, node: NodeId) {
+    /// Makes `node` the selected entry, shows it from its top and remembers it;
+    /// a narrow window's drawer stays as it is (M163, M164).
+    pub(super) fn change_selected(&mut self, node: NodeId) {
         if self.ui_state.selected != Some(node) {
             self.ui_state.selected = Some(node);
             self.ui_state.note_scroll = 0.0;

@@ -231,3 +231,30 @@ fn the_toast_opens_the_trash_and_shows_the_hidden_list() {
         "the trash needs its column"
     );
 }
+
+#[test]
+fn deleting_and_undoing_keep_the_drawer_open() {
+    let document = sample_document();
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    let first = first_note(&document).unwrap_or_else(|| panic!("the sample has a note"));
+    memo.drawer_open = true;
+    memo.apply(&WindowAction::Delete(first), Language::English);
+    assert!(memo.drawer_open, "more entries may follow (M164)");
+    assert_ne!(
+        memo.ui_state.selected,
+        Some(first),
+        "the selection moves on"
+    );
+    memo.apply(&WindowAction::Undo, Language::English);
+    assert!(memo.drawer_open, "undoing keeps it open too (M164)");
+    assert_eq!(memo.ui_state.selected, Some(first));
+}
+
+#[test]
+fn deleting_from_the_note_view_leaves_the_drawer_closed() {
+    let document = sample_document();
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    let first = first_note(&document).unwrap_or_else(|| panic!("the sample has a note"));
+    memo.apply(&WindowAction::Delete(first), Language::English);
+    assert!(!memo.drawer_open, "the note menu does not open the list");
+}

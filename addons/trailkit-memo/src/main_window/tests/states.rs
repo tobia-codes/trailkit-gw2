@@ -623,6 +623,17 @@ fn context_menu_in_the_drawer() {
         in_drawer,
         &right_click(DAILIES_ROW),
     );
+    // Deleting keeps it open and the toast lies above it (M164).
+    let deleted_in_drawer = || {
+        let mut fixture = in_drawer();
+        if let Some(first) = first_note(&fixture.0.document) {
+            fixture
+                .0
+                .apply(&WindowAction::Delete(first), Language::English);
+        }
+        fixture
+    };
+    assert_state("narrow-drawer-toast", NARROW, deleted_in_drawer, &[]);
 }
 
 #[test]

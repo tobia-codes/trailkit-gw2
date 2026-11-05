@@ -165,7 +165,8 @@ impl MemoWindow {
     /// Selects `selection` or clears the selection, and remembers it.
     fn change_selection(&mut self, selection: Option<NodeId>) {
         match selection {
-            Some(node) => self.select(node),
+            // Deleting several entries in a row keeps the drawer open (M164).
+            Some(node) => self.change_selected(node),
             None => {
                 self.ui_state.selected = None;
                 self.saver.save_ui_state(self.ui_state);
@@ -179,7 +180,7 @@ impl MemoWindow {
         self.toast = None;
         if let Some(step) = self.undo.undo(&mut self.document, Timestamp::now()) {
             let (UndoStep::Delete(node) | UndoStep::Move { node, .. }) = step;
-            self.select(node);
+            self.change_selected(node);
             self.save_notes();
         }
     }
