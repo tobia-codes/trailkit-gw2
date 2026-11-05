@@ -3,7 +3,7 @@
 //! system (`tokens.md` §10). Behavior is tested elsewhere; this file only
 //! brings the window into each state.
 
-use trailkit_memo_shared::{drafts::Draft, note_tree::TrashEntry};
+use trailkit_memo_shared::{drafts::Draft, i18n::local_utc_offset, note_tree::TrashEntry};
 use trailkit_memo_trash::trash_view::TrashAction;
 use trailkit_ui::markdown_view::MarkdownAction;
 
@@ -208,6 +208,13 @@ fn trash_view(document: NotesDocument, select: bool) -> Fixture {
         );
     }
     fixture
+}
+
+/// A time that local time shows as the same wall clock in every time zone, so
+/// a snapshot with a formatted time matches on the CI runner too.
+fn same_local_time_everywhere() -> Timestamp {
+    let offset = local_utc_offset(fixed_time());
+    fixed_time() - jiff::SignedDuration::from_secs(i64::from(offset.seconds()))
 }
 
 /// The sample with a storage `problem` shown.
@@ -643,7 +650,7 @@ fn problems_and_drafts() {
                 note,
                 title: "Shopping list (draft)".to_owned(),
                 body: "- [ ] A draft line".to_owned(),
-                saved_at: fixed_time(),
+                saved_at: same_local_time_everywhere(),
                 note_updated_at: fixed_time(),
             });
         }

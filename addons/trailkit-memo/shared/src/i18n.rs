@@ -430,7 +430,7 @@ pub fn format_local_time(time: jiff::Timestamp, language: Language) -> String {
 /// Windows' current time-zone settings define it. Falls back to UTC (and logs
 /// a warning) if Windows cannot convert the time.
 #[cfg(windows)]
-fn local_utc_offset(time: jiff::Timestamp) -> jiff::tz::Offset {
+pub fn local_utc_offset(time: jiff::Timestamp) -> jiff::tz::Offset {
     use windows::Win32::{Foundation::SYSTEMTIME, System::Time::SystemTimeToTzSpecificLocalTime};
 
     let utc = time.to_zoned(jiff::tz::TimeZone::UTC).datetime();
@@ -461,7 +461,7 @@ fn local_utc_offset(time: jiff::Timestamp) -> jiff::tz::Offset {
 /// Without Windows (unit tests on Linux) there are no time-zone settings to
 /// ask: the offset is always UTC.
 #[cfg(not(windows))]
-fn local_utc_offset(_time: jiff::Timestamp) -> jiff::tz::Offset {
+pub fn local_utc_offset(_time: jiff::Timestamp) -> jiff::tz::Offset {
     jiff::tz::Offset::UTC
 }
 
