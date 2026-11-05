@@ -610,6 +610,22 @@ fn note_menu() {
 }
 
 #[test]
+fn context_menu_in_the_drawer() {
+    let in_drawer = || {
+        let mut fixture = selected();
+        fixture.0.drawer_open = true;
+        fixture
+    };
+    // A right click selects the row, but its menu needs the drawer (M163).
+    assert_state(
+        "narrow-drawer-context-menu",
+        NARROW,
+        in_drawer,
+        &right_click(DAILIES_ROW),
+    );
+}
+
+#[test]
 fn problems_and_drafts() {
     assert_state(
         "problem-recovered",

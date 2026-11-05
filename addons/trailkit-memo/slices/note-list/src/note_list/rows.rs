@@ -283,7 +283,9 @@ fn handle_hovered_row(
         context.pressed = Some(node);
     }
     if ui.is_mouse_clicked(MouseButton::Right) {
-        context.actions.push(NoteListAction::Select(node));
+        context
+            .actions
+            .push(NoteListAction::SelectForContextMenu(node));
         ui.open_popup("context");
     }
 }

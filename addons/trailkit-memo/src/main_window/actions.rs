@@ -35,6 +35,8 @@ use super::{MemoWindow, WindowToast, WindowToastKind};
 pub(super) enum WindowAction {
     /// Select a note or group.
     Select(NodeId),
+    /// Select the row a context menu opens for; keeps the drawer open (M163).
+    SelectForContextMenu(NodeId),
     /// A group was expanded or collapsed.
     SetExpanded(GroupId, bool),
     /// Rename a note or group (inline rename committed, M44).
@@ -114,7 +116,7 @@ impl WindowAction {
     /// another entry or creating one. These ask first if something changed.
     pub(super) fn leaves_editor_of(&self, note: NoteId) -> bool {
         match self {
-            Self::Select(node) => *node != NodeId::Note(note),
+            Self::Select(node) | Self::SelectForContextMenu(node) => *node != NodeId::Note(note),
             Self::NewNote(_) | Self::NewGroup(_) | Self::ToggleTrash | Self::OpenTrash => true,
             _ => false,
         }
@@ -156,6 +158,7 @@ impl MemoWindow {
         }
         match action {
             WindowAction::Select(_)
+            | WindowAction::SelectForContextMenu(_)
             | WindowAction::SetExpanded(..)
             | WindowAction::Move(..)
             | WindowAction::Rename(..)
@@ -206,6 +209,7 @@ impl MemoWindow {
     fn apply_tree_action(&mut self, action: &WindowAction, language: Language, now: Timestamp) {
         match action {
             WindowAction::Select(node) => self.select(*node),
+            WindowAction::SelectForContextMenu(node) => self.change_selected(*node),
             WindowAction::SetExpanded(group, expanded) => {
                 if let Some(group) = self.document.group_mut(*group)
                     && group.expanded != *expanded
@@ -431,8 +435,8 @@ impl MemoWindow {
         }
     }
 
-    /// Selects `node`, shows it in the single-pane layout and remembers it.
-    pub(super) fn select(&mut self, node: NodeId) {
+    /// Makes `node` the selected entry, shows it from its top and remembers it.
+    fn change_selected(&mut self, node: NodeId) {
         if self.ui_state.selected != Some(node) {
             self.ui_state.selected = Some(node);
             self.ui_state.note_scroll = 0.0;
@@ -440,6 +444,11 @@ impl MemoWindow {
                 .show_other_note(self.search.current.is_some());
             self.saver.save_ui_state(self.ui_state);
         }
+    }
+
+    /// Selects `node`, shows it in the single-pane layout and remembers it.
+    pub(super) fn select(&mut self, node: NodeId) {
+        self.change_selected(node);
         // Choosing a note closes the drawer; groups keep it open (M48).
         if matches!(node, NodeId::Note(_)) {
             self.drawer_open = false;

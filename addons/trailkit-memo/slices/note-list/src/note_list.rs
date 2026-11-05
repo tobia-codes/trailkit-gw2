@@ -88,6 +88,9 @@ pub struct NoteListInput<'a> {
 pub enum NoteListAction {
     /// Select a note or group.
     Select(NodeId),
+    /// A right click selects the row its menu opens for; unlike [`Self::Select`]
+    /// this keeps a narrow window's drawer open, the menu lives in it (M163).
+    SelectForContextMenu(NodeId),
     /// A group was expanded or collapsed.
     SetExpanded(GroupId, bool),
     /// An inline rename was committed with this title (M44).
