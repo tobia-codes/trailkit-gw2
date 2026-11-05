@@ -1493,6 +1493,7 @@ dependencies = [
  "trailkit-memo-reset-schedule",
  "trailkit-memo-search",
  "trailkit-memo-shared",
+ "trailkit-memo-trash",
  "trailkit-storage",
  "trailkit-ui",
  "trailkit-ui-testing",
@@ -1571,6 +1572,16 @@ dependencies = [
  "trailkit-ui",
  "uuid",
  "windows",
+]
+
+[[package]]
+name = "trailkit-memo-trash"
+version = "0.0.0"
+dependencies = [
+ "jiff",
+ "nexus",
+ "trailkit-memo-shared",
+ "trailkit-ui",
 ]
 
 [[package]]

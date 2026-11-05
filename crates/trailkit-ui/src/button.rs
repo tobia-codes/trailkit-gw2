@@ -5,7 +5,7 @@
 use nexus::imgui::{ImColor32, StyleColor, Ui};
 
 use crate::{
-    dropdown::{draw_icon_into, icon_width},
+    dropdown::{draw_border, draw_icon_into, icon_width},
     font_registry::FontScope,
     fonts::FontRole,
     glyph_metrics::capital_middle,
@@ -25,6 +25,21 @@ pub fn draw_button(ui: &Ui, theme: &Theme, label: &str) -> bool {
 /// label but keeps `button.min_width`, negative values fill the available
 /// space).
 pub fn draw_button_with_size(ui: &Ui, theme: &Theme, label: &str, size: [f32; 2]) -> bool {
+    let clicked = draw_filled_button(ui, theme, label, size);
+    // The fill alone can vanish on `bg.window` (R85), like on a dropdown.
+    draw_border(
+        ui.item_rect_min(),
+        ui.item_rect_max(),
+        theme.border.color,
+        theme.border.width,
+        theme.radius.medium,
+    );
+    clicked
+}
+
+/// Draws a button without a frame, in the current `Button*` colors, for
+/// [`draw_button_with_size`] and the fills that stand out on their own.
+fn draw_filled_button(ui: &Ui, theme: &Theme, label: &str, size: [f32; 2]) -> bool {
     let padding = ui.clone_style().frame_padding;
     let text_size = ui.calc_text_size(label);
     let size = [
@@ -88,7 +103,43 @@ pub fn draw_primary_button_with_size(ui: &Ui, theme: &Theme, label: &str, size: 
         ui.push_style_color(StyleColor::ButtonActive, theme.accent.active.to_array()),
         ui.push_style_color(StyleColor::Text, theme.text.on_accent.to_array()),
     ];
-    draw_button_with_size(ui, theme, label, size)
+    draw_filled_button(ui, theme, label, size)
+}
+
+/// Draws a button for a destructive action that asks first (memo M146):
+/// the regular button background with a `danger` label, e.g. "Empty trash".
+pub fn draw_danger_button(ui: &Ui, theme: &Theme, label: &str) -> bool {
+    let _text = ui.push_style_color(StyleColor::Text, theme.status.danger.to_array());
+    draw_button(ui, theme, label)
+}
+
+/// Draws the confirming button of a destructive dialog (memo M146): a
+/// `danger` fill with a label in the window color, at `size` (ImGui sizing,
+/// `0.0` fits the label).
+pub fn draw_danger_fill_button_with_size(
+    ui: &Ui,
+    theme: &Theme,
+    label: &str,
+    size: [f32; 2],
+) -> bool {
+    let danger = theme.status.danger;
+    let _colors = [
+        ui.push_style_color(StyleColor::Button, danger.to_array()),
+        ui.push_style_color(
+            StyleColor::ButtonHovered,
+            danger.with_alpha(0.85).to_array(),
+        ),
+        ui.push_style_color(StyleColor::ButtonActive, danger.with_alpha(0.7).to_array()),
+        ui.push_style_color(StyleColor::Text, theme.surface.window.to_array()),
+    ];
+    draw_filled_button(ui, theme, label, size)
+}
+
+/// Like [`draw_icon_button`] with a `danger` icon, for a destructive action
+/// that asks first (memo M145, "Delete permanently").
+pub fn draw_danger_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str) -> bool {
+    let _text = ui.push_style_color(StyleColor::Text, theme.status.danger.to_array());
+    draw_icon_button(ui, theme, icon, tooltip)
 }
 
 /// Draws a primary button with a Lucide `icon` before `label` (accent
@@ -163,15 +214,29 @@ pub fn draw_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str) -> bo
     draw_icon_toggle(ui, theme, icon, tooltip, false)
 }
 
-/// Like [`draw_icon_button`], but the icon is drawn in `accent.text` when
-/// `active` (toggles whose state is on, memo M69).
+/// Like [`draw_icon_button`], but a toggle that keeps a state: while
+/// `active` it sits on `bg.active` with a `text.primary` icon, otherwise it
+/// looks like a plain icon button. Toggles never use the brass accent
+/// (ROADMAP R79, tokens.md §3).
 pub fn draw_icon_toggle(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str, active: bool) -> bool {
-    let _active_color =
-        active.then(|| ui.push_style_color(StyleColor::Text, theme.accent.text.to_array()));
+    let _active_text =
+        active.then(|| ui.push_style_color(StyleColor::Text, theme.text.primary.to_array()));
+    let resting = if active {
+        theme.surface.active.to_array()
+    } else {
+        [0.0; 4]
+    };
     let clicked = {
         let _colors = [
-            ui.push_style_color(StyleColor::Button, [0.0; 4]),
-            ui.push_style_color(StyleColor::ButtonHovered, theme.surface.hover.to_array()),
+            ui.push_style_color(StyleColor::Button, resting),
+            ui.push_style_color(
+                StyleColor::ButtonHovered,
+                if active {
+                    resting
+                } else {
+                    theme.surface.hover.to_array()
+                },
+            ),
             ui.push_style_color(StyleColor::ButtonActive, theme.surface.active.to_array()),
         ];
         let _icons = FontScope::push(ui, FontRole::Icons);

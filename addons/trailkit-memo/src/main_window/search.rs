@@ -51,19 +51,28 @@ impl MemoWindow {
         self.search_field.clear(true);
     }
 
-    /// Ctrl+F focuses the search field (M124, M127): it shows the note list
-    /// or opens the drawer first and takes the focus from the editor, which
-    /// stays in edit mode.
+    /// Ctrl+F focuses the search field (M124, M127, M138): it shows the
+    /// field, the note list or the drawer first and takes the focus from the
+    /// editor, which stays in edit mode.
     pub(super) fn handle_search_keys(&mut self, ui: &Ui) {
         if !(self.window_focused && ui.io().key_ctrl && ui.is_key_index_pressed(VIRTUAL_KEY_F)) {
             return;
         }
+        self.show_search_field();
+    }
+
+    /// Shows the search field (M138) with the note list or the drawer it
+    /// sits in, and moves the keyboard focus into it.
+    pub(super) fn show_search_field(&mut self) {
+        // The search filters the notes, so the trash makes way (M136).
+        self.trash.visible = false;
+        self.ui_state.search_visible = true;
         if self.is_narrow {
             self.drawer_open = true;
-        } else if self.ui_state.note_list_hidden {
+        } else {
             self.ui_state.note_list_hidden = false;
-            self.saver.save_ui_state(self.ui_state);
         }
+        self.saver.save_ui_state(self.ui_state);
         if let Some(editor) = &mut self.editor {
             editor.unfocus_body();
         }

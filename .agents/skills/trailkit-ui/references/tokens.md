@@ -27,7 +27,9 @@ and `theme.rs` disagree, `theme.rs` wins and the difference is a bug to report.
 | Content region | `bg.panel` via `pane::draw_pane` | a bare `ChildWindow` |
 | Text field, search | `bg.input` | |
 | Hovered row or ghost button | `bg.hover` | a brass hover |
-| Selected row, pressed button | `bg.active` + selection bar | a brass fill |
+| Hovered row inside a popup | `bg.popup_hover` via `menu::draw_popup` | `bg.hover`, invisible on `bg.popup` |
+| Selected or pressed list row | `bg.active` + selection bar | a brass fill |
+| Pressed regular button, dropdown, menu row | `bg.pressed` | the same color as its hover |
 | Body text, headings | `text.primary` | |
 | Counts, ids, hints, placeholders | `text.secondary` | `text.disabled` for readable text |
 | Bullets, chevrons, disabled controls | `text.disabled` | |
@@ -46,13 +48,23 @@ Brass (`accent`, `accent.text`, `accent.highlight`) marks exactly four things:
    (Save while editing, Edit while reading). Secondary actions use
    `draw_button`, icon actions `draw_icon_button`.
 2. **Keyboard focus** (`border.focus`).
-3. **The current selection or active state**: the selection bar, active
-   toggles, check marks, the drop line while dragging.
+3. **The current selection**: the selection bar, check marks, the drop
+   line while dragging.
 4. **Search hits** (R73, memo M122): `accent.highlight` behind matching
    text, an `accent.text` frame around a matching chip.
 
 Brass never fills large areas, never decorates, and never marks a category.
 If a design needs a fifth use, it needs a decision first (grill-me).
+
+**Toggles that keep a state are never brass (R79).** A button that switches
+something on and off and stays that way (show tools, show the note list,
+show the search field, compact view, …) is drawn with
+`button::draw_icon_toggle`: while on it sits on `bg.active` with a
+`text.primary` icon, while off it is a plain icon button (`text.secondary`
+icon, `bg.hover` only on hover). Several such toggles side by side would
+otherwise light up like a christmas tree (user decision 2026-11-04). The
+editor's formatting buttons that light up for the formatting at the cursor
+(memo M69) still use `accent.text` until that is decided.
 
 ## 4. Chat-link chips
 
@@ -79,7 +91,25 @@ If a design needs a fifth use, it needs a decision first (grill-me).
   for buttons, inputs, dropdowns, rows, menu items and the drop highlight;
   `radius.lg` 10 for windows, panes, popups and dialogs. Custom-drawn shapes
   pick the radius of the thing they look like.
+- **Nothing is square (R81, all addons).** Every filled or outlined surface
+  has rounded corners, including every hover, pressed and selected state.
+  Only lines too thin to show a radius (separators, the text caret) are
+  exempt. ImGui 1.80 draws the highlight of `Selectable`, `MenuItem`,
+  `BeginMenu` and tree nodes with radius 0, whatever `FrameRounding` says, so
+  never use its highlight: rows use `selection_bar::hide_square_row_highlight`
+  + `draw_row_highlight`, popups use `menu::draw_popup` with the `menu` entries
+  (never a bare `MenuItem` or `ui.popup`).
 - Every window, pane, popup and dialog has the 1 px `border.subtle` outline.
+- Regular buttons and dropdowns have a 1 px `border` frame (R85): their fill
+  alone can vanish on `bg.window`. Primary and `danger` fills stand out alone.
+- **Dividers (R83)** come from `separator`, never `ui.separator()`, and have the
+  same gap above and below, measured to the visible content (letters, an icon,
+  a button edge); the fill of a hovered row may come closer:
+  - **Section, `spacing.medium` 12:** `draw_separator` (buttons, fields),
+    `draw_separator_above_rows` (fill of the first row `list.item_spacing` away),
+    `draw_separator_above_text` (the text's own leading counts as gap).
+  - **Compact, `spacing.small` 8:** `draw_compact_separator`, inside a tight
+    group: menus, a rule in a note's body.
 - Text buttons are at least `button.min_width` × font size wide (M131);
   measure rows with `button_width` / `icon_label_button_width`, never with
   `calc_text_size` + padding, or right-aligned rows drift.
@@ -112,10 +142,10 @@ test fails otherwise.
 3. Text tokens join `text_meets_contrast_minimum_in_every_theme` (≥ 4.5:1 on
    every surface); text on a new fill gets its own contrast test. Graphics
    and focus rings need ≥ 3:1 against their ground.
-4. Add it to the token table in `SKILL.md` §2 and, if it has a rule, here.
-5. Update the "Trailkit" design system (tokens and README) so the visual
-   reference stays in step, and tell the user.
-6. Run `cargo xtask ui-test`; review changed snapshots before accepting them
+4. Document it in `xtask/src/token_docs.rs` (the crate does not compile until
+   you do), run `cargo xtask tokens` to update
+   [`token-values.md`](token-values.md), and add any rule for it here.
+5. Run `cargo xtask ui-test`; review changed snapshots before accepting them
    with `--update`.
 
 ## 9. Review checklist for tokens
@@ -125,5 +155,42 @@ test fails otherwise.
 - [ ] At most one primary (brass) button per view
 - [ ] Selected rows use the selection bar, not a colored fill
 - [ ] Chips use their category colors; invalid links are warnings
-- [ ] Radius matches the element (§5)
+- [ ] Radius matches the element, nothing is square, hover states included (§5, R81)
 - [ ] Readable in Dark and Light; new text tokens are in the contrast test
+
+## 10. Every state has a snapshot, every snapshot gets reviewed (R82)
+
+A UI change is not done, and not handed to the user for an in-game test,
+until its snapshots have been reviewed against this file.
+
+**Coverage.** Every element of every addon has a snapshot of each state it can
+be in, in Dark **and** Light:
+
+- Interaction: rest, hover, pressed, selected, on/off, disabled, focused,
+  open, dragged.
+- Content: empty, filled, long/scrolled, narrow window, error or problem hint.
+
+Each state is covered once per element; the cross product of independent
+states is not needed. Shared components live in
+`crates/trailkit-ui/tests/component_states.rs` (`ui-<component>-<state>-<theme>`),
+addon views in `addons/<addon>/src/main_window/tests/states.rs`
+(`<addon>-state-<name>-<theme>`). A new element or state adds its snapshot in
+the same change.
+
+**Review.** Look at every new or changed snapshot, the whole element and not
+only what the change was about, and go through §9:
+
+- [ ] Every corner rounded with the right radius, hover states included (§5)
+- [ ] Tokens: colors, spacing and borders as in §2 and §3
+- [ ] Alignment and equal gaps between neighbors
+- [ ] The state is visible at all, in both themes
+- [ ] Texts fit and are not clipped
+
+Check the snapshot actually shows the state: a hover that misses its element
+looks like a rest state and passes silently. Fix or report what the review
+finds before accepting with `--update`.
+
+**Limits.** The test renderer uses 16 px fonts (18 px in game), samples
+textures nearest-neighbour and shows no game behind the window. Sizes that
+depend on the font, and anything depending on the real game, stay in-game
+checks.

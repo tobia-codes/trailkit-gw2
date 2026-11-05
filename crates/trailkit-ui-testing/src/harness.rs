@@ -144,6 +144,25 @@ impl UiHarness {
     /// Runs one frame with `input`, calling `draw` with the frame's `Ui`,
     /// and returns the rendered image.
     pub fn frame(&mut self, input: &FrameInput, draw: impl FnOnce(&Ui)) -> Image {
+        self.apply_input(input);
+        let ui = self.context.frame();
+        draw(&ui);
+        let draw_data = ui.render();
+        rasterize(draw_data, self.size, &self.atlas)
+    }
+
+    /// Runs one frame like [`Self::frame`] without rendering an image, which
+    /// takes most of the time of a frame.
+    pub fn step(&mut self, input: &FrameInput, draw: impl FnOnce(&Ui)) {
+        self.apply_input(input);
+        let ui = self.context.frame();
+        draw(&ui);
+        ui.render();
+    }
+
+    /// Hands `input` to ImGui for the next frame and releases the keys of the
+    /// previous one.
+    fn apply_input(&mut self, input: &FrameInput) {
         {
             let io = self.context.io_mut();
             for code in self.held_keys.drain(..) {
@@ -167,10 +186,6 @@ impl UiHarness {
             }
         }
         self.held_keys.clone_from(&input.keys);
-        let ui = self.context.frame();
-        draw(&ui);
-        let draw_data = ui.render();
-        rasterize(draw_data, self.size, &self.atlas)
     }
 
     /// Runs `frames` frames without input changes (e.g. to let layouts
@@ -181,11 +196,10 @@ impl UiHarness {
         input: &FrameInput,
         mut draw: impl FnMut(&Ui),
     ) -> Image {
-        let mut image = Image::new(1, 1, BACKGROUND);
-        for _ in 0..frames.max(1) {
-            image = self.frame(input, &mut draw);
+        for _ in 1..frames {
+            self.step(input, &mut draw);
         }
-        image
+        self.frame(input, &mut draw)
     }
 }
 

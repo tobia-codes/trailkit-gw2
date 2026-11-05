@@ -433,6 +433,7 @@ impl TextEditor {
                         theme.accent.base.with_alpha(0.35).to_array(),
                     )
                     .filled(true)
+                    .rounding(theme.radius.small)
                     .build();
             }
             for span in layout.spans_in(line.range.clone()) {
@@ -460,6 +461,7 @@ impl TextEditor {
                             draw_list
                                 .add_rect(min, max, theme.accent.base.with_alpha(0.35).to_array())
                                 .filled(true)
+                                .rounding(theme.radius.small)
                                 .build();
                         }
                         if editor_hovered && ui.is_mouse_hovering_rect(min, max) {

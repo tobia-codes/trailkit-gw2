@@ -200,6 +200,38 @@ impl TreeNode {
             Self::Group(group) => &group.title,
         }
     }
+
+    /// Whether this is the note `id` or a group holding it, nested groups
+    /// included.
+    #[must_use]
+    pub fn contains_note(&self, id: NoteId) -> bool {
+        match self {
+            Self::Note(note) => note.id == id,
+            Self::Group(group) => group.children.iter().any(|child| child.contains_note(id)),
+        }
+    }
+
+    /// Calls `visit` with the id of this note or of every note inside this
+    /// group, nested groups included.
+    pub fn for_each_note_id(&self, visit: &mut impl FnMut(NoteId)) {
+        match self {
+            Self::Note(note) => visit(note.id),
+            Self::Group(group) => {
+                for child in &group.children {
+                    child.for_each_note_id(visit);
+                }
+            }
+        }
+    }
+
+    /// The note `id` if it is this note or inside this group.
+    #[must_use]
+    pub fn find_note(&self, id: NoteId) -> Option<&Note> {
+        match self {
+            Self::Note(note) => (note.id == id).then_some(note),
+            Self::Group(group) => group.children.iter().find_map(|child| child.find_note(id)),
+        }
+    }
 }
 
 /// Tests of the node types; `noon` is shared with the document tests.

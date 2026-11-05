@@ -12,14 +12,15 @@ charts) lives in [`references/ux-rules.md`](references/ux-rules.md) — read it
 before designing a new window or component and when reviewing UI. How to use
 the theme tokens (which token for what, the brass budget, chips, selection,
 adding a token) is binding in [`references/tokens.md`](references/tokens.md) —
-read it before touching any color, size or radius. Do not apply
+read it before touching any color, size or radius, and review every new or
+changed snapshot against it before handing a UI change over (§10, R82). Do not apply
 generic web/mobile UI guidelines (touch targets, breakpoints, CSS, …) here.
 
 ## 1. Principles
 
 1. **Consistency over novelty** — same component, same look, same place, in
    every addon.
-2. **Calm, flat, slightly rounded** — ink-tinted dark and parchment-warm
+2. **Calm, flat, always rounded (nothing is square, hover states included: R81)** — ink-tinted dark and parchment-warm
    light surfaces with one brass accent spent sparingly (R71); radii 4 / 6 /
    10 by element size; windows, panes, popups and dialogs get a faint 1 px
    `border.subtle` outline (memo M103); no highlight edges, no shadows.
@@ -39,31 +40,16 @@ generic web/mobile UI guidelines (touch targets, breakpoints, CSS, …) here.
 ## 2. Theme tokens
 
 Components never use raw colors or numbers; they read **semantic tokens** from
-the active `Theme` (crate `crates/trailkit-ui`). Token set (initial — extend
-in the crate, document here):
-
-| Group | Tokens |
-|-------|--------|
-| Surface | `bg.window`, `bg.panel`, `bg.input`, `bg.hover`, `bg.active`, `bg.popup`, `overlay.modal` |
-| Text | `text.primary`, `text.secondary`, `text.disabled`, `text.link`, `text.on_accent` |
-| Accent | `accent` (brass fill: primary button, selection bar), `accent.hover`, `accent.active`, `accent.text` (brass as text, icon or line), `accent.highlight` (translucent brass behind search hits, R73) |
-| Status | `success`, `warning`, `danger`, `info` |
-| Border | `border` (inputs, dropdowns), `border.focus`, `border.subtle` (windows, panes, popups, dialogs; ~6 % white / ~8 % warm black), `border.width` |
-| Reset | `reset.daily` (brass), `reset.weekly` (violet): reset note badges and kind chip (memo M104; text colors, contrast-tested) |
-| Chip | `chip.place`, `chip.character`, `chip.item`, `chip.progress`, each with `text` and `background` (chat-link categories, R71) |
-| Coin | `coin.gold`, `coin.silver`, `coin.copper` (coin amounts in chat-link chips; graphics, not text) |
-| Event | `event.default`, `event.highlight`, `event.active`, `event.upcoming`, `event.custom` (per category overrides allowed) |
-| Spacing | `space.xs` 4, `space.sm` 8, `space.md` 12, `space.lg` 16, `space.xl` 24 (px at 100 %) |
-| Lists | `list.item_spacing`, `list.indent`, `list.selection_bar_width` 3, `list.selection_bar_inset` 6 |
-| Panes | `pane.padding` 8 (inner padding), `pane.gap` 8 (space between panes) — see `lay-pane-padding` |
-| Buttons | `button.min_width` 4 (× current font size; minimum width of text buttons, not icon buttons) — see `lay-button-min-width` |
-| Shape | `radius.sm` 4 (chips, badges, scrollbar), `radius.md` 6 (buttons, inputs, rows, menus), `radius.lg` 10 (windows, panes, popups, dialogs); user-overridable; custom-drawn frames use them too |
-| Typography | `font.size.small`, `font.size.body`, `font.size.heading`, `font.line_height` (running text: 1.5 × font size, text centered in its line; markdown view and editor) |
+the active `Theme` (crate `crates/trailkit-ui`). Every token with its value in
+both themes and its purpose is listed in
+[`references/token-values.md`](references/token-values.md), generated from
+`theme.rs` by `cargo xtask tokens` (R84); when to use which is binding in
+[`references/tokens.md`](references/tokens.md).
 
 - **Built-in themes:** `Dark` (default) and `Light`. Both are full token sets.
   Values: `crates/trailkit-ui/src/theme.rs` (palette R71, supersedes R51:
-  ink-tinted dark and parchment-warm light surfaces, brass accent; visual
-  reference: the "Trailkit" design system in Claude Design). The themes are
+  ink-tinted dark and parchment-warm light surfaces, brass accent). The
+  "Trailkit" design system in Claude Design is no longer a reference (R84). The themes are
   called just "Dark" and "Light", in code and in the UI. Unit tests enforce
   ≥ 4.5:1 for every text color on every surface and for chip text on its
   fill — add new text/background tokens to them (`references/tokens.md` §8).
@@ -83,17 +69,30 @@ in the crate, document here):
 Build once, use everywhere. Planned:
 
 - Title bar — **exists**: `title_bar::draw_window` replaces ImGui's title
-  bar on every trailkit window (R71): on the window background, Lucide
-  chevron to collapse, bold title, Lucide `x` to close; the addon passes the
-  texts and keeps a `TitleBarState`. A menu (Settings, Help, About) joins it
-  later
+  bar on every trailkit window (R71, R78): on the window background; on the
+  left the addon's own toggles (`TitleBarToggle`, e.g. memo's tools ⋮ and
+  note list) and the bold title, on the right the Lucide chevron to
+  collapse and the Lucide `x` to close. The row uses the window padding, so
+  the first and the last button line up with the panes below. The addon
+  passes texts and toggles, keeps a `TitleBarState` and applies the clicked
+  toggle index it gets back. A menu (Settings, Help, About) joins it later
+- Tool rail — **exists**: `tool_rail::draw_tool_rail`, a narrow vertical
+  strip of icon toggles on the left edge (like VS Code's activity bar,
+  memo M136): tools at the top, window-wide entries (settings) at the
+  bottom; never wraps; shown or hidden by a title bar toggle
 - `SettingsWindow` scaffold (left navigation list, right content, search)
 - `HelpWindow` (renders bundled markdown help in active language)
 - Buttons — **exist**: `button::draw_button` (secondary, `bg.hover` fill),
   `draw_primary_button`, `draw_primary_button_with_icon` (Lucide icon +
   label, R71; primary toolbar actions, `lay-button-icon`), all text
   buttons at least `button.min_width` wide (M131), `draw_icon_button` / `draw_icon_toggle` (borderless icon
-  buttons with tooltip). Planned: danger
+  buttons with tooltip), danger variants for destructive actions that ask
+  first (memo M146): `draw_danger_button` (`danger` label),
+  `draw_danger_icon_button`, `draw_danger_fill_button_with_size` (the
+  confirm button of a destructive dialog: `danger` fill)
+- Toast — **exists**: `toast::draw_toast`, one message with an optional
+  action button at the bottom centre of the window, 5 s, the timer pauses
+  while hovered, a new one replaces the old (memo M142, M148, `ix-toasts`)
 - `Popover` / `Tooltip`, `ConfirmDialog`, `UnsavedChangesDialog`
 - `DependencyHint` (greyed feature + explanation + "Open core settings"/
   "Get trailkit-core" button)
@@ -116,13 +115,17 @@ Build once, use everywhere. Planned:
   `tint` colors frame, text, chevron and check mark (e.g. the reset kind,
   M104). No compact or other variants. Never ImGui's plain combo
 - Selection bar — **exists**: `selection_bar::draw_selection_bar`, called
-  right after the selected row's tree node or selectable (R71)
+  right after the selected row's tree node (R71), with the rounded row fill
+  `draw_row_highlight`; the `_in` variants take the row rect for
+  selectables, whose item rect reaches beyond the row
 - Tree arrow — **exists**: `tree_arrow::draw_tree_arrow`, the Lucide chevron
   (`chevron-down` / `chevron-right` in `text.disabled`) over ImGui's hidden
   triangle; never ImGui's filled triangle in lists (R71)
 - Menu entries — **exist**: `menu::draw_menu_item` (check mark = Lucide
   `check` in `accent.text`) and `menu::begin_submenu` (Lucide `chevron-right`,
-  flush beside the parent); never ImGui's own check mark/arrow (memo M99)
+  flush beside the parent); never ImGui's own check mark/arrow (memo M99);
+  `menu::draw_menu_item_with_icon` (Lucide icon before the label, regular
+  or `danger` tone, disabled with a tooltip, memo M133, M141)
 - `Pane` and inset separator — **exist**: `pane::draw_pane`,
   `separator::draw_separator`; every sub-region of a window and every
   separator uses them (`lay-pane-padding`, decided 2026-11-01)

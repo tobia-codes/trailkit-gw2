@@ -10,9 +10,17 @@ Während Ladebildschirmen, Zwischensequenzen und der Charakterauswahl wird das F
 
 ## Deine Notizen
 
-Das Fenster zeigt links die Notizliste und rechts die ausgewählte Notiz. Der Pfeil links vom Titel klappt das Fenster auf seine Titelleiste ein (erneut klicken zum Ausklappen), das **×** rechts schließt es. Ziehe den Spalt zwischen beiden Seiten, um ihre Breite zu ändern (beim Darüberfahren erscheint eine Linie). Die Notizliste behält ihre Breite, wenn du das Fenster größer oder kleiner ziehst; der zusätzliche Platz geht an die Notiz.
+Das Fenster zeigt links die Notizliste und rechts die ausgewählte Notiz. Ziehe den Spalt zwischen beiden Seiten, um ihre Breite zu ändern (beim Darüberfahren erscheint eine Linie). Die Notizliste behält ihre Breite, wenn du das Fenster größer oder kleiner ziehst; der zusätzliche Platz geht an die Notiz.
 
-- **Seitenleisten-Button** (Fenster-Symbol, oben links in der Notiz): blendet die Notizliste aus, damit die Notiz die ganze Breite bekommt; ein weiterer Klick blendet sie wieder ein. memo merkt sich deine Wahl.
+In der Titelleiste sitzen vier Buttons:
+
+- **Werkzeuge** (drei Punkte), oben links: blendet die Werkzeugleiste am linken Rand mit *Suchen* und dem *Papierkorb* ein oder aus. Sie ist anfangs ausgeblendet; memo merkt sich deine Wahl.
+- **Seitenleisten-Button** daneben: blendet die linke Spalte (Notizliste oder Papierkorb) aus, damit die Notiz die ganze Breite bekommt; ein weiterer Klick blendet sie wieder ein. memo merkt sich deine Wahl.
+- **Pfeil** rechts: klappt das Fenster auf seine Titelleiste ein (erneut klicken zum Ausklappen); **×** schließt es.
+
+Ein hinterlegter Button bedeutet: Was er schaltet, ist gerade eingeblendet.
+
+- **Kompakte Ansicht** (Pfeile-Button, oben links in der Notiz): blendet die Leiste mit *Bearbeiten* und das Typ-Feld aus, damit die Notiz mehr Platz bekommt. Der Button hinter dem Titel beendet sie wieder. Andere Notizen auswählen und Kästchen abhaken geht weiter; eine Notiz bearbeiten (auch per Doppelklick) oder eine neue anlegen beendet die kompakte Ansicht. memo merkt sie sich. Zusammen mit ausgeblendeter Notizliste bleibt nur die Notiz übrig.
 - **Schmales Fenster:** Die Notiz füllt das Fenster, und der Seitenleisten-Button öffnet die Notizliste darüber. Wähle eine Notiz, klicke auf die abgedunkelte Notiz oder erneut auf den Seitenleisten-Button, um die Liste zu schließen. Beim Bearbeiten mit offener Vorschau schaltet memo schon früher um, damit Text und Vorschau Platz behalten.
 
 - **Neue Notiz / neue Gruppe:** die beiden Buttons über der Liste. Der neue Eintrag landet in der ausgewählten Gruppe (bzw. der Gruppe der ausgewählten Notiz), ganz am Ende. Tippe gleich einen Namen ein und drücke Enter.
@@ -21,18 +29,29 @@ Das Fenster zeigt links die Notizliste und rechts die ausgewählte Notiz. Der Pf
 - **Sortieren:** Ziehe eine Notiz oder Gruppe an eine neue Stelle. Eine Linie zeigt, wo sie landet; auf der unteren Hälfte einer offenen Gruppe wird sie deren erster Eintrag, unter dem letzten Eintrag kommt sie ans Ende der Liste. Auf der Mitte einer geschlossenen Gruppe landet sie an deren Ende; bleibst du kurz darauf, öffnet sich die Gruppe. Ein rotes Verbotszeichen heißt: Dort geht es nicht hin (eine Gruppe kann nicht in sich selbst). Am oberen oder unteren Rand scrollt die Liste. Escape bricht ab.
 - **Verschieben nach:** Rechtsklick › *Verschieben nach* › *Oberste Ebene* oder eine Gruppe verschiebt den Eintrag an deren Ende, ohne zu ziehen.
 - **Gruppen** haben fett gedruckte Namen und zeigen rechts, wie viele Notizen sie enthalten.
+- **Löschen:** Rechtsklick › *Löschen*, oder den Eintrag auswählen und **Entf** drücken, während die Liste den Fokus hat. Der Eintrag kommt in den Papierkorb; eine Gruppe mit Notizen fragt vorher nach. Die Notiz, die du gerade bearbeitest, lässt sich erst löschen, wenn du speicherst oder abbrichst.
+- **Rückgängig:** Nach dem Löschen bietet eine Meldung unten im Fenster ein paar Sekunden lang *Rückgängig* an (solange die Maus darauf zeigt, bleibt sie stehen). **Strg+Z** macht das letzte Löschen oder Verschieben rückgängig, **Strg+Y** (oder Strg+Umschalt+Z) stellt es wieder her – bis zu 20 Schritte, bis zum Neustart des Spiels. Während du tippst, macht Strg+Z stattdessen dein Tippen rückgängig.
 - **Abzeichen** am rechten Ende einer Zeile: **T** kennzeichnet eine tägliche Notiz (Reset um 00:00 UTC), **W** eine wöchentliche (Reset montags um 07:30 UTC). Fahre mit der Maus darüber, um zu sehen, wie lange es bis zum nächsten Reset dauert.
+
+## Papierkorb
+
+Klicke auf den **Papierkorb** in der Werkzeugleiste (drei Punkte in der Titelleiste), um statt der Notizliste den Papierkorb zu sehen; ein zweiter Klick oder der **Zurück-Pfeil** neben *Papierkorb* bringt dich zurück zu deinen Notizen. Gelöschte Notizen und Gruppen bleiben dort **30 Tage** und werden dann endgültig entfernt. Jeder Eintrag zeigt, wie viele Tage noch bleiben – in der letzten Woche rot.
+
+- Klicke einen Eintrag an, um ihn rechts zu lesen. Bearbeiten lässt er sich dort nicht.
+- **Wiederherstellen** (oder Rechtsklick › *Wiederherstellen*) legt ihn dorthin zurück, wo er war. Gibt es seine Gruppe nicht mehr, landet er am Ende der Liste. Eine Gruppe kommt mit allem darin zurück.
+- Der rote **Papierkorb** neben *Wiederherstellen* (oder Rechtsklick › *Endgültig löschen*) löscht ihn endgültig, **Leeren** löscht alles im Papierkorb. Beides fragt vorher nach und lässt sich nicht rückgängig machen.
+- Ungespeicherte Änderungen einer Notiz bleiben im Papierkorb bei ihr und kommen beim Wiederherstellen mit zurück.
 
 ## Suchen
 
-Tippe in das Feld **Suchen** oben über der Notizliste (oder drücke **Strg+F**). Die Liste zeigt dann nur Notizen, die jedes eingegebene Wort enthalten — im Titel oder im Text, egal ob groß oder klein geschrieben. Umlaute zählen als eigene Buchstaben: „ä“ findet „Ä“, aber nicht „a“.
+Blende das Feld **Suchen** mit der Lupe in der Werkzeugleiste ein (drei Punkte in der Titelleiste) oder drücke **Strg+F**; es bleibt über der Notizliste, bis du es mit der Lupe wieder ausblendest, auch nach einem Neustart. Tippe hinein: Die Liste zeigt dann nur Notizen, die jedes eingegebene Wort enthalten — im Titel oder im Text, egal ob groß oder klein geschrieben. Umlaute zählen als eigene Buchstaben: „ä“ findet „Ä“, aber nicht „a“.
 
 - Gruppen mit Treffern klappen von selbst auf; ihre Zahl zeigt, wie viele Notizen passen. Passt der Name einer Gruppe, erscheint alles darin.
 - Treffer sind in den Titeln und in der geöffneten Notiz markiert; die Notiz springt zum ersten Treffer. Notizen, die nur über ihren Text passen, zeigen am Ende der Zeile die Zahl der Treffer.
 - Linktexte und Chat-Codes werden durchsucht, Linkadressen nicht. Ein Chip, dessen Code passt, bekommt einen Rahmen.
 - Die geöffnete Notiz bleibt immer in der Liste, auch wenn sie nach einer Änderung nicht mehr passt.
 - Während einer Suche kannst du nichts verschieben; leere zuerst die Suche. Umbenennen, das Rechtsklick-Menü und *Verschieben nach* gehen wie gewohnt. Eine neue Notiz oder Gruppe leert die Suche.
-- **×** im Feld oder **Escape** (während du im Feld tippst) leert die Suche; ein zweites Escape schließt das Fenster. Die Suche bleibt beim Schließen und Öffnen des Fensters erhalten, bis das Spiel neu startet.
+- **×** im Feld oder **Escape** (während du im Feld tippst) leert die Suche; ein zweites Escape schließt das Fenster. Auch das Ausblenden des Felds leert die Suche. Die Suche bleibt beim Schließen und Öffnen des Fensters erhalten, bis das Spiel neu startet.
 
 ## Tägliche und wöchentliche Notizen
 
@@ -43,7 +62,7 @@ Wähle die Art einer Notiz im Feld neben ihrem Titel (*Normal*, *Täglicher Rese
 - Während du eine Notiz bearbeitest (oder es einen Entwurf gibt), wartet ihr Reset, bis du speicherst oder verwirfst; dein Text wird nie unter deinen Händen geändert.
 - **Checkboxen** in einer Notiz kannst du direkt abhaken.
 - **Links** öffnen sich im Browser (nur `http://` und `https://`); fahre mit der Maus darüber, um das Ziel zu sehen.
-- **Chat-Links** aus dem Spiel (`[&…]`, z. B. eine Wegmarke oder ein Gegenstand) erscheinen als Chips mit Symbol, Art und ID; Münzen zeigen ihren Betrag. Die Farbe zeigt die Gruppe: Kupfer für Orte, Blau für Fertigkeiten, Eigenschaften und Builds, Grün für Gegenstände, Violett für Erfolge, NPC-Texte und Spieler. Klicke auf einen Chip, um den Code zu kopieren, und füge ihn dann im Spiel-Chat ein. Fahre mit der Maus darüber, um den Code zu sehen. Ein Chip mit **!** hat einen beschädigten Code; der Tooltip sagt, warum. Namen (statt IDs) kommen mit trailkit-core.
+- **Chat-Links** aus dem Spiel (`[&…]`, z. B. eine Wegmarke oder ein Gegenstand) erscheinen als Chips mit Symbol, Art und ID; Münzen zeigen ihren Betrag. Die Farbe zeigt die Gruppe: Kupfer für Orte, Blau für Fertigkeiten, Eigenschaften und Builds, Grün für Gegenstände, Violett für Erfolge, NPC-Texte und Spieler. Klicke auf einen Chip, um den Code zu kopieren (eine kurze Meldung unten im Fenster bestätigt es), und füge ihn dann im Spiel-Chat ein. Fahre mit der Maus darüber, um den Code zu sehen. Ein Chip mit **!** hat einen beschädigten Code; der Tooltip sagt, warum. Namen (statt IDs) kommen mit trailkit-core.
 
 Lange Namen werden mit „…“ gekürzt — fahre mit der Maus darüber, um den ganzen Namen zu sehen. In einer langen Notiz bleibt der Titel oben stehen, während du scrollst; in einer langen Liste bleiben Suchfeld und Buttons oben.
 

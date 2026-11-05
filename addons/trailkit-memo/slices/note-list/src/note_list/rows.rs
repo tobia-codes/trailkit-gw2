@@ -14,7 +14,7 @@ use trailkit_ui::{
     font_registry::FontScope,
     fonts::FontRole,
     glyph_metrics::{draw_glyph_at, glyph_ink_box, glyph_visible_ink},
-    selection_bar::draw_selection_bar,
+    selection_bar::{draw_row_highlight, draw_selection_bar, hide_square_row_highlight},
     text_layout::{format_count, truncate_to_width},
     text_search::SearchQuery,
     theme::Theme,
@@ -55,7 +55,7 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut RowContext<'_, '_>) {
         .as_ref()
         .is_some_and(|rename| rename.node == node);
     let mut flags = TreeNodeFlags::OPEN_ON_ARROW
-        | TreeNodeFlags::SPAN_AVAIL_WIDTH
+        | TreeNodeFlags::SPAN_FULL_WIDTH
         | TreeNodeFlags::FRAME_PADDING;
     if context.selected == Some(node) {
         flags |= TreeNodeFlags::SELECTED;
@@ -90,12 +90,14 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut RowContext<'_, '_>) {
         // Lucide chevron and the title are drawn over it (R71).
         let token = {
             let _hidden_triangle = ui.push_style_color(StyleColor::Text, [0.0; 4]);
+            let _square_highlight = hide_square_row_highlight(ui);
             TreeNode::new("group")
                 .label::<&str, _>("")
                 .flags(flags)
                 .opened(expanded, Condition::Always)
                 .push(ui)
         };
+        draw_row_highlight(ui, context.theme, context.selected == Some(node));
         if context.selected == Some(node) {
             draw_selection_bar(ui, context.theme);
         }
@@ -125,7 +127,7 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut RowContext<'_, '_>) {
     } else {
         RowKind::CollapsedGroup(group.id)
     };
-    record_row(ui, node, kind, context);
+    record_row(ui, node, kind, row_start[0], context);
     ui.get_window_draw_list().add_text(
         [count_x, row_start[1] + context.frame_padding[1]],
         context.theme.text.secondary.to_array(),
@@ -178,21 +180,28 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut RowContext<'_, '_>) {
     let node = NodeId::Note(note.id);
     let mut flags = TreeNodeFlags::LEAF
         | TreeNodeFlags::NO_TREE_PUSH_ON_OPEN
-        | TreeNodeFlags::SPAN_AVAIL_WIDTH
+        | TreeNodeFlags::SPAN_FULL_WIDTH
         | TreeNodeFlags::FRAME_PADDING;
     if context.selected == Some(node) {
         flags |= TreeNodeFlags::SELECTED;
     }
-    // The node draws selection and hover; badge and title are drawn after it.
-    let _token = TreeNode::new("note")
-        .label::<&str, _>("")
-        .flags(flags)
-        .push(ui);
+    // The node spans the full width (M144) and takes hover and clicks; its
+    // rounded highlight, badge and title are drawn after it, the title at
+    // the row's indentation.
+    let row_start = ui.cursor_screen_pos();
+    let _token = {
+        let _square_highlight = hide_square_row_highlight(ui);
+        TreeNode::new("note")
+            .label::<&str, _>("")
+            .flags(flags)
+            .push(ui)
+    };
+    draw_row_highlight(ui, context.theme, context.selected == Some(node));
     if context.selected == Some(node) {
         draw_selection_bar(ui, context.theme);
     }
-    let row_start = ui.item_rect_min();
-    record_row(ui, node, RowKind::Note, context);
+    let row_start = [row_start[0], ui.item_rect_min()[1]];
+    record_row(ui, node, RowKind::Note, row_start[0], context);
     // Ask the tree node itself: it spans the whole row, and once a click
     // makes it the active item, `is_window_hovered` would report false.
     let is_row_hovered = ui.is_item_hovered();
@@ -280,13 +289,14 @@ fn handle_hovered_row(
 }
 
 /// Records the rectangle of the row just drawn (the tree node item) for the
-/// drop zones (M107).
-fn record_row(ui: &Ui, node: NodeId, kind: RowKind, context: &mut RowContext<'_, '_>) {
+/// drop zones (M107). `left` is where the row's indented content starts:
+/// the node spans the full width (M144), the drop line keeps the level.
+fn record_row(ui: &Ui, node: NodeId, kind: RowKind, left: f32, context: &mut RowContext<'_, '_>) {
     let [min, max] = [ui.item_rect_min(), ui.item_rect_max()];
     context.rows.push(RowRect {
         node,
         kind,
-        left: min[0],
+        left,
         right: max[0],
         top: min[1],
         bottom: max[1],

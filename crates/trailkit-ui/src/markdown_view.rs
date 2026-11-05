@@ -21,7 +21,7 @@ use crate::{
     fonts::FontRole,
     icons::Icon,
     markdown::{Block, ListMarker, MarkdownDocument, Span, TaskMarker},
-    separator::draw_separator,
+    separator::draw_compact_separator,
     text_search::SearchQuery,
     theme::Theme,
 };
@@ -86,6 +86,15 @@ struct LineBounds {
     left: f32,
     /// Right edge no text may cross (screen x).
     right: f32,
+}
+
+/// The font of the first line of `document`, e.g. to keep an even gap above it.
+#[must_use]
+pub fn first_line_font(document: &MarkdownDocument) -> FontRole {
+    match document.blocks.first() {
+        Some(Block::Heading { level, .. }) => FontRole::heading(*level),
+        _ => FontRole::Body,
+    }
 }
 
 /// Draws `document` at the cursor position and returns what the user
@@ -187,7 +196,7 @@ pub fn draw_markdown(
                 marker_click.or(text_click)
             }
             Block::Rule => {
-                draw_separator(ui, theme);
+                draw_compact_separator(ui, theme);
                 None
             }
         };
@@ -242,23 +251,41 @@ fn draw_list_marker(
                 Icon::SQUARE
             };
             let mut buffer = [0; 4];
-            let size = {
-                let _icons = FontScope::push(ui, FontRole::Icons);
-                let glyph = icon.as_str(&mut buffer);
-                let size = ui.calc_text_size(glyph);
-                let color = if checked {
-                    theme.accent.text
-                } else {
-                    theme.text.secondary
-                };
-                ui.text_colored(color.to_array(), glyph);
-                size
+            let _icons = FontScope::push(ui, FontRole::Icons);
+            let glyph = icon.as_str(&mut buffer);
+            let size = ui.calc_text_size(glyph);
+            // Only the box is clickable, the text next to it may hold links
+            // and chips (R85); the target reaches a little beyond the glyph.
+            let margin = theme.spacing.extra_small;
+            let target_min = [left - margin, text_top - margin];
+            let target_size = [
+                size[0].max(1.0) + 2.0 * margin,
+                size[1].max(1.0) + 2.0 * margin,
+            ];
+            ui.set_cursor_screen_pos(target_min);
+            let clicked = ui.invisible_button("task", target_size);
+            let fill = if ui.is_item_active() {
+                Some(theme.surface.active)
+            } else if ui.is_item_hovered() {
+                ui.set_mouse_cursor(Some(MouseCursor::Hand));
+                Some(theme.surface.hover)
+            } else {
+                None
+            };
+            if let Some(fill) = fill {
+                ui.get_window_draw_list()
+                    .add_rect(ui.item_rect_min(), ui.item_rect_max(), fill.to_array())
+                    .filled(true)
+                    .rounding(theme.radius.medium)
+                    .build();
+            }
+            let color = if checked {
+                theme.accent.text
+            } else {
+                theme.text.secondary
             };
             ui.set_cursor_screen_pos([left, text_top]);
-            let clicked = ui.invisible_button("task", [size[0].max(1.0), size[1].max(1.0)]);
-            if ui.is_item_hovered() {
-                ui.set_mouse_cursor(Some(MouseCursor::Hand));
-            }
+            ui.text_colored(color.to_array(), glyph);
             clicked.then_some(MarkdownAction::ToggleTask(marker))
         }
     };

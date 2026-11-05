@@ -5,7 +5,7 @@
 //! Lives in memo until a second addon needs a search field (AGENTS.md
 //! rule 7); the settings window will be the likely second user.
 
-use nexus::imgui::{StyleColor, StyleVar, Ui};
+use nexus::imgui::{StyleColor, StyleVar, Ui, WindowHoveredFlags};
 use trailkit_ui::{
     font_registry::FontScope, fonts::FontRole, glyph_metrics::glyph_ink_box, icons::Icon,
     theme::Theme,
@@ -66,8 +66,18 @@ impl SearchField {
         let end = [start[0] + width, start[1] + height];
         let padding = ui.clone_style().frame_padding;
         // `DrawListMut` is a singleton: take it only for each drawing step.
+        // Like ImGui's own inputs (`FrameBgHovered`), but not while typing.
+        let is_hovered = ui.is_mouse_hovering_rect(start, end)
+            && ui.is_window_hovered_with_flags(
+                WindowHoveredFlags::ALLOW_WHEN_BLOCKED_BY_ACTIVE_ITEM,
+            );
+        let fill = if is_hovered && !self.is_active {
+            theme.surface.hover
+        } else {
+            theme.surface.input
+        };
         ui.get_window_draw_list()
-            .add_rect(start, end, theme.surface.input.to_array())
+            .add_rect(start, end, fill.to_array())
             .filled(true)
             .rounding(theme.radius.medium)
             .build();

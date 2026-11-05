@@ -63,6 +63,17 @@ pub enum NodeId {
     Group(GroupId),
 }
 
+impl NodeId {
+    /// A 32-bit ImGui id for this note or group.
+    #[must_use]
+    pub const fn imgui_id(self) -> i32 {
+        match self {
+            Self::Note(id) => id.imgui_id(),
+            Self::Group(id) => id.imgui_id(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

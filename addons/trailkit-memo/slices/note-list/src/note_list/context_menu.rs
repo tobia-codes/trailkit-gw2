@@ -2,14 +2,19 @@
 //! of other slices, "Move to…" and, on groups and empty spots, "New note" /
 //! "New group" (M86, M96–M99, M112).
 
-use nexus::imgui::{MenuItem, Ui};
+use nexus::imgui::Ui;
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText, Text},
     note_tree::{GroupId, InsertionPoint, NodeId, Note, TreeNode as Node},
 };
-use trailkit_ui::menu::{begin_submenu, draw_menu_item};
+use trailkit_ui::{
+    icons::Icon,
+    menu::{MenuItemTone, begin_submenu, draw_menu_item, draw_menu_item_with_icon, draw_popup},
+    separator::draw_compact_separator,
+    theme::Theme,
+};
 
-use super::{NoteListAction, RenameStep, RowContext};
+use super::{NoteListAction, RenameStep, RowContext, delete::blocks_delete};
 use crate::i18n::NoteListText;
 
 /// Draws the context menu of a row if it is open (must run every frame).
@@ -21,8 +26,8 @@ pub(super) fn draw_context_menu(
     context: &mut RowContext<'_, '_>,
 ) {
     let (language, theme) = (context.language, context.theme);
-    ui.popup("context", || {
-        if MenuItem::new(NoteListText::Rename.get(language)).build(ui) {
+    draw_popup(ui, "context", || {
+        if draw_menu_item(ui, theme, NoteListText::Rename.get(language), false) {
             context.rename_steps.push(RenameStep::Start(node));
         }
         // Other slices add their items to notes, e.g. the reset type
@@ -35,13 +40,28 @@ pub(super) fn draw_context_menu(
         }
         // Only groups offer creating, into themselves (M96, M97).
         if let NodeId::Group(group) = node {
-            ui.separator();
+            draw_compact_separator(ui, theme);
             draw_create_menu_items(
                 ui,
                 language,
+                theme,
                 InsertionPoint::End(Some(group)),
                 context.actions,
             );
+        }
+        // Deleting comes last, set off by a separator (M133); the edited
+        // note and its groups wait until the editor is left (M141).
+        draw_compact_separator(ui, theme);
+        let blocked = blocks_delete(context.document, node, context.edited);
+        if draw_menu_item_with_icon(
+            ui,
+            theme,
+            Icon::TRASH_2,
+            NoteListText::Delete.get(language),
+            MenuItemTone::Regular,
+            blocked.then(|| NoteListText::SaveOrCancelFirst.get(language)),
+        ) {
+            context.actions.push(NoteListAction::Delete(node));
         }
     });
 }
@@ -103,13 +123,14 @@ fn draw_move_target_groups(
 pub(super) fn draw_create_menu_items(
     ui: &Ui,
     language: Language,
+    theme: &Theme,
     point: InsertionPoint,
     actions: &mut Vec<NoteListAction>,
 ) {
-    if MenuItem::new(Text::NewNote.get(language)).build(ui) {
+    if draw_menu_item(ui, theme, Text::NewNote.get(language), false) {
         actions.push(NoteListAction::NewNote(Some(point)));
     }
-    if MenuItem::new(Text::NewGroup.get(language)).build(ui) {
+    if draw_menu_item(ui, theme, Text::NewGroup.get(language), false) {
         actions.push(NoteListAction::NewGroup(Some(point)));
     }
 }

@@ -136,8 +136,9 @@ expensive for the rest of the session. Keep it small:
   `gh pr checks --watch | tail -3`. The git hooks already run quietly.
 - **Read narrowly.** Grep for the lines you need or read a range instead of
   whole files; don't re-read a file you just edited.
-- **Images only when needed.** Look at snapshot PNGs only when a UI test
-  reports a change (`tests/snapshots/failures/`); otherwise trust the test.
+- **Images only when needed.** Look at the snapshot PNGs a UI test reports as
+  changed or new (`tests/snapshots/failures/`) and review them as R82 demands
+  (`.agents/skills/trailkit-ui/references/tokens.md` §10); skip unchanged ones.
 - **Batch work.** One edit/script per logical change, one PR per step; don't
   repeat large code or plans in chat — link files and decision ids instead.
 - **Concise answers.** Report results and open questions, not the full
@@ -162,7 +163,8 @@ Fundamental design decisions are recorded so any agent can pick them up:
   checklist for new addons) →
   `.agents/skills/nexus-addon-dev/references/addon-structure.md`
 - Theme, design tokens, shared components, UX rules →
-  `.agents/skills/trailkit-ui/SKILL.md`
+  `.agents/skills/trailkit-ui/SKILL.md`; token values are generated into
+  `references/token-values.md` (`cargo xtask tokens`, R84), never edited by hand
 - Per-component decisions → the "Decisions" table in `docs/plans/**`
 
 When a new fundamental decision is made, add it to the matching place above

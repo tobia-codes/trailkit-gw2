@@ -11,7 +11,7 @@ use std::ops::Range;
 use nexus::imgui::{Key, StyleColor, Ui};
 use trailkit_memo_shared::i18n::{Language, LocalizedText};
 use trailkit_ui::{
-    button::{draw_icon_button, icon_button_width},
+    button::{draw_icon_toggle, icon_button_width},
     chat_link_chip::ChipContext,
     editor::view::TextEditor,
     font_registry::FontScope,
@@ -275,15 +275,13 @@ impl Editor {
                 id += 1;
                 let _id = ui.push_id(id);
                 // ImGui 1.80 has no disabled items: a disabled button is drawn
-                // in `text.disabled` and its clicks are ignored.
-                let icon_color = match command {
-                    None => Some(theme.text.disabled),
-                    Some(command) if active.is_active(*command) => Some(theme.accent.text),
-                    Some(_) => None,
-                };
-                let _icon_color =
-                    icon_color.map(|color| ui.push_style_color(StyleColor::Text, color.to_array()));
-                if draw_icon_button(ui, theme, *icon, tooltip.get(language))
+                // in `text.disabled` and its clicks are ignored. Formatting at
+                // the cursor is a kept state, so neutral, not brass (R79).
+                let _disabled = command
+                    .is_none()
+                    .then(|| ui.push_style_color(StyleColor::Text, theme.text.disabled.to_array()));
+                let is_on = command.is_some_and(|command| active.is_active(command));
+                if draw_icon_toggle(ui, theme, *icon, tooltip.get(language), is_on)
                     && let Some(command) = command
                 {
                     clicked = Some(ToolbarAction::Format(*command));
@@ -291,18 +289,14 @@ impl Editor {
             }
         }
 
-        // The preview toggle is its own group; its icon is drawn in the
-        // accent color while the preview is visible.
+        // The preview toggle is its own group, neutral like every toggle (R79).
         begin_toolbar_group(ui, theme, icon_button_width(ui, Icon::EYE));
-        let (tooltip, _selected) = if preview_visible {
-            (
-                EditorText::HidePreview,
-                Some(ui.push_style_color(StyleColor::Text, theme.accent.text.to_array())),
-            )
+        let tooltip = if preview_visible {
+            EditorText::HidePreview
         } else {
-            (EditorText::ShowPreview, None)
+            EditorText::ShowPreview
         };
-        if draw_icon_button(ui, theme, Icon::EYE, tooltip.get(language)) {
+        if draw_icon_toggle(ui, theme, Icon::EYE, tooltip.get(language), preview_visible) {
             clicked = Some(ToolbarAction::TogglePreview);
         }
         clicked

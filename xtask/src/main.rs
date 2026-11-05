@@ -16,6 +16,8 @@
 //!   (owned by Changesets) into its `Cargo.toml` (ROADMAP R16/R17).
 //! - `subset-fonts [--check]` — cut the embedded fonts down to the characters
 //!   trailkit can show (M62).
+//! - `tokens [--check]` — write the design token reference from the themes
+//!   (ROADMAP R84).
 //! - `ui-test [--update]` — build the Windows UI tests and run them (from WSL
 //!   through interop); `--update` rewrites the snapshot references (M65).
 
@@ -27,6 +29,7 @@ mod deploy;
 mod install_hooks;
 mod subset_fonts;
 mod sync_versions;
+mod token_docs;
 mod ui_test;
 mod workspace;
 
@@ -45,6 +48,7 @@ commands:
   check-names                  verify file/directory names against the naming conventions
   sync-versions [--check]      copy package.json versions into Cargo.toml (--check: only verify)
   subset-fonts [--check]       cut the embedded fonts to the shown characters (--check: only verify)
+  tokens [--check]             write the token reference from the themes (--check: only verify)
   ui-test [--update]           build and run the Windows UI tests (--update: rewrite snapshots)
   help                         show this text";
 
@@ -78,6 +82,8 @@ fn main() -> Result<()> {
         ["sync-versions", "--check"] => sync_versions::run(sync_versions::Mode::Check),
         ["subset-fonts"] => subset_fonts::run(subset_fonts::Mode::Write),
         ["subset-fonts", "--check"] => subset_fonts::run(subset_fonts::Mode::Check),
+        ["tokens"] => token_docs::run(token_docs::Mode::Write),
+        ["tokens", "--check"] => token_docs::run(token_docs::Mode::Check),
         ["ui-test"] => ui_test::run(ui_test::Mode::Compare),
         ["ui-test", "--update"] => ui_test::run(ui_test::Mode::Update),
         [] | ["help" | "--help" | "-h"] => {

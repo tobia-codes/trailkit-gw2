@@ -48,7 +48,7 @@ const COLOR_SLOTS: [(StyleColor, ColorToken); 44] = [
     // darker fill reads as a hole (R71, in-game test).
     (StyleColor::Button, |theme| theme.surface.hover),
     (StyleColor::ButtonHovered, |theme| theme.surface.active),
-    (StyleColor::ButtonActive, |theme| theme.surface.active),
+    (StyleColor::ButtonActive, |theme| theme.surface.pressed),
     // `Header` is the selected state of rows (`bg.active`); hover stays distinct.
     (StyleColor::Header, |theme| theme.surface.active),
     (StyleColor::HeaderHovered, |theme| theme.surface.hover),

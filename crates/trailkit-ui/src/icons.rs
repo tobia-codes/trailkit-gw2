@@ -15,10 +15,10 @@ impl Icon {
     pub const FILE_PLUS: Self = Self('\u{e0c9}');
     /// `folder-plus`: create a group.
     pub const FOLDER_PLUS: Self = Self('\u{e0d9}');
-    /// `panel-left-close`: hide the list on the left (memo note list, M101).
-    pub const PANEL_LEFT_CLOSE: Self = Self('\u{e21c}');
-    /// `panel-left-open`: show the list on the left (memo note list, M101).
-    pub const PANEL_LEFT_OPEN: Self = Self('\u{e21d}');
+    /// `panel-left`: shows or hides a window's left column (memo M153).
+    pub const PANEL_LEFT: Self = Self('\u{e12a}');
+    /// `arrow-left`: goes back to the previous view (memo M154).
+    pub const ARROW_LEFT: Self = Self('\u{e048}');
     /// `square`: unchecked task.
     pub const SQUARE: Self = Self('\u{e167}');
     /// `square-check`: checked task (tick inside the box, M64).
@@ -88,15 +88,31 @@ impl Icon {
     pub const SEARCH: Self = Self('\u{e151}');
     /// `save` (floppy disk): the Save button of an editor (memo M130).
     pub const SAVE: Self = Self('\u{e14d}');
+    /// `ellipsis-vertical` (⋮): title bar toggle of the tool rail (memo M136).
+    pub const ELLIPSIS_VERTICAL: Self = Self('\u{e0b7}');
+    /// `maximize-2`: turns the compact note view on (memo M139).
+    pub const MAXIMIZE_2: Self = Self('\u{e113}');
+    /// `minimize-2`: turns the compact note view off again (memo M139).
+    pub const MINIMIZE_2: Self = Self('\u{e11b}');
+    /// `trash-2`: deletes to the trash, the trash tool, permanent delete
+    /// (memo M133, M145).
+    pub const TRASH_2: Self = Self('\u{e18e}');
+    /// `rotate-ccw`: restores an entry from the trash (memo M145).
+    pub const ROTATE_CCW: Self = Self('\u{e148}');
     /// Every icon above; keep in sync when adding one.
-    pub const ALL: [Self; 38] = [
+    pub const ALL: [Self; 43] = [
+        Self::TRASH_2,
+        Self::ROTATE_CCW,
+        Self::ELLIPSIS_VERTICAL,
+        Self::MAXIMIZE_2,
+        Self::MINIMIZE_2,
         Self::SAVE,
         Self::X,
         Self::SEARCH,
         Self::FILE_PLUS,
         Self::FOLDER_PLUS,
-        Self::PANEL_LEFT_CLOSE,
-        Self::PANEL_LEFT_OPEN,
+        Self::PANEL_LEFT,
+        Self::ARROW_LEFT,
         Self::SQUARE,
         Self::SQUARE_CHECK,
         Self::TRIANGLE_ALERT,

@@ -2,15 +2,18 @@
 //!
 //! ImGui's own title bar has a filled triangle, a drawn cross and a band in
 //! its own color. Trailkit windows hide it (`NO_TITLE_BAR`) and draw this
-//! one instead, on the window background: a Lucide chevron that collapses
-//! the window, the title in bold and a Lucide `x` that closes it. ImGui
-//! still moves the window when its empty areas are dragged; windows without
-//! a title bar are exempt from `ConfigWindowsMoveFromTitleBarOnly`.
+//! one instead, on the window background (ROADMAP R78): the addon's own
+//! toggles and the title in bold on the left, a Lucide chevron that
+//! collapses the window and a Lucide `x` that closes it on the right. The
+//! row uses the window padding, so the first and the last button line up
+//! with the panes below. ImGui still moves the window when its empty areas
+//! are dragged; windows without a title bar are exempt from
+//! `ConfigWindowsMoveFromTitleBarOnly`.
 
 use nexus::imgui::{Condition, StyleColor, Ui, Window, WindowFlags};
 
 use crate::{
-    button::{draw_icon_button, draw_label},
+    button::{draw_icon_button, draw_icon_toggle, draw_label, icon_button_width},
     dropdown::packed,
     font_registry::FontScope,
     fonts::FontRole,
@@ -30,6 +33,18 @@ pub struct TitleBarTexts<'texts> {
     pub expand: &'texts str,
     /// Tooltip of the close button.
     pub close: &'texts str,
+}
+
+/// A toggle of the addon on the left of the title (e.g. memo's tool rail
+/// and note list, memo M136/M137), drawn with [`draw_icon_toggle`].
+#[derive(Debug, Clone, Copy)]
+pub struct TitleBarToggle<'texts> {
+    /// The Lucide icon.
+    pub icon: Icon,
+    /// Tooltip naming what the toggle shows or hides.
+    pub tooltip: &'texts str,
+    /// Whether what it toggles is shown.
+    pub active: bool,
 }
 
 /// What the title bar remembers between frames: whether the window is
@@ -59,18 +74,23 @@ impl TitleBarState {
     }
 }
 
-/// Builds `window` with the trailkit title bar showing `texts.title` and runs
-/// `content` below it unless the window is collapsed. `open` is set to
-/// `false` when the close button is clicked.
+/// Builds `window` with the trailkit title bar showing `toggles` and
+/// `texts.title` and runs `content` below it unless the window is
+/// collapsed. `open` is set to `false` when the close button is clicked.
+/// Returns the index of the toggle clicked in this frame; the caller applies
+/// it (the content closure may hold the state it changes).
+#[must_use]
+#[allow(clippy::too_many_arguments)]
 pub fn draw_window<Label: AsRef<str>>(
     ui: &Ui,
     theme: &Theme,
     window: Window<'_, Label>,
     texts: TitleBarTexts<'_>,
+    toggles: &[TitleBarToggle<'_>],
     state: &mut TitleBarState,
     open: &mut bool,
     content: impl FnOnce(),
-) {
+) -> Option<usize> {
     let mut flags = WindowFlags::NO_TITLE_BAR | WindowFlags::NO_COLLAPSE;
     let mut window = window;
     if state.collapsed {
@@ -80,11 +100,14 @@ pub fn draw_window<Label: AsRef<str>>(
     } else if let Some(size) = state.restore_size.take() {
         window = window.size(size, Condition::Always);
     }
+    let mut clicked_toggle = None;
     window.flags(flags).build(ui, || {
         if !state.collapsed {
             state.expanded_size = ui.window_size();
         }
-        if draw_title_row(ui, theme, texts, state, open) {
+        let row = draw_title_row(ui, theme, texts, toggles, state, open);
+        clicked_toggle = row.toggle;
+        if row.collapse_clicked {
             if state.collapsed {
                 state.restore_size = Some(state.expanded_size);
             }
@@ -94,43 +117,76 @@ pub fn draw_window<Label: AsRef<str>>(
             content();
         }
     });
+    clicked_toggle
 }
 
-/// Draws chevron, bold title and close button in one row; returns whether
-/// the chevron was clicked.
+/// What was clicked in the title row.
+#[derive(Debug, Clone, Copy)]
+struct TitleRowClicks {
+    /// Whether the chevron was clicked.
+    collapse_clicked: bool,
+    /// The index of the clicked addon toggle.
+    toggle: Option<usize>,
+}
+
+/// Draws the addon toggles (hidden while collapsed), the bold title, the
+/// chevron and the close button in one row.
 fn draw_title_row(
     ui: &Ui,
     theme: &Theme,
     texts: TitleBarTexts<'_>,
+    toggles: &[TitleBarToggle<'_>],
     state: &TitleBarState,
     open: &mut bool,
-) -> bool {
+) -> TitleRowClicks {
     let _muted = ui.push_style_color(StyleColor::Text, theme.text.secondary.to_array());
+    let mut clicks = TitleRowClicks {
+        collapse_clicked: false,
+        toggle: None,
+    };
+    let row_top = ui.cursor_screen_pos()[1];
+    let mut title_x = ui.cursor_screen_pos()[0];
+    if !state.collapsed {
+        for (index, toggle) in toggles.iter().enumerate() {
+            if index > 0 {
+                ui.same_line_with_spacing(0.0, theme.spacing.small);
+            }
+            if draw_icon_toggle(ui, theme, toggle.icon, toggle.tooltip, toggle.active) {
+                clicks.toggle = Some(index);
+            }
+            title_x = ui.item_rect_max()[0] + theme.spacing.small;
+        }
+    }
+    let row_bottom = row_top + ui.frame_height();
+    {
+        let _bold = FontScope::push(ui, FontRole::BodyBold);
+        draw_label(
+            texts.title,
+            title_x,
+            [row_top, row_bottom],
+            packed(theme.text.primary),
+        );
+    }
     let (icon, tooltip) = if state.collapsed {
         (Icon::CHEVRON_RIGHT, texts.expand)
     } else {
         (Icon::CHEVRON_DOWN, texts.collapse)
     };
-    let toggled = draw_icon_button(ui, theme, icon, tooltip);
-    let [row_min, row_max] = [ui.item_rect_min(), ui.item_rect_max()];
-    {
-        let _bold = FontScope::push(ui, FontRole::BodyBold);
-        draw_label(
-            texts.title,
-            row_max[0] + theme.spacing.extra_small,
-            [row_min[1], row_max[1]],
-            packed(theme.text.primary),
-        );
-    }
-    let close_width = {
-        let _icons = FontScope::push(ui, FontRole::Icons);
-        let mut buffer = [0; 4];
-        ui.calc_text_size(Icon::X.as_str(&mut buffer))[0] + 2.0 * ui.clone_style().frame_padding[0]
-    };
+    let spacing = theme.spacing.extra_small;
     let right = ui.window_content_region_max()[0];
-    ui.same_line_with_pos(right - close_width);
+    let buttons_width = icon_button_width(ui, icon) + spacing + icon_button_width(ui, Icon::X);
+    if toggles.is_empty() || state.collapsed {
+        // Nothing was drawn on the left yet: keep the row's height.
+        ui.dummy([0.0, ui.frame_height()]);
+    }
+    ui.same_line_with_pos(right - buttons_width);
+    clicks.collapse_clicked = draw_icon_button(ui, theme, icon, tooltip);
+    ui.same_line_with_spacing(0.0, spacing);
     if draw_icon_button(ui, theme, Icon::X, texts.close) {
         *open = false;
     }
-    toggled
+    // The toggles keep `spacing.small` to each other and the regular item
+    // spacing (also `spacing.small`) to the tool rail below, so the gaps
+    // match in both directions.
+    clicks
 }

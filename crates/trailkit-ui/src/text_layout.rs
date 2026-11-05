@@ -6,15 +6,44 @@ use std::borrow::Cow;
 
 use nexus::imgui::Ui;
 
-/// Draws `text` horizontally centered in a region of `width`, wrapping if needed.
+/// Draws `text` horizontally centered in a region of `width`. Too long text
+/// wraps at spaces with each line centered; a single word wider than `width`
+/// falls back to ImGui's left-aligned wrapping.
 pub fn centered_text(ui: &Ui, text: &str, width: f32) {
     let text_width = ui.calc_text_size(text)[0];
     if text_width <= width {
         indent_to_center(ui, text_width, width);
         ui.text(text);
-    } else {
-        ui.text_wrapped(text);
+        return;
     }
+    if text
+        .split_whitespace()
+        .any(|word| ui.calc_text_size(word)[0] > width)
+    {
+        ui.text_wrapped(text);
+        return;
+    }
+    let mut line = String::new();
+    for word in text.split_whitespace() {
+        let previous_length = line.len();
+        if !line.is_empty() {
+            line.push(' ');
+        }
+        line.push_str(word);
+        if ui.calc_text_size(&line)[0] > width {
+            line.truncate(previous_length);
+            draw_centered_line(ui, &line, width);
+            line.clear();
+            line.push_str(word);
+        }
+    }
+    draw_centered_line(ui, &line, width);
+}
+
+/// Draws one `line` that fits into `width`, centered in it.
+fn draw_centered_line(ui: &Ui, line: &str, width: f32) {
+    indent_to_center(ui, ui.calc_text_size(line)[0], width);
+    ui.text(line);
 }
 
 /// Moves the cursor so an item of `item_width` is centered in `width`.

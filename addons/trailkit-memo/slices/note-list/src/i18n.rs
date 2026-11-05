@@ -14,10 +14,20 @@ pub enum NoteListText {
     MoveTo,
     /// "Move to" target: the root level of the note list (M112).
     TopLevel,
+    /// Context menu entry that moves a note or group to the trash (M133).
+    Delete,
+    /// Tooltip of "Delete" on the note open in the editor (M141).
+    SaveOrCancelFirst,
 }
 
 impl LocalizedText for NoteListText {
-    const ALL: &'static [Self] = &[Self::Rename, Self::MoveTo, Self::TopLevel];
+    const ALL: &'static [Self] = &[
+        Self::Rename,
+        Self::MoveTo,
+        Self::TopLevel,
+        Self::Delete,
+        Self::SaveOrCancelFirst,
+    ];
 
     fn get(self, language: Language) -> &'static str {
         match (self, language) {
@@ -27,6 +37,12 @@ impl LocalizedText for NoteListText {
             (Self::MoveTo, Language::German) => "Verschieben nach",
             (Self::TopLevel, Language::English) => "Top level",
             (Self::TopLevel, Language::German) => "Oberste Ebene",
+            (Self::Delete, Language::English) => "Delete",
+            (Self::Delete, Language::German) => "Löschen",
+            (Self::SaveOrCancelFirst, Language::English) => "Save or cancel the edit first",
+            (Self::SaveOrCancelFirst, Language::German) => {
+                "Erst speichern oder die Bearbeitung abbrechen"
+            }
         }
     }
 }

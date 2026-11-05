@@ -21,9 +21,14 @@ use trailkit_memo_shared::{
         TreeNode as Node,
     },
     settings::UnsavedChanges,
+    undo::UndoStep,
 };
+use trailkit_memo_trash::trash_view::TrashAction;
 
-use super::{CopiedChatLink, MemoWindow};
+use trailkit_memo_shared::i18n::chip_text;
+use trailkit_ui::{chat_link::ChipText, toast::Toast};
+
+use super::{MemoWindow, WindowToast};
 
 /// Something the user did while the window was drawn.
 #[derive(Debug, Clone, PartialEq)]
@@ -38,9 +43,15 @@ pub(super) enum WindowAction {
     NewNote(Option<InsertionPoint>),
     /// Create a group at a point, or by the selection for `None`.
     NewGroup(Option<InsertionPoint>),
-    /// The menu button: hide/show the note list column, or open/close the
-    /// drawer in a narrow window (M48).
+    /// The note list toggle in the title bar: hide/show the note list
+    /// column, or open/close the drawer in a narrow window (M48, M137).
     ToggleNoteList,
+    /// The tool rail toggle in the title bar (M136).
+    ToggleToolRail,
+    /// The search toggle in the tool rail (M138).
+    ToggleSearch,
+    /// The compact note view toggle (M139).
+    ToggleCompactNoteView,
     /// Close the drawer (click on the dimmed note).
     CloseDrawer,
     /// Toggle a task checkbox in the shown note.
@@ -77,6 +88,23 @@ pub(super) enum WindowAction {
     SetCollapsedInSearch(GroupId, bool),
     /// Empty the search field (empty search result, M126).
     ClearSearch,
+    /// Delete a note or group: to the trash, a group with notes asks first
+    /// (M133, M134).
+    Delete(NodeId),
+    /// Take the latest delete or move back (Ctrl+Z, the toast, M135).
+    Undo,
+    /// Do the latest undone step again (Ctrl+Y, Ctrl+Shift+Z, M135).
+    Redo,
+    /// The toast's time is up (M148).
+    DismissToast,
+    /// The trash tool in the tool rail (M136).
+    ToggleTrash,
+    /// Something done in the trash view (M145–M147).
+    Trash(TrashAction),
+    /// The open delete question was confirmed (M134, M146).
+    ConfirmAccepted,
+    /// The open delete question was cancelled.
+    ConfirmCancelled,
 }
 
 impl WindowAction {
@@ -85,7 +113,7 @@ impl WindowAction {
     pub(super) fn leaves_editor_of(&self, note: NoteId) -> bool {
         match self {
             Self::Select(node) => *node != NodeId::Note(note),
-            Self::NewNote(_) | Self::NewGroup(_) => true,
+            Self::NewNote(_) | Self::NewGroup(_) | Self::ToggleTrash => true,
             _ => false,
         }
     }
@@ -145,9 +173,28 @@ impl MemoWindow {
             | WindowAction::LeaveCancelled => self.apply_editor_action(action, language, now),
             WindowAction::ClearSearch
             | WindowAction::ToggleNoteList
+            | WindowAction::ToggleToolRail
+            | WindowAction::ToggleSearch
+            | WindowAction::ToggleCompactNoteView
             | WindowAction::CloseDrawer
             | WindowAction::Markdown(_)
-            | WindowAction::OpenFolder => self.apply_view_action(action, now),
+            | WindowAction::OpenFolder => self.apply_view_action(action, now, language),
+            WindowAction::Delete(_)
+            | WindowAction::Undo
+            | WindowAction::Redo
+            | WindowAction::DismissToast
+            | WindowAction::ToggleTrash
+            | WindowAction::Trash(_)
+            | WindowAction::ConfirmAccepted
+            | WindowAction::ConfirmCancelled => self.apply_trash_action(action, language),
+        }
+        // Whatever opens the editor, and creating an entry, leaves the
+        // compact note view (M139).
+        let leaves_compact = self.editor.is_some()
+            || matches!(action, WindowAction::NewNote(_) | WindowAction::NewGroup(_));
+        if self.ui_state.compact_note_view && leaves_compact {
+            self.ui_state.compact_note_view = false;
+            self.saver.save_ui_state(self.ui_state);
         }
     }
 
@@ -165,7 +212,16 @@ impl MemoWindow {
                 }
             }
             WindowAction::Move(node, point) => {
+                let from = self.document.place(*node);
                 if self.document.move_node(*node, *point) {
+                    // Moves are undoable (M114, M135).
+                    if let (Some(from), Some(to)) = (from, self.document.place(*node)) {
+                        self.undo.record(UndoStep::Move {
+                            node: *node,
+                            from,
+                            to,
+                        });
+                    }
                     self.save_notes();
                 }
             }
@@ -284,7 +340,7 @@ impl MemoWindow {
 
     /// Applies an action of the window's view: search, note list, drawer,
     /// clicks on rendered markdown and the addon folder.
-    fn apply_view_action(&mut self, action: &WindowAction, now: Timestamp) {
+    fn apply_view_action(&mut self, action: &WindowAction, now: Timestamp, language: Language) {
         match action {
             WindowAction::ClearSearch => self.search_field.clear(false),
             WindowAction::ToggleNoteList => {
@@ -294,6 +350,24 @@ impl MemoWindow {
                     self.ui_state.note_list_hidden = !self.ui_state.note_list_hidden;
                     self.saver.save_ui_state(self.ui_state);
                 }
+            }
+            WindowAction::ToggleToolRail => {
+                self.ui_state.tool_rail_visible = !self.ui_state.tool_rail_visible;
+                self.saver.save_ui_state(self.ui_state);
+            }
+            WindowAction::ToggleSearch => {
+                if self.ui_state.search_visible && !self.trash.visible {
+                    // A hidden field must not keep filtering the list (M138).
+                    self.search_field.clear(false);
+                    self.ui_state.search_visible = false;
+                    self.saver.save_ui_state(self.ui_state);
+                } else {
+                    self.show_search_field();
+                }
+            }
+            WindowAction::ToggleCompactNoteView => {
+                self.ui_state.compact_note_view = !self.ui_state.compact_note_view;
+                self.saver.save_ui_state(self.ui_state);
             }
             WindowAction::CloseDrawer => self.drawer_open = false,
             WindowAction::Markdown(MarkdownAction::ToggleTask(marker)) => {
@@ -310,10 +384,10 @@ impl MemoWindow {
                 }
             }
             WindowAction::Markdown(MarkdownAction::OpenLink(url)) => open_web_link(url),
-            WindowAction::Markdown(MarkdownAction::ChatLinkCopied(code)) => {
-                self.copied_chat_link = Some(CopiedChatLink {
-                    code: code.clone(),
-                    shown_since: None,
+            WindowAction::Markdown(MarkdownAction::ChatLinkCopied(_)) => {
+                self.toast = Some(WindowToast {
+                    toast: Toast::new(chip_text(ChipText::Copied, language).to_owned()),
+                    offers_undo: false,
                 });
             }
             WindowAction::OpenFolder => {

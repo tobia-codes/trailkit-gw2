@@ -5,10 +5,15 @@
 //! that opens a popup list below it. The field has the width of its widest
 //! option, so it does not jump when the choice changes.
 
-use nexus::imgui::{ImColor32, Selectable, Ui};
+use nexus::imgui::{ImColor32, Selectable, StyleColor, Ui};
 
 use crate::{
-    button::draw_label, color::Color, font_registry::FontScope, fonts::FontRole, icons::Icon,
+    button::draw_label,
+    color::Color,
+    font_registry::FontScope,
+    fonts::FontRole,
+    icons::Icon,
+    menu::{draw_menu_row_highlight, draw_menu_row_label, draw_popup},
     theme::Theme,
 };
 
@@ -86,14 +91,21 @@ pub fn draw_dropdown(
     }
     let mut picked = None;
     let mut is_open = false;
-    ui.popup(popup_id, || {
+    draw_popup(ui, popup_id, || {
         is_open = true;
         for (index, option) in options.iter().enumerate() {
             let is_selected = index == selected;
             let _row = ui.push_id(i32::try_from(index).unwrap_or(i32::MAX));
-            if Selectable::new(option).selected(is_selected).build(ui) {
+            let origin = ui.cursor_screen_pos();
+            let clicked = {
+                let _hidden = ui.push_style_color(StyleColor::Text, [0.0; 4]);
+                Selectable::new(option).selected(is_selected).build(ui)
+            };
+            if clicked {
                 picked = Some(index);
             }
+            draw_menu_row_highlight(ui, theme, is_selected);
+            draw_menu_row_label(origin, theme.text.primary, option);
             // The chosen option also gets a check mark, not only a color
             // (`a11y-color-alone`).
             if is_selected {
@@ -189,7 +201,13 @@ pub(crate) fn draw_icon_into(
 }
 
 /// Draws a rectangle outline from `min` to `max` (the field's border).
-fn draw_border(min: [f32; 2], max: [f32; 2], color: Color, thickness: f32, rounding: f32) {
+pub(crate) fn draw_border(
+    min: [f32; 2],
+    max: [f32; 2],
+    color: Color,
+    thickness: f32,
+    rounding: f32,
+) {
     // SAFETY: called on the render thread inside a frame, so the current
     // window's draw list is valid; the call only adds a rectangle.
     unsafe {

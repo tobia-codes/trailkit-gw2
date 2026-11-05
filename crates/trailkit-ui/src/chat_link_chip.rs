@@ -54,13 +54,11 @@ fn icon_metrics(ui: &Ui) -> IconMetrics {
     }
 }
 
-/// What a chip needs from the addon: its texts and the code copied last.
+/// What a chip needs from the addon: its texts.
 #[derive(Clone, Copy)]
 pub struct ChipContext<'a> {
     /// Translates a chip text into the addon language.
     pub text: &'a dyn Fn(ChipText) -> &'static str,
-    /// The code copied by the last chip click, while "Copied" is shown.
-    pub copied: Option<&'a str>,
 }
 
 /// One drawable part of a chip, left to right.
@@ -353,11 +351,9 @@ pub fn chip_tooltip(
         if !copyable {
             return;
         }
-        let hint = if context.copied == Some(chip.code.as_str()) {
-            ChipText::Copied
-        } else {
-            ChipText::ClickToCopy
-        };
-        ui.text_colored(theme.text.secondary.to_array(), (context.text)(hint));
+        ui.text_colored(
+            theme.text.secondary.to_array(),
+            (context.text)(ChipText::ClickToCopy),
+        );
     });
 }

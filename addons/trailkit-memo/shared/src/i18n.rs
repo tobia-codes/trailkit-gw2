@@ -105,18 +105,15 @@ pub fn assert_all_translated<T: LocalizedText>() {
 }
 
 /// What chat-link chips need from memo (M75): chip texts in `language` and
-/// the code copied last (`copied`), shared by note view and editor.
+/// shared by note view and editor.
 #[cfg(windows)]
 #[must_use]
-pub fn chip_context(
-    language: Language,
-    copied: Option<&str>,
-) -> trailkit_ui::chat_link_chip::ChipContext<'_> {
+pub fn chip_context(language: Language) -> trailkit_ui::chat_link_chip::ChipContext<'static> {
     let text: &'static dyn Fn(ChipText) -> &'static str = match language {
         Language::English => &|text| chip_text(text, Language::English),
         Language::German => &|text| chip_text(text, Language::German),
     };
-    trailkit_ui::chat_link_chip::ChipContext { text, copied }
+    trailkit_ui::chat_link_chip::ChipContext { text }
 }
 
 /// The translation of a chat-link chip text (memo plan M75).
@@ -214,10 +211,22 @@ pub enum Text {
     NoNotesYet,
     /// Primary empty-state button.
     CreateFirstNote,
-    /// Tooltip of the menu button while the note list is hidden (M48).
-    ShowNoteList,
-    /// Tooltip of the menu button while the note list is shown (M48).
-    HideNoteList,
+    /// Tooltip of the left column toggle while the column is hidden (M153).
+    ShowSidebar,
+    /// Tooltip of the left column toggle while the column is shown (M153).
+    HideSidebar,
+    /// Tooltip of the tool rail toggle while the rail is hidden (M136).
+    ShowTools,
+    /// Tooltip of the tool rail toggle while the rail is shown (M136).
+    HideTools,
+    /// Tooltip of the search toggle while the field is hidden (M138).
+    ShowSearch,
+    /// Tooltip of the search toggle while the field is shown (M138).
+    HideSearch,
+    /// Tooltip of the button that makes the note view compact (M139).
+    CompactNoteView,
+    /// Tooltip of the button that ends the compact note view (M139).
+    RegularNoteView,
     /// Label of the primary edit button (M51; a brass text button, R71).
     EditNote,
     /// Button committing an edit (M51).
@@ -257,8 +266,14 @@ impl LocalizedText for Text {
         Self::NewGroup,
         Self::NoNotesYet,
         Self::CreateFirstNote,
-        Self::ShowNoteList,
-        Self::HideNoteList,
+        Self::ShowSidebar,
+        Self::HideSidebar,
+        Self::ShowTools,
+        Self::HideTools,
+        Self::ShowSearch,
+        Self::HideSearch,
+        Self::CompactNoteView,
+        Self::RegularNoteView,
         Self::EditNote,
         Self::Save,
         Self::SaveTooltip,
@@ -328,10 +343,22 @@ impl LocalizedText for Text {
             (Self::NoNotesYet, Language::German) => "Noch keine Notizen",
             (Self::CreateFirstNote, Language::English) => "Create your first note",
             (Self::CreateFirstNote, Language::German) => "Erste Notiz anlegen",
-            (Self::ShowNoteList, Language::English) => "Show note list",
-            (Self::ShowNoteList, Language::German) => "Notizliste einblenden",
-            (Self::HideNoteList, Language::English) => "Hide note list",
-            (Self::HideNoteList, Language::German) => "Notizliste ausblenden",
+            (Self::ShowSidebar, Language::English) => "Show sidebar",
+            (Self::ShowSidebar, Language::German) => "Seitenleiste einblenden",
+            (Self::HideSidebar, Language::English) => "Hide sidebar",
+            (Self::HideSidebar, Language::German) => "Seitenleiste ausblenden",
+            (Self::ShowTools, Language::English) => "Show tools",
+            (Self::ShowTools, Language::German) => "Werkzeuge einblenden",
+            (Self::HideTools, Language::English) => "Hide tools",
+            (Self::HideTools, Language::German) => "Werkzeuge ausblenden",
+            (Self::ShowSearch, Language::English) => "Show search (Ctrl+F)",
+            (Self::ShowSearch, Language::German) => "Suche einblenden (Strg+F)",
+            (Self::HideSearch, Language::English) => "Hide search",
+            (Self::HideSearch, Language::German) => "Suche ausblenden",
+            (Self::CompactNoteView, Language::English) => "Compact view",
+            (Self::CompactNoteView, Language::German) => "Kompakte Ansicht",
+            (Self::RegularNoteView, Language::English) => "Leave compact view",
+            (Self::RegularNoteView, Language::German) => "Kompakte Ansicht beenden",
             (Self::EditNote, Language::English) => "Edit",
             (Self::EditNote, Language::German) => "Bearbeiten",
             (Self::Save, Language::English) => "Save",
@@ -403,7 +430,7 @@ pub fn format_local_time(time: jiff::Timestamp, language: Language) -> String {
 /// Windows' current time-zone settings define it. Falls back to UTC (and logs
 /// a warning) if Windows cannot convert the time.
 #[cfg(windows)]
-fn local_utc_offset(time: jiff::Timestamp) -> jiff::tz::Offset {
+pub fn local_utc_offset(time: jiff::Timestamp) -> jiff::tz::Offset {
     use windows::Win32::{Foundation::SYSTEMTIME, System::Time::SystemTimeToTzSpecificLocalTime};
 
     let utc = time.to_zoned(jiff::tz::TimeZone::UTC).datetime();
@@ -434,7 +461,7 @@ fn local_utc_offset(time: jiff::Timestamp) -> jiff::tz::Offset {
 /// Without Windows (unit tests on Linux) there are no time-zone settings to
 /// ask: the offset is always UTC.
 #[cfg(not(windows))]
-fn local_utc_offset(_time: jiff::Timestamp) -> jiff::tz::Offset {
+pub fn local_utc_offset(_time: jiff::Timestamp) -> jiff::tz::Offset {
     jiff::tz::Offset::UTC
 }
 

@@ -51,10 +51,7 @@ fn draw(ui: &Ui, editor: &mut TextEditor, theme: ThemeKind) -> [f32; 2] {
         .flags(WindowFlags::NO_TITLE_BAR | WindowFlags::NO_RESIZE)
         .build(ui, || {
             position = ui.window_pos();
-            let chips = ChipContext {
-                text: &chip_text,
-                copied: None,
-            };
+            let chips = ChipContext { text: &chip_text };
             editor.draw(ui, &theme, "body", [0.0, 0.0], chips);
         });
     position

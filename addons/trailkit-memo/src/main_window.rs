@@ -12,14 +12,22 @@ mod note_list;
 mod note_pane;
 mod search;
 mod text_scale;
+mod trash;
+mod trash_pane;
 
 use std::{collections::HashSet, path::PathBuf};
 
 use jiff::Timestamp;
 use nexus::imgui::{Ui, WindowFocusedFlags};
 use trailkit_ui::{
-    font_registry::FontScope, fonts::FontRole, pane::draw_pane, theme::Theme,
-    title_bar::TitleBarTexts,
+    font_registry::FontScope,
+    fonts::FontRole,
+    icons::Icon,
+    pane::draw_pane,
+    theme::Theme,
+    title_bar::{TitleBarTexts, TitleBarToggle},
+    toast::Toast,
+    tool_rail::{ToolRailClick, ToolRailItem, draw_tool_rail},
 };
 
 use trailkit_memo_drafts::draft_hint::DraftHint;
@@ -38,12 +46,15 @@ use trailkit_memo_shared::{
     settings::{Settings, TextScale, UnsavedChanges},
     storage_worker::StorageSaver,
     ui_state::UiState,
+    undo::UndoHistory,
 };
+use trailkit_memo_trash::i18n::TrashText;
 
 use self::{
     actions::{LeaveReason, WindowAction},
     layout::draw_empty_state,
     search::SearchCache,
+    trash::{Confirmation, TrashState},
 };
 
 /// Minimum content width of each pane in average characters (M40).
@@ -52,16 +63,14 @@ const MINIMUM_PANE_CHARACTERS: f32 = 22.0;
 /// user may drag it narrower than the other panes.
 const MINIMUM_TREE_CHARACTERS: f32 = 10.0;
 
-/// How long a chat-link chip says "Copied" after a click (M75).
-const COPIED_FEEDBACK_SECONDS: f64 = 1.5;
-
-/// The chat code copied by the last chip click (M75).
+/// A toast of the window and what it offers.
 #[derive(Debug)]
-struct CopiedChatLink {
-    /// The copied code.
-    code: String,
-    /// When "Copied" started to show (ImGui time); set on the next frame.
-    shown_since: Option<f64>,
+struct WindowToast {
+    /// The shared toast.
+    toast: Toast,
+    /// Whether it offers to undo the last delete (M148); a "Copied" message
+    /// does not (M142).
+    offers_undo: bool,
 }
 
 /// Minimum widths of the two-pane layout in pixels (M40, M73).
@@ -108,8 +117,6 @@ pub struct MemoWindow {
     note_view: NoteView,
     /// Narrow window: whether the note list drawer is open (M48).
     drawer_open: bool,
-    /// The chat code copied last, while its chip says "Copied" (M75).
-    copied_chat_link: Option<CopiedChatLink>,
     /// Whether the window was too narrow for two panes in the last frame;
     /// decides what the menu button does.
     is_narrow: bool,
@@ -156,6 +163,14 @@ pub struct MemoWindow {
     /// Counts saves of the notes; a changed value invalidates the search
     /// index.
     document_revision: u64,
+    /// Deletes and moves that can be undone (M135); memory only.
+    undo: UndoHistory,
+    /// The toast at the bottom of the window (M142, M148).
+    toast: Option<WindowToast>,
+    /// The trash view (M136, M145).
+    trash: TrashState,
+    /// An open delete question (M134, M146).
+    confirmation: Option<Confirmation>,
 }
 
 impl MemoWindow {
@@ -171,7 +186,10 @@ impl MemoWindow {
         settings: Settings,
     ) -> Self {
         let mut drafts = drafts;
-        if drafts.prune(Timestamp::now(), |note| document.note(note).is_some()) {
+        // A trashed note keeps its draft until it is deleted for good (M151).
+        let note_exists =
+            |note| document.note(note).is_some() || document.note_in_trash(note).is_some();
+        if drafts.prune(Timestamp::now(), note_exists) {
             saver.save_drafts(drafts.clone());
         }
         let mut ui_state = ui_state;
@@ -190,7 +208,6 @@ impl MemoWindow {
             note_list: NoteList::default(),
             note_view: NoteView::default(),
             drawer_open: false,
-            copied_chat_link: None,
             is_narrow: false,
             actions: Vec::new(),
             drafts,
@@ -209,6 +226,10 @@ impl MemoWindow {
             search: SearchCache::default(),
             collapsed_in_search: HashSet::new(),
             document_revision: 0,
+            undo: UndoHistory::default(),
+            toast: None,
+            trash: TrashState::default(),
+            confirmation: None,
         }
     }
 
@@ -286,23 +307,46 @@ impl MemoWindow {
         // `FontUI` size (M35, M62); the window's default font differs.
         let _body_font = FontScope::push(ui, FontRole::Body);
         self.actions.clear();
-        if let Some(copied) = &mut self.copied_chat_link {
-            let since = *copied.shown_since.get_or_insert(ui.time());
-            if ui.time() - since > COPIED_FEEDBACK_SECONDS {
-                self.copied_chat_link = None;
-            }
-        }
         self.window_rect = Some([ui.window_pos(), ui.window_size()]);
         self.window_focused =
             ui.is_window_focused_with_flags(WindowFocusedFlags::ROOT_AND_CHILD_WINDOWS);
         self.apply_due_resets(Timestamp::now());
+        self.purge_trash(Timestamp::now());
+        self.handle_undo_keys(ui);
         self.handle_text_scale_keys(ui);
         self.handle_search_keys(ui);
         self.update_search();
         self.update_text_scale(ui, language);
         self.draw_problem(ui, language, theme);
 
-        if self.document.root.is_empty() {
+        if self.ui_state.tool_rail_visible {
+            self.draw_tool_rail(ui, language, theme);
+            ui.same_line_with_spacing(0.0, theme.pane.gap);
+        }
+        // A group keeps every line of the content right of the rail.
+        ui.group(|| self.draw_content(ui, language, theme));
+        // Last, so it lies above the content (M148).
+        self.draw_toast_message(ui, language, theme);
+
+        if let Some(action) = self.note_list.finish_drag(ui, theme, &self.document) {
+            self.actions.push(action.into());
+        }
+        let actions = std::mem::take(&mut self.actions);
+        for action in &actions {
+            self.apply(action, language);
+        }
+        // Finishing an edit or discarding a draft may unblock a waiting
+        // reset (M89); a kind change may make one due. Check next frame.
+        if !actions.is_empty() {
+            self.next_reset_check = None;
+        }
+        self.actions = actions;
+    }
+
+    /// Draws the notes area: the empty state, two panes, or the note pane
+    /// with the drawer in a narrow window.
+    fn draw_content(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+        if self.document.root.is_empty() && !self.trash.visible {
             draw_empty_state(ui, language, theme, &mut self.actions);
         } else {
             let character_width = ui.calc_text_size("n")[0];
@@ -326,7 +370,7 @@ impl MemoWindow {
             } else {
                 let area_start = ui.cursor_screen_pos();
                 draw_pane(ui, theme, "note", [0.0, 0.0], || {
-                    self.draw_note_pane(ui, language, theme, Text::ShowNoteList);
+                    self.draw_note_pane(ui, language, theme);
                 });
                 // Without a selected note there is nothing to show but the list.
                 if self.is_narrow && (self.drawer_open || self.selected_note().is_none()) {
@@ -334,20 +378,79 @@ impl MemoWindow {
                 }
             }
         }
+    }
 
-        if let Some(action) = self.note_list.finish_drag(ui, theme, &self.document) {
-            self.actions.push(action.into());
+    /// Draws the tool rail (M136) and applies its clicks: the search toggle
+    /// (M138) and the trash; settings follow in their step.
+    fn draw_tool_rail(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+        let search_visible = self.ui_state.search_visible && !self.trash.visible;
+        let top = [
+            ToolRailItem {
+                icon: Icon::SEARCH,
+                tooltip: if search_visible {
+                    Text::HideSearch.get(language)
+                } else {
+                    Text::ShowSearch.get(language)
+                },
+                active: search_visible,
+            },
+            ToolRailItem {
+                icon: Icon::TRASH_2,
+                tooltip: if self.trash.visible {
+                    TrashText::HideTrash.get(language)
+                } else {
+                    TrashText::ShowTrash.get(language)
+                },
+                active: self.trash.visible,
+            },
+        ];
+        match draw_tool_rail(ui, theme, &top, &[]) {
+            Some(ToolRailClick::Top(0)) => self.actions.push(WindowAction::ToggleSearch),
+            Some(ToolRailClick::Top(1)) => self.actions.push(WindowAction::ToggleTrash),
+            _ => {}
         }
-        let actions = std::mem::take(&mut self.actions);
-        for action in &actions {
-            self.apply(action, language);
-        }
-        // Finishing an edit or discarding a draft may unblock a waiting
-        // reset (M89); a kind change may make one due. Check next frame.
-        if !actions.is_empty() {
-            self.next_reset_check = None;
-        }
-        self.actions = actions;
+    }
+
+    /// The memo toggles of the title bar (R78): the tool rail (M136) and the
+    /// note list (M137). Empty while the notes are not loaded.
+    #[must_use]
+    pub fn title_bar_toggles(&self, language: Language) -> [TitleBarToggle<'static>; 2] {
+        let list_visible = if self.is_narrow {
+            self.drawer_open
+        } else {
+            !self.ui_state.note_list_hidden
+        };
+        [
+            TitleBarToggle {
+                icon: Icon::ELLIPSIS_VERTICAL,
+                tooltip: if self.ui_state.tool_rail_visible {
+                    Text::HideTools.get(language)
+                } else {
+                    Text::ShowTools.get(language)
+                },
+                active: self.ui_state.tool_rail_visible,
+            },
+            TitleBarToggle {
+                icon: Icon::PANEL_LEFT,
+                tooltip: if list_visible {
+                    Text::HideSidebar.get(language)
+                } else {
+                    Text::ShowSidebar.get(language)
+                },
+                active: list_visible,
+            },
+        ]
+    }
+
+    /// Applies a click on the title bar toggle at `index` (see
+    /// [`Self::title_bar_toggles`]).
+    pub fn apply_title_bar_toggle(&mut self, index: usize, language: Language) {
+        let action = match index {
+            0 => WindowAction::ToggleToolRail,
+            1 => WindowAction::ToggleNoteList,
+            _ => return,
+        };
+        self.apply(&action, language);
     }
 
     /// Applies due resets (M88–M90) once a reset time has passed; notes in

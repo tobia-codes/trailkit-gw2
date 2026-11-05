@@ -2,7 +2,7 @@
 //! M102), separator and the rendered content in its own scroll region, so
 //! the title stays in place (M81). Search hits are marked (M122).
 
-use nexus::imgui::{ChildWindow, MouseButton, Ui};
+use nexus::imgui::{ChildWindow, MouseButton, StyleColor, Ui};
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText},
     note_tree::{Note, NoteId},
@@ -13,8 +13,8 @@ use trailkit_ui::{
     fonts::FontRole,
     glyph_metrics::capital_middle,
     markdown::{self, MarkdownDocument},
-    markdown_view::{MarkdownAction, SearchHighlight, draw_markdown},
-    separator::draw_separator,
+    markdown_view::{MarkdownAction, SearchHighlight, draw_markdown, first_line_font},
+    separator::draw_separator_above_text,
     text_search::SearchQuery,
     theme::Theme,
 };
@@ -38,6 +38,9 @@ struct ParsedNote {
 pub struct TitleTrailing<'a> {
     /// The widget's size, measured before drawing.
     pub size: [f32; 2],
+    /// Whether the widget sits at the right end of the title row instead of
+    /// right behind the title (the compact view toggle, memo M139).
+    pub at_row_end: bool,
     /// Draws the widget at the cursor.
     pub draw: &'a mut dyn FnMut(&Ui),
 }
@@ -52,6 +55,16 @@ pub struct NoteViewInput<'a> {
     pub chips: ChipContext<'a>,
     /// The widget behind the title.
     pub title_trailing: Option<TitleTrailing<'a>>,
+    /// A read-only note (in the trash, memo M145): the title is muted, the
+    /// `subtitle` line follows it and a double-click does not edit.
+    pub read_only: Option<ReadOnly<'a>>,
+}
+
+/// How a read-only note is shown (memo M145).
+#[derive(Debug, Clone, Copy)]
+pub struct ReadOnly<'a> {
+    /// The line below the title, e.g. "In the trash · deleted today".
+    pub subtitle: &'a str,
 }
 
 /// What the user did in the view.
@@ -138,9 +151,22 @@ impl NoteView {
             });
         }
 
-        draw_title(ui, theme, &note.title, input.title_trailing);
-        draw_separator(ui, theme);
-        if ui.is_window_hovered() && ui.is_mouse_double_clicked(MouseButton::Left) {
+        {
+            let _muted = input
+                .read_only
+                .map(|_| ui.push_style_color(StyleColor::Text, theme.text.secondary.to_array()));
+            draw_title(ui, theme, &note.title, input.title_trailing);
+        }
+        if let Some(read_only) = input.read_only {
+            ui.text_colored(theme.text.secondary.to_array(), read_only.subtitle);
+        }
+        let first_line = self
+            .parsed
+            .as_ref()
+            .map_or(FontRole::Body, |parsed| first_line_font(&parsed.document));
+        draw_separator_above_text(ui, theme, first_line);
+        let editable = input.read_only.is_none();
+        if editable && ui.is_window_hovered() && ui.is_mouse_double_clicked(MouseButton::Left) {
             output.actions.push(NoteViewAction::StartEditing);
         }
         // Title and separator stay at the top; only the content scrolls, so
@@ -153,7 +179,7 @@ impl NoteView {
                     ui,
                     language,
                     theme,
-                    (input.search, input.chips),
+                    (input.search, input.chips, editable),
                     note_scroll,
                     &mut output,
                 );
@@ -167,11 +193,11 @@ impl NoteView {
         ui: &Ui,
         language: Language,
         theme: &Theme,
-        (search, chips): (Option<&SearchQuery>, ChipContext<'_>),
+        (search, chips, editable): (Option<&SearchQuery>, ChipContext<'_>, bool),
         note_scroll: &mut f32,
         output: &mut NoteViewOutput,
     ) {
-        if ui.is_window_hovered() && ui.is_mouse_double_clicked(MouseButton::Left) {
+        if editable && ui.is_window_hovered() && ui.is_mouse_double_clicked(MouseButton::Left) {
             output.actions.push(NoteViewAction::StartEditing);
         }
         if self.restore_scroll {
@@ -208,9 +234,9 @@ impl NoteView {
     }
 }
 
-/// Draws the note title with `trailing` right behind it, centered on the
-/// title's capitals (M102); the widget moves below a title that leaves no
-/// room.
+/// Draws the note title with `trailing` right behind it (or at the row end),
+/// centered on the title's capitals (M102); the widget moves below a title
+/// that leaves no room.
 fn draw_title(ui: &Ui, theme: &Theme, title: &str, trailing: Option<TitleTrailing<'_>>) {
     let trailing_size = trailing.as_ref().map_or([0.0, 0.0], |widget| widget.size);
     let gap = theme.spacing.medium;
@@ -233,7 +259,11 @@ fn draw_title(ui: &Ui, theme: &Theme, title: &str, trailing: Option<TitleTrailin
     };
     if is_beside {
         ui.same_line_with_spacing(0.0, gap);
-        let x = ui.cursor_screen_pos()[0];
+        let x = if trailing.at_row_end {
+            left + available - trailing_size[0]
+        } else {
+            ui.cursor_screen_pos()[0]
+        };
         ui.set_cursor_screen_pos([x, (top + title_middle - trailing_size[1] / 2.0).round()]);
     }
     (trailing.draw)(ui);
