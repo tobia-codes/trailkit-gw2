@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-05 (session 16: layout, trash & undo and the UI state round merged into `develop` from `feature/memo-sidebar-layout`).
+Last updated: 2026-11-05 (session 17: UX round built and deployed on the unmerged, unpushed branch `feature/memo-ux-round`, in-game test running).
 
 ## Where we are
 
@@ -104,24 +104,32 @@ Last updated: 2026-11-05 (session 16: layout, trash & undo and the UI state roun
 
 ## ▶ Resume here
 
-Next ids: **M157+, R86+, questions from 107.**
+Next ids: **M166+, R86+, questions from 113.**
 
-1. **Next branch: the UX round the user accepted on 2026-11-05** (mockups:
-   https://claude.ai/artifact/J6oQVVs2u6fZ1zWfMscKef). Record the decisions in
-   `docs/plans/addons/trailkit-memo.md`, amending M136 and M153/M154 where needed:
-   - Row 1: the tool rail is always visible, `⋮` goes away.
-   - Row 2: the delete toast says "Moved to the trash" and offers "Open trash"
-     next to "Undo".
-   - Row 3: a `⋯` button next to Edit offers Rename, Move to, Reset type, Delete;
-     right-click stays.
-   - Row 5: arrow keys in the note list with a visible focus; tooltips name
-     their shortcut.
-   - Row 4 (editor that hides markdown outside the active line) is **not** agreed
-     for building: it needs its own grill round, it is the biggest change.
+1. **Finish branch `feature/memo-ux-round`** (local only, nothing pushed; work
+   continues here, on no other branch). Decisions M157–M165 are in
+   `docs/plans/addons/trailkit-memo.md`; the latest DLL is deployed.
+   - **The user is testing in game.** Not yet confirmed: `⋯` menu, Rename from it
+     (title selected; the focus may behave differently in game than in the test
+     renderer), "Open trash" (also with the sidebar hidden), toast buttons in a
+     narrow window, delete and undo in the drawer. Fixes the user reported so far
+     are M163 and M164. Follow-ups stay on this branch and are redeployed.
+   - **Q112 is open:** split `draw_toast` (103 code lines, hint at 80) by moving
+     the layout calculation into its own function? Recommendation: yes, a small
+     commit on this branch.
+   - **Disclosed, not yet answered:** the right-click menu's order changed
+     (Reset type below Move to) because it shares its code with the `⋯` menu (M160);
+     easy to turn back if the user dislikes it.
+   - **Merge only after the user's OK in that conversation** (R74): then push, open
+     the PR into `develop`, `gh pr merge --auto --merge --delete-branch`. No AI
+     attribution in commits or PRs (R68).
+   - Row 4 (editor that hides markdown outside the active line) is **not** part of
+     the branch: it needs its own grill round, it is the biggest change.
 2. **Splits after that (R77), each a small own step:** Q91 `note_list.rs` +
    `draw_group`, Q95 `draw_dropdown`, Q96 `editor/view.rs`, Q105 `markdown_view.rs`.
    All answered yes. Q92 `Text::get`: my recommendation is no, the user has not
-   objected.
+   objected. `Editor::draw` (101 code lines) is a new hint, not yet put to the user:
+   proposed to take it along with Q96 or the editor round.
 3. **Then the M28 order continues:** settings window, export/import, backups,
    help page, release preparation.
 4. Optional, offer once: Light contrast of `reset.daily` on `bg.pressed` is
@@ -141,6 +149,40 @@ Next ids: **M157+, R86+, questions from 107.**
    - In this WSL shell plain `grep` may fail; use `command grep`. Run
      `source ~/.cargo/env` before cargo.
    - Never leave an `eprintln!` debug line before `cargo fmt`.
+
+## Session 17 summary (2026-11-05, branch `feature/memo-ux-round`)
+
+- Commits: `4b5c1f2` UX round, `69a479e` drawer on right click, `1eb1595` drawer
+  on delete and undo, `d1a983f` toast above the drawer.
+- M157 rail always visible, `⋮` and `tool_rail_visible` gone. M158 toast "Moved to
+  the trash" with Undo and Open trash, no count on the icon (Q108). M159 toast
+  buttons below the message or stacked (Q110). M160 `⋯` menu, shared with the
+  context menu through `note_list::EntryMenu`. M161 Rename from `⋯` opens the
+  editor with the title selected, the sidebar stays (Q109, Q111). M162 tooltips
+  name shortcuts.
+- **Arrow keys in the note list were dropped** (Q107, M162): Nexus would send them
+  to the game.
+- M163/M164 (user reports): only a left click on a note closes the drawer. M165:
+  toast card in its own draw list.
+- Shared: `menu::place_next_popup`, `ToastAction`, `Icon::ELLIPSIS` (U+E0B6).
+
+## Facts learned in session 17
+
+- Any layout shift silently breaks fixed coordinates in `states.rs`: `--update`
+  stays green while hovers miss. After `ui-test --update`, group the snapshots by
+  md5 and compare with the groups at `HEAD`: `hover-badge-count = hover-group-arrow =
+  hover-group` and `hover-selected-row = hover-task-text = note = memo-wide` are the
+  known identical sets (`collapsed-group` joining one exposed a missed click).
+- With the rail the columns start at: rail x 12–44, list 52–244, note pane 252–628
+  (window 640 wide, test fonts).
+- A child window's background lands in the parent's draw list, so a later sibling
+  (the drawer) covers it and the parent's other children can show through. Overlays
+  draw their card in their own list (`draw_background(false)`, as the scrim does); a
+  borderless child has no window padding and is not clipped at its edge.
+- Selecting through `select` closes the drawer; use `change_selected` when the
+  list must stay open.
+- Nexus logs "Loaded addon" 1–2 s after the deploy returns: check the log again
+  before calling a reload failed.
 
 ## Session 16 summary (2026-11-05)
 
@@ -336,7 +378,7 @@ Next ids: **M157+, R86+, questions from 107.**
 ## Recurring checks
 
 - GW2 wiki (2026-10-31): still behind Cognito login → Wayback workaround stays.
-- C-703/25 P (checked 2026-11-05, session 16: search found no judgment or hearing, sources only from 2025; check again next session): still
+- C-703/25 P (checked 2026-11-05, session 17: search found no judgment or hearing, sources only from 2025; check again next session): still
   pending, no hearing date or judgment reported; DPF in force. Microsoft intervened for the
   Commission; noyb asked for repeal (2026-06-30) but has not sued yet.
 - DPF reminder workflow: the 2026-11-01 08:00 cron was silently skipped by
