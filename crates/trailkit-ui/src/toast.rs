@@ -6,7 +6,7 @@
 //! drawn as a child window, so it lies above the window's content and takes
 //! the clicks there.
 
-use nexus::imgui::{ChildWindow, StyleColor, StyleVar, Ui, WindowHoveredFlags};
+use nexus::imgui::{ChildWindow, Ui, WindowHoveredFlags};
 
 use crate::{
     button::{button_width, draw_button},
@@ -147,24 +147,34 @@ pub fn draw_toast(
         window_position[0] + ((window_size[0] - width) / 2.0).max(0.0),
         window_position[1] + window_size[1] - bottom_gap - height,
     ]);
-    let _colors = [
-        ui.push_style_color(StyleColor::ChildBg, theme.surface.popup.to_array()),
-        ui.push_style_color(StyleColor::Border, theme.border.color.to_array()),
-    ];
-    let _rounding = ui.push_style_var(StyleVar::ChildRounding(theme.radius.medium));
-    let window_padding = ui.push_style_var(StyleVar::WindowPadding([padding, padding]));
-    let token = ChildWindow::new("##toast")
+    // A child without a border has no window padding. ImGui renders a child's
+    // background into the parent's draw list, below everything drawn before
+    // (the drawer, a note's text), so the card goes into the toast's own list.
+    let Some(_toast) = ChildWindow::new("##toast")
         .size([width, height])
-        .border(true)
+        .draw_background(false)
         .scroll_bar(false)
         .scrollable(false)
-        .begin(ui);
-    window_padding.pop();
-    let Some(_toast) = token else {
+        .begin(ui)
+    else {
         return outcome;
     };
+    let card_start = ui.window_pos();
+    let card_end = [card_start[0] + width, card_start[1] + height];
+    {
+        let draw_list = ui.get_window_draw_list();
+        draw_list
+            .add_rect(card_start, card_end, theme.surface.popup.to_array())
+            .filled(true)
+            .rounding(theme.radius.medium)
+            .build();
+        draw_list
+            .add_rect(card_start, card_end, theme.border.color.to_array())
+            .rounding(theme.radius.medium)
+            .build();
+    }
     toast.hovered = ui.is_window_hovered_with_flags(WindowHoveredFlags::CHILD_WINDOWS);
-    let [left, top] = ui.cursor_screen_pos();
+    let [left, top] = [card_start[0] + padding, card_start[1] + padding];
     let right = left + width - 2.0 * padding;
     let line_offset = (row_height - ui.text_line_height()) / 2.0;
     ui.set_cursor_screen_pos([left, top + line_offset]);
