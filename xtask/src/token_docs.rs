@@ -517,6 +517,12 @@ fn render_document() -> String {
     document
 }
 
+/// Whether `committed` is `generated`, whatever line endings the checkout gave
+/// it: Git may check text files out with CRLF on Windows.
+fn is_same_document(committed: &str, generated: &str) -> bool {
+    committed.replace("\r\n", "\n") == generated
+}
+
 /// Writes the document, or in [`Mode::Check`] verifies it.
 ///
 /// # Errors
@@ -533,7 +539,7 @@ pub fn run(mode: Mode) -> Result<()> {
         Mode::Check => {
             let committed =
                 fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
-            if committed != document {
+            if !is_same_document(&committed, &document) {
                 bail!("{DOCUMENT_PATH} is out of date; run `cargo xtask tokens`");
             }
         }
@@ -550,6 +556,13 @@ mod tests {
         if let Err(error) = run(Mode::Check) {
             panic!("{error:#}");
         }
+    }
+
+    #[test]
+    fn line_endings_of_the_checkout_do_not_matter() {
+        assert!(is_same_document("a\r\nb\r\n", "a\nb\n"));
+        assert!(is_same_document("a\nb\n", "a\nb\n"));
+        assert!(!is_same_document("a\r\nc\r\n", "a\nb\n"));
     }
 
     #[test]
