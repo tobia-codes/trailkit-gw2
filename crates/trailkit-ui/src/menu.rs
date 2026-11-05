@@ -12,6 +12,19 @@ use crate::{
     theme::Theme,
 };
 
+/// Draws the popup `id` if it is open, with `content` inside it. Every popup
+/// goes through here so that its rows hover in `bg.popup_hover` (ROADMAP R80).
+pub fn draw_popup(ui: &Ui, theme: &Theme, id: &str, content: impl FnOnce()) {
+    ui.popup(id, || {
+        let hover = theme.surface.popup_hover.to_array();
+        let _colors = [
+            ui.push_style_color(StyleColor::HeaderHovered, hover),
+            ui.push_style_color(StyleColor::HeaderActive, hover),
+        ];
+        content();
+    });
+}
+
 /// Draws a menu item and returns whether it was clicked. A `checked` item
 /// shows a check mark in the accent color at its right end.
 pub fn draw_menu_item(ui: &Ui, theme: &Theme, label: &str, checked: bool) -> bool {

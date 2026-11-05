@@ -27,6 +27,7 @@ and `theme.rs` disagree, `theme.rs` wins and the difference is a bug to report.
 | Content region | `bg.panel` via `pane::draw_pane` | a bare `ChildWindow` |
 | Text field, search | `bg.input` | |
 | Hovered row or ghost button | `bg.hover` | a brass hover |
+| Hovered row inside a popup | `bg.popup_hover` via `menu::draw_popup` | `bg.hover`, invisible on `bg.popup` |
 | Selected row, pressed button | `bg.active` + selection bar | a brass fill |
 | Body text, headings | `text.primary` | |
 | Counts, ids, hints, placeholders | `text.secondary` | `text.disabled` for readable text |

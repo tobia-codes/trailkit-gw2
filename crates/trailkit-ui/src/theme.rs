@@ -80,6 +80,9 @@ pub struct SurfaceColors {
     pub active: Color,
     /// `bg.popup`: popups, tooltips, menus.
     pub popup: Color,
+    /// `bg.popup_hover`: hovered and pressed rows inside popups, where
+    /// `bg.hover` is almost invisible on `bg.popup` (ROADMAP R80).
+    pub popup_hover: Color,
     /// `overlay.modal`: dimming behind modal dialogs.
     pub modal_overlay: Color,
 }
@@ -366,6 +369,7 @@ impl Theme {
             hover: Color::from_rgb_hex(0x1D232C),
             active: Color::from_rgb_hex(0x232A35),
             popup: Color::from_rgb_hex(0x1A2029),
+            popup_hover: Color::from_rgb_hex(0x2A323E),
             modal_overlay: Color::from_rgba_hex(0x0507_0AB8),
         },
         text: TextColors {
@@ -446,6 +450,7 @@ impl Theme {
             hover: Color::from_rgb_hex(0xF0EEE9),
             active: Color::from_rgb_hex(0xE7E3DB),
             popup: Color::from_rgb_hex(0xFFFFFF),
+            popup_hover: Color::from_rgb_hex(0xE7E3DB),
             modal_overlay: Color::from_rgba_hex(0x1410_0873),
         },
         text: TextColors {
@@ -550,6 +555,7 @@ mod tests {
                 ("bg.panel", theme.surface.panel),
                 ("bg.input", theme.surface.input),
                 ("bg.popup", theme.surface.popup),
+                ("bg.popup_hover", theme.surface.popup_hover),
                 ("bg.hover", theme.surface.hover),
                 ("bg.active", theme.surface.active),
             ];

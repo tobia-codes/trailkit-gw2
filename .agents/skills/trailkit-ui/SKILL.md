@@ -44,7 +44,7 @@ in the crate, document here):
 
 | Group | Tokens |
 |-------|--------|
-| Surface | `bg.window`, `bg.panel`, `bg.input`, `bg.hover`, `bg.active`, `bg.popup`, `overlay.modal` |
+| Surface | `bg.window`, `bg.panel`, `bg.input`, `bg.hover`, `bg.active`, `bg.popup`, `bg.popup_hover`, `overlay.modal` |
 | Text | `text.primary`, `text.secondary`, `text.disabled`, `text.link`, `text.on_accent` |
 | Accent | `accent` (brass fill: primary button, selection bar), `accent.hover`, `accent.active`, `accent.text` (brass as text, icon or line), `accent.highlight` (translucent brass behind search hits, R73) |
 | Status | `success`, `warning`, `danger`, `info` |

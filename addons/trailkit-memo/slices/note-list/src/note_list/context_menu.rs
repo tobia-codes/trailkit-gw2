@@ -9,7 +9,7 @@ use trailkit_memo_shared::{
 };
 use trailkit_ui::{
     icons::Icon,
-    menu::{MenuItemTone, begin_submenu, draw_menu_item, draw_menu_item_with_icon},
+    menu::{MenuItemTone, begin_submenu, draw_menu_item, draw_menu_item_with_icon, draw_popup},
 };
 
 use super::{NoteListAction, RenameStep, RowContext, delete::blocks_delete};
@@ -24,7 +24,7 @@ pub(super) fn draw_context_menu(
     context: &mut RowContext<'_, '_>,
 ) {
     let (language, theme) = (context.language, context.theme);
-    ui.popup("context", || {
+    draw_popup(ui, theme, "context", || {
         if MenuItem::new(NoteListText::Rename.get(language)).build(ui) {
             context.rename_steps.push(RenameStep::Start(node));
         }

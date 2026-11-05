@@ -16,7 +16,7 @@ use trailkit_ui::{
     font_registry::FontScope,
     fonts::FontRole,
     icons::Icon,
-    menu::{MenuItemTone, draw_menu_item_with_icon},
+    menu::{MenuItemTone, draw_menu_item_with_icon, draw_popup},
     selection_bar::{draw_row_highlight_in, draw_selection_bar_in, hide_square_row_highlight},
     separator::draw_separator,
     theme::Theme,
@@ -133,7 +133,7 @@ fn draw_entry_row(
         action = Some(TrashAction::Select(id));
         ui.open_popup("trash_context");
     }
-    ui.popup("trash_context", || {
+    draw_popup(ui, theme, "trash_context", || {
         if let Some(chosen) = draw_entry_menu(ui, language, theme, id) {
             action = Some(chosen);
         }

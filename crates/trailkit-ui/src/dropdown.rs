@@ -9,7 +9,7 @@ use nexus::imgui::{ImColor32, Selectable, Ui};
 
 use crate::{
     button::draw_label, color::Color, font_registry::FontScope, fonts::FontRole, icons::Icon,
-    theme::Theme,
+    menu::draw_popup, theme::Theme,
 };
 
 /// The width of a dropdown with `options`: the widest option plus padding,
@@ -86,7 +86,7 @@ pub fn draw_dropdown(
     }
     let mut picked = None;
     let mut is_open = false;
-    ui.popup(popup_id, || {
+    draw_popup(ui, theme, popup_id, || {
         is_open = true;
         for (index, option) in options.iter().enumerate() {
             let is_selected = index == selected;
