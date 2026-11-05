@@ -155,10 +155,17 @@ pub fn draw_menu_item_with_icon(
     // ImGui keeps room for a check mark after the label; the label moves
     // right by the icon, which fits into that room.
     let clicked = {
-        let _hidden = ui.push_style_color(StyleColor::Text, [0.0; 4]);
+        // A disabled item draws its label in `TextDisabled`, not `Text`.
+        let _hidden = [
+            ui.push_style_color(StyleColor::Text, [0.0; 4]),
+            ui.push_style_color(StyleColor::TextDisabled, [0.0; 4]),
+        ];
         MenuItem::new(label).enabled(enabled).build(ui)
     };
-    draw_menu_row_highlight(ui, theme, false);
+    // ImGui reports the hover of a disabled item once the item has ended.
+    if enabled {
+        draw_menu_row_highlight(ui, theme, false);
+    }
     let color = match (enabled, tone) {
         (false, _) => theme.text.disabled,
         (true, MenuItemTone::Regular) => theme.text.primary,

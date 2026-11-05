@@ -15,13 +15,13 @@ Das Fenster zeigt links die Notizliste und rechts die ausgewählte Notiz. Ziehe 
 In der Titelleiste sitzen vier Buttons:
 
 - **Werkzeuge** (drei Punkte), oben links: blendet die Werkzeugleiste am linken Rand mit *Suchen* und dem *Papierkorb* ein oder aus. Sie ist anfangs ausgeblendet; memo merkt sich deine Wahl.
-- **Listen-Button** daneben: blendet die Notizliste aus, damit die Notiz die ganze Breite bekommt; ein weiterer Klick blendet sie wieder ein. memo merkt sich deine Wahl.
+- **Seitenleisten-Button** daneben: blendet die linke Spalte (Notizliste oder Papierkorb) aus, damit die Notiz die ganze Breite bekommt; ein weiterer Klick blendet sie wieder ein. memo merkt sich deine Wahl.
 - **Pfeil** rechts: klappt das Fenster auf seine Titelleiste ein (erneut klicken zum Ausklappen); **×** schließt es.
 
 Ein hinterlegter Button bedeutet: Was er schaltet, ist gerade eingeblendet.
 
 - **Kompakte Ansicht** (Pfeile-Button, oben links in der Notiz): blendet die Leiste mit *Bearbeiten* und das Typ-Feld aus, damit die Notiz mehr Platz bekommt. Der Button hinter dem Titel beendet sie wieder. Andere Notizen auswählen und Kästchen abhaken geht weiter; eine Notiz bearbeiten (auch per Doppelklick) oder eine neue anlegen beendet die kompakte Ansicht. memo merkt sie sich. Zusammen mit ausgeblendeter Notizliste bleibt nur die Notiz übrig.
-- **Schmales Fenster:** Die Notiz füllt das Fenster, und der Listen-Button öffnet die Notizliste darüber. Wähle eine Notiz, klicke auf die abgedunkelte Notiz oder erneut auf den Listen-Button, um die Liste zu schließen. Beim Bearbeiten mit offener Vorschau schaltet memo schon früher um, damit Text und Vorschau Platz behalten.
+- **Schmales Fenster:** Die Notiz füllt das Fenster, und der Seitenleisten-Button öffnet die Notizliste darüber. Wähle eine Notiz, klicke auf die abgedunkelte Notiz oder erneut auf den Seitenleisten-Button, um die Liste zu schließen. Beim Bearbeiten mit offener Vorschau schaltet memo schon früher um, damit Text und Vorschau Platz behalten.
 
 - **Neue Notiz / neue Gruppe:** die beiden Buttons über der Liste. Der neue Eintrag landet in der ausgewählten Gruppe (bzw. der Gruppe der ausgewählten Notiz), ganz am Ende. Tippe gleich einen Namen ein und drücke Enter.
 - **Rechtsklick** auf eine Gruppe oder eine leere Stelle der Liste bietet dasselbe: auf einer Gruppe kommt der neue Eintrag in sie hinein, auf einer leeren Stelle ans Ende der Liste.
@@ -35,7 +35,7 @@ Ein hinterlegter Button bedeutet: Was er schaltet, ist gerade eingeblendet.
 
 ## Papierkorb
 
-Klicke auf den **Papierkorb** in der Werkzeugleiste (drei Punkte in der Titelleiste), um statt der Notizliste den Papierkorb zu sehen; ein zweiter Klick bringt dich zurück zu deinen Notizen. Gelöschte Notizen und Gruppen bleiben dort **30 Tage** und werden dann endgültig entfernt. Jeder Eintrag zeigt, wie viele Tage noch bleiben – in der letzten Woche rot.
+Klicke auf den **Papierkorb** in der Werkzeugleiste (drei Punkte in der Titelleiste), um statt der Notizliste den Papierkorb zu sehen; ein zweiter Klick oder der **Zurück-Pfeil** neben *Papierkorb* bringt dich zurück zu deinen Notizen. Gelöschte Notizen und Gruppen bleiben dort **30 Tage** und werden dann endgültig entfernt. Jeder Eintrag zeigt, wie viele Tage noch bleiben – in der letzten Woche rot.
 
 - Klicke einen Eintrag an, um ihn rechts zu lesen. Bearbeiten lässt er sich dort nicht.
 - **Wiederherstellen** (oder Rechtsklick › *Wiederherstellen*) legt ihn dorthin zurück, wo er war. Gibt es seine Gruppe nicht mehr, landet er am Ende der Liste. Eine Gruppe kommt mit allem darin zurück.

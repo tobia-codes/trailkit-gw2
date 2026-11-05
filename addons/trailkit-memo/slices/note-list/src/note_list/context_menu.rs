@@ -10,6 +10,7 @@ use trailkit_memo_shared::{
 use trailkit_ui::{
     icons::Icon,
     menu::{MenuItemTone, begin_submenu, draw_menu_item, draw_menu_item_with_icon, draw_popup},
+    separator::draw_compact_separator,
     theme::Theme,
 };
 
@@ -39,7 +40,7 @@ pub(super) fn draw_context_menu(
         }
         // Only groups offer creating, into themselves (M96, M97).
         if let NodeId::Group(group) = node {
-            ui.separator();
+            draw_compact_separator(ui, theme);
             draw_create_menu_items(
                 ui,
                 language,
@@ -50,7 +51,7 @@ pub(super) fn draw_context_menu(
         }
         // Deleting comes last, set off by a separator (M133); the edited
         // note and its groups wait until the editor is left (M141).
-        ui.separator();
+        draw_compact_separator(ui, theme);
         let blocked = blocks_delete(context.document, node, context.edited);
         if draw_menu_item_with_icon(
             ui,

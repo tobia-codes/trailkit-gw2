@@ -214,10 +214,10 @@ pub enum Text {
     NoNotesYet,
     /// Primary empty-state button.
     CreateFirstNote,
-    /// Tooltip of the note list toggle while the list is hidden (M48, M137).
-    ShowNoteList,
-    /// Tooltip of the note list toggle while the list is shown (M48, M137).
-    HideNoteList,
+    /// Tooltip of the left column toggle while the column is hidden (M153).
+    ShowSidebar,
+    /// Tooltip of the left column toggle while the column is shown (M153).
+    HideSidebar,
     /// Tooltip of the tool rail toggle while the rail is hidden (M136).
     ShowTools,
     /// Tooltip of the tool rail toggle while the rail is shown (M136).
@@ -269,8 +269,8 @@ impl LocalizedText for Text {
         Self::NewGroup,
         Self::NoNotesYet,
         Self::CreateFirstNote,
-        Self::ShowNoteList,
-        Self::HideNoteList,
+        Self::ShowSidebar,
+        Self::HideSidebar,
         Self::ShowTools,
         Self::HideTools,
         Self::ShowSearch,
@@ -346,10 +346,10 @@ impl LocalizedText for Text {
             (Self::NoNotesYet, Language::German) => "Noch keine Notizen",
             (Self::CreateFirstNote, Language::English) => "Create your first note",
             (Self::CreateFirstNote, Language::German) => "Erste Notiz anlegen",
-            (Self::ShowNoteList, Language::English) => "Show note list",
-            (Self::ShowNoteList, Language::German) => "Notizliste einblenden",
-            (Self::HideNoteList, Language::English) => "Hide note list",
-            (Self::HideNoteList, Language::German) => "Notizliste ausblenden",
+            (Self::ShowSidebar, Language::English) => "Show sidebar",
+            (Self::ShowSidebar, Language::German) => "Seitenleiste einblenden",
+            (Self::HideSidebar, Language::English) => "Hide sidebar",
+            (Self::HideSidebar, Language::German) => "Seitenleiste ausblenden",
             (Self::ShowTools, Language::English) => "Show tools",
             (Self::ShowTools, Language::German) => "Werkzeuge einblenden",
             (Self::HideTools, Language::English) => "Hide tools",

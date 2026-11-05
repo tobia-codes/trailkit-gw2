@@ -58,6 +58,16 @@ pub enum TrashText {
     DeleteGroupTitle,
     /// Explanation when deleting a group with notes; `{count}` is replaced.
     DeleteGroupText,
+    /// Dialog text for a group with exactly one note, moving to the trash.
+    DeleteGroupOneNoteText,
+    /// Dialog text for a group with exactly one note, deleted for good.
+    DeleteGroupPermanentlyOneNoteText,
+    /// Number of entries in the trash; `{count}` is replaced.
+    EntryCount,
+    /// One entry in the trash.
+    OneEntry,
+    /// Tooltip of the back arrow in the trash header (M154).
+    BackToNotes,
     /// Confirm button of the group delete dialog.
     Delete,
     /// Toast after deleting (M148); `{title}` is replaced.
@@ -92,6 +102,11 @@ impl LocalizedText for TrashText {
         Self::EmptyTrashText,
         Self::DeleteGroupTitle,
         Self::DeleteGroupText,
+        Self::DeleteGroupOneNoteText,
+        Self::DeleteGroupPermanentlyOneNoteText,
+        Self::EntryCount,
+        Self::OneEntry,
+        Self::BackToNotes,
         Self::Delete,
         Self::Deleted,
         Self::Undo,
@@ -134,8 +149,17 @@ const fn english(text: TrashText) -> &'static str {
         }
         TrashText::EmptyTrashTitle => "Empty the trash?",
         TrashText::EmptyTrashText => {
-            "{entries} entries ({notes} notes) will be deleted permanently. This cannot be undone."
+            "Everything in the trash ({entries}, {notes}) will be deleted permanently. This cannot be undone."
         }
+        TrashText::DeleteGroupOneNoteText => {
+            "The group and the note in it move to the trash. You can restore them for 30 days."
+        }
+        TrashText::DeleteGroupPermanentlyOneNoteText => {
+            "The group and the note in it will be deleted permanently. This cannot be undone."
+        }
+        TrashText::EntryCount => "{count} entries",
+        TrashText::OneEntry => "1 entry",
+        TrashText::BackToNotes => "Back to notes",
         TrashText::DeleteGroupTitle => "Delete \u{201c}{title}\u{201d}?",
         TrashText::DeleteGroupText => {
             "The group and the {count} notes in it move to the trash. You can restore them for 30 days."
@@ -175,8 +199,17 @@ const fn german(text: TrashText) -> &'static str {
         }
         TrashText::EmptyTrashTitle => "Papierkorb leeren?",
         TrashText::EmptyTrashText => {
-            "{entries} Einträge ({notes} Notizen) werden endgültig gelöscht. Das lässt sich nicht rückgängig machen."
+            "Alles im Papierkorb ({entries}, {notes}) wird endgültig gelöscht. Das lässt sich nicht rückgängig machen."
         }
+        TrashText::DeleteGroupOneNoteText => {
+            "Die Gruppe und die Notiz darin kommen in den Papierkorb. Du kannst sie 30 Tage lang wiederherstellen."
+        }
+        TrashText::DeleteGroupPermanentlyOneNoteText => {
+            "Die Gruppe und die Notiz darin werden endgültig gelöscht. Das lässt sich nicht rückgängig machen."
+        }
+        TrashText::EntryCount => "{count} Einträge",
+        TrashText::OneEntry => "1 Eintrag",
+        TrashText::BackToNotes => "Zurück zu den Notizen",
         TrashText::DeleteGroupTitle => "\u{201e}{title}\u{201c} löschen?",
         TrashText::DeleteGroupText => {
             "Die Gruppe und die {count} Notizen darin kommen in den Papierkorb. Du kannst sie 30 Tage lang wiederherstellen."

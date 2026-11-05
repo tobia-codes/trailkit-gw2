@@ -21,7 +21,7 @@ use crate::{
     fonts::FontRole,
     icons::Icon,
     markdown::{Block, ListMarker, MarkdownDocument, Span, TaskMarker},
-    separator::draw_separator,
+    separator::draw_compact_separator,
     text_search::SearchQuery,
     theme::Theme,
 };
@@ -86,6 +86,15 @@ struct LineBounds {
     left: f32,
     /// Right edge no text may cross (screen x).
     right: f32,
+}
+
+/// The font of the first line of `document`, e.g. to keep an even gap above it.
+#[must_use]
+pub fn first_line_font(document: &MarkdownDocument) -> FontRole {
+    match document.blocks.first() {
+        Some(Block::Heading { level, .. }) => FontRole::heading(*level),
+        _ => FontRole::Body,
+    }
 }
 
 /// Draws `document` at the cursor position and returns what the user
@@ -187,7 +196,7 @@ pub fn draw_markdown(
                 marker_click.or(text_click)
             }
             Block::Rule => {
-                draw_separator(ui, theme);
+                draw_compact_separator(ui, theme);
                 None
             }
         };

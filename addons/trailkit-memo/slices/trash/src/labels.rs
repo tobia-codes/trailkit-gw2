@@ -64,9 +64,14 @@ pub fn delete_permanently_question(node: &TreeNode, language: Language) -> (Stri
         TreeNode::Note(_) => TrashText::DeleteNotePermanentlyText
             .get(language)
             .to_owned(),
-        TreeNode::Group(group) => TrashText::DeleteGroupPermanentlyText
-            .get(language)
-            .replace("{count}", &group.note_count().to_string()),
+        TreeNode::Group(group) => match group.note_count() {
+            1 => TrashText::DeleteGroupPermanentlyOneNoteText
+                .get(language)
+                .to_owned(),
+            count => TrashText::DeleteGroupPermanentlyText
+                .get(language)
+                .replace("{count}", &count.to_string()),
+        },
     };
     (title, text)
 }
@@ -81,10 +86,16 @@ pub fn empty_trash_question(trash: &[TrashEntry], language: Language) -> (String
             TreeNode::Group(group) => group.note_count(),
         })
         .sum();
+    let entries = match trash.len() {
+        1 => TrashText::OneEntry.get(language).to_owned(),
+        count => TrashText::EntryCount
+            .get(language)
+            .replace("{count}", &count.to_string()),
+    };
     let text = TrashText::EmptyTrashText
         .get(language)
-        .replace("{entries}", &trash.len().to_string())
-        .replace("{notes}", &notes.to_string());
+        .replace("{entries}", &entries)
+        .replace("{notes}", &note_count(notes, language));
     (TrashText::EmptyTrashTitle.get(language).to_owned(), text)
 }
 
@@ -96,9 +107,12 @@ pub fn delete_group_question(title: &str, notes: usize, language: Language) -> (
         TrashText::DeleteGroupTitle
             .get(language)
             .replace("{title}", title),
-        TrashText::DeleteGroupText
-            .get(language)
-            .replace("{count}", &notes.to_string()),
+        match notes {
+            1 => TrashText::DeleteGroupOneNoteText.get(language).to_owned(),
+            count => TrashText::DeleteGroupText
+                .get(language)
+                .replace("{count}", &count.to_string()),
+        },
     )
 }
 
@@ -157,6 +171,19 @@ mod tests {
     #[test]
     fn the_empty_trash_question_counts_entries_and_notes() {
         let (_, text) = empty_trash_question(&[entry(), entry()], Language::English);
-        assert!(text.starts_with("2 entries (2 notes)"));
+        assert!(text.contains("(2 entries, 2 notes)"));
+    }
+
+    #[test]
+    fn dialogs_use_the_singular_for_one_note_and_one_entry() {
+        for language in [Language::English, Language::German] {
+            let (_, group_text) = delete_group_question("Raids", 1, language);
+            assert!(!group_text.contains('1'), "{group_text}");
+            let (_, empty_text) = empty_trash_question(&[entry()], language);
+            let singular_entry = TrashText::OneEntry.get(language);
+            let singular_note = TrashText::OneNote.get(language);
+            assert!(empty_text.contains(singular_entry), "{empty_text}");
+            assert!(empty_text.contains(singular_note), "{empty_text}");
+        }
     }
 }

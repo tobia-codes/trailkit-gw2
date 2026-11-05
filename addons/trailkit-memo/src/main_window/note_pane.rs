@@ -62,7 +62,10 @@ impl MemoWindow {
             }
         }
         self.draw_note_toolbar_end(ui, language, theme);
-        draw_separator(ui, theme);
+        // Without a note there is no toolbar above that a line could set off.
+        if self.editor.is_some() || self.selected_note().is_some() {
+            draw_separator(ui, theme);
+        }
         if self.editor.is_some() {
             self.draw_editor(ui, language, theme);
         } else {

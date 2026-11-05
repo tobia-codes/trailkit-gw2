@@ -21,7 +21,7 @@ use trailkit_memo_shared::{
 };
 use trailkit_ui::{
     button::icon_button_width, font_registry::FontScope, fonts::FontRole, icons::Icon,
-    separator::draw_separator, text_search::SearchQuery, theme::Theme,
+    separator::draw_separator_above_rows, text_search::SearchQuery, theme::Theme,
 };
 
 use crate::tree_drag::{
@@ -274,7 +274,7 @@ impl NoteList {
                 clicked_action = Some(action);
             }
         }
-        draw_separator(ui, theme);
+        draw_separator_above_rows(ui, theme);
         clicked_action
     }
 

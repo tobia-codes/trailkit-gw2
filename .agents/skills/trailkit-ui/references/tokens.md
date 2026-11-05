@@ -99,6 +99,14 @@ editor's formatting buttons that light up for the formatting at the cursor
   + `draw_row_highlight`, popups use `menu::draw_popup` with the `menu` entries
   (never a bare `MenuItem` or `ui.popup`).
 - Every window, pane, popup and dialog has the 1 px `border.subtle` outline.
+- **Dividers (R83)** come from `separator`, never `ui.separator()`, and have the
+  same gap above and below, measured to the visible content (letters, an icon,
+  a button edge); the fill of a hovered row may come closer:
+  - **Section, `spacing.medium` 12:** `draw_separator` (buttons, fields),
+    `draw_separator_above_rows` (fill of the first row `list.item_spacing` away),
+    `draw_separator_above_text` (the text's own leading counts as gap).
+  - **Compact, `spacing.small` 8:** `draw_compact_separator`, inside a tight
+    group: menus, a rule in a note's body.
 - Text buttons are at least `button.min_width` × font size wide (M131);
   measure rows with `button_width` / `icon_label_button_width`, never with
   `calc_text_size` + padding, or right-aligned rows drift.
@@ -146,3 +154,40 @@ test fails otherwise.
 - [ ] Chips use their category colors; invalid links are warnings
 - [ ] Radius matches the element, nothing is square, hover states included (§5, R81)
 - [ ] Readable in Dark and Light; new text tokens are in the contrast test
+
+## 10. Every state has a snapshot, every snapshot gets reviewed (R82)
+
+A UI change is not done, and not handed to the user for an in-game test,
+until its snapshots have been reviewed against this file.
+
+**Coverage.** Every element of every addon has a snapshot of each state it can
+be in, in Dark **and** Light:
+
+- Interaction: rest, hover, pressed, selected, on/off, disabled, focused,
+  open, dragged.
+- Content: empty, filled, long/scrolled, narrow window, error or problem hint.
+
+Each state is covered once per element; the cross product of independent
+states is not needed. Shared components live in
+`crates/trailkit-ui/tests/component_states.rs` (`ui-<component>-<state>-<theme>`),
+addon views in `addons/<addon>/src/main_window/tests/states.rs`
+(`<addon>-state-<name>-<theme>`). A new element or state adds its snapshot in
+the same change.
+
+**Review.** Look at every new or changed snapshot, the whole element and not
+only what the change was about, and go through §9:
+
+- [ ] Every corner rounded with the right radius, hover states included (§5)
+- [ ] Tokens: colors, spacing and borders as in §2 and §3
+- [ ] Alignment and equal gaps between neighbors
+- [ ] The state is visible at all, in both themes
+- [ ] Texts fit and are not clipped
+
+Check the snapshot actually shows the state: a hover that misses its element
+looks like a rest state and passes silently. Fix or report what the review
+finds before accepting with `--update`.
+
+**Limits.** The test renderer uses 16 px fonts (18 px in game), samples
+textures nearest-neighbour and shows no game behind the window. Sizes that
+depend on the font, and anything depending on the real game, stay in-game
+checks.

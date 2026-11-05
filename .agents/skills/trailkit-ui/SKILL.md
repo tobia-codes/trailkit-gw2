@@ -12,7 +12,8 @@ charts) lives in [`references/ux-rules.md`](references/ux-rules.md) — read it
 before designing a new window or component and when reviewing UI. How to use
 the theme tokens (which token for what, the brass budget, chips, selection,
 adding a token) is binding in [`references/tokens.md`](references/tokens.md) —
-read it before touching any color, size or radius. Do not apply
+read it before touching any color, size or radius, and review every new or
+changed snapshot against it before handing a UI change over (§10, R82). Do not apply
 generic web/mobile UI guidelines (touch targets, breakpoints, CSS, …) here.
 
 ## 1. Principles

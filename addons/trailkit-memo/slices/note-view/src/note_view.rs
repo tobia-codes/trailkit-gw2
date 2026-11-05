@@ -13,8 +13,8 @@ use trailkit_ui::{
     fonts::FontRole,
     glyph_metrics::capital_middle,
     markdown::{self, MarkdownDocument},
-    markdown_view::{MarkdownAction, SearchHighlight, draw_markdown},
-    separator::draw_separator,
+    markdown_view::{MarkdownAction, SearchHighlight, draw_markdown, first_line_font},
+    separator::draw_separator_above_text,
     text_search::SearchQuery,
     theme::Theme,
 };
@@ -160,7 +160,11 @@ impl NoteView {
         if let Some(read_only) = input.read_only {
             ui.text_colored(theme.text.secondary.to_array(), read_only.subtitle);
         }
-        draw_separator(ui, theme);
+        let first_line = self
+            .parsed
+            .as_ref()
+            .map_or(FontRole::Body, |parsed| first_line_font(&parsed.document));
+        draw_separator_above_text(ui, theme, first_line);
         let editable = input.read_only.is_none();
         if editable && ui.is_window_hovered() && ui.is_mouse_double_clicked(MouseButton::Left) {
             output.actions.push(NoteViewAction::StartEditing);

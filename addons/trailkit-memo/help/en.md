@@ -15,13 +15,13 @@ The window shows the note list on the left and the selected note on the right. D
 The title bar holds four buttons:
 
 - **Tools** (three dots), top left: shows or hides the tool bar on the left edge with *Search* and the *Trash*. It starts hidden; memo remembers your choice.
-- **List button** next to it: hides the note list so the note gets the full width; click it again to show the list. memo remembers your choice.
+- **Sidebar button** next to it: hides the left column (the note list or the trash) so the note gets the full width; click it again to show it. memo remembers your choice.
 - **Arrow** on the right: collapses the window to its title bar (click it again to expand); **×** closes it.
 
 A highlighted button means that what it switches is shown.
 
 - **Compact view** (arrows button, top left of the note): hides the toolbar with *Edit* and the kind box, so the note gets more room. The button behind the title ends it again. You can still choose other notes and tick checkboxes; editing a note (also by double-click) or creating a new one ends the compact view. memo remembers it. Together with a hidden note list only the note is left.
-- **Narrow window:** the note fills the window and the list button opens the note list over it. Choose a note, click the dimmed note or the list button again to close the list. While you edit with the preview open, memo switches earlier, so text and preview keep their room.
+- **Narrow window:** the note fills the window and the sidebar button opens the note list over it. Choose a note, click the dimmed note or the sidebar button again to close the list. While you edit with the preview open, memo switches earlier, so text and preview keep their room.
 
 - **New note / new group:** the two buttons above the list. The new entry goes into the selected group (or the group of the selected note), at the end. Type a name right away and press Enter.
 - **Right-click** a group or an empty spot of the list for the same actions: on a group the new entry goes into it, on an empty spot at the end of the list.
@@ -35,7 +35,7 @@ A highlighted button means that what it switches is shown.
 
 ## Trash
 
-Click the **trash can** in the tool bar (three dots in the title bar) to see the trash in place of the note list; click it again to go back to your notes. Deleted notes and groups stay there for **30 days** and are then removed for good. Each entry shows how many days are left — red in the last week.
+Click the **trash can** in the tool bar (three dots in the title bar) to see the trash in place of the note list; click it again, or the **back arrow** next to *Trash*, to go back to your notes. Deleted notes and groups stay there for **30 days** and are then removed for good. Each entry shows how many days are left — red in the last week.
 
 - Click an entry to read it on the right. It cannot be edited there.
 - **Restore** (or right-click › *Restore*) puts it back where it was. If its group no longer exists, it goes to the end of the list. A group comes back with everything inside.

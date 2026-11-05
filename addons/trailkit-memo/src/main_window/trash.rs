@@ -279,6 +279,7 @@ impl MemoWindow {
                     });
                 }
             }
+            WindowAction::Trash(TrashAction::LeaveTrash) => self.trash.visible = false,
             WindowAction::Trash(TrashAction::EmptyTrash) => {
                 let (title, text) = labels::empty_trash_question(&self.document.trash, language);
                 self.confirmation = Some(Confirmation {

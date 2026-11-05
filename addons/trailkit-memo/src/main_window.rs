@@ -442,11 +442,11 @@ impl MemoWindow {
                 active: self.ui_state.tool_rail_visible,
             },
             TitleBarToggle {
-                icon: Icon::LIST,
+                icon: Icon::PANEL_LEFT,
                 tooltip: if list_visible {
-                    Text::HideNoteList.get(language)
+                    Text::HideSidebar.get(language)
                 } else {
-                    Text::ShowNoteList.get(language)
+                    Text::ShowSidebar.get(language)
                 },
                 active: list_visible,
             },

@@ -20,7 +20,7 @@ fn raids_and_weekly(document: &NotesDocument) -> (NodeId, Option<NodeId>) {
 }
 
 /// The sample with `days_ago`-old trash entries: a note and a group.
-fn document_with_trash(days_ago: [i64; 2]) -> NotesDocument {
+pub(super) fn document_with_trash(days_ago: [i64; 2]) -> NotesDocument {
     let mut document = sample_document();
     let now = Timestamp::now();
     let mut group = Group::new("Fractals".to_owned());
@@ -153,6 +153,18 @@ fn expired_entries_are_purged() {
     let (mut memo, _worker, _directory) = memo_window(document, UiState::default());
     memo.purge_trash(Timestamp::now());
     assert_eq!(memo.document.trash.len(), 1, "M150");
+}
+
+#[test]
+fn the_back_arrow_leaves_the_trash() {
+    let (mut memo, _worker, _directory) = memo_window(sample_document(), UiState::default());
+    memo.apply(&WindowAction::ToggleTrash, Language::English);
+    assert!(memo.trash.visible);
+    memo.apply(
+        &WindowAction::Trash(TrashAction::LeaveTrash),
+        Language::English,
+    );
+    assert!(!memo.trash.visible, "M154");
 }
 
 #[test]

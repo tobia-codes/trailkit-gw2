@@ -10,15 +10,16 @@ use trailkit_memo_shared::{
 };
 use trailkit_ui::{
     button::{
-        draw_danger_button, draw_danger_icon_button, draw_primary_button_with_icon,
-        icon_button_width, icon_label_button_width,
+        draw_danger_button, draw_danger_icon_button, draw_icon_button,
+        draw_primary_button_with_icon, icon_button_width, icon_label_button_width,
     },
     font_registry::FontScope,
     fonts::FontRole,
     icons::Icon,
     menu::{MenuItemTone, draw_menu_item_with_icon, draw_popup},
     selection_bar::{draw_row_highlight_in, draw_selection_bar_in, hide_square_row_highlight},
-    separator::draw_separator,
+    separator::{draw_compact_separator, draw_separator, draw_separator_above_rows},
+    text_layout::centered_text,
     theme::Theme,
     toolbar::move_to_toolbar_end,
 };
@@ -36,10 +37,13 @@ pub enum TrashAction {
     DeletePermanently(NodeId),
     /// Empty the trash; the app asks first (M146).
     EmptyTrash,
+    /// Go back to the note list (M154).
+    LeaveTrash,
 }
 
 /// Draws the header of the trash column: "Trash" in bold and, with
 /// entries, the `danger` "Empty" button at its right end; then a separator.
+/// A back arrow left of the title returns to the notes (M154).
 pub fn draw_trash_header(
     ui: &Ui,
     language: Language,
@@ -49,13 +53,22 @@ pub fn draw_trash_header(
     let top = ui.cursor_screen_pos()[1];
     let left = ui.cursor_screen_pos()[0];
     let row_height = ui.frame_height();
+    let mut action = None;
+    if draw_icon_button(
+        ui,
+        theme,
+        Icon::ARROW_LEFT,
+        TrashText::BackToNotes.get(language),
+    ) {
+        action = Some(TrashAction::LeaveTrash);
+    }
+    let title_left = ui.item_rect_max()[0] + theme.spacing.small;
     {
         let _bold = FontScope::push(ui, FontRole::BodyBold);
         let text_offset = (row_height - ui.text_line_height()) / 2.0;
-        ui.set_cursor_screen_pos([left, top + text_offset]);
+        ui.set_cursor_screen_pos([title_left, top + text_offset]);
         ui.text(TrashText::Trash.get(language));
     }
-    let mut action = None;
     if has_entries {
         ui.same_line();
         let label = TrashText::EmptyTrash.get(language);
@@ -68,7 +81,7 @@ pub fn draw_trash_header(
         ui.set_cursor_screen_pos([left, top]);
         ui.dummy([0.0, row_height]);
     }
-    draw_separator(ui, theme);
+    draw_separator_above_rows(ui, theme);
     action
 }
 
@@ -193,7 +206,7 @@ fn draw_entry_menu(ui: &Ui, language: Language, theme: &Theme, id: NodeId) -> Op
     ) {
         action = Some(TrashAction::Restore(id));
     }
-    ui.separator();
+    draw_compact_separator(ui, theme);
     let label = format!("{} …", TrashText::DeletePermanently.get(language));
     if draw_menu_item_with_icon(ui, theme, Icon::TRASH_2, &label, MenuItemTone::Danger, None) {
         action = Some(TrashAction::DeletePermanently(id));
@@ -210,9 +223,10 @@ fn draw_empty_state(ui: &Ui, language: Language, theme: &Theme) {
     ];
     let available = ui.content_region_avail();
     let line = ui.text_line_height_with_spacing();
-    let height = 3.0 * line;
+    // The icon and two text lines; the longer text may wrap in a narrow list.
+    let height = 4.0 * line;
     let [left, top] = ui.cursor_screen_pos();
-    let mut y = top + ((available[1] - height) / 2.0).max(0.0);
+    let y = top + ((available[1] - height) / 2.0).max(0.0);
     {
         let _icons = FontScope::push(ui, FontRole::Icons);
         let mut buffer = [0; 4];
@@ -221,11 +235,10 @@ fn draw_empty_state(ui: &Ui, language: Language, theme: &Theme) {
         ui.set_cursor_screen_pos([left + ((available[0] - width) / 2.0).max(0.0), y]);
         ui.text_colored(theme.text.disabled.to_array(), icon);
     }
+    ui.set_cursor_screen_pos([left, y + line]);
+    let _secondary = ui.push_style_color(StyleColor::Text, theme.text.secondary.to_array());
     for text in lines {
-        y += line;
-        let width = ui.calc_text_size(text)[0];
-        ui.set_cursor_screen_pos([left + ((available[0] - width) / 2.0).max(0.0), y]);
-        ui.text_colored(theme.text.secondary.to_array(), text);
+        centered_text(ui, text, available[0]);
     }
 }
 
