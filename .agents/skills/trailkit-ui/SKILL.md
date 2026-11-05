@@ -40,31 +40,16 @@ generic web/mobile UI guidelines (touch targets, breakpoints, CSS, …) here.
 ## 2. Theme tokens
 
 Components never use raw colors or numbers; they read **semantic tokens** from
-the active `Theme` (crate `crates/trailkit-ui`). Token set (initial — extend
-in the crate, document here):
-
-| Group | Tokens |
-|-------|--------|
-| Surface | `bg.window`, `bg.panel`, `bg.input`, `bg.hover`, `bg.active`, `bg.popup`, `bg.popup_hover`, `overlay.modal` |
-| Text | `text.primary`, `text.secondary`, `text.disabled`, `text.link`, `text.on_accent` |
-| Accent | `accent` (brass fill: primary button, selection bar), `accent.hover`, `accent.active`, `accent.text` (brass as text, icon or line), `accent.highlight` (translucent brass behind search hits, R73) |
-| Status | `success`, `warning`, `danger`, `info` |
-| Border | `border` (inputs, dropdowns), `border.focus`, `border.subtle` (windows, panes, popups, dialogs; ~6 % white / ~8 % warm black), `border.width` |
-| Reset | `reset.daily` (brass), `reset.weekly` (violet): reset note badges and kind chip (memo M104; text colors, contrast-tested) |
-| Chip | `chip.place`, `chip.character`, `chip.item`, `chip.progress`, each with `text` and `background` (chat-link categories, R71) |
-| Coin | `coin.gold`, `coin.silver`, `coin.copper` (coin amounts in chat-link chips; graphics, not text) |
-| Event | `event.default`, `event.highlight`, `event.active`, `event.upcoming`, `event.custom` (per category overrides allowed) |
-| Spacing | `space.xs` 4, `space.sm` 8, `space.md` 12, `space.lg` 16, `space.xl` 24 (px at 100 %) |
-| Lists | `list.item_spacing`, `list.indent`, `list.selection_bar_width` 3, `list.selection_bar_inset` 6 |
-| Panes | `pane.padding` 8 (inner padding), `pane.gap` 8 (space between panes) — see `lay-pane-padding` |
-| Buttons | `button.min_width` 4 (× current font size; minimum width of text buttons, not icon buttons) — see `lay-button-min-width` |
-| Shape | `radius.sm` 4 (chips, badges, scrollbar), `radius.md` 6 (buttons, inputs, rows, menus), `radius.lg` 10 (windows, panes, popups, dialogs); user-overridable; custom-drawn frames use them too |
-| Typography | `font.size.small`, `font.size.body`, `font.size.heading`, `font.line_height` (running text: 1.5 × font size, text centered in its line; markdown view and editor) |
+the active `Theme` (crate `crates/trailkit-ui`). Every token with its value in
+both themes and its purpose is listed in
+[`references/token-values.md`](references/token-values.md), generated from
+`theme.rs` by `cargo xtask tokens` (R84); when to use which is binding in
+[`references/tokens.md`](references/tokens.md).
 
 - **Built-in themes:** `Dark` (default) and `Light`. Both are full token sets.
   Values: `crates/trailkit-ui/src/theme.rs` (palette R71, supersedes R51:
-  ink-tinted dark and parchment-warm light surfaces, brass accent; visual
-  reference: the "Trailkit" design system in Claude Design). The themes are
+  ink-tinted dark and parchment-warm light surfaces, brass accent). The
+  "Trailkit" design system in Claude Design is no longer a reference (R84). The themes are
   called just "Dark" and "Light", in code and in the UI. Unit tests enforce
   ≥ 4.5:1 for every text color on every surface and for chip text on its
   fill — add new text/background tokens to them (`references/tokens.md` §8).

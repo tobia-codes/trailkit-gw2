@@ -139,10 +139,10 @@ test fails otherwise.
 3. Text tokens join `text_meets_contrast_minimum_in_every_theme` (≥ 4.5:1 on
    every surface); text on a new fill gets its own contrast test. Graphics
    and focus rings need ≥ 3:1 against their ground.
-4. Add it to the token table in `SKILL.md` §2 and, if it has a rule, here.
-5. Update the "Trailkit" design system (tokens and README) so the visual
-   reference stays in step, and tell the user.
-6. Run `cargo xtask ui-test`; review changed snapshots before accepting them
+4. Document it in `xtask/src/token_docs.rs` (the crate does not compile until
+   you do), run `cargo xtask tokens` to update
+   [`token-values.md`](token-values.md), and add any rule for it here.
+5. Run `cargo xtask ui-test`; review changed snapshots before accepting them
    with `--update`.
 
 ## 9. Review checklist for tokens

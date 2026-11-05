@@ -72,7 +72,7 @@ pub struct SurfaceColors {
     pub window: Color,
     /// `bg.panel`: panels, title bars, child regions.
     pub panel: Color,
-    /// `bg.input`: input fields and default buttons.
+    /// `bg.input`: input fields.
     pub input: Color,
     /// `bg.hover`: hovered interactive elements.
     pub hover: Color,

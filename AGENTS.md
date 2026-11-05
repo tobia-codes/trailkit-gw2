@@ -163,7 +163,8 @@ Fundamental design decisions are recorded so any agent can pick them up:
   checklist for new addons) →
   `.agents/skills/nexus-addon-dev/references/addon-structure.md`
 - Theme, design tokens, shared components, UX rules →
-  `.agents/skills/trailkit-ui/SKILL.md`
+  `.agents/skills/trailkit-ui/SKILL.md`; token values are generated into
+  `references/token-values.md` (`cargo xtask tokens`, R84), never edited by hand
 - Per-component decisions → the "Decisions" table in `docs/plans/**`
 
 When a new fundamental decision is made, add it to the matching place above
