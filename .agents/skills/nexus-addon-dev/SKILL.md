@@ -240,6 +240,64 @@ Project contract (to be finalized in `docs/plans/addons/trailkit-core.md`):
   `"(null)"`. Keybind display names are set via `set_translation(<keybind id>,
   <lang>, <text>)`.
 
+## 8. Facts learned in game
+
+**Nexus**
+
+- It consumes Escape before ImGui: always use `GUI_RegisterCloseOnEscape`.
+- It keeps fonts per identifier until the game restarts, so a font change needs a
+  restart, not a hot reload. `resize_font` flickers: debounce it.
+- "Loaded addon" appears in `Nexus.log` 1-2 s after a deploy returns. Check again
+  before calling a reload failed. Its directory watcher once stopped firing for a
+  whole game session (Nexus 2026.10.25.60, 2026-11-04): rename, copy and PowerShell
+  all went unseen, while manual unload/load worked and a game restart fixed it. If it
+  persists, ask in the Raidcore Discord.
+- The game's hover cursor (gear, speech bubble) leaks through addon windows: a Nexus
+  issue.
+- Font sizes differ in game, unlike in tests. Measured 2026-11-06 at the user's text size:
+  body and icons draw at 20 px, and a frame is 26.75 px high in the window's font but
+  28 px in the icon font.
+
+**ImGui 1.80**
+
+- A child's background goes into the parent's draw list, below siblings drawn earlier.
+  Overlays draw into their own list (`draw_background(false)`). A borderless child has
+  no window padding and is not clipped at its edge.
+- `AddLine` already adds half a pixel. Add none yourself, or a 1 px line shows as a dim
+  2 px band (not in the test renderer).
+- `Selectable` and `MenuItem` highlights have radius 0, and their item rect reaches half
+  the item spacing outwards. Disabled items draw their label in `TextDisabled`;
+  `IsItemHovered` is true for them once the item has ended.
+- A tree node's triangle takes the text color: push a transparent `Text` while pushing
+  the node, then draw chevron and title yourself.
+- `IsWindowHovered` is false while any item is active: use
+  `ALLOW_WHEN_BLOCKED_BY_ACTIVE_ITEM`. `is_mouse_hovering_rect` ignores windows above
+  it: combine it with the item's hover.
+- Alpha 0 windows skip all items. `CalcTextSize` rounds up per call: measure glyphs with
+  `ImFont_CalcTextSizeA`.
+- Dragging where no item is moves the window: `movable(false)` on children. Windows with
+  `NO_TITLE_BAR` move from any empty area even with `ConfigWindowsMoveFromTitleBarOnly`.
+- Submenus overlap their parent by `ItemInnerSpacing.x`; `menu::begin_submenu` sets it to 0.
+- A tooltip sits at mouse + 24 px × `style.MouseCursorScale`; `StyleScope` sets the scale
+  from the measured cursor (`cursor_extent`).
+- `DrawListMut` is a singleton in imgui-rs: shared components draw through the raw
+  `ImDrawList_*` calls when a caller may hold one.
+
+**Fonts and icons**
+
+- Open Sans sits low in ImGui's line box: center labels by their capitals
+  (`glyph_metrics::capital_middle`, `draw_button`, `draw_tooltip`).
+- Center icons with `glyph_icon_ink` and badge letters with `glyph_visible_ink`. Its 50 %
+  threshold misses thin strokes that straddle two pixel rows.
+- The Lucide source font stores `xMin`/`yMin` = 0 for every glyph; `cargo xtask
+  subset-fonts` rewrites the boxes from the outline points (`fix_glyph_bounds`).
+- A codepoint by name: parse the source TTF's `cmap` and `post` tables with a stdlib
+  script (no fontTools here).
+- Characters in help pages must exist in the subset fonts; the test
+  `every_character_is_in_the_subset_fonts` catches it.
+- Anything sized from an icon button's natural width can overflow in game while tests
+  look fine: size inner controls from the ink or a fixed square.
+
 ## Persisted user data (ROADMAP R22)
 
 - Every file an addon writes (notes, custom events, settings, theme) contains

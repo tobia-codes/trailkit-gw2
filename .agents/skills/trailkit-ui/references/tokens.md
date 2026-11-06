@@ -178,8 +178,37 @@ Each state is covered once per element; the cross product of independent
 states is not needed. Shared components live in
 `crates/trailkit-ui/tests/component_states.rs` (`ui-<component>-<state>-<theme>`),
 addon views in `addons/<addon>/src/main_window/tests/states.rs`
-(`<addon>-state-<name>-<theme>`). A new element or state adds its snapshot in
-the same change.
+(`<addon>-state-<name>-<theme>`), the minimum width in
+`tests/states/minimum_width.rs` (`min-*`, German `min-de-*`). A new element or
+state adds its snapshot in the same change.
+
+**Adding a snapshot.**
+
+1. Write a fixture that brings the window into the state: a function returning
+   a `Fixture`, shared if several tests need it.
+2. Call `assert_state(name, size, fixture, &steps)`. The steps come from `hover`,
+   `press`, `click`, `right_click`, `drag` and `typing`. It runs Dark and Light.
+   `assert_state_in` takes a language; a dialog's question built in the fixture
+   stays in the fixture's language.
+3. Run `cargo xtask ui-test --update` (about 4 minutes), which writes the new
+   reference. Without `--update` every differing pixel fails, and the images land
+   in `tests/snapshots/failures/`. A refactoring must pass without `--update`:
+   that proves it changed no pixel.
+4. Open each new image and review it as below. Delete references of removed
+   states by hand; nothing reports orphans.
+
+**Coordinates break silently.** Steps use fixed positions, so any layout shift
+moves them, and `--update` stays green while a hover misses:
+
+- At 640 px wide and test fonts the list spans x 12-204, the note pane 212-628.
+- After `--update`, group the images by md5 and compare the groups: `hover-group =
+  hover-group-arrow = hover-badge-count` and `note = hover-selected-row =
+  hover-task-text = memo-wide` are the known identical sets. A state joining a set
+  means a missed hover or click.
+- A click fires on release over the item: release there before moving away.
+- A killed `ui-test` can leave a test process running that overwrites images with
+  old code. Stop it with `pkill -f '^/init .*debug/deps/'`; a pattern that also
+  matches the calling shell's command line kills that shell.
 
 **Review.** Look at every new or changed snapshot, the whole element and not
 only what the change was about, and go through §9:
@@ -195,6 +224,18 @@ looks like a rest state and passes silently. Fix or report what the review
 finds before accepting with `--update`.
 
 **Limits.** The test renderer uses 16 px fonts (18 px in game), samples
-textures nearest-neighbour and shows no game behind the window. Sizes that
+textures nearest-neighbour and shows no game behind the window. All its fonts
+are the same size, while in game the window font, body and icons differ, so a
+size taken from the wrong font looks right in every snapshot (M170). Sizes that
 depend on the font, and anything depending on the real game, stay in-game
 checks.
+
+**Measuring in game.** When the user reports a few pixels off, measure before
+changing anything; guessing took three rounds on M132 and M170.
+
+1. Decode the user's screenshot with a small stdlib script (`zlib`, `struct`) and
+   print a brightness map of the region: exact rows and columns, faint ones too.
+2. For the real sizes, add a one-off `log::info!` (guarded to log once), deploy,
+   and read `Nexus.log`: it appears seconds later while the window is open. Remove
+   it before committing.
+3. Compare the map with the logged numbers, and fix what does not match.

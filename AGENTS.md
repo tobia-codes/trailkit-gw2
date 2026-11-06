@@ -90,6 +90,24 @@ says what the addon looks like today and which snapshot PNGs show it.
     providers with a data processing agreement (AVV/DPA), no tracking or
     analytics without consent. Flag any GDPR impact of a change to the user.
 
+## What an agent may do
+
+Rule 1 is binding; this is its overview, plus what the tools block.
+
+| When | What |
+|------|------|
+| Without asking | Commits on a work branch, builds, tests, `cargo xtask deploy` into the game, reading `Nexus.log` |
+| After the user's OK in the current conversation | Push the work branch, open the PR into `develop`, arm auto-merge |
+| Explicit approval, every time | Merging into `main`, release PRs, tags, GitHub releases, force pushes, changing branch protection or CI workflows |
+| Blocked by the tools | Direct pushes to `develop`/`main` (pre-push hook, always). In Claude Code's auto mode: changing branch protection, which the user ran themselves, and `git commit --amend`, so use a follow-up commit |
+
+**A block is not a puzzle.** Do not work around a hook, a permission prompt or a
+sandbox with another command or flag. Report what was blocked and let the user
+decide. Codex has its own approval and sandbox settings, and these have not been
+tried in this repository yet: note what it blocks here, for instance writing the
+DLL to `/mnt/c` or pushing. Commit without `--amend` in every tool, so that no
+agent rewrites what another may have seen.
+
 ## Working with the user
 
 The user tests everything in game and decides. What has proved to matter:
@@ -113,7 +131,8 @@ The user tests everything in game and decides. What has proved to matter:
 
 Conversation memory stays with the tool that wrote it, so a decision only
 reaches other agents once it is written into this repository: decisions into
-`docs/plans/`, how to continue into `NEXT_SESSION.md`.
+`docs/plans/`, lasting facts into the skills, and only the current state and next
+steps into `NEXT_SESSION.md`, which stays under 100 lines.
 
 ## Recurring checks
 
@@ -183,26 +202,31 @@ expensive for the rest of the session. Keep it small:
   `cargo-xwin` to `x86_64-pc-windows-msvc` and copied into the Windows GW2
   `addons` folder by a deploy script; CI additionally builds on a Windows
   runner.
+- Start a new branch from a fresh `develop`: `git fetch origin` and branch from
+  `origin/develop`. After a merge the local `develop` is stale until pulled, and a
+  branch from it silently drops what was just merged (it undid M170 once, seen only
+  in game).
 - Run `source ~/.cargo/env` before cargo. Plain `grep` may fail in this shell;
   use `command grep`.
 - Commands used daily:
   | Command | Purpose |
   |---------|---------|
   | `cargo xtask deploy trailkit-memo` | Build and hot-reload into the running game; `addons/Nexus/Nexus.log` in the game folder logs "Loaded addon" 1-2 s later |
-  | `cargo xtask ui-test [--update]` | Snapshot tests, about 4 minutes |
+  | `cargo xtask ui-test [--update]` | Snapshot tests, about 4 minutes. Adding one, coordinates, reviewing, measuring in game: [`tokens.md` §10](.agents/skills/trailkit-ui/references/tokens.md) |
   | `cargo xwin clippy --target x86_64-pc-windows-msvc --all-targets -- -D warnings` | Needed besides host clippy, which skips Windows-only code |
   | `cargo xtask subset-fonts` | After adding an icon to `Icon::ALL` |
   | `cargo xtask tokens` | After changing a token |
   | `cargo xtask check-names` | Naming conventions of paths |
-- A killed `ui-test` can leave a test process that overwrites snapshots: stop it
-  with `pkill -f '^/init .*debug/deps/'`.
+- Game folder `C:\Guild Wars 2\addons` (WSL: `/mnt/c/Guild Wars 2/addons`), log
+  `addons/Nexus/Nexus.log`. Node 24 via fnm, pnpm 11.17.0. `gh` is logged in as
+  `tobia-codes` over ssh.
 
 ## Architecture decisions
 
 Fundamental design decisions are recorded so any agent can pick them up:
 
 - Addon runtime, threading, inter-addon protocol, i18n, help pages, API key
-  handling → `.agents/skills/nexus-addon-dev/SKILL.md`
+  handling, facts learned in game → `.agents/skills/nexus-addon-dev/SKILL.md`
 - How an addon is structured (app, shared and slice crates; template and
   checklist for new addons) →
   `.agents/skills/nexus-addon-dev/references/addon-structure.md`

@@ -18,7 +18,10 @@ Use these in this order. The first one that answers the question wins.
 
 **The Claude Design canvases linked in the plans are not a source for you.** They
 are private `claude.ai` pages, so other agents cannot open them, and several are
-out of date. Each decision they led to is written down in the plans.
+out of date. Each decision they led to is written down in the plans. The oldest,
+for the user: design system https://claude.ai/artifact/G7sNVZe1JYTgxbUE5mhS33 and
+mockups https://claude.ai/artifact/Dp8BGiKczKw1ysiBmA8acj (they still show Inter and
+a pane highlight).
 
 ## How to see the addon
 
