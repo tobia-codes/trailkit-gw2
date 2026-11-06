@@ -127,7 +127,10 @@ Build once, use everywhere. Planned:
   `check` in `accent.text`) and `menu::begin_submenu` (Lucide `chevron-right`,
   flush beside the parent); never ImGui's own check mark/arrow (memo M99);
   `menu::draw_menu_item_with_icon` (Lucide icon before the label, regular
-  or `danger` tone, disabled with a tooltip, memo M133, M141)
+  or `danger` tone, disabled with a tooltip, memo M133, M141). A row that runs a
+  command has an icon, so all labels start on one line; a row that picks a value
+  (dropdown options, a submenu's targets) has none, only the check mark. The
+  `menu.*` tokens give all of them their room (memo M177)
 - `Pane` and inset separator — **exist**: `pane::draw_pane`,
   `separator::draw_separator`; every sub-region of a window and every
   separator uses them (`lay-pane-padding`, decided 2026-11-01)

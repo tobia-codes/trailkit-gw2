@@ -15,6 +15,8 @@ impl Icon {
     pub const FILE_PLUS: Self = Self('\u{e0c9}');
     /// `folder-plus`: create a group.
     pub const FOLDER_PLUS: Self = Self('\u{e0d9}');
+    /// `folder-input`: moves an entry into a group (memo M177).
+    pub const FOLDER_INPUT: Self = Self('\u{e334}');
     /// `menu`: opens a window's menu (memo M166).
     pub const MENU: Self = Self('\u{e115}');
     /// `file-text`: the way back to the notes in a window's menu (memo M166).
@@ -102,10 +104,12 @@ impl Icon {
     /// `trash-2`: deletes to the trash, the trash tool, permanent delete
     /// (memo M133, M145).
     pub const TRASH_2: Self = Self('\u{e18e}');
-    /// `rotate-ccw`: restores an entry from the trash (memo M145).
+    /// `rotate-ccw`: restores an entry from the trash (memo M145), and a note's
+    /// reset type in a menu (M177).
     pub const ROTATE_CCW: Self = Self('\u{e148}');
     /// Every icon above; keep in sync when adding one.
-    pub const ALL: [Self; 45] = [
+    pub const ALL: [Self; 46] = [
+        Self::FOLDER_INPUT,
         Self::MENU,
         Self::FILE_TEXT,
         Self::TRASH_2,

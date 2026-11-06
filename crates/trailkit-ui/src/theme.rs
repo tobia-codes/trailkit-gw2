@@ -59,6 +59,8 @@ pub struct Theme {
     pub pane: PaneMetrics,
     /// Button metrics (`button.*`, memo plan M131).
     pub button: ButtonMetrics,
+    /// Menu metrics (`menu.*`, memo M177).
+    pub menu: MenuMetrics,
     /// Corner radii (`radius.*`, R71).
     pub radius: Radii,
     /// Font sizes (`font.size.*`).
@@ -291,6 +293,30 @@ impl ButtonMetrics {
     }
 }
 
+/// Menu metrics (memo M177).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct MenuMetrics {
+    /// `menu.padding`: gap between a menu's edge and its rows.
+    pub padding: f32,
+    /// `menu.row_padding_x`: gap between a row's edge and its content.
+    pub row_padding_x: f32,
+    /// `menu.row_padding_y`: gap between a row's edge and its text line.
+    pub row_padding_y: f32,
+    /// `menu.row_gap`: gap between two rows.
+    pub row_gap: f32,
+    /// `menu.min_width`: minimum width of a command menu, as a multiple of the
+    /// current font size, so it scales with the text size.
+    pub min_width: f32,
+}
+
+impl MenuMetrics {
+    /// The minimum width of a command menu in pixels for `font_size`.
+    #[must_use]
+    pub fn min_width_for(&self, font_size: f32) -> f32 {
+        (font_size * self.min_width).round()
+    }
+}
+
 /// Font sizes in pixels.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Typography {
@@ -352,6 +378,15 @@ const PANE_METRICS: PaneMetrics = PaneMetrics {
 
 /// Button metrics shared by both built-in themes.
 const BUTTON_METRICS: ButtonMetrics = ButtonMetrics { min_width: 4.0 };
+
+/// Menu metrics shared by both built-in themes.
+const MENU_METRICS: MenuMetrics = MenuMetrics {
+    padding: 6.0,
+    row_padding_x: 10.0,
+    row_padding_y: 7.0,
+    row_gap: 2.0,
+    min_width: 14.0,
+};
 
 /// Font sizes shared by both built-in themes.
 const TYPOGRAPHY: Typography = Typography {
@@ -440,6 +475,7 @@ impl Theme {
         list: LIST_METRICS,
         pane: PANE_METRICS,
         button: BUTTON_METRICS,
+        menu: MENU_METRICS,
         radius: RADII,
         typography: TYPOGRAPHY,
     };
@@ -522,6 +558,7 @@ impl Theme {
         list: LIST_METRICS,
         pane: PANE_METRICS,
         button: BUTTON_METRICS,
+        menu: MENU_METRICS,
         radius: RADII,
         typography: TYPOGRAPHY,
     };

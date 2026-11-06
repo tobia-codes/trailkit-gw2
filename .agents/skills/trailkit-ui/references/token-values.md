@@ -115,6 +115,11 @@ use which token is binding in [`tokens.md`](tokens.md).
 | `pane.padding` | 8 px | 8 px | Inner padding of a pane |
 | `pane.gap` | 8 px | 8 px | Gap between neighboring panes |
 | `button.min_width` | 4 × font size | 4 × font size | Minimum width of a text button |
+| `menu.padding` | 6 px | 6 px | Gap between a menu's edge and its rows |
+| `menu.row_padding_x` | 10 px | 10 px | Gap between a menu row's edge and its content |
+| `menu.row_padding_y` | 7 px | 7 px | Gap between a menu row's edge and its text line |
+| `menu.row_gap` | 2 px | 2 px | Gap between two menu rows |
+| `menu.min_width` | 14 × font size | 14 × font size | Minimum width of a command menu |
 
 ## Corner radii
 

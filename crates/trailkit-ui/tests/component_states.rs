@@ -143,10 +143,10 @@ fn draw_sample_menu(ui: &Ui, theme: &Theme, opened: &Cell<bool>) {
     if !opened.replace(true) {
         ui.open_popup("menu");
     }
-    draw_popup(ui, "menu", || {
+    draw_popup(ui, theme, "menu", || {
         draw_menu_item(ui, theme, "Rename", false);
         draw_menu_item(ui, theme, "Checked", true);
-        if let Some(_submenu) = begin_submenu(ui, theme, "Move to") {
+        if let Some(_submenu) = begin_submenu(ui, theme, Icon::FOLDER_INPUT, "Move to") {
             draw_menu_item(ui, theme, "Normal", true);
             draw_menu_item(ui, theme, "Daily reset", false);
         }

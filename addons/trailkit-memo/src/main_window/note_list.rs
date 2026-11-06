@@ -7,6 +7,7 @@ use jiff::Timestamp;
 use nexus::imgui::{ChildWindow, Ui};
 use trailkit_ui::tooltip::draw_tooltip_with;
 use trailkit_ui::{
+    icons::Icon,
     menu::{begin_submenu, draw_menu_item},
     theme::Theme,
 };
@@ -152,7 +153,8 @@ pub(super) fn draw_reset_type_submenu(
     note: &Note,
     actions: &mut Vec<WindowAction>,
 ) {
-    let Some(_submenu) = begin_submenu(ui, theme, ResetText::ResetType.get(language)) else {
+    let label = ResetText::ResetType.get(language);
+    let Some(_submenu) = begin_submenu(ui, theme, Icon::ROTATE_CCW, label) else {
         return;
     };
     for (period, text) in KIND_OPTIONS {

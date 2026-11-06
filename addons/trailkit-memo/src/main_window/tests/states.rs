@@ -36,7 +36,7 @@ const NOWHERE: [f32; 2] = [420.0, 330.0];
 
 /// Vertical distances of the rows of a context menu from where it opened; the
 /// fourth row sits below the separator of a note's menu.
-const MENU_ROWS: [f32; 4] = [20.0, 44.0, 68.0, 100.0];
+const MENU_ROWS: [f32; 4] = [21.0, 53.0, 85.0, 127.0];
 
 /// The mouse resting at `position`.
 fn hover(position: [f32; 2]) -> Vec<FrameInput> {

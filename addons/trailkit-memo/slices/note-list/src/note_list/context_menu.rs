@@ -51,7 +51,8 @@ pub(super) fn draw_context_menu(
         actions: &mut *context.actions,
     };
     let rename_steps = &mut *context.rename_steps;
-    draw_popup(ui, "context", || {
+    let theme = context.theme;
+    draw_popup(ui, theme, "context", || {
         if draw_entry_menu_items(ui, node, note, &mut menu) {
             rename_steps.push(RenameStep::Start(node));
         }
@@ -64,7 +65,8 @@ pub(super) fn draw_context_menu(
 /// answers with the editor's title input (M161).
 pub fn draw_note_menu(ui: &Ui, popup_id: &str, note: &Note, mut menu: EntryMenu<'_>) -> bool {
     let mut rename = false;
-    draw_popup(ui, popup_id, || {
+    let theme = menu.theme;
+    draw_popup(ui, theme, popup_id, || {
         rename = draw_entry_menu_items(ui, NodeId::Note(note.id), Some(note), &mut menu);
     });
     rename
@@ -79,8 +81,20 @@ fn draw_entry_menu_items(
     menu: &mut EntryMenu<'_>,
 ) -> bool {
     let (language, theme) = (menu.language, menu.theme);
-    let rename = draw_menu_item(ui, theme, NoteListText::Rename.get(language), false);
-    if let Some(_submenu) = begin_submenu(ui, theme, NoteListText::MoveTo.get(language)) {
+    let rename = draw_menu_item_with_icon(
+        ui,
+        theme,
+        Icon::PENCIL,
+        NoteListText::Rename.get(language),
+        MenuItemTone::Regular,
+        None,
+    );
+    if let Some(_submenu) = begin_submenu(
+        ui,
+        theme,
+        Icon::FOLDER_INPUT,
+        NoteListText::MoveTo.get(language),
+    ) {
         draw_move_targets(ui, node, menu);
     }
     if let Some(note) = note {
@@ -175,10 +189,24 @@ pub(super) fn draw_create_menu_items(
     point: InsertionPoint,
     actions: &mut Vec<NoteListAction>,
 ) {
-    if draw_menu_item(ui, theme, Text::NewNote.get(language), false) {
+    if draw_menu_item_with_icon(
+        ui,
+        theme,
+        Icon::FILE_PLUS,
+        Text::NewNote.get(language),
+        MenuItemTone::Regular,
+        None,
+    ) {
         actions.push(NoteListAction::NewNote(Some(point)));
     }
-    if draw_menu_item(ui, theme, Text::NewGroup.get(language), false) {
+    if draw_menu_item_with_icon(
+        ui,
+        theme,
+        Icon::FOLDER_PLUS,
+        Text::NewGroup.get(language),
+        MenuItemTone::Regular,
+        None,
+    ) {
         actions.push(NoteListAction::NewGroup(Some(point)));
     }
 }
