@@ -137,6 +137,8 @@ pub struct TextEditor {
     sink: String,
     /// Whether the keyboard sink was active in the last frame.
     sink_was_active: bool,
+    /// Whether the editor just got the focus, so the sink must take it.
+    sink_activation_pending: bool,
     /// Line height of the last drawn frame (for Page Up/Down).
     line_height: f32,
 }
@@ -166,6 +168,7 @@ impl TextEditor {
             scroll_to_cursor: true,
             sink: String::new(),
             sink_was_active: false,
+            sink_activation_pending: true,
             line_height: 0.0,
         }
     }
@@ -204,6 +207,7 @@ impl TextEditor {
     /// Gives the editor the keyboard focus (e.g. after a toolbar button).
     pub fn focus(&mut self) {
         self.focused = true;
+        self.sink_activation_pending = true;
     }
 
     /// Takes the keyboard focus away (e.g. while a dialog is shown).
@@ -211,6 +215,7 @@ impl TextEditor {
         self.focused = false;
         self.dragging = false;
         self.sink_was_active = false;
+        self.sink_activation_pending = false;
     }
 
     /// Replaces `range` with `replacement` as one undo step and selects
@@ -256,7 +261,9 @@ impl TextEditor {
             // Read the typed characters before the sink consumes them.
             let typed = typed_characters();
             self.draw_keyboard_sink(ui);
-            self.handle_keyboard(ui, &typed, &mut response);
+            if self.focused {
+                self.handle_keyboard(ui, &typed, &mut response);
+            }
         } else {
             self.sink_was_active = false;
         }
@@ -314,7 +321,10 @@ impl TextEditor {
     }
 
     /// Keeps an invisible 1×1 ImGui text input active while the editor is
-    /// focused, so Nexus routes key presses to ImGui, not to the game.
+    /// focused, so Nexus routes key presses to ImGui, not to the game. It only
+    /// takes the keyboard when the editor gets the focus: an input that loses it
+    /// from outside, such as a click into the game world, which ImGui never
+    /// reports as a click, ends the focus, so the game gets its keys back (M178).
     fn draw_keyboard_sink(&mut self, ui: &Ui) {
         let start = ui.cursor_pos();
         // At the visible top, not the content top: ImGui does not activate
@@ -325,13 +335,19 @@ impl TextEditor {
         // and a multiline input is a child window. The smallest positive
         // alpha still rounds to fully transparent colors.
         let _invisible = ui.push_style_var(StyleVar::Alpha(f32::MIN_POSITIVE));
-        if !self.sink_was_active {
+        if self.sink_activation_pending && !self.sink_was_active {
             ui.set_keyboard_focus_here();
         }
         ui.input_text_multiline("##keyboard_sink", &mut self.sink, [1.0, 1.0])
             .callback(InputTextMultilineCallback::ALWAYS, ClearSink)
             .build();
         let sink_active = ui.is_item_active();
+        if sink_active {
+            self.sink_activation_pending = false;
+        } else if self.sink_was_active && !self.sink_activation_pending {
+            self.focused = false;
+            self.dragging = false;
+        }
         self.sink_was_active = sink_active;
         self.sink.clear();
         ui.set_cursor_pos(start);
@@ -513,12 +529,12 @@ impl TextEditor {
         if hovered && ui.is_mouse_double_clicked(MouseButton::Left) {
             self.buffer.select_word_at(hit);
             self.after_move(ui);
-            self.focused = true;
+            self.focus();
             self.dragging = false;
         } else if hovered && ui.is_mouse_clicked(MouseButton::Left) {
             self.buffer.set_cursor(hit, ui.io().key_shift);
             self.after_move(ui);
-            self.focused = true;
+            self.focus();
             self.dragging = true;
         } else if self.dragging && ui.is_mouse_down(MouseButton::Left) {
             if hit != self.buffer.cursor() {

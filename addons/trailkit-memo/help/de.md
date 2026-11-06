@@ -27,7 +27,7 @@ Das Menü führt dich zu den Bereichen von memo:
 
 - **Kompakte Ansicht** (Pfeile-Button, oben links in der Notiz): blendet die Leiste mit *Bearbeiten* und das Typ-Feld aus, damit die Notiz mehr Platz bekommt. Der Button hinter dem Titel beendet sie wieder. Andere Notizen auswählen und Kästchen abhaken geht weiter; eine Notiz bearbeiten (auch per Doppelklick) oder eine neue anlegen beendet die kompakte Ansicht. memo merkt sie sich. Zusammen mit ausgeblendeter Notizliste bleibt nur die Notiz übrig.
 - **Kleines Fenster:** Das Fenster wird nicht schmaler, als Notizliste und Notiz nebeneinander brauchen, die Liste verschwindet also nie von selbst, sie wird nur schmaler. Größerer Text macht diese Mindestbreite größer.
-- **Beim Bearbeiten** macht die Notizliste dem Editor Platz und kommt zurück, sobald du speicherst oder abbrichst. Hattest du sie selbst ausgeblendet, bleibt sie ausgeblendet.
+- **Beim Bearbeiten** macht die Notizliste dem Editor Platz und kommt zurück, sobald du speicherst oder abbrichst. Hattest du sie selbst ausgeblendet, bleibt sie ausgeblendet. Klicke ins Spiel, um den Chat oder deine Tasten zu nutzen; ein Klick in den Text und du schreibst weiter.
 
 - **Neue Notiz / neue Gruppe:** die beiden Buttons über der Liste. Der neue Eintrag landet in der ausgewählten Gruppe (bzw. der Gruppe der ausgewählten Notiz), ganz am Ende. Tippe gleich einen Namen ein und drücke Enter.
 - **Rechtsklick** auf eine Gruppe oder eine leere Stelle der Liste bietet dasselbe: auf einer Gruppe kommt der neue Eintrag in sie hinein, auf einer leeren Stelle ans Ende der Liste.
