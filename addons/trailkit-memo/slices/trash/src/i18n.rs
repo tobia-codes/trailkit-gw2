@@ -7,12 +7,8 @@ use trailkit_memo_shared::i18n::{Language, LocalizedText};
 /// A translatable string of the trash slice.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TrashText {
-    /// Heading of the trash view and name of its tool (M136).
+    /// Heading of the trash view and its row in the window menu (M136, M166).
     Trash,
-    /// Tooltip of the trash tool while the notes are shown.
-    ShowTrash,
-    /// Tooltip of the trash tool while the trash is shown.
-    HideTrash,
     /// Button that empties the trash (asks first, M146).
     EmptyTrash,
     /// Empty state of the trash.
@@ -70,17 +66,19 @@ pub enum TrashText {
     BackToNotes,
     /// Confirm button of the group delete dialog.
     Delete,
-    /// Toast after deleting (M148); `{title}` is replaced.
-    Deleted,
+    /// Toast after deleting (M158).
+    MovedToTrash,
     /// Action of the toast and the undo step (M135).
     Undo,
+    /// Tooltip of the toast's undo action, naming its shortcut (M162).
+    UndoTooltip,
+    /// Toast action that opens the trash (M158).
+    OpenTrash,
 }
 
 impl LocalizedText for TrashText {
     const ALL: &'static [Self] = &[
         Self::Trash,
-        Self::ShowTrash,
-        Self::HideTrash,
         Self::EmptyTrash,
         Self::TrashIsEmpty,
         Self::TrashKeepsEntries,
@@ -108,8 +106,10 @@ impl LocalizedText for TrashText {
         Self::OneEntry,
         Self::BackToNotes,
         Self::Delete,
-        Self::Deleted,
+        Self::MovedToTrash,
         Self::Undo,
+        Self::UndoTooltip,
+        Self::OpenTrash,
     ];
 
     fn get(self, language: Language) -> &'static str {
@@ -124,8 +124,6 @@ impl LocalizedText for TrashText {
 const fn english(text: TrashText) -> &'static str {
     match text {
         TrashText::Trash => "Trash",
-        TrashText::ShowTrash => "Show trash",
-        TrashText::HideTrash => "Hide trash",
         TrashText::EmptyTrash => "Empty",
         TrashText::TrashIsEmpty => "The trash is empty.",
         TrashText::TrashKeepsEntries => "Deleted entries stay here for 30 days.",
@@ -165,8 +163,10 @@ const fn english(text: TrashText) -> &'static str {
             "The group and the {count} notes in it move to the trash. You can restore them for 30 days."
         }
         TrashText::Delete => "Delete",
-        TrashText::Deleted => "\u{201c}{title}\u{201d} deleted",
+        TrashText::MovedToTrash => "Moved to the trash",
         TrashText::Undo => "Undo",
+        TrashText::UndoTooltip => "Undo (Ctrl+Z)",
+        TrashText::OpenTrash => "Open trash",
     }
 }
 
@@ -174,8 +174,6 @@ const fn english(text: TrashText) -> &'static str {
 const fn german(text: TrashText) -> &'static str {
     match text {
         TrashText::Trash => "Papierkorb",
-        TrashText::ShowTrash => "Papierkorb anzeigen",
-        TrashText::HideTrash => "Papierkorb ausblenden",
         TrashText::EmptyTrash => "Leeren",
         TrashText::TrashIsEmpty => "Der Papierkorb ist leer.",
         TrashText::TrashKeepsEntries => "Gelöschtes bleibt hier 30 Tage.",
@@ -215,8 +213,10 @@ const fn german(text: TrashText) -> &'static str {
             "Die Gruppe und die {count} Notizen darin kommen in den Papierkorb. Du kannst sie 30 Tage lang wiederherstellen."
         }
         TrashText::Delete => "Löschen",
-        TrashText::Deleted => "\u{201e}{title}\u{201c} gelöscht",
+        TrashText::MovedToTrash => "In den Papierkorb verschoben",
         TrashText::Undo => "Rückgängig",
+        TrashText::UndoTooltip => "Rückgängig (Strg+Z)",
+        TrashText::OpenTrash => "Papierkorb öffnen",
     }
 }
 

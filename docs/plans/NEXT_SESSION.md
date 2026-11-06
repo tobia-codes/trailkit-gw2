@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-05 (session 16: layout, trash & undo and the UI state round merged into `develop` from `feature/memo-sidebar-layout`).
+Last updated: 2026-11-06 (session 18: window menu replaces the tool rail, merged into `develop`; the user continues with Codex).
 
 ## Where we are
 
@@ -104,26 +104,29 @@ Last updated: 2026-11-05 (session 16: layout, trash & undo and the UI state roun
 
 ## ▶ Resume here
 
-Next ids: **M157+, R86+, questions from 107.**
+Next ids: **M172+, R87+, questions from 128.** The new look is described in
+[`current-design.md`](../../.agents/skills/trailkit-ui/references/current-design.md).
 
-1. **Next branch: the UX round the user accepted on 2026-11-05** (mockups:
-   https://claude.ai/artifact/J6oQVVs2u6fZ1zWfMscKef). Record the decisions in
-   `docs/plans/addons/trailkit-memo.md`, amending M136 and M153/M154 where needed:
-   - Row 1: the tool rail is always visible, `⋮` goes away.
-   - Row 2: the delete toast says "Moved to the trash" and offers "Open trash"
-     next to "Undo".
-   - Row 3: a `⋯` button next to Edit offers Rename, Move to, Reset type, Delete;
-     right-click stays.
-   - Row 5: arrow keys in the note list with a visible focus; tooltips name
-     their shortcut.
-   - Row 4 (editor that hides markdown outside the active line) is **not** agreed
-     for building: it needs its own grill round, it is the biggest change.
+1. **`feature/memo-ux-round` is merged into `develop`** with the user's OK (M157-M171).
+   Pull `develop` and start follow-ups on a new branch. Check first:
+   - **In game:** the last icon fix (M170, visible pixels) was deployed right before
+     the merge; before it the `menu` icon sat 1 px below "Notes". Ask the user for a
+     screenshot if unsure and measure it.
+   - Settled: Q112, Q121 and Q122 split, Q113 keeps the menu order (Reset type below
+     Move to). The user answered "alle ja" to Q122, whose recommendation was to wait;
+     it was taken as a yes to splitting.
+   - **Choices the agent made, disclosed to the user and easy to turn back:** Ctrl+F
+     does nothing in the editor (M167); the selected row of the menu (M166); the Hide
+     row is also offered in the trash, as in the approved mockup.
+   - Row 4 (editor that hides markdown outside the active line) was **not** part of
+     the branch: it needs its own grill round, it is the biggest change.
 2. **Splits after that (R77), each a small own step:** Q91 `note_list.rs` +
    `draw_group`, Q95 `draw_dropdown`, Q96 `editor/view.rs`, Q105 `markdown_view.rs`.
    All answered yes. Q92 `Text::get`: my recommendation is no, the user has not
-   objected.
-3. **Then the M28 order continues:** settings window, export/import, backups,
-   help page, release preparation.
+   objected. `Editor::draw` (101 code lines) is a new hint, not yet put to the user:
+   proposed to take it along with Q96 or the editor round.
+3. **Then the M28 order continues:** settings window (a row in the window menu),
+   export/import, backups, help page, release preparation.
 4. Optional, offer once: Light contrast of `reset.daily` on `bg.pressed` is
    4.16:1 while a tinted dropdown is held (see R85's test scope).
 
@@ -141,6 +144,69 @@ Next ids: **M157+, R86+, questions from 107.**
    - In this WSL shell plain `grep` may fail; use `command grep`. Run
      `source ~/.cargo/env` before cargo.
    - Never leave an `eprintln!` debug line before `cargo fmt`.
+
+## Session 18 summary (2026-11-06, branch `feature/memo-ux-round`)
+
+- Window menu instead of the tool rail (M166), the editor hides the note list
+  (M167), a minimum width instead of the responsive layout (M168), the search
+  field's `x` closes it (M169); R86 amends R78. `trailkit_ui::tool_rail` removed.
+- Mockups (private to the user's Claude account):
+  https://claude.ai/artifact/GzpgDiBgz5VrzFMdtvTYWN.
+- Knowledge that only Claude Code's memory held moved into `AGENTS.md` ("Working
+  with the user", commands) and `current-design.md`, so Codex can continue.
+
+## Facts learned in session 18
+
+- Removing the rail moved everything left of the note pane's right edge by 40 px:
+  list items and the note's left-anchored items in `states.rs` shifted with it;
+  right-anchored buttons stayed. The md5 groups below confirmed no hover missed.
+- Window menu rows are at y 67, 99, 131 in the 640 px snapshots, x from 20 to 147.
+- Minimum width is 40 characters (Q124): 320 px at test fonts, about 400 px in
+  game. `states.rs` covers it with `min-*` and German `min-de-*` states, whose
+  coordinates are the `MINIMUM_*` constants. In the German fixtures, a dialog's
+  question stays English because the fixture builds it in English; the app builds
+  it in the active language.
+- `ui-test` now takes about 4 minutes of test time for the memo window alone.
+- Minimum-width snapshots live in `tests/states/minimum_width.rs`. The user kept 40
+  characters after trying it in game (Q125).
+- `draw_icon_button` centers by visible pixels since M170: when an icon looks off in
+  game, measure the screenshot before changing anything; the test renderer hid
+  1.5 px. A scanner over the glyph's texels runs per icon button per frame, a few
+  hundred bytes each.
+
+## Session 17 summary (2026-11-05, branch `feature/memo-ux-round`)
+
+- Commits: `4b5c1f2` UX round, `69a479e` drawer on right click, `1eb1595` drawer
+  on delete and undo, `d1a983f` toast above the drawer.
+- M157 rail always visible, `⋮` and `tool_rail_visible` gone. M158 toast "Moved to
+  the trash" with Undo and Open trash, no count on the icon (Q108). M159 toast
+  buttons below the message or stacked (Q110). M160 `⋯` menu, shared with the
+  context menu through `note_list::EntryMenu`. M161 Rename from `⋯` opens the
+  editor with the title selected, the sidebar stays (Q109, Q111). M162 tooltips
+  name shortcuts.
+- **Arrow keys in the note list were dropped** (Q107, M162): Nexus would send them
+  to the game.
+- M163/M164 (user reports): only a left click on a note closes the drawer. M165:
+  toast card in its own draw list.
+- Shared: `menu::place_next_popup`, `ToastAction`, `Icon::ELLIPSIS` (U+E0B6).
+
+## Facts learned in session 17
+
+- Any layout shift silently breaks fixed coordinates in `states.rs`: `--update`
+  stays green while hovers miss. After `ui-test --update`, group the snapshots by
+  md5 and compare with the groups at `HEAD`: `hover-badge-count = hover-group-arrow =
+  hover-group` and `hover-selected-row = hover-task-text = note = memo-wide` are the
+  known identical sets (`collapsed-group` joining one exposed a missed click).
+- The columns start at: list x 12-204, note pane 212-628 (window 640 wide, test
+  fonts).
+- A child window's background lands in the parent's draw list, so a later sibling
+  (the drawer) covers it and the parent's other children can show through. Overlays
+  draw their card in their own list (`draw_background(false)`, as the scrim does); a
+  borderless child has no window padding and is not clipped at its edge.
+- Selecting through `select` closes the drawer; use `change_selected` when the
+  list must stay open.
+- Nexus logs "Loaded addon" 1–2 s after the deploy returns: check the log again
+  before calling a reload failed.
 
 ## Session 16 summary (2026-11-05)
 
@@ -336,14 +402,14 @@ Next ids: **M157+, R86+, questions from 107.**
 ## Recurring checks
 
 - GW2 wiki (2026-10-31): still behind Cognito login → Wayback workaround stays.
-- C-703/25 P (checked 2026-11-05, session 16: search found no judgment or hearing, sources only from 2025; check again next session): still
+- C-703/25 P (checked 2026-11-06, session 18: search found no judgment, opinion or hearing, sources only from 2025; check again next session): still
   pending, no hearing date or judgment reported; DPF in force. Microsoft intervened for the
   Commission; noyb asked for repeal (2026-06-30) but has not sued yet.
 - DPF reminder workflow: the 2026-11-01 08:00 cron was silently skipped by
   GitHub; triggered manually (issue #11). If it skips again on 2026-12-01,
   grill round on moving the cron off the full hour.
 - Daily archive: WvW EU snapshot Fri 2026-11-06 17:23 UTC is the real test of
-  the cron delay margin (D29).
+  the cron delay margin (D29). Not yet checked after that time.
 
 ## User to-dos
 

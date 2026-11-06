@@ -1,7 +1,7 @@
-//! Layout of the memo main window: two panes or drawer (M48, M72–M74),
-//! and the empty state (M42).
+//! Layout of the memo main window: the two panes (M72, M74) and the empty
+//! state (M42).
 
-use nexus::imgui::{ChildWindow, MouseButton, Ui};
+use nexus::imgui::Ui;
 use trailkit_ui::{
     button::{button_width, draw_button, draw_primary_button},
     pane::draw_pane,
@@ -13,7 +13,7 @@ use trailkit_ui::{
 use trailkit_memo_shared::i18n::LocalizedText;
 use trailkit_memo_shared::i18n::{Language, Text};
 
-use super::{DRAWER_MAXIMUM_FRACTION, MemoWindow, PaneWidths, WindowAction};
+use super::{MemoWindow, PaneWidths, WindowAction};
 
 impl MemoWindow {
     /// Draws tree and note as two panes with a draggable splitter in the gap
@@ -61,51 +61,6 @@ impl MemoWindow {
         draw_pane(ui, theme, "note", [0.0, 0.0], || {
             self.draw_note_pane(ui, language, theme);
         });
-    }
-
-    /// Draws the note list as a drawer over the dimmed note (narrow window,
-    /// M48, `lay-drawer`): it appears instantly (`overlay-motion`) and closes
-    /// on a click on the dimmed area. `start` and `size` cover the note pane.
-    pub(super) fn draw_drawer(
-        &mut self,
-        ui: &Ui,
-        language: Language,
-        theme: &Theme,
-        start: [f32; 2],
-        size: [f32; 2],
-        pane_minimum: f32,
-    ) {
-        ui.set_cursor_screen_pos(start);
-        // The scrim takes the clicks on the note. ImGui renders a child's
-        // background into the parent's draw list, below the note pane drawn
-        // before, so the dimming is a rectangle in the scrim's own list.
-        let Some(_scrim) = ChildWindow::new("drawer_scrim")
-            .size(size)
-            .scrollable(false)
-            .scroll_bar(false)
-            .draw_background(false)
-            .begin(ui)
-        else {
-            return;
-        };
-        let scrim_start = ui.window_pos();
-        let scrim_end = [scrim_start[0] + size[0], scrim_start[1] + size[1]];
-        ui.get_window_draw_list()
-            .add_rect(
-                scrim_start,
-                scrim_end,
-                theme.surface.modal_overlay.to_array(),
-            )
-            .filled(true)
-            .rounding(theme.radius.large)
-            .build();
-        let width = pane_minimum.min(size[0] * DRAWER_MAXIMUM_FRACTION);
-        draw_pane(ui, theme, "drawer", [width, 0.0], || {
-            self.draw_tree_pane(ui, language, theme);
-        });
-        if ui.is_window_hovered() && ui.is_mouse_clicked(MouseButton::Left) {
-            self.actions.push(WindowAction::CloseDrawer);
-        }
     }
 }
 

@@ -4,6 +4,7 @@
 //! Lucide `check` and `chevron-right` icons like the dropdown, and submenus
 //! open flush beside their parent instead of overlapping it.
 
+use crate::tooltip::draw_tooltip;
 use nexus::imgui::{ItemHoveredFlags, MenuItem, MenuToken, StyleColor, StyleVar, Ui};
 
 use crate::{
@@ -23,6 +24,25 @@ pub fn draw_popup(ui: &Ui, id: &str, content: impl FnOnce()) {
         let _square = hide_square_row_highlight(ui);
         content();
     });
+}
+
+/// Places the next popup with its top at `position` (screen). `pivot_x` is the
+/// share of the popup's width left of `position`: 0 lines up its left edge
+/// (a dropdown), 1 its right edge (a menu at the end of a toolbar). Call it
+/// right before [`draw_popup`], every frame.
+pub fn place_next_popup(position: [f32; 2], pivot_x: f32) {
+    // SAFETY: a plain ImGui call on the render thread inside a frame; it only
+    // sets the position of the next window.
+    unsafe {
+        nexus::imgui::sys::igSetNextWindowPos(
+            nexus::imgui::sys::ImVec2 {
+                x: position[0],
+                y: position[1],
+            },
+            0,
+            nexus::imgui::sys::ImVec2 { x: pivot_x, y: 0.0 },
+        );
+    }
 }
 
 /// Fills the menu row `[min, max]` (screen) in `color` with `radius.md`
@@ -184,7 +204,7 @@ pub fn draw_menu_item_with_icon(
     if let Some(tooltip) = disabled_tooltip
         && ui.is_item_hovered_with_flags(ItemHoveredFlags::ALLOW_WHEN_DISABLED)
     {
-        ui.tooltip_text(tooltip);
+        draw_tooltip(ui, tooltip);
     }
     clicked && enabled
 }

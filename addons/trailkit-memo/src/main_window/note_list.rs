@@ -5,6 +5,7 @@
 
 use jiff::Timestamp;
 use nexus::imgui::{ChildWindow, Ui};
+use trailkit_ui::tooltip::draw_tooltip_with;
 use trailkit_ui::{
     menu::{begin_submenu, draw_menu_item},
     theme::Theme,
@@ -49,7 +50,7 @@ impl MemoWindow {
     /// Draws the fixed header (search field while shown, M138; toolbar) and
     /// below it the scrolling tree (M129).
     pub(super) fn draw_tree_pane(&mut self, ui: &Ui, language: Language, theme: &Theme) {
-        // The trash tool shows the trash in place of the notes (M136).
+        // The trash takes the place of the notes (M136).
         if self.trash.visible {
             self.draw_trash_column(ui, language, theme);
             return;
@@ -57,11 +58,15 @@ impl MemoWindow {
         if self.ui_state.search_visible {
             let search_texts = SearchFieldTexts {
                 hint: SearchText::SearchHint.get(language),
-                clear: SearchText::ClearSearch.get(language),
+                close: SearchText::CloseSearch.get(language),
             };
-            if self.search_field.draw(ui, theme, search_texts) {
+            let response = self.search_field.draw(ui, theme, search_texts);
+            if response.text_changed {
                 // Apply the new text in this frame already.
                 self.update_search();
+            }
+            if response.close_clicked {
+                self.actions.push(WindowAction::HideSearch);
             }
         }
         if let Some(action) = NoteList::draw_header(ui, language, theme) {
@@ -103,7 +108,7 @@ impl MemoWindow {
                 return;
             };
             let lines = reset_tooltip_lines(period, language, Timestamp::now());
-            ui.tooltip(|| {
+            draw_tooltip_with(ui, || {
                 for line in &lines {
                     ui.text(line);
                 }
@@ -112,16 +117,7 @@ impl MemoWindow {
         // The reset type submenu with the current kind checked (M86).
         let window_actions = &mut self.actions;
         let mut context_menu = |ui: &Ui, note: &Note| {
-            let Some(_submenu) = begin_submenu(ui, theme, ResetText::ResetType.get(language))
-            else {
-                return;
-            };
-            for (period, text) in KIND_OPTIONS {
-                let is_current = note.kind.period() == period;
-                if draw_menu_item(ui, theme, text.get(language), is_current) && !is_current {
-                    window_actions.push(WindowAction::SetResetPeriod(note.id, period));
-                }
-            }
+            draw_reset_type_submenu(ui, theme, language, note, window_actions);
         };
         let output = self.note_list.draw(
             ui,
@@ -141,5 +137,25 @@ impl MemoWindow {
         );
         self.actions
             .extend(output.actions.into_iter().map(WindowAction::from));
+    }
+}
+
+/// Draws the reset type submenu of `note` with its current kind checked (M86),
+/// used by the row's context menu and the note pane's `⋯` menu (M160).
+pub(super) fn draw_reset_type_submenu(
+    ui: &Ui,
+    theme: &Theme,
+    language: Language,
+    note: &Note,
+    actions: &mut Vec<WindowAction>,
+) {
+    let Some(_submenu) = begin_submenu(ui, theme, ResetText::ResetType.get(language)) else {
+        return;
+    };
+    for (period, text) in KIND_OPTIONS {
+        let is_current = note.kind.period() == period;
+        if draw_menu_item(ui, theme, text.get(language), is_current) && !is_current {
+            actions.push(WindowAction::SetResetPeriod(note.id, period));
+        }
     }
 }

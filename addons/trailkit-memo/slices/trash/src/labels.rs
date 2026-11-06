@@ -116,12 +116,6 @@ pub fn delete_group_question(title: &str, notes: usize, language: Language) -> (
     )
 }
 
-/// The toast message after `title` was deleted (M148).
-#[must_use]
-pub fn deleted_message(title: &str, language: Language) -> String {
-    TrashText::Deleted.get(language).replace("{title}", title)
-}
-
 /// `text` with `{count}` replaced by `count`.
 fn with_count(text: TrashText, count: i64, language: Language) -> String {
     text.get(language).replace("{count}", &count.to_string())

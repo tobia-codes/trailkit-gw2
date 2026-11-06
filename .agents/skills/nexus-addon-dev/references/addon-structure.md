@@ -20,7 +20,7 @@ addons/trailkit-<addon>/
 │   ├── main_window.rs    window state, `new`, `draw`, close/unload handling
 │   └── main_window/      one file per concern, e.g.
 │       ├── actions.rs    `WindowAction` + `apply` dispatcher + per-area apply fns
-│       ├── layout.rs     panes, drawer, empty state
+│       ├── layout.rs     panes, empty state
 │       ├── <slice>.rs    wiring of one slice (inputs, closures, action mapping)
 │       ├── dialogs.rs    dialog card and window
 │       └── tests.rs      snapshot and interaction tests of the window

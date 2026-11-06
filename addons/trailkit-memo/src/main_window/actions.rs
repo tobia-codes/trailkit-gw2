@@ -28,7 +28,7 @@ use trailkit_memo_trash::trash_view::TrashAction;
 use trailkit_memo_shared::i18n::chip_text;
 use trailkit_ui::{chat_link::ChipText, toast::Toast};
 
-use super::{MemoWindow, WindowToast};
+use super::{MemoWindow, WindowToast, WindowToastKind};
 
 /// Something the user did while the window was drawn.
 #[derive(Debug, Clone, PartialEq)]
@@ -43,23 +43,24 @@ pub(super) enum WindowAction {
     NewNote(Option<InsertionPoint>),
     /// Create a group at a point, or by the selection for `None`.
     NewGroup(Option<InsertionPoint>),
-    /// The note list toggle in the title bar: hide/show the note list
-    /// column, or open/close the drawer in a narrow window (M48, M137).
+    /// Hide or show the note list column (window menu, M166).
     ToggleNoteList,
-    /// The tool rail toggle in the title bar (M136).
-    ToggleToolRail,
-    /// The search toggle in the tool rail (M138).
-    ToggleSearch,
+    /// Show the search field and focus it (window menu, M166).
+    ShowSearch,
+    /// Close the search and clear its text (its `x`, M169).
+    HideSearch,
+    /// Back to the regular notes page from wherever the user is (M166).
+    ShowNotes,
     /// The compact note view toggle (M139).
     ToggleCompactNoteView,
-    /// Close the drawer (click on the dimmed note).
-    CloseDrawer,
     /// Toggle a task checkbox in the shown note.
     Markdown(MarkdownAction),
     /// Open the addon folder in the file explorer.
     OpenFolder,
     /// Start editing the selected note (M51).
     StartEditing,
+    /// Start editing the selected note in its title, selected (M161).
+    StartRenaming,
     /// Commit the edit ("Save", Ctrl+Enter).
     FinishEditing,
     /// Leave the editor without saving; asks first if something changed.
@@ -91,14 +92,14 @@ pub(super) enum WindowAction {
     /// Delete a note or group: to the trash, a group with notes asks first
     /// (M133, M134).
     Delete(NodeId),
+    /// Show the trash from the window menu or the toast (M158, M166).
+    OpenTrash,
     /// Take the latest delete or move back (Ctrl+Z, the toast, M135).
     Undo,
     /// Do the latest undone step again (Ctrl+Y, Ctrl+Shift+Z, M135).
     Redo,
     /// The toast's time is up (M148).
     DismissToast,
-    /// The trash tool in the tool rail (M136).
-    ToggleTrash,
     /// Something done in the trash view (M145–M147).
     Trash(TrashAction),
     /// The open delete question was confirmed (M134, M146).
@@ -113,7 +114,11 @@ impl WindowAction {
     pub(super) fn leaves_editor_of(&self, note: NoteId) -> bool {
         match self {
             Self::Select(node) => *node != NodeId::Note(note),
-            Self::NewNote(_) | Self::NewGroup(_) | Self::ToggleTrash => true,
+            Self::NewNote(_)
+            | Self::NewGroup(_)
+            | Self::OpenTrash
+            | Self::ShowNotes
+            | Self::ShowSearch => true,
             _ => false,
         }
     }
@@ -162,6 +167,7 @@ impl MemoWindow {
             | WindowAction::SetCollapsedInSearch(..)
             | WindowAction::SetResetPeriod(..) => self.apply_tree_action(action, language, now),
             WindowAction::StartEditing
+            | WindowAction::StartRenaming
             | WindowAction::FinishEditing
             | WindowAction::CancelEditing
             | WindowAction::Format(_)
@@ -173,17 +179,17 @@ impl MemoWindow {
             | WindowAction::LeaveCancelled => self.apply_editor_action(action, language, now),
             WindowAction::ClearSearch
             | WindowAction::ToggleNoteList
-            | WindowAction::ToggleToolRail
-            | WindowAction::ToggleSearch
+            | WindowAction::ShowSearch
+            | WindowAction::HideSearch
+            | WindowAction::ShowNotes
             | WindowAction::ToggleCompactNoteView
-            | WindowAction::CloseDrawer
             | WindowAction::Markdown(_)
             | WindowAction::OpenFolder => self.apply_view_action(action, now, language),
             WindowAction::Delete(_)
             | WindowAction::Undo
             | WindowAction::Redo
             | WindowAction::DismissToast
-            | WindowAction::ToggleTrash
+            | WindowAction::OpenTrash
             | WindowAction::Trash(_)
             | WindowAction::ConfirmAccepted
             | WindowAction::ConfirmCancelled => self.apply_trash_action(action, language),
@@ -202,7 +208,7 @@ impl MemoWindow {
     /// moving, expanding and the reset period of a note.
     fn apply_tree_action(&mut self, action: &WindowAction, language: Language, now: Timestamp) {
         match action {
-            WindowAction::Select(node) => self.select(*node),
+            WindowAction::Select(node) => self.change_selected(*node),
             WindowAction::SetExpanded(group, expanded) => {
                 if let Some(group) = self.document.group_mut(*group)
                     && group.expanded != *expanded
@@ -241,7 +247,7 @@ impl MemoWindow {
                 );
                 let id = NodeId::Note(note.id);
                 self.document.insert(point, Node::Note(note));
-                self.select(id);
+                self.change_selected(id);
                 self.start_rename_of_new(id, Text::NewNote.get(language));
                 self.save_notes();
             }
@@ -251,7 +257,7 @@ impl MemoWindow {
                 let group = Group::new(Text::NewGroup.get(language).to_owned());
                 let id = NodeId::Group(group.id);
                 self.document.insert(point, Node::Group(group));
-                self.select(id);
+                self.change_selected(id);
                 self.start_rename_of_new(id, Text::NewGroup.get(language));
                 self.save_notes();
             }
@@ -277,11 +283,15 @@ impl MemoWindow {
     /// formatting, the preview, drafts and the unsaved changes dialog.
     fn apply_editor_action(&mut self, action: &WindowAction, language: Language, now: Timestamp) {
         match action {
-            WindowAction::StartEditing => {
+            WindowAction::StartEditing | WindowAction::StartRenaming => {
                 if self.editor.is_none()
                     && let Some(note) = self.selected_note()
                 {
-                    self.editor = Some(Editor::new(EditSession::start(note)));
+                    let mut editor = Editor::new(EditSession::start(note));
+                    if *action == WindowAction::StartRenaming {
+                        editor.focus_title();
+                    }
+                    self.editor = Some(editor);
                 }
             }
             WindowAction::FinishEditing => self.commit_editor(now),
@@ -338,38 +348,27 @@ impl MemoWindow {
         }
     }
 
-    /// Applies an action of the window's view: search, note list, drawer,
+    /// Applies an action of the window's view: search, note list,
     /// clicks on rendered markdown and the addon folder.
     fn apply_view_action(&mut self, action: &WindowAction, now: Timestamp, language: Language) {
         match action {
             WindowAction::ClearSearch => self.search_field.clear(false),
             WindowAction::ToggleNoteList => {
-                if self.is_narrow {
-                    self.drawer_open = !self.drawer_open;
-                } else {
-                    self.ui_state.note_list_hidden = !self.ui_state.note_list_hidden;
-                    self.saver.save_ui_state(self.ui_state);
-                }
-            }
-            WindowAction::ToggleToolRail => {
-                self.ui_state.tool_rail_visible = !self.ui_state.tool_rail_visible;
+                self.ui_state.note_list_hidden = !self.ui_state.note_list_hidden;
                 self.saver.save_ui_state(self.ui_state);
             }
-            WindowAction::ToggleSearch => {
-                if self.ui_state.search_visible && !self.trash.visible {
-                    // A hidden field must not keep filtering the list (M138).
-                    self.search_field.clear(false);
-                    self.ui_state.search_visible = false;
-                    self.saver.save_ui_state(self.ui_state);
-                } else {
-                    self.show_search_field();
-                }
+            WindowAction::ShowSearch => self.show_search_field(),
+            WindowAction::HideSearch => self.hide_search_field(),
+            WindowAction::ShowNotes => {
+                self.trash.visible = false;
+                self.ui_state.note_list_hidden = false;
+                self.ui_state.compact_note_view = false;
+                self.hide_search_field();
             }
             WindowAction::ToggleCompactNoteView => {
                 self.ui_state.compact_note_view = !self.ui_state.compact_note_view;
                 self.saver.save_ui_state(self.ui_state);
             }
-            WindowAction::CloseDrawer => self.drawer_open = false,
             WindowAction::Markdown(MarkdownAction::ToggleTask(marker)) => {
                 let Some(NodeId::Note(id)) = self.ui_state.selected else {
                     return;
@@ -387,7 +386,7 @@ impl MemoWindow {
             WindowAction::Markdown(MarkdownAction::ChatLinkCopied(_)) => {
                 self.toast = Some(WindowToast {
                     toast: Toast::new(chip_text(ChipText::Copied, language).to_owned()),
-                    offers_undo: false,
+                    kind: WindowToastKind::Message,
                 });
             }
             WindowAction::OpenFolder => {
@@ -428,18 +427,14 @@ impl MemoWindow {
         }
     }
 
-    /// Selects `node`, shows it in the single-pane layout and remembers it.
-    pub(super) fn select(&mut self, node: NodeId) {
+    /// Makes `node` the selected entry, shows it from its top and remembers it.
+    pub(super) fn change_selected(&mut self, node: NodeId) {
         if self.ui_state.selected != Some(node) {
             self.ui_state.selected = Some(node);
             self.ui_state.note_scroll = 0.0;
             self.note_view
                 .show_other_note(self.search.current.is_some());
             self.saver.save_ui_state(self.ui_state);
-        }
-        // Choosing a note closes the drawer; groups keep it open (M48).
-        if matches!(node, NodeId::Note(_)) {
-            self.drawer_open = false;
         }
     }
 
@@ -453,8 +448,11 @@ impl MemoWindow {
 
     /// Puts a just-created note or group into rename mode (M43).
     pub(super) fn start_rename_of_new(&mut self, node: NodeId, title: &str) {
-        // The rename happens in the list, so a narrow window shows it.
-        self.drawer_open = true;
+        // The rename happens in the list, so it must be shown.
+        if self.ui_state.note_list_hidden {
+            self.ui_state.note_list_hidden = false;
+            self.saver.save_ui_state(self.ui_state);
+        }
         self.note_list.start_rename(node, title.to_owned());
     }
 

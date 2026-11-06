@@ -159,6 +159,9 @@ pub struct Editor {
     preview: Option<MarkdownDocument>,
     /// Whether the title input was active in the last frame.
     title_was_active: bool,
+    /// Whether the title input should take the focus with its text selected
+    /// (M161); stays set until the input is active.
+    title_focus_pending: bool,
     /// Formatting active at the cursor, cached per text revision and
     /// selection (M69).
     active: Option<(u64, Range<usize>, ActiveFormats)>,
@@ -174,6 +177,7 @@ impl Editor {
             body,
             preview: None,
             title_was_active: false,
+            title_focus_pending: false,
             active: None,
         }
     }
@@ -204,6 +208,13 @@ impl Editor {
     /// Selects `range` (byte offsets) in the body and scrolls to it.
     pub fn select_in_body(&mut self, range: Range<usize>) {
         self.body.select(range);
+    }
+
+    /// Moves the keyboard focus into the title input with the whole title
+    /// selected, so typing replaces it ("Rename", M161).
+    pub fn focus_title(&mut self) {
+        self.body.unfocus();
+        self.title_focus_pending = true;
     }
 
     /// Takes the keyboard focus from the body (e.g. for the search field).
@@ -320,12 +331,20 @@ impl Editor {
         {
             let _heading = FontScope::push(ui, FontRole::Heading1);
             ui.set_next_item_width(-f32::MIN_POSITIVE);
+            if self.title_focus_pending {
+                ui.set_keyboard_focus_here();
+            }
             ui.input_text("##title", &mut self.session.title)
                 .hint(EditorText::TitleHint.get(language))
                 .read_only(input.is_dialog_open)
+                // Only for "Rename"; a click into the title places the cursor.
+                .auto_select_all(self.title_focus_pending)
                 .build();
         }
         self.title_was_active = ui.is_item_active();
+        if self.title_was_active {
+            self.title_focus_pending = false;
+        }
         if ui.is_item_deactivated()
             && let Some(title) = title_backup
         {

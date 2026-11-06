@@ -4,12 +4,14 @@
 //! (M102) and the draft hint.
 
 use nexus::imgui::Ui;
+use trailkit_ui::tooltip::draw_tooltip;
 use trailkit_ui::{
     button::{
         button_width, draw_button, draw_icon_button, draw_icon_toggle,
         draw_primary_button_with_icon, icon_button_width, icon_label_button_width,
     },
     icons::Icon,
+    menu::place_next_popup,
     separator::draw_separator,
     theme::Theme,
     toolbar::move_to_toolbar_end,
@@ -17,11 +19,15 @@ use trailkit_ui::{
 
 use trailkit_memo_drafts::draft_hint::DraftHintAction;
 use trailkit_memo_editor::editor::{EditorAction, EditorInput, ToolbarAction};
+use trailkit_memo_note_list::note_list::{EntryMenu, draw_note_menu};
 use trailkit_memo_note_view::note_view::{NoteViewAction, NoteViewInput, TitleTrailing};
 use trailkit_memo_reset_schedule::note_kind::{draw_kind_dropdown, kind_dropdown_size};
-use trailkit_memo_shared::i18n::{Language, LocalizedText, Text, chip_context};
+use trailkit_memo_shared::{
+    i18n::{Language, LocalizedText, Text, chip_context},
+    note_tree::Note,
+};
 
-use super::{MemoWindow, WindowAction, selected_note_in};
+use super::{MemoWindow, WindowAction, note_list::draw_reset_type_submenu, selected_note_in};
 
 impl MemoWindow {
     /// Draws the note pane: the note toolbar, then the note in its own
@@ -92,16 +98,61 @@ impl MemoWindow {
                 self.actions.push(WindowAction::FinishEditing);
             }
             if ui.is_item_hovered() {
-                ui.tooltip_text(Text::SaveTooltip.get(language));
+                draw_tooltip(ui, Text::SaveTooltip.get(language));
             }
         } else if self.selected_note().is_some() {
             // Editing is the main action of the reading view: the one brass
-            // button of the view (R71).
+            // button of the view (R71); the note's other actions wait in the
+            // menu beside it (M160).
             let edit = Text::EditNote.get(language);
-            move_to_toolbar_end(ui, icon_label_button_width(ui, theme, edit));
+            move_to_toolbar_end(
+                ui,
+                icon_button_width(ui, Icon::ELLIPSIS)
+                    + spacing
+                    + icon_label_button_width(ui, theme, edit),
+            );
+            self.draw_note_menu_button(ui, language, theme);
+            ui.same_line();
             if draw_primary_button_with_icon(ui, theme, Icon::PENCIL, edit) {
                 self.actions.push(WindowAction::StartEditing);
             }
+        }
+    }
+
+    /// Draws the `⋯` button of the note toolbar and its menu, whose right edge
+    /// lines up with the button (M160).
+    fn draw_note_menu_button(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+        const POPUP_ID: &str = "note_menu";
+        if draw_icon_button(ui, theme, Icon::ELLIPSIS, Text::MoreActions.get(language)) {
+            ui.open_popup(POPUP_ID);
+        }
+        let Some(note) = selected_note_in(&self.document, self.ui_state.selected) else {
+            return;
+        };
+        let (right, bottom) = (ui.item_rect_max()[0], ui.item_rect_max()[1]);
+        place_next_popup([right, bottom], 1.0);
+        let window_actions = &mut self.actions;
+        let mut note_items = |ui: &Ui, note: &Note| {
+            draw_reset_type_submenu(ui, theme, language, note, window_actions);
+        };
+        let mut list_actions = Vec::new();
+        let rename = draw_note_menu(
+            ui,
+            POPUP_ID,
+            note,
+            EntryMenu {
+                document: &self.document,
+                edited: None,
+                language,
+                theme,
+                note_items: &mut note_items,
+                actions: &mut list_actions,
+            },
+        );
+        self.actions
+            .extend(list_actions.into_iter().map(WindowAction::from));
+        if rename {
+            self.actions.push(WindowAction::StartRenaming);
         }
     }
 

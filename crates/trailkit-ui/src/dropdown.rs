@@ -5,6 +5,7 @@
 //! that opens a popup list below it. The field has the width of its widest
 //! option, so it does not jump when the choice changes.
 
+use crate::tooltip::draw_tooltip;
 use nexus::imgui::{ImColor32, Selectable, StyleColor, Ui};
 
 use crate::{
@@ -13,7 +14,7 @@ use crate::{
     font_registry::FontScope,
     fonts::FontRole,
     icons::Icon,
-    menu::{draw_menu_row_highlight, draw_menu_row_label, draw_popup},
+    menu::{draw_menu_row_highlight, draw_menu_row_label, draw_popup, place_next_popup},
     theme::Theme,
 };
 
@@ -65,17 +66,10 @@ pub fn draw_dropdown(
     // mark inside the popup's own padding.
     let popup_width =
         width.max(width - 2.0 * style.frame_padding[0] + 2.0 * style.window_padding[0]);
-    // SAFETY: plain ImGui calls on the render thread inside a frame; they
-    // only set the position and minimum size of the next window (the popup).
+    place_next_popup([min[0], max[1]], 0.0);
+    // SAFETY: a plain ImGui call on the render thread inside a frame; it only
+    // sets the minimum size of the next window (the popup).
     unsafe {
-        nexus::imgui::sys::igSetNextWindowPos(
-            nexus::imgui::sys::ImVec2 {
-                x: min[0],
-                y: max[1],
-            },
-            0,
-            nexus::imgui::sys::ImVec2 { x: 0.0, y: 0.0 },
-        );
         nexus::imgui::sys::igSetNextWindowSizeConstraints(
             nexus::imgui::sys::ImVec2 {
                 x: popup_width,
@@ -121,7 +115,7 @@ pub fn draw_dropdown(
         }
     });
     if is_hovered && !is_open {
-        ui.tooltip_text(tooltip);
+        draw_tooltip(ui, tooltip);
     }
     let border = tint.unwrap_or(if is_open {
         theme.border.focus

@@ -24,8 +24,7 @@ use trailkit_ui::{
     style_scope::StyleScope,
     theme::{Theme, ThemeKind},
     title_bar::{TitleBarState, TitleBarTexts, TitleBarToggle, draw_window as draw_title_bar},
-    toast::{Toast, draw_toast},
-    tool_rail::{ToolRailItem, draw_tool_rail},
+    toast::{Toast, ToastAction, draw_toast},
 };
 use trailkit_ui_testing::{
     harness::{FrameInput, UiHarness},
@@ -283,7 +282,15 @@ fn every_toast_state() {
         let mut harness = UiHarness::new(size);
         let mut draw = |ui: &Ui| {
             in_window(ui, &theme, size, || {
-                draw_toast(ui, &theme, &mut toast, Some("Undo"));
+                draw_toast(
+                    ui,
+                    &theme,
+                    &mut toast,
+                    &[ToastAction {
+                        label: "Undo",
+                        tooltip: None,
+                    }],
+                );
             });
         };
         let names = |state| ("toast", state, theme_name);
@@ -309,49 +316,37 @@ fn every_toast_state() {
 }
 
 #[test]
-fn every_tool_rail_state() {
-    let size = [180.0, 180.0];
-    let top = [
-        ToolRailItem {
-            icon: Icon::SEARCH,
-            tooltip: "Search",
-            active: true,
+fn toast_with_two_actions_in_every_width() {
+    let actions = [
+        ToastAction {
+            label: "Undo",
+            tooltip: None,
         },
-        ToolRailItem {
-            icon: Icon::TRASH_2,
-            tooltip: "Trash",
-            active: false,
+        ToastAction {
+            label: "Open trash",
+            tooltip: None,
         },
     ];
-    let bottom = [ToolRailItem {
-        icon: Icon::X,
-        tooltip: "Bottom tool",
-        active: false,
-    }];
-    for (kind, theme_name) in THEMES {
-        let theme = kind.theme();
-        let mut harness = UiHarness::new(size);
-        let mut draw = |ui: &Ui| {
-            in_window(ui, &theme, size, || {
-                draw_tool_rail(ui, &theme, &top, &bottom);
-            });
-        };
-        let names = |state| ("tool-rail", state, theme_name);
-        assert_state(
-            &mut harness,
-            names("rest"),
-            &mouse([160.0, 170.0], false),
-            &mut draw,
-        );
-        for (state, position) in [
-            ("hover-on", [24.0, 24.0]),
-            ("hover-off", [24.0, 60.0]),
-            ("hover-bottom", [24.0, 154.0]),
-        ] {
+    // Wide enough for one row, for the buttons in a row below the message
+    // and only for one button per row (M159).
+    for (state, size) in [
+        ("two-actions", [420.0, 140.0]),
+        ("two-actions-below", [250.0, 140.0]),
+        ("two-actions-stacked", [150.0, 180.0]),
+    ] {
+        for (kind, theme_name) in THEMES {
+            let theme = kind.theme();
+            let mut toast = Toast::new("Moved to the trash".to_owned());
+            let mut harness = UiHarness::new(size);
+            let mut draw = |ui: &Ui| {
+                in_window(ui, &theme, size, || {
+                    draw_toast(ui, &theme, &mut toast, &actions);
+                });
+            };
             assert_state(
                 &mut harness,
-                names(state),
-                &mouse(position, false),
+                ("toast", state, theme_name),
+                &mouse([4.0, 4.0], false),
                 &mut draw,
             );
         }

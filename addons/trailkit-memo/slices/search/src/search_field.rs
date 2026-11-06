@@ -6,6 +6,7 @@
 //! rule 7); the settings window will be the likely second user.
 
 use nexus::imgui::{StyleColor, StyleVar, Ui, WindowHoveredFlags};
+use trailkit_ui::tooltip::draw_tooltip;
 use trailkit_ui::{
     font_registry::FontScope, fonts::FontRole, glyph_metrics::glyph_ink_box, icons::Icon,
     theme::Theme,
@@ -31,8 +32,17 @@ pub struct SearchField {
 pub struct SearchFieldTexts<'text> {
     /// Placeholder while empty ("Search …").
     pub hint: &'text str,
-    /// Tooltip of the clear button.
-    pub clear: &'text str,
+    /// Tooltip of the `x` that closes the field.
+    pub close: &'text str,
+}
+
+/// What the user did with the field in this frame.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SearchFieldResponse {
+    /// The text changed by typing.
+    pub text_changed: bool,
+    /// The `x` was clicked: the app closes the field and clears it (M169).
+    pub close_clicked: bool,
 }
 
 impl SearchField {
@@ -54,9 +64,14 @@ impl SearchField {
         self.is_active
     }
 
-    /// Draws the field over the full available width. Returns whether the
-    /// text changed (typing or the clear button).
-    pub fn draw(&mut self, ui: &Ui, theme: &Theme, texts: SearchFieldTexts<'_>) -> bool {
+    /// Draws the field over the full available width and reports what the
+    /// user did.
+    pub fn draw(
+        &mut self,
+        ui: &Ui,
+        theme: &Theme,
+        texts: SearchFieldTexts<'_>,
+    ) -> SearchFieldResponse {
         let start = ui.cursor_screen_pos();
         let width = ui.content_region_avail()[0];
         // A little taller than a button (M128); the input inside keeps the
@@ -82,68 +97,25 @@ impl SearchField {
             .rounding(theme.radius.medium)
             .build();
 
-        // Magnifier on the left, the clear `x` mirrored on the right: same
-        // size, color and distance to the frame (M128). Both are placed by
-        // their ink, not their line box, in which Lucide glyphs sit off
-        // center.
+        let (magnifier, clear) = field_icon_inks(ui);
         let middle = start[1] + height / 2.0;
-        let (magnifier, clear) = {
-            let _icons = FontScope::push(ui, FontRole::Icons);
-            let line = ui.text_line_height();
-            let ink = |icon: Icon| glyph_ink_box(icon.glyph()).unwrap_or([0.0, 0.0, line, line]);
-            (ink(Icon::SEARCH), ink(Icon::X))
-        };
-        let magnifier_position = [
-            start[0] + padding[0] - magnifier[0],
-            middle - (magnifier[1] + magnifier[3]) / 2.0,
-        ];
         let clear_position = [
             end[0] - padding[0] - clear[2],
             middle - (clear[1] + clear[3]) / 2.0,
         ];
-        {
-            let _icons = FontScope::push(ui, FontRole::Icons);
-            let mut buffer = [0; 4];
-            ui.get_window_draw_list().add_text(
-                magnifier_position,
-                theme.text.secondary.to_array(),
-                Icon::SEARCH.as_str(&mut buffer),
-            );
-        }
+        draw_magnifier(ui, theme, [start[0] + padding[0], middle], magnifier);
         let input_x = start[0] + padding[0] + (magnifier[2] - magnifier[0]) + theme.spacing.small;
-        let clear_width = if self.text.is_empty() {
-            0.0
-        } else {
-            padding[0] + (clear[2] - clear[0]) + theme.spacing.small
-        };
+        let clear_width = padding[0] + (clear[2] - clear[0]) + theme.spacing.small;
 
-        let changed = {
-            let _id = ui.push_id(self.generation);
-            let _colors = [
-                ui.push_style_color(StyleColor::FrameBg, [0.0; 4]),
-                ui.push_style_color(StyleColor::FrameBgHovered, [0.0; 4]),
-                ui.push_style_color(StyleColor::FrameBgActive, [0.0; 4]),
-                ui.push_style_color(StyleColor::TextDisabled, theme.text.secondary.to_array()),
-            ];
-            let _border = ui.push_style_var(StyleVar::FrameBorderSize(0.0));
-            ui.set_cursor_screen_pos([input_x, input_y]);
-            ui.set_next_item_width((end[0] - clear_width - input_x).max(1.0));
-            if std::mem::take(&mut self.focus_requested) {
-                ui.set_keyboard_focus_here();
-            }
-            let changed = ui
-                .input_text("##search", &mut self.text)
-                .hint(texts.hint)
-                .build();
-            self.is_active = ui.is_item_active();
-            changed
-        };
+        let changed = self.draw_input(
+            ui,
+            theme,
+            texts.hint,
+            [input_x, input_y],
+            (end[0] - clear_width - input_x).max(1.0),
+        );
 
-        let cleared = !self.text.is_empty()
-            && self.draw_clear_button(ui, theme, clear_position, clear, texts.clear);
-        if cleared {
-            self.clear(true);
-        }
+        let close_clicked = self.draw_close_button(ui, theme, clear_position, clear, texts.close);
 
         let frame = if self.is_active {
             theme.border.focus
@@ -158,13 +130,44 @@ impl SearchField {
         // Leave the cursor below the field, as a regular item would.
         ui.set_cursor_screen_pos([start[0], end[1]]);
         ui.dummy([0.0, 0.0]);
-        changed || cleared
+        SearchFieldResponse {
+            text_changed: changed,
+            close_clicked,
+        }
     }
 
-    /// Draws the clear `x` at pen `position` (`ink` box relative to it):
+    /// Draws the frameless text input at `position` with `width`; returns
+    /// whether its text changed.
+    fn draw_input(
+        &mut self,
+        ui: &Ui,
+        theme: &Theme,
+        hint: &str,
+        position: [f32; 2],
+        width: f32,
+    ) -> bool {
+        let _id = ui.push_id(self.generation);
+        let _colors = [
+            ui.push_style_color(StyleColor::FrameBg, [0.0; 4]),
+            ui.push_style_color(StyleColor::FrameBgHovered, [0.0; 4]),
+            ui.push_style_color(StyleColor::FrameBgActive, [0.0; 4]),
+            ui.push_style_color(StyleColor::TextDisabled, theme.text.secondary.to_array()),
+        ];
+        let _border = ui.push_style_var(StyleVar::FrameBorderSize(0.0));
+        ui.set_cursor_screen_pos(position);
+        ui.set_next_item_width(width);
+        if std::mem::take(&mut self.focus_requested) {
+            ui.set_keyboard_focus_here();
+        }
+        let changed = ui.input_text("##search", &mut self.text).hint(hint).build();
+        self.is_active = ui.is_item_active();
+        changed
+    }
+
+    /// Draws the closing `x` at pen `position` (`ink` box relative to it):
     /// `text.secondary`, on hover `text.primary` over a small `bg.hover`
     /// square centered on the glyph. Returns whether it was clicked.
-    fn draw_clear_button(
+    fn draw_close_button(
         &self,
         ui: &Ui,
         theme: &Theme,
@@ -183,7 +186,7 @@ impl SearchField {
         ui.set_cursor_screen_pos(box_start);
         let clicked = {
             let _id = ui.push_id(self.generation);
-            ui.invisible_button("##clear_search", box_size)
+            ui.invisible_button("##close_search", box_size)
         };
         let hovered = ui.is_item_hovered();
         if hovered {
@@ -196,7 +199,7 @@ impl SearchField {
                 .filled(true)
                 .rounding(theme.radius.small)
                 .build();
-            ui.tooltip_text(tooltip);
+            draw_tooltip(ui, tooltip);
         }
         let color = if hovered {
             theme.text.primary
@@ -209,4 +212,25 @@ impl SearchField {
             .add_text(position, color.to_array(), Icon::X.as_str(&mut buffer));
         clicked
     }
+}
+
+/// The ink boxes of the field's magnifier and closing `x` (M128). Both icons are
+/// placed by their ink, not their line box, in which Lucide glyphs sit off center,
+/// so they mirror each other: same size, color and distance to the frame.
+fn field_icon_inks(ui: &Ui) -> ([f32; 4], [f32; 4]) {
+    let _icons = FontScope::push(ui, FontRole::Icons);
+    let line = ui.text_line_height();
+    let ink = |icon: Icon| glyph_ink_box(icon.glyph()).unwrap_or([0.0, 0.0, line, line]);
+    (ink(Icon::SEARCH), ink(Icon::X))
+}
+
+/// Draws the magnifier with its `ink` box starting at `left`, centered on `middle`.
+fn draw_magnifier(ui: &Ui, theme: &Theme, [left, middle]: [f32; 2], ink: [f32; 4]) {
+    let _icons = FontScope::push(ui, FontRole::Icons);
+    let mut buffer = [0; 4];
+    ui.get_window_draw_list().add_text(
+        [left - ink[0], middle - (ink[1] + ink[3]) / 2.0],
+        theme.text.secondary.to_array(),
+        Icon::SEARCH.as_str(&mut buffer),
+    );
 }

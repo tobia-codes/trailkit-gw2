@@ -16,6 +16,9 @@ read it before touching any color, size or radius, and review every new or
 changed snapshot against it before handing a UI change over (§10, R82). Do not apply
 generic web/mobile UI guidelines (touch targets, breakpoints, CSS, …) here.
 
+
+How the addons look today, with the snapshots to open: [`references/current-design.md`](references/current-design.md).
+
 ## 1. Principles
 
 1. **Consistency over novelty** — same component, same look, same place, in
@@ -70,16 +73,15 @@ Build once, use everywhere. Planned:
 
 - Title bar — **exists**: `title_bar::draw_window` replaces ImGui's title
   bar on every trailkit window (R71, R78): on the window background; on the
-  left the addon's own toggles (`TitleBarToggle`, e.g. memo's tools ⋮ and
-  note list) and the bold title, on the right the Lucide chevron to
+  left the addon's own toggles (`TitleBarToggle`, e.g. memo's note list) and the bold title, on the right the Lucide chevron to
   collapse and the Lucide `x` to close. The row uses the window padding, so
   the first and the last button line up with the panes below. The addon
   passes texts and toggles, keeps a `TitleBarState` and applies the clicked
   toggle index it gets back. A menu (Settings, Help, About) joins it later
-- Tool rail — **exists**: `tool_rail::draw_tool_rail`, a narrow vertical
-  strip of icon toggles on the left edge (like VS Code's activity bar,
-  memo M136): tools at the top, window-wide entries (settings) at the
-  bottom; never wraps; shown or hidden by a title bar toggle
+- Window menu — **pattern, in memo** (`main_window/window_menu.rs`, M166, R86): the
+  title bar's `menu` toggle opens a panel over the full content height with an
+  `overlay.modal` backdrop (`lay-drawer`). Moves to this crate when a second
+  addon needs it (rule 7). The former tool rail is gone
 - `SettingsWindow` scaffold (left navigation list, right content, search)
 - `HelpWindow` (renders bundled markdown help in active language)
 - Buttons — **exist**: `button::draw_button` (secondary, `bg.hover` fill),
@@ -168,12 +170,13 @@ move it into `crates/trailkit-ui` (see AGENTS.md "Code sharing").
   give the box the parity whose centre matches the ink centre's fraction
   (never round the ink size). Boxes of one kind keep one width so they line
   up (memo M132; `badge_geometry` in the memo note-list slice).
-- Tooltips: plain ImGui tooltips; `StyleScope` moves them right of the real
+- Tooltips: always `tooltip::draw_tooltip` or `draw_tooltip_with`, which center the
+  text by its capitals (M171; clippy bans the ImGui calls); `StyleScope` moves them right of the real
   cursor (GW2's cursor is large, memo M84) — never position them by hand.
 - Overlays inside a window (scrims): ImGui renders a child window's
   *background* into the parent's draw list, i.e. below every sibling child
   drawn earlier. Never dim with `ChildBg`; draw the dimming rectangle into
-  the overlay child's own draw list (see memo `draw_drawer`).
+  the overlay child's own draw list (see memo `draw_window_menu`).
 
 ## 5. Review checklist
 

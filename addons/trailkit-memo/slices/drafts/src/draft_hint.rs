@@ -2,14 +2,14 @@
 //! note changed since, and "Restore" (primary) / "Discard".
 
 use jiff::Timestamp;
-use nexus::imgui::Ui;
+use nexus::imgui::{StyleColor, Ui};
 use trailkit_memo_shared::{
     drafts::Draft,
     i18n::{Language, LocalizedText, Text, format_local_time},
     note_tree::NoteId,
 };
 use trailkit_ui::{
-    button::{draw_button, draw_primary_button},
+    button::{button_width, draw_button, draw_primary_button},
     separator::draw_separator,
     theme::Theme,
 };
@@ -59,21 +59,28 @@ impl DraftHint {
             ));
         }
         if let Some((_, _, label)) = self.label.as_ref() {
-            ui.text_colored(theme.status.warning.to_array(), label);
+            let _warning = ui.push_style_color(StyleColor::Text, theme.status.warning.to_array());
+            ui.text_wrapped(label);
         }
         if draft.note_updated_at != note_updated_at {
-            ui.text_colored(
-                theme.text.secondary.to_array(),
-                DraftText::DraftNoteChangedSince.get(language),
-            );
+            let _muted = ui.push_style_color(StyleColor::Text, theme.text.secondary.to_array());
+            ui.text_wrapped(DraftText::DraftNoteChangedSince.get(language));
         }
+        let restore = DraftText::RestoreDraft.get(language);
+        // "Discard" is shared with the unsaved-changes question.
+        let discard = Text::DiscardChanges.get(language);
+        let buttons_width = button_width(ui, theme, restore)
+            + ui.clone_style().item_spacing[0]
+            + button_width(ui, theme, discard);
+        let fits_one_row = buttons_width <= ui.content_region_avail()[0];
         let mut action = None;
-        if draw_primary_button(ui, theme, DraftText::RestoreDraft.get(language)) {
+        if draw_primary_button(ui, theme, restore) {
             action = Some(DraftHintAction::Restore);
         }
-        ui.same_line();
-        // "Discard" is shared with the unsaved-changes question.
-        if draw_button(ui, theme, Text::DiscardChanges.get(language)) {
+        if fits_one_row {
+            ui.same_line();
+        }
+        if draw_button(ui, theme, discard) {
             action = Some(DraftHintAction::Discard);
         }
         draw_separator(ui, theme);

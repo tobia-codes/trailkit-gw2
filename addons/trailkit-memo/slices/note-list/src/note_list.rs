@@ -7,10 +7,12 @@
 //! ([`ListSearch`], [`NoteRowExtras`], ROADMAP R76 questions 48–53).
 
 mod context_menu;
+pub use context_menu::{EntryMenu, draw_note_menu};
 mod delete;
 mod rows;
 
 use std::collections::HashSet;
+use trailkit_ui::tooltip::{draw_tooltip, draw_tooltip_with};
 
 use nexus::imgui::{MouseButton, StyleColor, Ui, WindowHoveredFlags};
 use trailkit_memo_shared::{
@@ -63,7 +65,7 @@ pub struct NoteRowExtras<'a> {
     pub badge: &'a dyn Fn(&Note) -> Option<RowBadge>,
     /// Draws the tooltip of a hovered badge.
     pub badge_tooltip: &'a mut dyn FnMut(&Ui, &Note),
-    /// Draws extra items of a note's context menu, after "Rename".
+    /// Draws extra items of a note's context menu, after "Move to" (M160).
     pub context_menu: &'a mut dyn FnMut(&Ui, &Note),
 }
 
@@ -268,7 +270,7 @@ impl NoteList {
                 ui.button_with_size(icon.as_str(&mut buffer), [width, 0.0])
             };
             if ui.is_item_hovered() {
-                ui.tooltip_text(tooltip.get(language));
+                draw_tooltip(ui, tooltip.get(language));
             }
             if clicked {
                 clicked_action = Some(action);
@@ -330,7 +332,7 @@ impl NoteList {
             } else if self.drag_blocked_by_search
                 && ui.is_mouse_dragging_with_threshold(MouseButton::Left, DRAG_THRESHOLD)
             {
-                ui.tooltip_text(search.texts.clear_search_to_move);
+                draw_tooltip(ui, search.texts.clear_search_to_move);
             }
         } else if let Some(node) = pressed {
             self.drag = Some(TreeDrag {
@@ -456,7 +458,7 @@ impl NoteList {
     /// target (M106–M111). While dragging, the title floats next to the
     /// cursor with a gold border, red with a ban icon over an impossible
     /// target (M109, M116). Call once per frame after the whole window, as
-    /// the list may not be drawn (drawer closed).
+    /// the list may not be drawn (list hidden).
     pub fn finish_drag(
         &mut self,
         ui: &Ui,
@@ -482,7 +484,7 @@ impl NoteList {
         }
         let title = node_title(document, drag.node).unwrap_or_default();
         let is_impossible = drag.target.is_some() && drag.check == MoveCheck::Impossible;
-        // The list may not be drawn next frame (drawer closed); its target
+        // The list may not be drawn next frame (list hidden); its target
         // is only valid for this one.
         drag.target = None;
         drag.check = MoveCheck::Unchanged;
@@ -494,7 +496,7 @@ impl NoteList {
             theme.accent.text
         };
         let _border = ui.push_style_color(StyleColor::Border, border.to_array());
-        ui.tooltip(|| {
+        draw_tooltip_with(ui, || {
             let _danger = is_impossible
                 .then(|| ui.push_style_color(StyleColor::Text, theme.status.danger.to_array()));
             if is_impossible {

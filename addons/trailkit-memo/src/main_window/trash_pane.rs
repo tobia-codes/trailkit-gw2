@@ -3,12 +3,12 @@
 //! read-only preview in the note pane and the toast at the bottom.
 
 use jiff::Timestamp;
-use nexus::imgui::{ChildWindow, Ui};
+use nexus::imgui::{ChildWindow, StyleColor, Ui};
 use trailkit_ui::{
     markdown_view::{MarkdownAction, open_web_link},
     separator::draw_separator,
     theme::Theme,
-    toast::draw_toast,
+    toast::{ToastAction, draw_toast},
 };
 
 use trailkit_memo_note_view::note_view::{NoteViewAction, NoteViewInput, ReadOnly};
@@ -22,7 +22,7 @@ use trailkit_memo_trash::{
     trash_view::{draw_group_preview, draw_preview_toolbar, draw_trash_entries, draw_trash_header},
 };
 
-use super::{MemoWindow, WindowAction};
+use super::{MemoWindow, WindowAction, WindowToastKind};
 
 impl MemoWindow {
     /// Draws the trash column in place of the note list (M136): header with
@@ -62,10 +62,8 @@ impl MemoWindow {
             .selected
             .and_then(|node| self.document.trash_entry(node))
         else {
-            ui.text_colored(
-                theme.text.secondary.to_array(),
-                TrashText::SelectTrashEntry.get(language),
-            );
+            let _muted = ui.push_style_color(StyleColor::Text, theme.text.secondary.to_array());
+            ui.text_wrapped(TrashText::SelectTrashEntry.get(language));
             return;
         };
         if let Some(action) = draw_preview_toolbar(ui, language, theme, entry.id()) {
@@ -95,18 +93,32 @@ impl MemoWindow {
         }
     }
 
-    /// Draws the toast at the bottom of the window, with "Undo" if it offers
-    /// that (M142, M148).
+    /// Draws the toast at the bottom of the window; after a delete it offers
+    /// "Undo" and "Open trash" (M142, M148, M158).
     pub(super) fn draw_toast_message(&mut self, ui: &Ui, language: Language, theme: &Theme) {
         let Some(toast) = &mut self.toast else {
             return;
         };
-        let action = toast.offers_undo.then(|| TrashText::Undo.get(language));
-        let outcome = draw_toast(ui, theme, &mut toast.toast, action);
-        if outcome.action_clicked {
-            self.actions.push(WindowAction::Undo);
-        } else if outcome.expired {
-            self.actions.push(WindowAction::DismissToast);
+        let trash_actions = [
+            ToastAction {
+                label: TrashText::Undo.get(language),
+                tooltip: Some(TrashText::UndoTooltip.get(language)),
+            },
+            ToastAction {
+                label: TrashText::OpenTrash.get(language),
+                tooltip: None,
+            },
+        ];
+        let actions: &[ToastAction<'_>] = match toast.kind {
+            WindowToastKind::Message => &[],
+            WindowToastKind::MovedToTrash => &trash_actions,
+        };
+        let outcome = draw_toast(ui, theme, &mut toast.toast, actions);
+        match outcome.clicked_action {
+            Some(0) => self.actions.push(WindowAction::Undo),
+            Some(_) => self.actions.push(WindowAction::OpenTrash),
+            None if outcome.expired => self.actions.push(WindowAction::DismissToast),
+            None => {}
         }
     }
 }

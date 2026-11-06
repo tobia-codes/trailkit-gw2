@@ -2,6 +2,7 @@
 //! badges and search hits, row interaction and the inline rename input.
 
 use std::borrow::Cow;
+use trailkit_ui::tooltip::draw_tooltip;
 
 use nexus::imgui::{
     Condition, Key, MouseButton, StyleColor, StyleVar, TreeNode, TreeNodeFlags, Ui,
@@ -217,7 +218,8 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut RowContext<'_, '_>) {
     if let Some(badge) = (context.extras.badge)(note) {
         let (badge_start, is_hovered) =
             draw_row_badge(ui, badge, [content_end, row_start[1]], context.theme);
-        if is_hovered {
+        // The rectangle alone also matches below an open menu.
+        if is_hovered && is_row_hovered {
             (context.extras.badge_tooltip)(ui, note);
         }
         title_end = badge_start - context.theme.spacing.small;
@@ -235,7 +237,7 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut RowContext<'_, '_>) {
             count,
         );
         if is_row_hovered && ui.io().mouse_pos[0] >= count_x {
-            ui.tooltip_text(search.texts.content_hits.replace("{count}", count));
+            draw_tooltip(ui, search.texts.content_hits.replace("{count}", count));
         }
         title_end = count_x - context.theme.spacing.small;
     }
@@ -273,13 +275,12 @@ fn handle_hovered_row(
     context: &mut RowContext<'_, '_>,
 ) {
     if label != title && !label.is_empty() {
-        ui.tooltip_text(title);
+        draw_tooltip(ui, title);
     }
     if ui.is_mouse_double_clicked(MouseButton::Left) {
         context.rename_steps.push(RenameStep::Start(node));
     } else if ui.is_mouse_clicked(MouseButton::Left) && !ui.is_item_toggled_open() {
-        // Selects on release unless it becomes a drag (M106), so dragging a
-        // note keeps the drawer open (M113).
+        // Selects on release unless it becomes a drag (M106).
         context.pressed = Some(node);
     }
     if ui.is_mouse_clicked(MouseButton::Right) {

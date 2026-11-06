@@ -8,9 +8,10 @@ use trailkit_memo_shared::i18n::{Language, LocalizedText};
 pub enum SearchText {
     /// Placeholder of the search field (M123).
     SearchHint,
-    /// Clear button of the search field and of the empty search result
-    /// (M118, M126).
+    /// Button of the empty search result (M126).
     ClearSearch,
+    /// Tooltip of the `x` that closes the search field (M169).
+    CloseSearch,
     /// Empty search result; `{query}` is replaced by the search text (M126).
     NoSearchResults,
     /// Tooltip while dragging during a search, which cannot move (M125).
@@ -23,6 +24,7 @@ impl LocalizedText for SearchText {
     const ALL: &'static [Self] = &[
         Self::SearchHint,
         Self::ClearSearch,
+        Self::CloseSearch,
         Self::NoSearchResults,
         Self::ClearSearchToMove,
         Self::ContentHits,
@@ -34,6 +36,8 @@ impl LocalizedText for SearchText {
             (Self::SearchHint, Language::German) => "Suchen …",
             (Self::ClearSearch, Language::English) => "Clear search",
             (Self::ClearSearch, Language::German) => "Suche leeren",
+            (Self::CloseSearch, Language::English) => "Close search",
+            (Self::CloseSearch, Language::German) => "Suche schließen",
             (Self::NoSearchResults, Language::English) => "No notes for “{query}”",
             (Self::NoSearchResults, Language::German) => "Keine Notizen für „{query}“",
             (Self::ClearSearchToMove, Language::English) => "Clear the search to move",

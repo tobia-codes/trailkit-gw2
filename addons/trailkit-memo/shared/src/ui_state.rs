@@ -31,9 +31,6 @@ pub struct UiState {
     /// Whether the user hid the note list column of the two-pane layout
     /// (M48, toggled from the title bar since M137).
     pub note_list_hidden: bool,
-    /// Whether the tool rail on the left edge is shown (M136; hidden by
-    /// default).
-    pub tool_rail_visible: bool,
     /// Whether the search field above the note list is shown (M138); it
     /// stays until the user hides it again.
     pub search_visible: bool,
@@ -49,14 +46,13 @@ pub struct UiState {
 
 impl Default for UiState {
     /// Nothing selected, default splitter, top of the note, note list shown,
-    /// tool rail and search field hidden, regular note view, no preview.
+    /// search field hidden, regular note view, no preview.
     fn default() -> Self {
         Self {
             selected: None,
             note_list_characters: DEFAULT_NOTE_LIST_CHARACTERS,
             note_scroll: 0.0,
             note_list_hidden: false,
-            tool_rail_visible: false,
             search_visible: false,
             compact_note_view: false,
             preview_visible: false,
@@ -111,7 +107,6 @@ mod tests {
         assert!((state.note_list_characters - DEFAULT_NOTE_LIST_CHARACTERS).abs() < f32::EPSILON);
         assert!((state.note_scroll - 12.5).abs() < f32::EPSILON);
         assert!(!state.note_list_hidden);
-        assert!(!state.tool_rail_visible);
         assert!(!state.search_visible);
         assert!(!state.compact_note_view);
         Ok(())

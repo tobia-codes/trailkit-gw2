@@ -168,7 +168,11 @@ be in, in Dark **and** Light:
 
 - Interaction: rest, hover, pressed, selected, on/off, disabled, focused,
   open, dragged.
-- Content: empty, filled, long/scrolled, narrow window, error or problem hint.
+- Content: empty, filled, long/scrolled, error or problem hint.
+- Size and language: every view, menu, dialog and hint also at the window's
+  minimum width, and the longest texts in German, where nothing may run past or
+  be clipped by its pane (`lay-responsive`; hovers excepted, they do not change
+  the layout). A snapshot shows clipped text but does not fail on it, so look.
 
 Each state is covered once per element; the cross product of independent
 states is not needed. Shared components live in

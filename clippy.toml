@@ -5,5 +5,7 @@ allow-expect-in-tests = true
 # jiff is built without a time-zone database (ROADMAP R72): `TimeZone::system()`
 # would silently fall back to UTC. Use the addon's own local-time helper.
 disallowed-methods = [
+    { path = "nexus::imgui::Ui::tooltip_text", reason = "use trailkit_ui::tooltip::draw_tooltip, which centers the text (M171)" },
+    { path = "nexus::imgui::Ui::tooltip", reason = "use trailkit_ui::tooltip::draw_tooltip_with, which centers the text (M171)" },
     { path = "jiff::tz::TimeZone::system", reason = "no bundled tzdb (R72); convert with the operating system, e.g. trailkit-memo `i18n::format_local_time`" },
 ]

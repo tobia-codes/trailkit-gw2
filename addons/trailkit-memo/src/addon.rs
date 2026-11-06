@@ -41,7 +41,7 @@ use trailkit_ui::{
     title_bar::{TitleBarState, draw_window},
 };
 
-use crate::main_window::{MemoWindow, NotesProblem, title_bar_texts};
+use crate::main_window::{MemoWindow, NotesProblem, minimum_window_width, title_bar_texts};
 use trailkit_memo_shared::i18n::LocalizedText;
 use trailkit_memo_shared::{
     i18n::{Language, Text},
@@ -317,18 +317,7 @@ fn detect_nexus_language() -> Option<String> {
 /// Draws the main window. Returns immediately while the window is closed, and
 /// skips drawing (keeping it open) outside gameplay unless the settings allow it.
 fn render_main_window(ui: &nexus::imgui::Ui) {
-    // Escape in the focused, non-empty search field clears the search
-    // instead (M124); Nexus already hid the window, so show it again.
-    if !VISIBLE.load(Ordering::Relaxed) && SEARCH_TAKES_ESCAPE.swap(false, Ordering::Relaxed) {
-        VISIBLE.store(true, Ordering::Relaxed);
-        SEARCH_ESCAPED.store(true, Ordering::Relaxed);
-    }
-    // Hidden by keybind or quick access with unsaved changes: show it again
-    // and ask instead (M54).
-    if !VISIBLE.load(Ordering::Relaxed) && UNSAVED_CHANGES.load(Ordering::Relaxed) {
-        VISIBLE.store(true, Ordering::Relaxed);
-        CLOSE_REQUESTED.store(true, Ordering::Relaxed);
-    }
+    reopen_hidden_window_if_needed();
     if !VISIBLE.load(Ordering::Relaxed) || !settings().allows_drawing(is_gameplay()) {
         return;
     }
@@ -354,7 +343,7 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
     let mut title_bar = TITLE_BAR
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
-    // The memo toggles (tool rail, note list; R78) exist once notes are loaded.
+    // The memo toggle (window menu; R78) exists once notes are loaded.
     let toggles = match &*notes {
         NotesState::Ready(window) => Some(window.title_bar_toggles(language)),
         NotesState::Loading { .. } | NotesState::Unavailable => None,
@@ -362,7 +351,9 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
     let clicked_toggle = draw_window(
         ui,
         &theme,
-        Window::new(title).size([640.0, 420.0], Condition::FirstUseEver),
+        Window::new(title)
+            .size([640.0, 420.0], Condition::FirstUseEver)
+            .size_constraints([minimum_window_width(ui), 0.0], [f32::MAX, f32::MAX]),
         title_bar_texts(language),
         toggles.as_ref().map_or(&[][..], |toggles| &toggles[..]),
         &mut title_bar,
@@ -381,12 +372,35 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
     drop(title_bar);
     if let NotesState::Ready(window) = &mut *notes {
         if let Some(index) = clicked_toggle {
-            window.apply_title_bar_toggle(index, language);
+            window.apply_title_bar_toggle(index);
         }
         window.draw_dialog(ui, language, &theme);
     }
+    apply_close_request(&mut notes, open);
+}
+
+/// Shows the hidden window again when Nexus hid it too early: Escape in the
+/// focused, non-empty search field only clears the search (M124), and with
+/// unsaved changes a keybind or quick access click asks first (M54).
+fn reopen_hidden_window_if_needed() {
+    if !VISIBLE.load(Ordering::Relaxed) && SEARCH_TAKES_ESCAPE.swap(false, Ordering::Relaxed) {
+        VISIBLE.store(true, Ordering::Relaxed);
+        SEARCH_ESCAPED.store(true, Ordering::Relaxed);
+    }
+    if !VISIBLE.load(Ordering::Relaxed) && UNSAVED_CHANGES.load(Ordering::Relaxed) {
+        VISIBLE.store(true, Ordering::Relaxed);
+        CLOSE_REQUESTED.store(true, Ordering::Relaxed);
+    }
+}
+
+/// Handles a close request of this frame; `open` is false after a click on the
+/// title bar's close button, which closes the window menu along with it.
+fn apply_close_request(notes: &mut NotesState, open: bool) {
+    if !open && let NotesState::Ready(window) = notes {
+        window.close_window_menu();
+    }
     let close_requested = !open || CLOSE_REQUESTED.swap(false, Ordering::Relaxed);
-    let may_close = match &mut *notes {
+    let may_close = match notes {
         NotesState::Ready(window) => {
             let may_close =
                 window.take_close_approval() || (close_requested && window.request_close());

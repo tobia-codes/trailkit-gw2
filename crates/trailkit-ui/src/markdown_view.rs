@@ -11,6 +11,7 @@
 //! The view never changes anything itself: clicks are returned as a
 //! [`MarkdownAction`] for the caller to apply.
 
+use crate::tooltip::draw_tooltip;
 use std::ops::Range;
 
 use nexus::imgui::{MouseCursor, Ui};
@@ -550,7 +551,7 @@ fn draw_piece(ui: &Ui, piece: &str, span: &Span, theme: &Theme) -> Option<Markdo
         .build();
     if ui.is_item_hovered() {
         ui.set_mouse_cursor(Some(MouseCursor::Hand));
-        ui.tooltip_text(url);
+        draw_tooltip(ui, url);
     }
     ui.is_item_clicked()
         .then(|| MarkdownAction::OpenLink(url.clone()))
