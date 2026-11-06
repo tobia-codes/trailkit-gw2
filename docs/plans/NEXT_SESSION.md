@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-06 (shared agent context cleanup). This file holds only the current state and
+Last updated: 2026-11-06 (agent guidance follow-ups). This file holds only the current state and
 the next steps. Keep it under 100 lines: decisions go into `docs/plans/`, lasting
 facts into the skills, and the history stays in git.
 
@@ -18,8 +18,7 @@ facts into the skills, and the history stays in git.
 ## ▶ Resume here
 
 Next ids: **M179+, R89+, questions from 144.** R87/R88 and the shared context
-cleanup are in this change; the user explicitly requested its merge into `develop`.
-Q141 answered yes (keep flat token tables, R77); Q142 answered yes (one consolidated
+cleanup are merged into `develop` (#92). Q141 answered yes (keep flat token tables, R77); Q142 answered yes (one consolidated
 memo changeset at first-release preparation, R16). Claude/Codex share the shorter rules.
 
 **Separate pending work:** `feature/memo-save-error-design` holds the local HTML
@@ -67,9 +66,13 @@ ones were removed on 2026-11-06 (Q137). `bugfix/ui-theme-in-game-fixes` is obsol
 
 ## Recurring checks
 
-- **GW2 wiki** (2026-10-31): still behind Cognito login, the Wayback workaround stays.
+Triggers and consequences: [agent reference](../agent-reference.md#recurring-checks).
+
+- **GW2 wiki** (checked 2026-10-31; due regularly, for event data work and at each phase
+  start): still behind Cognito login, the Wayback workaround stays.
 - **C-703/25 P** (checked 2026-11-06: no judgment, opinion or hearing found, sources only
-  from 2025; check again next session): pending, DPF in force. Microsoft intervened for
+  from 2025; due at the start of each session touching planning, hosting or core and at
+  each phase start): pending, DPF in force. Microsoft intervened for
   the Commission; noyb asked for repeal (2026-06-30) but has not sued yet.
 - **DPF reminder workflow:** the 2026-11-01 08:00 cron was silently skipped by GitHub and
   triggered by hand (issue #11). If it skips again on 2026-12-01, grill moving the cron off
