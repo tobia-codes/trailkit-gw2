@@ -2,6 +2,28 @@
 # Checks before every push (ROADMAP R14, R48). Enable with `cargo xtask install-hooks`.
 set -e
 # Shells started by git may not have rustup on PATH.
+# Git passes one line per ref: local ref, local sha, remote ref, remote sha. A
+# deletion has an all-zero local sha and builds nothing, so it needs no checks and
+# the current branch does not matter; only the two long-lived branches stay safe.
+only_deletions=false
+while read -r _local_ref local_sha remote_ref _remote_sha; do
+    case "$local_sha" in
+        *[!0]*)
+            only_deletions=no
+            ;;
+        *)
+            case "$remote_ref" in
+                refs/heads/develop | refs/heads/main)
+                    echo "Error: deleting $remote_ref is not allowed" >&2
+                    exit 1
+                    ;;
+            esac
+            [ "$only_deletions" = no ] || only_deletions=true
+            ;;
+    esac
+done
+[ "$only_deletions" = true ] && exit 0
+
 command -v cargo >/dev/null 2>&1 || . "$HOME/.cargo/env"
 cargo xtask check-branch
 cargo clippy --quiet --workspace --all-targets -- -D warnings
