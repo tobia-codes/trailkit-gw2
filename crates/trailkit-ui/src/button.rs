@@ -9,7 +9,7 @@ use crate::{
     dropdown::{draw_border, draw_icon_into, icon_width},
     font_registry::FontScope,
     fonts::FontRole,
-    glyph_metrics::{capital_middle, glyph_ink_box},
+    glyph_metrics::{capital_middle, glyph_ink_box, glyph_visible_ink},
     icons::Icon,
     theme::Theme,
 };
@@ -254,13 +254,15 @@ pub fn draw_icon_toggle(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str, activ
     clicked
 }
 
-/// Draws `icon` with its visible ink centered in `[min, max]`, on whole
-/// pixels. The font's line box is no substitute: how the ink sits in it
-/// changes with the font size.
+/// Draws `icon` with its visible pixels centered in `[min, max]`, on whole
+/// pixels. Neither the font's line box nor the glyph's quad will do: how the
+/// ink sits in them changes with the font size.
 fn draw_icon_centered(ui: &Ui, icon: Icon, [min, max]: [[f32; 2]; 2], color: u32) {
     let _icons = FontScope::push(ui, FontRole::Icons);
     let line = ui.text_line_height();
-    let ink = glyph_ink_box(icon.glyph()).unwrap_or([0.0, 0.0, line, line]);
+    let ink = glyph_visible_ink(icon.glyph())
+        .or_else(|| glyph_ink_box(icon.glyph()))
+        .unwrap_or([0.0, 0.0, line, line]);
     let position = nexus::imgui::sys::ImVec2 {
         x: ((min[0] + max[0] - ink[0] - ink[2]) / 2.0).round(),
         y: ((min[1] + max[1] - ink[1] - ink[3]) / 2.0).round(),

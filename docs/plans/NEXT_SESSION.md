@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-06 (session 18: window menu replaces the tool rail, on the unmerged, unpushed branch `feature/memo-ux-round`; the user continues with Codex).
+Last updated: 2026-11-06 (session 18: window menu replaces the tool rail, merged into `develop`; the user continues with Codex).
 
 ## Where we are
 
@@ -107,30 +107,18 @@ Last updated: 2026-11-06 (session 18: window menu replaces the tool rail, on the
 Next ids: **M172+, R87+, questions from 128.** The new look is described in
 [`current-design.md`](../../.agents/skills/trailkit-ui/references/current-design.md).
 
-1. **Finish branch `feature/memo-ux-round`** (local only, nothing pushed; work
-   continues here, on no other branch). Decisions M157-M171 are in
-   `docs/plans/addons/trailkit-memo.md`.
-   - **The user tests in game, then says whether it may merge.** Deployed: M157-M171.
-     Not yet confirmed in game: the window menu and its rows, the backdrop, the
-     minimum width (at 18 px text), the list hiding and returning around editing,
-     the search field's `x`, the `⋯` menu, Rename from it (title selected), toast
-     buttons, delete and undo. Follow-ups stay on this branch and are redeployed.
-   - **Merge only after the user's OK in that conversation** (R74): then push, open
-     the PR into `develop`, `gh pr merge --auto --merge --delete-branch`. No AI
-     attribution in commits or PRs (R68).
-   - **Open questions, not yet answered:**
-     - Q112: split `draw_toast` (103 code lines, hint at 80) by moving the layout
-       calculation into its own function? Recommendation: yes, a small commit here.
-     - Q113: keep the right-click menu's new order (Reset type below Move to), because
-       it shares its code with the `⋯` menu (M160)? Recommendation: yes.
-     - Q121: split `SearchField::draw` (91 code lines), a new hint from M169, by moving
-       the icon placement out? Recommendation: yes, a small commit here.
-     - Q122: `render_main_window` (83 code lines) grew slightly past the hint.
-       Recommendation: leave it until the settings step changes that function anyway.
-   - **Choices the agent made, disclosed to the user and easy to turn back:** Ctrl+F does
-     nothing in the editor (M167); the selected row of the menu (M166); the Hide row is
-     also offered in the trash, as in the approved mockup.
-   - Row 4 (editor that hides markdown outside the active line) is **not** part of
+1. **`feature/memo-ux-round` is merged into `develop`** with the user's OK (M157-M171).
+   Pull `develop` and start follow-ups on a new branch. Check first:
+   - **In game:** the last icon fix (M170, visible pixels) was deployed right before
+     the merge; before it the `menu` icon sat 1 px below "Notes". Ask the user for a
+     screenshot if unsure and measure it.
+   - Settled: Q112, Q121 and Q122 split, Q113 keeps the menu order (Reset type below
+     Move to). The user answered "alle ja" to Q122, whose recommendation was to wait;
+     it was taken as a yes to splitting.
+   - **Choices the agent made, disclosed to the user and easy to turn back:** Ctrl+F
+     does nothing in the editor (M167); the selected row of the menu (M166); the Hide
+     row is also offered in the trash, as in the approved mockup.
+   - Row 4 (editor that hides markdown outside the active line) was **not** part of
      the branch: it needs its own grill round, it is the biggest change.
 2. **Splits after that (R77), each a small own step:** Q91 `note_list.rs` +
    `draw_group`, Q95 `draw_dropdown`, Q96 `editor/view.rs`, Q105 `markdown_view.rs`.
@@ -181,8 +169,10 @@ Next ids: **M172+, R87+, questions from 128.** The new look is described in
 - `ui-test` now takes about 4 minutes of test time for the memo window alone.
 - Minimum-width snapshots live in `tests/states/minimum_width.rs`. The user kept 40
   characters after trying it in game (Q125).
-- `draw_icon_button` centers by ink since M170: when an icon looks off in game,
-  measure the screenshot before changing anything; the test renderer hid 1.5 px.
+- `draw_icon_button` centers by visible pixels since M170: when an icon looks off in
+  game, measure the screenshot before changing anything; the test renderer hid
+  1.5 px. A scanner over the glyph's texels runs per icon button per frame, a few
+  hundred bytes each.
 
 ## Session 17 summary (2026-11-05, branch `feature/memo-ux-round`)
 
