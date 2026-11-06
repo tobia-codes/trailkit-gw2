@@ -8,7 +8,7 @@ use crate::{
     dropdown::{draw_border, draw_icon_into, icon_width},
     font_registry::FontScope,
     fonts::FontRole,
-    glyph_metrics::capital_middle,
+    glyph_metrics::{capital_middle, glyph_ink_box},
     icons::Icon,
     theme::Theme,
 };
@@ -217,7 +217,8 @@ pub fn draw_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str) -> bo
 /// Like [`draw_icon_button`], but a toggle that keeps a state: while
 /// `active` it sits on `bg.active` with a `text.primary` icon, otherwise it
 /// looks like a plain icon button. Toggles never use the brass accent
-/// (ROADMAP R79, tokens.md §3).
+/// (ROADMAP R79, tokens.md §3). The icon is centered by its visible ink, so
+/// it lines up with a label centered by its capitals (memo M170).
 pub fn draw_icon_toggle(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str, active: bool) -> bool {
     let _active_text =
         active.then(|| ui.push_style_color(StyleColor::Text, theme.text.primary.to_array()));
@@ -226,8 +227,10 @@ pub fn draw_icon_toggle(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str, activ
     } else {
         [0.0; 4]
     };
+    let color = ImColor32::from(ui.style_color(StyleColor::Text)).to_bits();
     let clicked = {
         let _colors = [
+            ui.push_style_color(StyleColor::Text, [0.0; 4]),
             ui.push_style_color(StyleColor::Button, resting),
             ui.push_style_color(
                 StyleColor::ButtonHovered,
@@ -243,10 +246,39 @@ pub fn draw_icon_toggle(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str, activ
         let mut buffer = [0; 4];
         ui.button(icon.as_str(&mut buffer))
     };
+    draw_icon_centered(ui, icon, [ui.item_rect_min(), ui.item_rect_max()], color);
     if ui.is_item_hovered() {
         ui.tooltip_text(tooltip);
     }
     clicked
+}
+
+/// Draws `icon` with its visible ink centered in `[min, max]`, on whole
+/// pixels. The font's line box is no substitute: how the ink sits in it
+/// changes with the font size.
+fn draw_icon_centered(ui: &Ui, icon: Icon, [min, max]: [[f32; 2]; 2], color: u32) {
+    let _icons = FontScope::push(ui, FontRole::Icons);
+    let line = ui.text_line_height();
+    let ink = glyph_ink_box(icon.glyph()).unwrap_or([0.0, 0.0, line, line]);
+    let position = nexus::imgui::sys::ImVec2 {
+        x: ((min[0] + max[0] - ink[0] - ink[2]) / 2.0).round(),
+        y: ((min[1] + max[1] - ink[1] - ink[3]) / 2.0).round(),
+    };
+    let mut buffer = [0; 4];
+    let glyph = icon.as_str(&mut buffer);
+    let begin = glyph.as_ptr().cast::<std::ffi::c_char>();
+    // SAFETY: called on the render thread inside a frame, where ImGui has a
+    // current window and returns its draw list; `begin..begin + len` is the
+    // UTF-8 glyph, which ImGui only reads.
+    unsafe {
+        nexus::imgui::sys::ImDrawList_AddText_Vec2(
+            nexus::imgui::sys::igGetWindowDrawList(),
+            position,
+            color,
+            begin,
+            begin.add(glyph.len()),
+        );
+    }
 }
 
 /// The width a text button with `label` takes (at least `button.min_width`,

@@ -104,13 +104,13 @@ Last updated: 2026-11-06 (session 18: window menu replaces the tool rail, on the
 
 ## ▶ Resume here
 
-Next ids: **M170+, R87+, questions from 127.** The new look is described in
+Next ids: **M171+, R87+, questions from 128.** The new look is described in
 [`current-design.md`](../../.agents/skills/trailkit-ui/references/current-design.md).
 
 1. **Finish branch `feature/memo-ux-round`** (local only, nothing pushed; work
-   continues here, on no other branch). Decisions M157-M169 are in
+   continues here, on no other branch). Decisions M157-M170 are in
    `docs/plans/addons/trailkit-memo.md`.
-   - **The user tests in game, then says whether it may merge.** Deployed: M157-M169.
+   - **The user tests in game, then says whether it may merge.** Deployed: M157-M170.
      Not yet confirmed in game: the window menu and its rows, the backdrop, the
      minimum width (at 18 px text), the list hiding and returning around editing,
      the search field's `x`, the `⋯` menu, Rename from it (title selected), toast
@@ -127,7 +127,6 @@ Next ids: **M170+, R87+, questions from 127.** The new look is described in
        the icon placement out? Recommendation: yes, a small commit here.
      - Q122: `render_main_window` (83 code lines) grew slightly past the hint.
        Recommendation: leave it until the settings step changes that function anyway.
-     - Q125: see "Facts learned in session 18".
    - **Choices the agent made, disclosed to the user and easy to turn back:** Ctrl+F does
      nothing in the editor (M167); the selected row of the menu (M166); the Hide row is
      also offered in the trash, as in the approved mockup.
@@ -180,8 +179,10 @@ Next ids: **M170+, R87+, questions from 127.** The new look is described in
   question stays English because the fixture builds it in English; the app builds
   it in the active language.
 - `ui-test` now takes about 4 minutes of test time for the memo window alone.
-- Q125 is open: keep 40 characters, or about 46 so the list stays readable?
-  Recommendation: keep 40, the user decides after trying it in game.
+- Minimum-width snapshots live in `tests/states/minimum_width.rs`. The user kept 40
+  characters after trying it in game (Q125).
+- `draw_icon_button` centers by ink since M170: when an icon looks off in game,
+  measure the screenshot before changing anything; the test renderer hid 1.5 px.
 
 ## Session 17 summary (2026-11-05, branch `feature/memo-ux-round`)
 
