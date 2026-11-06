@@ -11,6 +11,8 @@ use super::{trash::document_with_trash, *};
 
 /// A window with the storage worker and directory that must outlive it.
 type Fixture = (MemoWindow, StorageWorker, tempfile::TempDir);
+/// A state's name and how to bring a window into it.
+type NamedFixture = (&'static str, fn() -> Fixture);
 
 /// The usual window size of these snapshots.
 const WIDE: [f32; 2] = [640.0, 360.0];
@@ -110,10 +112,21 @@ fn typing(position: [f32; 2], text: &str) -> Vec<FrameInput> {
 /// Brings a window from `make` into the state after `steps` in both themes
 /// and compares each with the reference `memo-state-<name>-<theme>`.
 fn assert_state(name: &str, size: [f32; 2], make: impl Fn() -> Fixture, steps: &[FrameInput]) {
+    assert_state_in(Language::English, name, size, make, steps);
+}
+
+/// Like [`assert_state`] with the window's texts in `language`.
+fn assert_state_in(
+    language: Language,
+    name: &str,
+    size: [f32; 2],
+    make: impl Fn() -> Fixture,
+    steps: &[FrameInput],
+) {
     for (theme, theme_name) in [(ThemeKind::Dark, "dark"), (ThemeKind::Light, "light")] {
         let (mut memo, _worker, _directory) = make();
         let mut harness = UiHarness::new(size);
-        let mut draw_frame = |ui: &Ui| draw(ui, &mut memo, size, theme);
+        let mut draw_frame = |ui: &Ui| draw_in_language(ui, &mut memo, size, theme, language);
         for _ in 0..2 {
             harness.step(&FrameInput::default(), &mut draw_frame);
         }
@@ -204,6 +217,104 @@ fn trash_view(document: NotesDocument, select: bool) -> Fixture {
     fixture
 }
 
+/// The first note with a body long enough to scroll, scrolled down.
+fn scrolled_note() -> Fixture {
+    let long_body = (1..=30)
+        .map(|line| format!("- Line {line}"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    with_body(&long_body, |state| state.note_scroll = 200.0)
+}
+
+/// The first note with a chat link chip of every category.
+fn chips_note() -> Fixture {
+    with_body(
+        "## Route\n- Start at [&BDgAAAA=], buy [&AvoJTQAA]\n- Budget: [&AdsnAAA=]\n- Build: [&DQc=]\n- Gear: [&CwEAAAA=] [&BnMVAAA=] [&CgEAAAA=] [&DgEAAAA=]\n- Broken: [&KgAAAAA=]",
+        |_| {},
+    )
+}
+
+/// The first note open in the editor beside its preview.
+fn editing_with_preview() -> Fixture {
+    let document = sample_document();
+    let ui_state = UiState {
+        preview_visible: true,
+        ..selected_first(&document)
+    };
+    let mut fixture = memo_window(document, ui_state);
+    fixture
+        .0
+        .apply(&WindowAction::StartEditing, Language::English);
+    if let Some(editor) = fixture.0.editor.as_mut() {
+        editor.unfocus_body();
+    }
+    fixture
+}
+
+/// The unsaved changes dialog over the editor.
+fn unsaved_dialog() -> Fixture {
+    let mut fixture = editing();
+    if let Some(editor) = fixture.0.editor.as_mut() {
+        editor.title_mut().push_str(" (changed)");
+    }
+    assert!(!fixture.0.request_close(), "closing must ask first");
+    fixture
+}
+
+/// The question before deleting a group with notes.
+fn delete_group_dialog() -> Fixture {
+    let document = sample_document();
+    let raids = document.root.iter().find_map(|node| match node {
+        Node::Group(group) => Some(NodeId::Group(group.id)),
+        Node::Note(_) => None,
+    });
+    let ui_state = selected_first(&document);
+    let mut fixture = memo_window(document, ui_state);
+    if let Some(raids) = raids {
+        fixture
+            .0
+            .apply(&WindowAction::Delete(raids), Language::English);
+    }
+    fixture
+}
+
+/// The question before deleting a trash entry for good.
+fn delete_for_good_dialog() -> Fixture {
+    let document = document_with_trash([0, 25]);
+    let first = document.trash[0].id();
+    let mut fixture = trash_view(document, false);
+    fixture.0.apply(
+        &WindowAction::Trash(TrashAction::DeletePermanently(first)),
+        Language::English,
+    );
+    fixture
+}
+
+/// The question before emptying the trash.
+fn empty_trash_dialog() -> Fixture {
+    let mut fixture = trash_view(document_with_trash([0, 25]), false);
+    fixture.0.apply(
+        &WindowAction::Trash(TrashAction::EmptyTrash),
+        Language::English,
+    );
+    fixture
+}
+
+/// The first note with a draft kept from an earlier session.
+fn with_draft() -> Fixture {
+    let mut fixture = selected();
+    if let Some(NodeId::Note(note)) = first_note(&fixture.0.document) {
+        fixture.0.drafts.drafts.push(Draft {
+            note,
+            title: "Shopping list (draft)".to_owned(),
+            body: "- [ ] A draft line".to_owned(),
+            saved_at: same_local_time_everywhere(),
+            note_updated_at: fixed_time(),
+        });
+    }
+    fixture
+}
+
 /// A time that local time shows as the same wall clock in every time zone, so
 /// a snapshot with a formatted time matches on the CI runner too.
 fn same_local_time_everywhere() -> Timestamp {
@@ -253,27 +364,8 @@ fn views() {
         &[],
     );
     assert_state("minimum-width", MINIMUM_WINDOW, selected, &[]);
-    let long_body = (1..=30)
-        .map(|line| format!("- Line {line}"))
-        .collect::<Vec<_>>()
-        .join("\n");
-    assert_state(
-        "scrolled-note",
-        WIDE,
-        || with_body(&long_body, |state| state.note_scroll = 200.0),
-        &[],
-    );
-    assert_state(
-        "chips",
-        WIDE,
-        || {
-            with_body(
-                "## Route\n- Start at [&BDgAAAA=], buy [&AvoJTQAA]\n- Budget: [&AdsnAAA=]\n- Build: [&DQc=]\n- Gear: [&CwEAAAA=] [&BnMVAAA=] [&CgEAAAA=] [&DgEAAAA=]\n- Broken: [&KgAAAAA=]",
-                |_| {},
-            )
-        },
-        &[],
-    );
+    assert_state("scrolled-note", WIDE, scrolled_note, &[]);
+    assert_state("chips", WIDE, chips_note, &[]);
 }
 
 #[test]
@@ -370,8 +462,8 @@ fn context_menus() {
     assert_state("menu-note", WIDE, selected, &right_click(DAILIES_ROW));
     for (name, row) in [
         ("menu-note-hover-rename", 0),
-        ("menu-note-reset-submenu", 1),
-        ("menu-note-move-submenu", 2),
+        ("menu-note-move-submenu", 1),
+        ("menu-note-reset-submenu", 2),
         ("menu-note-hover-delete", 3),
     ] {
         assert_state(name, WIDE, selected, &menu_row_hover(DAILIES_ROW, row));
@@ -409,22 +501,7 @@ fn editor() {
     assert_state("editor", WIDE, editing, &[]);
     assert_state("editor-focused", WIDE, selected_editing_focused, &[]);
     assert_state("editor-selection", WIDE, editing_with_selection, &[]);
-    let with_preview = || {
-        let document = sample_document();
-        let ui_state = UiState {
-            preview_visible: true,
-            ..selected_first(&document)
-        };
-        let mut fixture = memo_window(document, ui_state);
-        fixture
-            .0
-            .apply(&WindowAction::StartEditing, Language::English);
-        if let Some(editor) = fixture.0.editor.as_mut() {
-            editor.unfocus_body();
-        }
-        fixture
-    };
-    assert_state("editor-preview", [720.0, 360.0], with_preview, &[]);
+    assert_state("editor-preview", [720.0, 360.0], editing_with_preview, &[]);
 }
 
 /// The first note open in the editor with the keyboard focus in its body.
@@ -460,52 +537,10 @@ fn search() {
 
 #[test]
 fn dialogs() {
-    let unsaved = || {
-        let mut fixture = editing();
-        if let Some(editor) = fixture.0.editor.as_mut() {
-            editor.title_mut().push_str(" (changed)");
-        }
-        assert!(!fixture.0.request_close(), "closing must ask first");
-        fixture
-    };
-    assert_state("dialog-unsaved", WIDE, unsaved, &[]);
-    assert_state("dialog-unsaved-narrow", [480.0, 300.0], unsaved, &[]);
-    let delete_group = || {
-        let document = sample_document();
-        let raids = document.root.iter().find_map(|node| match node {
-            Node::Group(group) => Some(NodeId::Group(group.id)),
-            Node::Note(_) => None,
-        });
-        let ui_state = selected_first(&document);
-        let mut fixture = memo_window(document, ui_state);
-        if let Some(raids) = raids {
-            fixture
-                .0
-                .apply(&WindowAction::Delete(raids), Language::English);
-        }
-        fixture
-    };
-    assert_state("dialog-delete-group", WIDE, delete_group, &[]);
-    let delete_for_good = || {
-        let document = document_with_trash([0, 25]);
-        let first = document.trash[0].id();
-        let mut fixture = trash_view(document, false);
-        fixture.0.apply(
-            &WindowAction::Trash(TrashAction::DeletePermanently(first)),
-            Language::English,
-        );
-        fixture
-    };
-    assert_state("dialog-delete-for-good", WIDE, delete_for_good, &[]);
-    let empty_trash = || {
-        let mut fixture = trash_view(document_with_trash([0, 25]), false);
-        fixture.0.apply(
-            &WindowAction::Trash(TrashAction::EmptyTrash),
-            Language::English,
-        );
-        fixture
-    };
-    assert_state("dialog-empty-trash", WIDE, empty_trash, &[]);
+    assert_state("dialog-unsaved", WIDE, unsaved_dialog, &[]);
+    assert_state("dialog-delete-group", WIDE, delete_group_dialog, &[]);
+    assert_state("dialog-delete-for-good", WIDE, delete_for_good_dialog, &[]);
+    assert_state("dialog-empty-trash", WIDE, empty_trash_dialog, &[]);
 }
 
 #[test]
@@ -681,18 +716,212 @@ fn problems_and_drafts() {
         || with_problem(NotesProblem::Inaccessible),
         &[],
     );
-    let with_draft = || {
-        let mut fixture = selected();
-        if let Some(NodeId::Note(note)) = first_note(&fixture.0.document) {
-            fixture.0.drafts.drafts.push(Draft {
-                note,
-                title: "Shopping list (draft)".to_owned(),
-                body: "- [ ] A draft line".to_owned(),
-                saved_at: same_local_time_everywhere(),
-                note_updated_at: fixed_time(),
-            });
-        }
-        fixture
-    };
     assert_state("draft-hint", WIDE, with_draft, &[]);
+}
+
+/// Entries in the trash, none chosen.
+fn trash_entries() -> Fixture {
+    trash_view(document_with_trash([0, 25]), false)
+}
+
+/// Entries in the trash, the first one shown.
+fn trash_entry_chosen() -> Fixture {
+    trash_view(document_with_trash([0, 25]), true)
+}
+
+/// The sample with the search field shown.
+fn searching() -> Fixture {
+    selected_with(|state| state.search_visible = true)
+}
+
+/// Center of the search field at the minimum width.
+const MINIMUM_SEARCH_FIELD: [f32; 2] = [55.0, 68.0];
+/// Center of the kind dropdown at the minimum width.
+const MINIMUM_KIND_FIELD: [f32; 2] = [180.0, 145.0];
+/// Center of the note toolbar's `⋯` button at the minimum width.
+const MINIMUM_NOTE_MENU_BUTTON: [f32; 2] = [212.0, 65.0];
+/// Center of the "Dailies" row at the minimum width.
+const MINIMUM_DAILIES_ROW: [f32; 2] = [60.0, 138.0];
+/// Center of the "Raids" row at the minimum width.
+const MINIMUM_RAIDS_ROW: [f32; 2] = [60.0, 170.0];
+
+/// Every view and dialog at the narrowest window (M168), which nothing may run
+/// past or clip (`lay-responsive`). Hovers are left out: they do not change the
+/// layout.
+#[test]
+fn views_at_the_minimum_width() {
+    let views: [NamedFixture; 24] = [
+        ("no-selection", || {
+            memo_window(sample_document(), UiState::default())
+        }),
+        ("empty", || {
+            memo_window(NotesDocument::default(), UiState::default())
+        }),
+        ("daily-note", || selected_titled("Dailies")),
+        ("search-shown", searching),
+        ("list-hidden", || {
+            selected_with(|state| state.note_list_hidden = true)
+        }),
+        ("compact", || {
+            selected_with(|state| state.compact_note_view = true)
+        }),
+        ("scrolled-note", scrolled_note),
+        ("chips", chips_note),
+        ("editor", editing),
+        ("editor-preview", editing_with_preview),
+        ("dialog-unsaved", unsaved_dialog),
+        ("dialog-delete-group", delete_group_dialog),
+        ("dialog-delete-for-good", delete_for_good_dialog),
+        ("dialog-empty-trash", empty_trash_dialog),
+        ("trash-nothing-in-it", || {
+            trash_view(sample_document(), false)
+        }),
+        ("trash-nothing-selected", trash_entries),
+        ("trash-selected", trash_entry_chosen),
+        ("problem-recovered", || {
+            with_problem(NotesProblem::Recovered("notes.corrupt.json".to_owned()))
+        }),
+        ("problem-newer", || with_problem(NotesProblem::NewerVersion)),
+        ("problem-inaccessible", || {
+            with_problem(NotesProblem::Inaccessible)
+        }),
+        ("draft-hint", with_draft),
+        ("window-menu-in-trash", || {
+            let mut fixture = trash_entries();
+            fixture.0.window_menu_open = true;
+            fixture
+        }),
+        ("window-menu-editing", || {
+            let mut fixture = editing();
+            fixture.0.window_menu_open = true;
+            fixture
+        }),
+        ("window-menu-no-notes", || {
+            let mut fixture = memo_window(NotesDocument::default(), UiState::default());
+            fixture.0.window_menu_open = true;
+            fixture
+        }),
+    ];
+    for (name, make) in views {
+        assert_state(&format!("min-{name}"), MINIMUM_WINDOW, make, &[]);
+    }
+}
+
+/// Menus and text input at the narrowest window (M168).
+#[test]
+fn menus_at_the_minimum_width() {
+    let window = MINIMUM_WINDOW;
+    let field = MINIMUM_SEARCH_FIELD;
+    assert_state("min-search-hits", window, searching, &typing(field, "ecto"));
+    assert_state(
+        "min-search-no-hits",
+        window,
+        searching,
+        &typing(field, "xyzzy"),
+    );
+    assert_state(
+        "min-kind-open",
+        window,
+        selected,
+        &click(MINIMUM_KIND_FIELD),
+    );
+    assert_state(
+        "min-note-menu",
+        window,
+        selected,
+        &click(MINIMUM_NOTE_MENU_BUTTON),
+    );
+    assert_state(
+        "min-menu-note",
+        window,
+        selected,
+        &right_click(MINIMUM_DAILIES_ROW),
+    );
+    assert_state(
+        "min-menu-note-move-submenu",
+        window,
+        selected,
+        &menu_row_hover(MINIMUM_DAILIES_ROW, 1),
+    );
+    assert_state(
+        "min-menu-note-reset-submenu",
+        window,
+        selected,
+        &menu_row_hover(MINIMUM_DAILIES_ROW, 2),
+    );
+    assert_state(
+        "min-menu-group",
+        window,
+        selected,
+        &right_click(MINIMUM_RAIDS_ROW),
+    );
+    assert_state(
+        "min-menu-list",
+        window,
+        selected,
+        &right_click([60.0, 300.0]),
+    );
+    assert_state(
+        "min-trash-menu",
+        window,
+        trash_entries,
+        &right_click([60.0, 160.0]),
+    );
+    let mut renaming = right_click(MINIMUM_DAILIES_ROW);
+    renaming.extend(click([
+        MINIMUM_DAILIES_ROW[0] + 30.0,
+        MINIMUM_DAILIES_ROW[1] + MENU_ROWS[0],
+    ]));
+    renaming.extend(hover([300.0, 340.0]));
+    assert_state("min-rename", window, selected, &renaming);
+}
+
+/// The longer German texts at the narrowest window (M168).
+#[test]
+fn german_at_the_minimum_width() {
+    let views: [NamedFixture; 9] = [
+        ("note", selected),
+        ("empty", || {
+            memo_window(NotesDocument::default(), UiState::default())
+        }),
+        ("draft-hint", with_draft),
+        ("trash-nothing-selected", trash_entries),
+        ("trash-selected", trash_entry_chosen),
+        ("dialog-unsaved", unsaved_dialog),
+        ("dialog-empty-trash", empty_trash_dialog),
+        ("problem-recovered", || {
+            with_problem(NotesProblem::Recovered("notes.corrupt.json".to_owned()))
+        }),
+        ("window-menu", menu_open),
+    ];
+    for (name, make) in views {
+        assert_state_in(
+            Language::German,
+            &format!("min-de-{name}"),
+            MINIMUM_WINDOW,
+            make,
+            &[],
+        );
+    }
+    assert_state_in(
+        Language::German,
+        "min-de-search-no-hits",
+        MINIMUM_WINDOW,
+        searching,
+        &typing(MINIMUM_SEARCH_FIELD, "xyzzy"),
+    );
+    assert_state_in(
+        Language::German,
+        "min-de-menu-note",
+        MINIMUM_WINDOW,
+        selected,
+        &right_click(MINIMUM_DAILIES_ROW),
+    );
+    assert_state_in(
+        Language::German,
+        "min-de-kind-open",
+        MINIMUM_WINDOW,
+        selected,
+        &click(MINIMUM_KIND_FIELD),
+    );
 }

@@ -133,10 +133,8 @@ impl NoteView {
     ) -> NoteViewOutput {
         let mut output = NoteViewOutput::default();
         let Some(note) = input.note else {
-            ui.text_colored(
-                theme.text.secondary.to_array(),
-                NoteViewText::SelectNote.get(language),
-            );
+            let _muted = ui.push_style_color(StyleColor::Text, theme.text.secondary.to_array());
+            ui.text_wrapped(NoteViewText::SelectNote.get(language));
             return output;
         };
         let is_stale = self
@@ -158,7 +156,8 @@ impl NoteView {
             draw_title(ui, theme, &note.title, input.title_trailing);
         }
         if let Some(read_only) = input.read_only {
-            ui.text_colored(theme.text.secondary.to_array(), read_only.subtitle);
+            let _muted = ui.push_style_color(StyleColor::Text, theme.text.secondary.to_array());
+            ui.text_wrapped(read_only.subtitle);
         }
         let first_line = self
             .parsed
@@ -221,10 +220,10 @@ impl NoteView {
                     ui.set_scroll_y((first_hit - ui.text_line_height()).max(0.0));
                 }
             }
-            _ => ui.text_colored(
-                theme.text.secondary.to_array(),
-                NoteViewText::EmptyNote.get(language),
-            ),
+            _ => {
+                let _muted = ui.push_style_color(StyleColor::Text, theme.text.secondary.to_array());
+                ui.text_wrapped(NoteViewText::EmptyNote.get(language));
+            }
         }
         let scroll = ui.scroll_y();
         if (scroll - *note_scroll).abs() >= 1.0 {

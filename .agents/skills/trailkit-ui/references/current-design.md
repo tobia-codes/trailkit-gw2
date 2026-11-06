@@ -66,6 +66,7 @@ Names follow `memo-state-<state>-<dark|light>.png` and
 | Menu while editing | `window-menu-editing-dark` |
 | Compact note view | `compact-dark` |
 | Dialogs, toast | `dialog-unsaved-dark`, `toast-dark` |
+| Any view at the narrowest window | `min-<state>-dark`, in German `min-de-<state>-dark` |
 
 ## How the layout behaves
 
@@ -77,6 +78,9 @@ Names follow `memo-state-<state>-<dark|light>.png` and
   regular page.
 - **The editor hides the note list** and brings it back when it ends (M167). A
   list the user hid stays hidden.
+- **At the narrowest window the list is barely readable by choice** (M168): nested
+  notes show only their badge, and the search hint is cut to "Sea". The note stays
+  fully usable. Everything else wraps or shortens with "…".
 
 ## Character of the design
 

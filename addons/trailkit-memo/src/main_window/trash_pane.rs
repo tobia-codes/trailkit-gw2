@@ -3,7 +3,7 @@
 //! read-only preview in the note pane and the toast at the bottom.
 
 use jiff::Timestamp;
-use nexus::imgui::{ChildWindow, Ui};
+use nexus::imgui::{ChildWindow, StyleColor, Ui};
 use trailkit_ui::{
     markdown_view::{MarkdownAction, open_web_link},
     separator::draw_separator,
@@ -62,10 +62,8 @@ impl MemoWindow {
             .selected
             .and_then(|node| self.document.trash_entry(node))
         else {
-            ui.text_colored(
-                theme.text.secondary.to_array(),
-                TrashText::SelectTrashEntry.get(language),
-            );
+            let _muted = ui.push_style_color(StyleColor::Text, theme.text.secondary.to_array());
+            ui.text_wrapped(TrashText::SelectTrashEntry.get(language));
             return;
         };
         if let Some(action) = draw_preview_toolbar(ui, language, theme, entry.id()) {

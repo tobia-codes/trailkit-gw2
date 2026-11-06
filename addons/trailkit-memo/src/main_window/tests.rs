@@ -94,29 +94,40 @@ fn memo_window(
     (window, worker, directory)
 }
 
-/// Draws `memo` like the addon does: theme, window, then its dialog.
+/// Draws `memo` in English like the addon does.
 fn draw(ui: &Ui, memo: &mut MemoWindow, size: [f32; 2], theme: ThemeKind) {
+    draw_in_language(ui, memo, size, theme, Language::English);
+}
+
+/// Draws `memo` like the addon does: theme, window, then its dialog.
+fn draw_in_language(
+    ui: &Ui,
+    memo: &mut MemoWindow,
+    size: [f32; 2],
+    theme: ThemeKind,
+    language: Language,
+) {
     let theme = theme.theme();
     let _style = StyleScope::push_with_cursor_extent(ui, &theme, None);
     let mut title_bar = TitleBarState::default();
     let mut open = true;
-    let toggles = memo.title_bar_toggles(Language::English);
+    let toggles = memo.title_bar_toggles(language);
     let clicked = draw_window(
         ui,
         &theme,
         Window::new("Notes###memo")
             .position([0.0, 0.0], Condition::Always)
             .size(size, Condition::Always),
-        title_bar_texts(Language::English),
+        title_bar_texts(language),
         &toggles,
         &mut title_bar,
         &mut open,
-        || memo.draw(ui, Language::English, &theme),
+        || memo.draw(ui, language, &theme),
     );
     if let Some(index) = clicked {
         memo.apply_title_bar_toggle(index);
     }
-    memo.draw_dialog(ui, Language::English, &theme);
+    memo.draw_dialog(ui, language, &theme);
 }
 
 /// Renders `memo` for a few frames (layouts settle) and compares it with the

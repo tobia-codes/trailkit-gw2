@@ -217,7 +217,8 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut RowContext<'_, '_>) {
     if let Some(badge) = (context.extras.badge)(note) {
         let (badge_start, is_hovered) =
             draw_row_badge(ui, badge, [content_end, row_start[1]], context.theme);
-        if is_hovered {
+        // The rectangle alone also matches below an open menu.
+        if is_hovered && is_row_hovered {
             (context.extras.badge_tooltip)(ui, note);
         }
         title_end = badge_start - context.theme.spacing.small;
