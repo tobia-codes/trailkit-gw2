@@ -16,6 +16,11 @@ Shared instructions for every coding agent working in this repository
 
 Planning documents live in [`docs/plans/`](docs/plans/README.md).
 
+**Start every session** with [`docs/plans/NEXT_SESSION.md`](docs/plans/NEXT_SESSION.md),
+section "Resume here". Before UI work, read
+[`current-design.md`](.agents/skills/trailkit-ui/references/current-design.md): it
+says what the addon looks like today and which snapshot PNGs show it.
+
 ## Hard rules
 
 1. **Pushing and merging.** Agents work on a work branch (`feature/`,
@@ -44,7 +49,8 @@ Planning documents live in [`docs/plans/`](docs/plans/README.md).
 2. **Decisions go through the grill-me skill.** Whenever a decision is needed
    (architecture, scope, libraries, naming, UX, data model, …) that is not
    already settled in `docs/plans/` or by the user, run the `grilling` skill
-   (`.agents/skills/grilling`, entry point `grill-me`): ask numbered questions
+   (`.agents/skills/grilling/SKILL.md`; `grill-me` only forwards to it, so agents
+   without a Skill tool read that file directly): ask numbered questions
    in rounds with a recommended answer each, until the decision tree is fully
    resolved. Do not silently assume. Record settled decisions in the relevant
    plan document.
@@ -83,6 +89,31 @@ Planning documents live in [`docs/plans/`](docs/plans/README.md).
     data as possible (IP addresses count as personal data), prefer EU
     providers with a data processing agreement (AVV/DPA), no tracking or
     analytics without consent. Flag any GDPR impact of a change to the user.
+
+## Working with the user
+
+The user tests everything in game and decides. What has proved to matter:
+
+- **German in conversation**, English in everything that gets committed. The
+  user's GitHub login is `tobia-codes`. The public commit address is
+  `tobiacodes@gmail.com`; a private address must never reach the git history
+  (ROADMAP R62).
+- **Comes from TypeScript and is learning Rust.** Explain Rust concepts with a
+  TypeScript comparison.
+- **Decides visual questions from images** and wants to see every state before
+  deciding (see `current-design.md`, last section). Build only after the OK.
+- **Cares strongly about UI quality, theming, performance and security.**
+  Performance beats DLL size (R72).
+- **Asks why when an argument is weak.** Give honest trade-offs and correct
+  yourself openly. Say plainly what you chose yourself and what you did not
+  verify.
+- **Review snapshots before handing over** (R82): look at the whole element
+  against `tokens.md` §10, not only the property you changed. The user once found
+  a square hover in game that an already-viewed snapshot showed.
+
+Conversation memory stays with the tool that wrote it, so a decision only
+reaches other agents once it is written into this repository: decisions into
+`docs/plans/`, how to continue into `NEXT_SESSION.md`.
 
 ## Recurring checks
 
@@ -152,6 +183,19 @@ expensive for the rest of the session. Keep it small:
   `cargo-xwin` to `x86_64-pc-windows-msvc` and copied into the Windows GW2
   `addons` folder by a deploy script; CI additionally builds on a Windows
   runner.
+- Run `source ~/.cargo/env` before cargo. Plain `grep` may fail in this shell;
+  use `command grep`.
+- Commands used daily:
+  | Command | Purpose |
+  |---------|---------|
+  | `cargo xtask deploy trailkit-memo` | Build and hot-reload into the running game; `addons/Nexus/Nexus.log` in the game folder logs "Loaded addon" 1-2 s later |
+  | `cargo xtask ui-test [--update]` | Snapshot tests, about 4 minutes |
+  | `cargo xwin clippy --target x86_64-pc-windows-msvc --all-targets -- -D warnings` | Needed besides host clippy, which skips Windows-only code |
+  | `cargo xtask subset-fonts` | After adding an icon to `Icon::ALL` |
+  | `cargo xtask tokens` | After changing a token |
+  | `cargo xtask check-names` | Naming conventions of paths |
+- A killed `ui-test` can leave a test process that overwrites snapshots: stop it
+  with `pkill -f '^/init .*debug/deps/'`.
 
 ## Architecture decisions
 
@@ -162,6 +206,8 @@ Fundamental design decisions are recorded so any agent can pick them up:
 - How an addon is structured (app, shared and slice crates; template and
   checklist for new addons) →
   `.agents/skills/nexus-addon-dev/references/addon-structure.md`
+- What the addons look like today, and how to see it →
+  `.agents/skills/trailkit-ui/references/current-design.md`
 - Theme, design tokens, shared components, UX rules →
   `.agents/skills/trailkit-ui/SKILL.md`; token values are generated into
   `references/token-values.md` (`cargo xtask tokens`, R84), never edited by hand

@@ -12,17 +12,22 @@ Während Ladebildschirmen, Zwischensequenzen und der Charakterauswahl wird das F
 
 Das Fenster zeigt links die Notizliste und rechts die ausgewählte Notiz. Ziehe den Spalt zwischen beiden Seiten, um ihre Breite zu ändern (beim Darüberfahren erscheint eine Linie). Die Notizliste behält ihre Breite, wenn du das Fenster größer oder kleiner ziehst; der zusätzliche Platz geht an die Notiz.
 
-Die **Werkzeugleiste** am linken Rand ist immer da, mit *Suchen* und dem *Papierkorb*.
-
 In der Titelleiste sitzen drei Buttons:
 
-- **Seitenleisten-Button**, oben links: blendet die linke Spalte (Notizliste oder Papierkorb) aus, damit die Notiz die ganze Breite bekommt; ein weiterer Klick blendet sie wieder ein. memo merkt sich deine Wahl.
+- **Menü-Button**, oben links: öffnet das Menü. Ein Klick auf die abgedunkelte Fläche oder erneut auf den Button schließt es.
 - **Pfeil** rechts: klappt das Fenster auf seine Titelleiste ein (erneut klicken zum Ausklappen); **×** schließt es.
 
 Ein hinterlegter Button bedeutet: Was er schaltet, ist gerade eingeblendet.
 
+Das Menü führt dich zu den Bereichen von memo:
+
+- **Notizen** bringt dich immer zurück zur normalen Seite: Es verlässt den Papierkorb, schließt die Suche und blendet die Notizliste wieder ein.
+- **Suchen** zeigt das Suchfeld. **Papierkorb** zeigt den Papierkorb.
+- **Notizliste ausblenden** gibt der Notiz die ganze Breite; **Notizliste einblenden** holt die Liste zurück. memo merkt sich deine Wahl.
+
 - **Kompakte Ansicht** (Pfeile-Button, oben links in der Notiz): blendet die Leiste mit *Bearbeiten* und das Typ-Feld aus, damit die Notiz mehr Platz bekommt. Der Button hinter dem Titel beendet sie wieder. Andere Notizen auswählen und Kästchen abhaken geht weiter; eine Notiz bearbeiten (auch per Doppelklick) oder eine neue anlegen beendet die kompakte Ansicht. memo merkt sie sich. Zusammen mit ausgeblendeter Notizliste bleibt nur die Notiz übrig.
-- **Schmales Fenster:** Die Notiz füllt das Fenster, und der Seitenleisten-Button öffnet die Notizliste darüber. Wähle eine Notiz, klicke auf die abgedunkelte Notiz oder erneut auf den Seitenleisten-Button, um die Liste zu schließen. Beim Bearbeiten mit offener Vorschau schaltet memo schon früher um, damit Text und Vorschau Platz behalten.
+- **Kleines Fenster:** Das Fenster wird nicht schmaler, als Notizliste und Notiz nebeneinander brauchen, die Liste verschwindet also nie von selbst. Größerer Text macht diese Mindestbreite größer.
+- **Beim Bearbeiten** macht die Notizliste dem Editor Platz und kommt zurück, sobald du speicherst oder abbrichst. Hattest du sie selbst ausgeblendet, bleibt sie ausgeblendet.
 
 - **Neue Notiz / neue Gruppe:** die beiden Buttons über der Liste. Der neue Eintrag landet in der ausgewählten Gruppe (bzw. der Gruppe der ausgewählten Notiz), ganz am Ende. Tippe gleich einen Namen ein und drücke Enter.
 - **Rechtsklick** auf eine Gruppe oder eine leere Stelle der Liste bietet dasselbe: auf einer Gruppe kommt der neue Eintrag in sie hinein, auf einer leeren Stelle ans Ende der Liste.
@@ -37,7 +42,7 @@ Ein hinterlegter Button bedeutet: Was er schaltet, ist gerade eingeblendet.
 
 ## Papierkorb
 
-Klicke auf den **Papierkorb** in der Werkzeugleiste, um statt der Notizliste den Papierkorb zu sehen; ein zweiter Klick oder der **Zurück-Pfeil** neben *Papierkorb* bringt dich zurück zu deinen Notizen. Gelöschte Notizen und Gruppen bleiben dort **30 Tage** und werden dann endgültig entfernt. Jeder Eintrag zeigt, wie viele Tage noch bleiben – in der letzten Woche rot.
+Wähle im Menü **Papierkorb**, um statt der Notizliste den Papierkorb zu sehen; der **Zurück-Pfeil** neben *Papierkorb* oder *Notizen* im Menü bringt dich zurück zu deinen Notizen. Gelöschte Notizen und Gruppen bleiben dort **30 Tage** und werden dann endgültig entfernt. Jeder Eintrag zeigt, wie viele Tage noch bleiben – in der letzten Woche rot.
 
 - Klicke einen Eintrag an, um ihn rechts zu lesen. Bearbeiten lässt er sich dort nicht.
 - **Wiederherstellen** (oder Rechtsklick › *Wiederherstellen*) legt ihn dorthin zurück, wo er war. Gibt es seine Gruppe nicht mehr, landet er am Ende der Liste. Eine Gruppe kommt mit allem darin zurück.
@@ -46,7 +51,7 @@ Klicke auf den **Papierkorb** in der Werkzeugleiste, um statt der Notizliste den
 
 ## Suchen
 
-Blende das Feld **Suchen** mit der Lupe in der Werkzeugleiste ein oder drücke **Strg+F**; es bleibt über der Notizliste, bis du es mit der Lupe wieder ausblendest, auch nach einem Neustart. Tippe hinein: Die Liste zeigt dann nur Notizen, die jedes eingegebene Wort enthalten — im Titel oder im Text, egal ob groß oder klein geschrieben. Umlaute zählen als eigene Buchstaben: „ä“ findet „Ä“, aber nicht „a“.
+Blende das Feld **Suchen** über das Menü ein oder drücke **Strg+F** (nicht beim Bearbeiten); es bleibt über der Notizliste, bis du es mit seinem **×** schließt, auch nach einem Neustart. Das Schließen leert auch deine Eingabe. Tippe hinein: Die Liste zeigt dann nur Notizen, die jedes eingegebene Wort enthalten — im Titel oder im Text, egal ob groß oder klein geschrieben. Umlaute zählen als eigene Buchstaben: „ä“ findet „Ä“, aber nicht „a“.
 
 - Gruppen mit Treffern klappen von selbst auf; ihre Zahl zeigt, wie viele Notizen passen. Passt der Name einer Gruppe, erscheint alles darin.
 - Treffer sind in den Titeln und in der geöffneten Notiz markiert; die Notiz springt zum ersten Treffer. Notizen, die nur über ihren Text passen, zeigen am Ende der Zeile die Zahl der Treffer.

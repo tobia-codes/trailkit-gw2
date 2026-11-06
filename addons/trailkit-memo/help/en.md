@@ -12,17 +12,22 @@ The window hides during loading screens, cutscenes and character select and reap
 
 The window shows the note list on the left and the selected note on the right. Drag the gap between both sides to change their widths (a line appears when you point at it). The note list keeps its width when you resize the window; the note gets the extra room.
 
-The **tool bar** on the left edge is always there, with *Search* and the *Trash*.
-
 The title bar holds three buttons:
 
-- **Sidebar button**, top left: hides the left column (the note list or the trash) so the note gets the full width; click it again to show it. memo remembers your choice.
+- **Menu button**, top left: opens the menu. Click the dimmed area or the button again to close it.
 - **Arrow** on the right: collapses the window to its title bar (click it again to expand); **×** closes it.
 
 A highlighted button means that what it switches is shown.
 
+The menu takes you to the different parts of memo:
+
+- **Notes** always brings you back to the regular page: it leaves the trash, closes the search and shows the note list again.
+- **Search** shows the search field. **Trash** shows the trash.
+- **Hide note list** gives the note the full width; **Show note list** brings the list back. memo remembers your choice.
+
 - **Compact view** (arrows button, top left of the note): hides the toolbar with *Edit* and the kind box, so the note gets more room. The button behind the title ends it again. You can still choose other notes and tick checkboxes; editing a note (also by double-click) or creating a new one ends the compact view. memo remembers it. Together with a hidden note list only the note is left.
-- **Narrow window:** the note fills the window and the sidebar button opens the note list over it. Choose a note, click the dimmed note or the sidebar button again to close the list. While you edit with the preview open, memo switches earlier, so text and preview keep their room.
+- **Small window:** the window cannot get narrower than the note list and the note need side by side, so the list never disappears by itself. Text at a larger size makes this minimum wider.
+- **While you edit** the note list makes way for the editor and comes back when you save or cancel. If you had hidden it yourself, it stays hidden.
 
 - **New note / new group:** the two buttons above the list. The new entry goes into the selected group (or the group of the selected note), at the end. Type a name right away and press Enter.
 - **Right-click** a group or an empty spot of the list for the same actions: on a group the new entry goes into it, on an empty spot at the end of the list.
@@ -37,7 +42,7 @@ A highlighted button means that what it switches is shown.
 
 ## Trash
 
-Click the **trash can** in the tool bar to see the trash in place of the note list; click it again, or the **back arrow** next to *Trash*, to go back to your notes. Deleted notes and groups stay there for **30 days** and are then removed for good. Each entry shows how many days are left — red in the last week.
+Choose **Trash** in the menu to see the trash in place of the note list; the **back arrow** next to *Trash*, or *Notes* in the menu, takes you back to your notes. Deleted notes and groups stay there for **30 days** and are then removed for good. Each entry shows how many days are left — red in the last week.
 
 - Click an entry to read it on the right. It cannot be edited there.
 - **Restore** (or right-click › *Restore*) puts it back where it was. If its group no longer exists, it goes to the end of the list. A group comes back with everything inside.
@@ -46,7 +51,7 @@ Click the **trash can** in the tool bar to see the trash in place of the note li
 
 ## Searching
 
-Show the **Search** field with the magnifier in the tool bar or press **Ctrl+F**; it stays above the note list until you hide it with the magnifier again, also after a restart. Type into it: The list shows only notes that contain every word you typed — in their title or text, upper or lower case alike. Umlauts count as their own letters: "ä" finds "Ä", but not "a".
+Show the **Search** field from the menu or press **Ctrl+F** (not while editing); it stays above the note list until you close it with its **×**, also after a restart. Closing it also clears what you typed. Type into it: The list shows only notes that contain every word you typed — in their title or text, upper or lower case alike. Umlauts count as their own letters: "ä" finds "Ä", but not "a".
 
 - Groups with hits open by themselves; their number shows how many notes match. A group whose name matches shows everything inside.
 - Hits are marked in the titles and in the open note, which jumps to the first hit. Notes that match only through their text show the number of hits at the end of the row.

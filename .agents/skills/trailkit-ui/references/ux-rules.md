@@ -146,7 +146,7 @@ Each rule has an id (`area-name`) so reviews can cite it.
   `trailkit_ui::pane::draw_pane`, which applies `pane.padding` (8 px) on every
   side; ImGui's bare `ChildWindow` has no padding and is not used directly
   for regions with a surface (exceptions: a transparent scroll region inside
-  a pane, and a drawer scrim).
+  a pane, and a drawer backdrop).
   Neighboring panes are separated by a `pane.gap` (8 px) of window
   background, not by a line; a splitter sits in that gap and shows an accent
   line only while hovered or dragged (plus the resize cursor). Selection and
@@ -174,16 +174,16 @@ Each rule has an id (`area-name`) so reviews can cite it.
   stack. Nothing may require horizontal scrolling or be clipped by the window
   border. ImGui 1.80 multiline inputs cannot wrap lines: multi-line text is
   edited with `trailkit_ui::editor::view::TextEditor` (memo M58), which wraps.
-- `lay-drawer` — A list that does not fit next to its content (narrow
-  window, or a column the user hid) opens as a drawer from the left **over**
-  the content: a pane on `bg.panel`, the content behind it dimmed with
-  `overlay.modal`. It appears instantly (`overlay-motion`). It is opened by a
-  flat menu button (Lucide `menu`, tooltip) at the top left of the content;
-  the same button is repeated at the same place in the drawer to close it.
-  A click on the dimmed area or choosing an item closes it; it stays open
-  while the user works inside it (expand, rename). Width: the list's minimum
-  width, at most 85 % of the window. Escape keeps closing the window
-  (`overlay-escape`).
+- `lay-drawer` — A window menu opens as a drawer from the left **over** the
+  content: a pane on `bg.panel` over the full content height, the content behind
+  it dimmed with `overlay.modal`; the title bar stays undimmed, so its buttons
+  stay in reach. It appears instantly (`overlay-motion`) and is opened and closed
+  by a flat `menu` toggle at the left of the title bar (R86). A click on the dimmed
+  area or choosing a row closes it. It marks the area the window shows like a
+  selected list row and offers a row back to the addon's regular page. Width: its
+  widest row, at most 85 % of the window. **A window never folds a column away
+  because of its size:** it has a minimum width instead. Escape closes the drawer
+  first, then the window (`overlay-escape`).
 - `lay-inline-edit` — Inline editing in a list (e.g. renaming a row) keeps
   the row one uniform color: the input has no background of its own
   (transparent frame), a 1 px `border.focus` frame surrounds the whole row

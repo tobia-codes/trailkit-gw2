@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-05 (session 17: UX round built and deployed on the unmerged, unpushed branch `feature/memo-ux-round`, in-game test running).
+Last updated: 2026-11-06 (session 18: window menu replaces the tool rail, on the unmerged, unpushed branch `feature/memo-ux-round`; the user continues with Codex).
 
 ## Where we are
 
@@ -104,25 +104,32 @@ Last updated: 2026-11-05 (session 17: UX round built and deployed on the unmerge
 
 ## ▶ Resume here
 
-Next ids: **M166+, R86+, questions from 113.**
+Next ids: **M170+, R87+, questions from 123.** The new look is described in
+[`current-design.md`](../../.agents/skills/trailkit-ui/references/current-design.md).
 
 1. **Finish branch `feature/memo-ux-round`** (local only, nothing pushed; work
-   continues here, on no other branch). Decisions M157–M165 are in
-   `docs/plans/addons/trailkit-memo.md`; the latest DLL is deployed.
-   - **The user is testing in game.** Not yet confirmed: `⋯` menu, Rename from it
-     (title selected; the focus may behave differently in game than in the test
-     renderer), "Open trash" (also with the sidebar hidden), toast buttons in a
-     narrow window, delete and undo in the drawer. Fixes the user reported so far
-     are M163 and M164. Follow-ups stay on this branch and are redeployed.
-   - **Q112 is open:** split `draw_toast` (103 code lines, hint at 80) by moving
-     the layout calculation into its own function? Recommendation: yes, a small
-     commit on this branch.
-   - **Disclosed, not yet answered:** the right-click menu's order changed
-     (Reset type below Move to) because it shares its code with the `⋯` menu (M160);
-     easy to turn back if the user dislikes it.
+   continues here, on no other branch). Decisions M157-M169 are in
+   `docs/plans/addons/trailkit-memo.md`.
+   - **The user tests in game, then says whether it may merge.** Deployed: M157-M169.
+     Not yet confirmed in game: the window menu and its rows, the backdrop, the
+     minimum width (at 18 px text), the list hiding and returning around editing,
+     the search field's `x`, the `⋯` menu, Rename from it (title selected), toast
+     buttons, delete and undo. Follow-ups stay on this branch and are redeployed.
    - **Merge only after the user's OK in that conversation** (R74): then push, open
      the PR into `develop`, `gh pr merge --auto --merge --delete-branch`. No AI
      attribution in commits or PRs (R68).
+   - **Open questions, not yet answered:**
+     - Q112: split `draw_toast` (103 code lines, hint at 80) by moving the layout
+       calculation into its own function? Recommendation: yes, a small commit here.
+     - Q113: keep the right-click menu's new order (Reset type below Move to), because
+       it shares its code with the `⋯` menu (M160)? Recommendation: yes.
+     - Q121: split `SearchField::draw` (91 code lines), a new hint from M169, by moving
+       the icon placement out? Recommendation: yes, a small commit here.
+     - Q122: `render_main_window` (83 code lines) grew slightly past the hint.
+       Recommendation: leave it until the settings step changes that function anyway.
+   - **Choices the agent made, disclosed to the user and easy to turn back:** Ctrl+F does
+     nothing in the editor (M167); the selected row of the menu (M166); the Hide row is
+     also offered in the trash, as in the approved mockup.
    - Row 4 (editor that hides markdown outside the active line) is **not** part of
      the branch: it needs its own grill round, it is the biggest change.
 2. **Splits after that (R77), each a small own step:** Q91 `note_list.rs` +
@@ -130,8 +137,8 @@ Next ids: **M166+, R86+, questions from 113.**
    All answered yes. Q92 `Text::get`: my recommendation is no, the user has not
    objected. `Editor::draw` (101 code lines) is a new hint, not yet put to the user:
    proposed to take it along with Q96 or the editor round.
-3. **Then the M28 order continues:** settings window, export/import, backups,
-   help page, release preparation.
+3. **Then the M28 order continues:** settings window (a row in the window menu),
+   export/import, backups, help page, release preparation.
 4. Optional, offer once: Light contrast of `reset.daily` on `bg.pressed` is
    4.16:1 while a tinted dropdown is held (see R85's test scope).
 
@@ -149,6 +156,23 @@ Next ids: **M166+, R86+, questions from 113.**
    - In this WSL shell plain `grep` may fail; use `command grep`. Run
      `source ~/.cargo/env` before cargo.
    - Never leave an `eprintln!` debug line before `cargo fmt`.
+
+## Session 18 summary (2026-11-06, branch `feature/memo-ux-round`)
+
+- Window menu instead of the tool rail (M166), the editor hides the note list
+  (M167), a minimum width instead of the responsive layout (M168), the search
+  field's `x` closes it (M169); R86 amends R78. `trailkit_ui::tool_rail` removed.
+- Mockups (private to the user's Claude account):
+  https://claude.ai/artifact/GzpgDiBgz5VrzFMdtvTYWN.
+- Knowledge that only Claude Code's memory held moved into `AGENTS.md` ("Working
+  with the user", commands) and `current-design.md`, so Codex can continue.
+
+## Facts learned in session 18
+
+- Removing the rail moved everything left of the note pane's right edge by 40 px:
+  list items and the note's left-anchored items in `states.rs` shifted with it;
+  right-anchored buttons stayed. The md5 groups below confirmed no hover missed.
+- Window menu rows are at y 67, 99, 131 in the 640 px snapshots, x from 20 to 147.
 
 ## Session 17 summary (2026-11-05, branch `feature/memo-ux-round`)
 
@@ -173,8 +197,8 @@ Next ids: **M166+, R86+, questions from 113.**
   md5 and compare with the groups at `HEAD`: `hover-badge-count = hover-group-arrow =
   hover-group` and `hover-selected-row = hover-task-text = note = memo-wide` are the
   known identical sets (`collapsed-group` joining one exposed a missed click).
-- With the rail the columns start at: rail x 12–44, list 52–244, note pane 252–628
-  (window 640 wide, test fonts).
+- The columns start at: list x 12-204, note pane 212-628 (window 640 wide, test
+  fonts).
 - A child window's background lands in the parent's draw list, so a later sibling
   (the drawer) covers it and the parent's other children can show through. Overlays
   draw their card in their own list (`draw_background(false)`, as the scrim does); a
@@ -378,14 +402,14 @@ Next ids: **M166+, R86+, questions from 113.**
 ## Recurring checks
 
 - GW2 wiki (2026-10-31): still behind Cognito login → Wayback workaround stays.
-- C-703/25 P (checked 2026-11-05, session 17: search found no judgment or hearing, sources only from 2025; check again next session): still
+- C-703/25 P (checked 2026-11-06, session 18: search found no judgment, opinion or hearing, sources only from 2025; check again next session): still
   pending, no hearing date or judgment reported; DPF in force. Microsoft intervened for the
   Commission; noyb asked for repeal (2026-06-30) but has not sued yet.
 - DPF reminder workflow: the 2026-11-01 08:00 cron was silently skipped by
   GitHub; triggered manually (issue #11). If it skips again on 2026-12-01,
   grill round on moving the cron off the full hour.
 - Daily archive: WvW EU snapshot Fri 2026-11-06 17:23 UTC is the real test of
-  the cron delay margin (D29).
+  the cron delay margin (D29). Not yet checked after that time.
 
 ## User to-dos
 

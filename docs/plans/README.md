@@ -7,6 +7,7 @@
 | [`data-pipeline.md`](data-pipeline.md) | **Current:** static data files + daily price archive (no server) |
 | [`backend.md`](backend.md) | Rust server — deferred target design |
 | [`BACKLOG.md`](BACKLOG.md) | Postponed ideas |
+| [`NEXT_SESSION.md`](NEXT_SESSION.md) | **Start here:** where the work stands and what comes next |
 
 Every plan is produced through a `grill-me` session; open questions stay in the
 plan's *Open questions* section until settled.
