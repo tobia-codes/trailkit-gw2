@@ -21,12 +21,12 @@ A highlighted button means that what it switches is shown.
 
 The menu takes you to the different parts of memo:
 
-- **Notes** always brings you back to the regular page: it leaves the trash, closes the search and shows the note list again.
+- **Notes** always brings you back to the regular page: it leaves the trash, closes the search, ends the compact view and shows the note list again.
 - **Search** shows the search field. **Trash** shows the trash.
 - **Hide note list** gives the note the full width; **Show note list** brings the list back. memo remembers your choice.
 
 - **Compact view** (arrows button, top left of the note): hides the toolbar with *Edit* and the kind box, so the note gets more room. The button behind the title ends it again. You can still choose other notes and tick checkboxes; editing a note (also by double-click) or creating a new one ends the compact view. memo remembers it. Together with a hidden note list only the note is left.
-- **Small window:** the window cannot get narrower than the note list and the note need side by side, so the list never disappears by itself. Text at a larger size makes this minimum wider.
+- **Small window:** the window cannot get narrower than the note list and the note need side by side, so the list never disappears by itself; it only gets narrower. Text at a larger size makes this minimum wider.
 - **While you edit** the note list makes way for the editor and comes back when you save or cancel. If you had hidden it yourself, it stays hidden.
 
 - **New note / new group:** the two buttons above the list. The new entry goes into the selected group (or the group of the selected note), at the end. Type a name right away and press Enter.

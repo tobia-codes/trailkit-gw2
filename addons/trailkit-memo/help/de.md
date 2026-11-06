@@ -21,12 +21,12 @@ Ein hinterlegter Button bedeutet: Was er schaltet, ist gerade eingeblendet.
 
 Das Menü führt dich zu den Bereichen von memo:
 
-- **Notizen** bringt dich immer zurück zur normalen Seite: Es verlässt den Papierkorb, schließt die Suche und blendet die Notizliste wieder ein.
+- **Notizen** bringt dich immer zurück zur normalen Seite: Es verlässt den Papierkorb, schließt die Suche, beendet die kompakte Ansicht und blendet die Notizliste wieder ein.
 - **Suchen** zeigt das Suchfeld. **Papierkorb** zeigt den Papierkorb.
 - **Notizliste ausblenden** gibt der Notiz die ganze Breite; **Notizliste einblenden** holt die Liste zurück. memo merkt sich deine Wahl.
 
 - **Kompakte Ansicht** (Pfeile-Button, oben links in der Notiz): blendet die Leiste mit *Bearbeiten* und das Typ-Feld aus, damit die Notiz mehr Platz bekommt. Der Button hinter dem Titel beendet sie wieder. Andere Notizen auswählen und Kästchen abhaken geht weiter; eine Notiz bearbeiten (auch per Doppelklick) oder eine neue anlegen beendet die kompakte Ansicht. memo merkt sie sich. Zusammen mit ausgeblendeter Notizliste bleibt nur die Notiz übrig.
-- **Kleines Fenster:** Das Fenster wird nicht schmaler, als Notizliste und Notiz nebeneinander brauchen, die Liste verschwindet also nie von selbst. Größerer Text macht diese Mindestbreite größer.
+- **Kleines Fenster:** Das Fenster wird nicht schmaler, als Notizliste und Notiz nebeneinander brauchen, die Liste verschwindet also nie von selbst, sie wird nur schmaler. Größerer Text macht diese Mindestbreite größer.
 - **Beim Bearbeiten** macht die Notizliste dem Editor Platz und kommt zurück, sobald du speicherst oder abbrichst. Hattest du sie selbst ausgeblendet, bleibt sie ausgeblendet.
 
 - **Neue Notiz / neue Gruppe:** die beiden Buttons über der Liste. Der neue Eintrag landet in der ausgewählten Gruppe (bzw. der Gruppe der ausgewählten Notiz), ganz am Ende. Tippe gleich einen Namen ein und drücke Enter.

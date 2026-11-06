@@ -25,7 +25,7 @@ use trailkit_memo_shared::{
 };
 
 /// The narrowest window (M168) at the test fonts.
-const MINIMUM_WINDOW: [f32; 2] = [480.0, 360.0];
+const MINIMUM_WINDOW: [f32; 2] = [320.0, 360.0];
 
 /// A fixed point in time, so rendered dates never change.
 fn fixed_time() -> Timestamp {
@@ -782,6 +782,7 @@ fn showing_the_notes_returns_to_the_regular_page() {
     let ui_state = UiState {
         note_list_hidden: true,
         search_visible: true,
+        compact_note_view: true,
         ..selected
     };
     let (mut memo, _worker, _directory) = memo_window(document, ui_state);
@@ -791,6 +792,7 @@ fn showing_the_notes_returns_to_the_regular_page() {
     assert!(!memo.trash.visible);
     assert!(memo.note_list_shown());
     assert!(!memo.ui_state.search_visible, "the search closes (Q120)");
+    assert!(!memo.ui_state.compact_note_view, "Edit is back (Q123)");
     assert!(memo.search_field.text.is_empty());
     assert_eq!(memo.ui_state.selected, selected.selected, "the note stays");
 }

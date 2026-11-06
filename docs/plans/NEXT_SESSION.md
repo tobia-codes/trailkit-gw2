@@ -104,7 +104,7 @@ Last updated: 2026-11-06 (session 18: window menu replaces the tool rail, on the
 
 ## ▶ Resume here
 
-Next ids: **M170+, R87+, questions from 123.** The new look is described in
+Next ids: **M170+, R87+, questions from 125.** The new look is described in
 [`current-design.md`](../../.agents/skills/trailkit-ui/references/current-design.md).
 
 1. **Finish branch `feature/memo-ux-round`** (local only, nothing pushed; work

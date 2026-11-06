@@ -61,9 +61,10 @@ const MINIMUM_PANE_CHARACTERS: f32 = 22.0;
 /// Minimum content width of the note list in average characters (M73): the
 /// user may drag it narrower than the other panes.
 const MINIMUM_TREE_CHARACTERS: f32 = 10.0;
-/// Minimum window width in average characters (M168): the note list and the
-/// note always fit beside each other, nothing folds away by itself.
-const MINIMUM_WINDOW_CHARACTERS: f32 = 60.0;
+/// Minimum window width in average characters (M168): room for the note list
+/// at its minimum, the note at its minimum, the gap and the window padding, so
+/// nothing folds away by itself and the list narrows first.
+const MINIMUM_WINDOW_CHARACTERS: f32 = 40.0;
 
 /// A toast of the window and what it offers.
 #[derive(Debug)]

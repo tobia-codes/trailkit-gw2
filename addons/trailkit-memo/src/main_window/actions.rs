@@ -362,6 +362,7 @@ impl MemoWindow {
             WindowAction::ShowNotes => {
                 self.trash.visible = false;
                 self.ui_state.note_list_hidden = false;
+                self.ui_state.compact_note_view = false;
                 self.hide_search_field();
             }
             WindowAction::ToggleCompactNoteView => {
