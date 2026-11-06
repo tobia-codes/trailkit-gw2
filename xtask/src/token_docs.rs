@@ -13,8 +13,8 @@ use trailkit_ui::{
     color::Color,
     theme::{
         AccentColors, BorderTokens, ButtonMetrics, ChipCategoryColors, ChipColors, CoinColors,
-        EventColors, ListMetrics, PaneMetrics, Radii, ResetColors, Spacing, StatusColors,
-        SurfaceColors, TextColors, Theme, Typography,
+        EventColors, ListMetrics, MenuMetrics, PaneMetrics, Radii, ResetColors, Spacing,
+        StatusColors, SurfaceColors, TextColors, Theme, Typography,
     },
 };
 
@@ -342,7 +342,12 @@ fn spacing_group(scale: Spacing) -> TokenGroup {
 }
 
 /// The metrics of lists, panes and buttons.
-fn layout_group(list: ListMetrics, pane: PaneMetrics, button: ButtonMetrics) -> TokenGroup {
+fn layout_group(
+    list: ListMetrics,
+    pane: PaneMetrics,
+    button: ButtonMetrics,
+    menu: MenuMetrics,
+) -> TokenGroup {
     let ListMetrics {
         item_spacing,
         indent,
@@ -351,6 +356,13 @@ fn layout_group(list: ListMetrics, pane: PaneMetrics, button: ButtonMetrics) -> 
     } = list;
     let PaneMetrics { padding, gap } = pane;
     let ButtonMetrics { min_width } = button;
+    let MenuMetrics {
+        padding: menu_padding,
+        row_padding_x,
+        row_padding_y,
+        row_gap,
+        min_width: menu_min_width,
+    } = menu;
     TokenGroup {
         title: "Layout",
         tokens: vec![
@@ -372,6 +384,27 @@ fn layout_group(list: ListMetrics, pane: PaneMetrics, button: ButtonMetrics) -> 
                 id: "button.min_width",
                 value: TokenValue::FontSizeFactor(min_width),
                 purpose: "Minimum width of a text button",
+            },
+            pixels(
+                "menu.padding",
+                menu_padding,
+                "Gap between a menu's edge and its rows",
+            ),
+            pixels(
+                "menu.row_padding_x",
+                row_padding_x,
+                "Gap between a menu row's edge and its content",
+            ),
+            pixels(
+                "menu.row_padding_y",
+                row_padding_y,
+                "Gap between a menu row's edge and its text line",
+            ),
+            pixels("menu.row_gap", row_gap, "Gap between two menu rows"),
+            Token {
+                id: "menu.min_width",
+                value: TokenValue::FontSizeFactor(menu_min_width),
+                purpose: "Minimum width of a command menu",
             },
         ],
     }
@@ -438,6 +471,7 @@ fn token_groups(theme: Theme) -> Vec<TokenGroup> {
         list,
         pane,
         button,
+        menu,
         radius,
         typography,
     } = theme;
@@ -452,7 +486,7 @@ fn token_groups(theme: Theme) -> Vec<TokenGroup> {
         coin_group(coin),
         event_group(event),
         spacing_group(spacing),
-        layout_group(list, pane, button),
+        layout_group(list, pane, button, menu),
         radius_group(radius),
         typography_group(typography),
     ]

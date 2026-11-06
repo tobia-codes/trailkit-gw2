@@ -13,8 +13,9 @@ use crate::{
     color::Color,
     font_registry::FontScope,
     fonts::FontRole,
+    glyph_metrics::{glyph_icon_ink, glyph_ink_box},
     icons::Icon,
-    menu::{draw_menu_row_highlight, draw_menu_row_label, draw_popup, place_next_popup},
+    menu::{draw_fitted_popup, draw_menu_row_highlight, draw_menu_row_label, place_next_popup},
     theme::Theme,
 };
 
@@ -85,7 +86,7 @@ pub fn draw_dropdown(
     }
     let mut picked = None;
     let mut is_open = false;
-    draw_popup(ui, popup_id, || {
+    draw_fitted_popup(ui, theme, popup_id, || {
         is_open = true;
         for (index, option) in options.iter().enumerate() {
             let is_selected = index == selected;
@@ -154,9 +155,8 @@ pub(crate) fn icon_width(ui: &Ui) -> f32 {
     ui.calc_text_size(Icon::CHEVRON_DOWN.as_str(&mut buffer))[0]
 }
 
-/// Draws `icon` at `x`, centered between `top` and `bottom` by its line box
-/// (Lucide glyphs fill the whole line box, memo plan M85), into the current
-/// window's draw list.
+/// Draws `icon` at `x`, centered between `top` and `bottom` by its visible
+/// pixels (memo M170, M177), into the current window's draw list.
 fn draw_icon(ui: &Ui, icon: Icon, x: f32, vertical_span: [f32; 2], color: u32) {
     // SAFETY: called on the render thread inside a frame, so the current
     // window's draw list is valid.
@@ -177,8 +177,11 @@ pub(crate) fn draw_icon_into(
     let _icons = FontScope::push(ui, FontRole::Icons);
     let mut buffer = [0; 4];
     let glyph = icon.as_str(&mut buffer);
-    let height = ui.text_line_height();
-    let y = ((top + bottom - height) / 2.0).round();
+    let line = ui.text_line_height();
+    let ink = glyph_icon_ink(icon.glyph())
+        .or_else(|| glyph_ink_box(icon.glyph()))
+        .unwrap_or([0.0, 0.0, line, line]);
+    let y = ((top + bottom - ink[1] - ink[3]) / 2.0).round();
     let begin = glyph.as_ptr().cast::<std::ffi::c_char>();
     // SAFETY: called on the render thread inside a frame with a draw list
     // of this frame; `begin..begin + len` is the UTF-8 glyph, which ImGui

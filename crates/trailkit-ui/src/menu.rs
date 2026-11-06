@@ -10,20 +10,60 @@ use nexus::imgui::{ItemHoveredFlags, MenuItem, MenuToken, StyleColor, StyleVar, 
 use crate::{
     color::Color,
     dropdown::{draw_icon_into, icon_width, packed},
+    glyph_metrics::capital_middle,
     icons::Icon,
     selection_bar::hide_square_row_highlight,
     theme::Theme,
 };
 
-/// Draws the popup `id` if it is open, with `content` inside it. Every popup
-/// goes through here: ImGui's own square row highlight is hidden, and the
-/// entries of this module draw a rounded one in `bg.popup_hover` instead
-/// (ROADMAP R80, R81).
-pub fn draw_popup(ui: &Ui, id: &str, content: impl FnOnce()) {
+/// Draws the command menu `id` if it is open, at least `menu.min_width` wide
+/// (memo M177), with `content` inside it.
+pub fn draw_popup(ui: &Ui, theme: &Theme, id: &str, content: impl FnOnce()) {
+    let minimum = theme.menu.min_width_for(ui.current_font_size());
+    // SAFETY: a plain ImGui call on the render thread inside a frame; it only
+    // limits the size of the next window, and no callback is passed.
+    unsafe {
+        nexus::imgui::sys::igSetNextWindowSizeConstraints(
+            nexus::imgui::sys::ImVec2 { x: minimum, y: 0.0 },
+            nexus::imgui::sys::ImVec2 {
+                x: f32::MAX,
+                y: f32::MAX,
+            },
+            None,
+            std::ptr::null_mut(),
+        );
+    }
+    draw_fitted_popup(ui, theme, id, content);
+}
+
+/// Draws the popup `id` if it is open, as wide as its rows, e.g. a dropdown's
+/// options. Every popup goes through here: the style gives its rows their room
+/// (memo M177), and ImGui's own square row highlight is hidden, as the entries
+/// of this module draw a rounded one in `bg.popup_hover` (ROADMAP R80, R81).
+pub(crate) fn draw_fitted_popup(ui: &Ui, theme: &Theme, id: &str, content: impl FnOnce()) {
+    let menu = theme.menu;
+    // A row's item rect reaches half the item spacing beyond its text, so the
+    // spacing makes the row's padding and gap. The window padding adds what the
+    // rect takes back; the highlight leaves half the gap at each end.
+    let _spacing = ui.push_style_var(StyleVar::ItemSpacing([
+        2.0 * menu.row_padding_x,
+        2.0 * menu.row_padding_y + menu.row_gap,
+    ]));
+    let _padding = ui.push_style_var(StyleVar::WindowPadding([
+        menu.padding + menu.row_padding_x,
+        menu.padding + menu.row_padding_y,
+    ]));
     ui.popup(id, || {
         let _square = hide_square_row_highlight(ui);
         content();
     });
+}
+
+/// The span to center an icon in beside a label drawn at line top `top`: the
+/// label's capitals, in the current font, set the middle.
+fn label_icon_span(ui: &Ui, top: f32) -> [f32; 2] {
+    let middle = capital_middle().unwrap_or(ui.text_line_height() / 2.0);
+    [top, top + 2.0 * middle]
 }
 
 /// Places the next popup with its top at `position` (screen). `pivot_x` is the
@@ -46,7 +86,7 @@ pub fn place_next_popup(position: [f32; 2], pivot_x: f32) {
 }
 
 /// Fills the menu row `[min, max]` (screen) in `color` with `radius.md`
-/// corners into `draw_list`.
+/// corners into `draw_list`, leaving half of `menu.row_gap` at top and bottom.
 ///
 /// # Safety
 /// `draw_list` must be a draw list of the current frame, used on the render
@@ -63,11 +103,11 @@ unsafe fn fill_menu_row(
             draw_list,
             nexus::imgui::sys::ImVec2 {
                 x: min[0],
-                y: min[1],
+                y: min[1] + theme.menu.row_gap / 2.0,
             },
             nexus::imgui::sys::ImVec2 {
                 x: max[0],
-                y: max[1],
+                y: max[1] - theme.menu.row_gap / 2.0,
             },
             packed(color),
             theme.radius.medium,
@@ -134,7 +174,7 @@ pub fn draw_menu_item(ui: &Ui, theme: &Theme, label: &str, checked: bool) -> boo
     draw_menu_row_highlight(ui, theme, false);
     draw_menu_row_label(origin, theme.text.primary, label);
     if checked {
-        let [min, max] = [ui.item_rect_min(), ui.item_rect_max()];
+        let max = ui.item_rect_max();
         // SAFETY: called on the render thread inside a frame, so the
         // current window's draw list is valid.
         let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
@@ -142,8 +182,8 @@ pub fn draw_menu_item(ui: &Ui, theme: &Theme, label: &str, checked: bool) -> boo
             draw_list,
             ui,
             Icon::CHECK,
-            max[0] - icon_width(ui),
-            [min[1], max[1]],
+            max[0] - theme.menu.row_padding_x - icon_width(ui),
+            label_icon_span(ui, origin[1]),
             packed(theme.accent.text),
         );
     }
@@ -197,9 +237,9 @@ pub fn draw_menu_item_with_icon(
     // SAFETY: called on the render thread inside a frame, so the current
     // window's draw list is valid.
     let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
-    let line = [origin[1], origin[1] + ui.text_line_height()];
-    draw_icon_into(draw_list, ui, icon, origin[0], line, packed(color));
-    let label_x = origin[0] + icon_width(ui) + theme.spacing.extra_small * 1.5;
+    let span = label_icon_span(ui, origin[1]);
+    draw_icon_into(draw_list, ui, icon, origin[0], span, packed(color));
+    let label_x = origin[0] + icon_width(ui) + theme.spacing.small;
     draw_menu_row_label([label_x, origin[1]], color, label);
     if let Some(tooltip) = disabled_tooltip
         && ui.is_item_hovered_with_flags(ItemHoveredFlags::ALLOW_WHEN_DISABLED)
@@ -209,14 +249,21 @@ pub fn draw_menu_item_with_icon(
     clicked && enabled
 }
 
-/// Begins a submenu entry labeled `label` with a chevron at its right end;
-/// returns a token while the submenu is open (draw its items, then drop the
-/// token). The submenu starts at the parent's right edge (memo M98).
-pub fn begin_submenu<'ui>(ui: &'ui Ui, theme: &Theme, label: &str) -> Option<MenuToken<'ui>> {
+/// Begins a submenu entry with a Lucide `icon` before `label` and a chevron at
+/// its right end; returns a token while the submenu is open (draw its items,
+/// then drop the token). The submenu starts at the parent's right edge (memo
+/// M98).
+pub fn begin_submenu<'ui>(
+    ui: &'ui Ui,
+    theme: &Theme,
+    icon: Icon,
+    label: &str,
+) -> Option<MenuToken<'ui>> {
     let style = ui.clone_style();
     let [x, y] = ui.cursor_screen_pos();
     let right_edge = ui.window_content_region_max()[0] + ui.window_pos()[0];
     let bottom = y + ui.text_line_height();
+    let span = label_icon_span(ui, y);
     // SAFETY: called on the render thread inside a frame, so the current
     // (parent menu) window's draw list is valid for this frame.
     let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
@@ -257,18 +304,22 @@ pub fn begin_submenu<'ui>(ui: &'ui Ui, theme: &Theme, label: &str) -> Option<Men
     unsafe {
         nexus::imgui::sys::ImDrawList_AddText_Vec2(
             draw_list,
-            nexus::imgui::sys::ImVec2 { x, y },
+            nexus::imgui::sys::ImVec2 {
+                x: x + icon_width(ui) + theme.spacing.small,
+                y,
+            },
             packed(theme.text.primary),
             begin,
             begin.add(label.len()),
         );
     }
+    draw_icon_into(draw_list, ui, icon, x, span, packed(theme.text.primary));
     draw_icon_into(
         draw_list,
         ui,
         Icon::CHEVRON_RIGHT,
         right_edge - icon_width(ui),
-        [y, bottom],
+        span,
         packed(theme.text.secondary),
     );
     token

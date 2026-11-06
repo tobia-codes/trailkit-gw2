@@ -402,7 +402,7 @@ fn kind_dropdown_lists_the_kinds_and_changes_the_note() {
         &image,
     );
 
-    let daily_row = [360.0, 160.0];
+    let daily_row = [360.0, 171.0];
     harness.frame(&at(daily_row, false), &mut draw_light);
     harness.frame(&at(daily_row, true), &mut draw_light);
     harness.frame(&at(daily_row, false), &mut draw_light);

@@ -358,7 +358,7 @@ impl NoteList {
         {
             ui.open_popup("list_context");
         }
-        trailkit_ui::menu::draw_popup(ui, "list_context", || {
+        trailkit_ui::menu::draw_popup(ui, theme, "list_context", || {
             context_menu::draw_create_menu_items(
                 ui,
                 language,
