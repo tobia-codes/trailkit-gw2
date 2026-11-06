@@ -98,6 +98,64 @@ impl Toast {
     }
 }
 
+/// Where the parts of a toast go, measured once per frame.
+#[derive(Debug, Clone, Copy)]
+struct ToastGeometry {
+    /// How message and buttons are arranged.
+    layout: ToastLayout,
+    /// Width of the message.
+    text_width: f32,
+    /// Width of all buttons side by side.
+    actions_width: f32,
+    /// Width of the card.
+    width: f32,
+    /// Height of the card.
+    height: f32,
+    /// Distance between the tops of two rows.
+    row_step: f32,
+}
+
+impl ToastGeometry {
+    /// Measures `message` and `actions` for the current window.
+    fn measure(ui: &Ui, theme: &Theme, message: &str, actions: &[ToastAction<'_>]) -> Self {
+        let padding = theme.spacing.small;
+        let gap = theme.spacing.medium;
+        let text_width = ui.calc_text_size(message)[0];
+        let widest_action = actions
+            .iter()
+            .map(|action| button_width(ui, theme, action.label))
+            .fold(0.0, f32::max);
+        let actions_width = actions
+            .iter()
+            .map(|action| button_width(ui, theme, action.label))
+            .sum::<f32>()
+            + gap * actions.len().saturating_sub(1) as f32;
+        let maximum_width = (ui.window_size()[0] - 2.0 * theme.spacing.large).max(1.0);
+        let layout = ToastLayout::choose(
+            text_width,
+            actions_width,
+            gap,
+            maximum_width - 2.0 * padding,
+        );
+        let row_height = ui.frame_height();
+        let row_step = row_height + theme.spacing.small;
+        let (content_width, rows) = match layout {
+            ToastLayout::Inline if actions.is_empty() => (text_width, 1),
+            ToastLayout::Inline => (text_width + gap + actions_width, 1),
+            ToastLayout::ActionsBelow => (text_width.max(actions_width), 2),
+            ToastLayout::ActionsStacked => (text_width.max(widest_action), 1 + actions.len()),
+        };
+        Self {
+            layout,
+            text_width,
+            actions_width,
+            width: (2.0 * padding + content_width).min(maximum_width),
+            height: row_height + row_step * (rows - 1) as f32 + 2.0 * padding,
+            row_step,
+        }
+    }
+}
+
 /// Draws `toast` at the bottom centre of the current window with its
 /// `actions` (regular buttons, e.g. "Undo") and advances its timer. The buttons
 /// move below the message when the window is too narrow (M159). Call it after
@@ -112,36 +170,9 @@ pub fn draw_toast(
         expired: toast.advance(ui.io().delta_time),
         ..ToastOutcome::default()
     };
-    let padding = theme.spacing.small;
-    let gap = theme.spacing.medium;
-    let text_width = ui.calc_text_size(&toast.message)[0];
-    let widest_action = actions
-        .iter()
-        .map(|action| button_width(ui, theme, action.label))
-        .fold(0.0, f32::max);
-    let actions_width = actions
-        .iter()
-        .map(|action| button_width(ui, theme, action.label))
-        .sum::<f32>()
-        + gap * actions.len().saturating_sub(1) as f32;
+    let geometry = ToastGeometry::measure(ui, theme, &toast.message, actions);
+    let (width, height) = (geometry.width, geometry.height);
     let window_size = ui.window_size();
-    let maximum_width = (window_size[0] - 2.0 * theme.spacing.large).max(1.0);
-    let layout = ToastLayout::choose(
-        text_width,
-        actions_width,
-        gap,
-        maximum_width - 2.0 * padding,
-    );
-    let row_height = ui.frame_height();
-    let row_step = row_height + theme.spacing.small;
-    let (content_width, rows) = match layout {
-        ToastLayout::Inline if actions.is_empty() => (text_width, 1),
-        ToastLayout::Inline => (text_width + gap + actions_width, 1),
-        ToastLayout::ActionsBelow => (text_width.max(actions_width), 2),
-        ToastLayout::ActionsStacked => (text_width.max(widest_action), 1 + actions.len()),
-    };
-    let width = (2.0 * padding + content_width).min(maximum_width);
-    let height = row_height + row_step * (rows - 1) as f32 + 2.0 * padding;
     let window_position = ui.window_pos();
     let bottom_gap = ui.clone_style().window_padding[1] + theme.spacing.large;
     ui.set_cursor_screen_pos([
@@ -175,17 +206,34 @@ pub fn draw_toast(
             .build();
     }
     toast.hovered = ui.is_window_hovered_with_flags(WindowHoveredFlags::CHILD_WINDOWS);
+    let padding = theme.spacing.small;
     let [left, top] = [card_start[0] + padding, card_start[1] + padding];
-    let right = left + width - 2.0 * padding;
-    let line_offset = (row_height - ui.text_line_height()) / 2.0;
+    let line_offset = (ui.frame_height() - ui.text_line_height()) / 2.0;
     ui.set_cursor_screen_pos([left, top + line_offset]);
     ui.text(&toast.message);
+    outcome.clicked_action = draw_toast_actions(ui, theme, actions, geometry, [left, top]);
+    outcome
+}
+
+/// Draws the buttons of a toast whose content starts at `[left, top]` and
+/// returns the index of the clicked one.
+fn draw_toast_actions(
+    ui: &Ui,
+    theme: &Theme,
+    actions: &[ToastAction<'_>],
+    geometry: ToastGeometry,
+    [left, top]: [f32; 2],
+) -> Option<usize> {
+    let gap = theme.spacing.medium;
+    let layout = geometry.layout;
+    let right = left + geometry.width - 2.0 * theme.spacing.small;
     let mut position = match layout {
-        ToastLayout::Inline => [left + text_width + gap, top],
+        ToastLayout::Inline => [left + geometry.text_width + gap, top],
         ToastLayout::ActionsBelow | ToastLayout::ActionsStacked => {
-            [right - actions_width, top + row_step]
+            [right - geometry.actions_width, top + geometry.row_step]
         }
     };
+    let mut clicked = None;
     for (index, action) in actions.iter().enumerate() {
         let button = button_width(ui, theme, action.label);
         if layout == ToastLayout::ActionsStacked {
@@ -193,7 +241,7 @@ pub fn draw_toast(
         }
         ui.set_cursor_screen_pos(position);
         if draw_button(ui, theme, action.label) {
-            outcome.clicked_action = Some(index);
+            clicked = Some(index);
         }
         if let Some(tooltip) = action.tooltip
             && ui.is_item_hovered()
@@ -201,12 +249,12 @@ pub fn draw_toast(
             draw_tooltip(ui, tooltip);
         }
         if layout == ToastLayout::ActionsStacked {
-            position[1] += row_step;
+            position[1] += geometry.row_step;
         } else {
             position[0] += button + gap;
         }
     }
-    outcome
+    clicked
 }
 
 #[cfg(test)]
