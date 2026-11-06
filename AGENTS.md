@@ -113,7 +113,8 @@ The user tests everything in game and decides. What has proved to matter:
 
 Conversation memory stays with the tool that wrote it, so a decision only
 reaches other agents once it is written into this repository: decisions into
-`docs/plans/`, how to continue into `NEXT_SESSION.md`.
+`docs/plans/`, lasting facts into the skills, and only the current state and next
+steps into `NEXT_SESSION.md`, which stays under 100 lines.
 
 ## Recurring checks
 
@@ -189,20 +190,21 @@ expensive for the rest of the session. Keep it small:
   | Command | Purpose |
   |---------|---------|
   | `cargo xtask deploy trailkit-memo` | Build and hot-reload into the running game; `addons/Nexus/Nexus.log` in the game folder logs "Loaded addon" 1-2 s later |
-  | `cargo xtask ui-test [--update]` | Snapshot tests, about 4 minutes |
+  | `cargo xtask ui-test [--update]` | Snapshot tests, about 4 minutes. Adding one, coordinates, reviewing, measuring in game: [`tokens.md` §10](.agents/skills/trailkit-ui/references/tokens.md) |
   | `cargo xwin clippy --target x86_64-pc-windows-msvc --all-targets -- -D warnings` | Needed besides host clippy, which skips Windows-only code |
   | `cargo xtask subset-fonts` | After adding an icon to `Icon::ALL` |
   | `cargo xtask tokens` | After changing a token |
   | `cargo xtask check-names` | Naming conventions of paths |
-- A killed `ui-test` can leave a test process that overwrites snapshots: stop it
-  with `pkill -f '^/init .*debug/deps/'`.
+- Game folder `C:\Guild Wars 2\addons` (WSL: `/mnt/c/Guild Wars 2/addons`), log
+  `addons/Nexus/Nexus.log`. Node 24 via fnm, pnpm 11.17.0. `gh` is logged in as
+  `tobia-codes` over ssh.
 
 ## Architecture decisions
 
 Fundamental design decisions are recorded so any agent can pick them up:
 
 - Addon runtime, threading, inter-addon protocol, i18n, help pages, API key
-  handling → `.agents/skills/nexus-addon-dev/SKILL.md`
+  handling, facts learned in game → `.agents/skills/nexus-addon-dev/SKILL.md`
 - How an addon is structured (app, shared and slice crates; template and
   checklist for new addons) →
   `.agents/skills/nexus-addon-dev/references/addon-structure.md`
