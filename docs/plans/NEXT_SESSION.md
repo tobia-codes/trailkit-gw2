@@ -20,8 +20,7 @@ facts into the skills, and the history stays in git.
 Next ids: **M179+, R87+, questions from 141.** Work on a new branch from a freshly
 fetched `origin/develop`.
 
-0. **Branch `bugfix/editor-release-keyboard` (M178):** merge after the user's in-game OK.
-   Confirmed in game: the game does not react to Ctrl+F or Delete while memo catches them.
+0. **Split `xtask/src/token_docs.rs`** (500 code lines, Q140 answered yes), a small own step.
 1. **Splits (R77), each a small own step:** Q91 `note_list.rs` + `draw_group`, Q95
    `draw_dropdown`, Q96 `editor/view.rs`, Q105 `markdown_view.rs`. All answered yes.
    Q92 `Text::get`: the recommendation is no, the user has not objected. `Editor::draw`
