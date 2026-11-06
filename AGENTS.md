@@ -1,271 +1,112 @@
 # AGENTS.md
 
-Shared instructions for every coding agent working in this repository
-(Claude Code reads this via `CLAUDE.md`, Codex reads it directly).
+Shared rules for Codex and Claude Code. `CLAUDE.md` imports this file;
+`.claude/skills` links to `.agents/skills`. Maintain one shared rule set.
 
-## Project
+## Start and load context
 
-`trailkit-gw2` is a monorepo for Guild Wars 2 tooling:
+- Read `docs/plans/NEXT_SESSION.md`: **Resume here** and **Recurring checks**.
+  Preserve current work and follow due checks. Project: GW2 Nexus addon DLLs
+  plus a Rust data pipeline; backend deferred. Plans: `docs/plans/README.md`.
+- Load only the task's skill and relevant reference sections below. Search
+  with `rg` before reading large files; do not recursively load linked docs
+  or reread unchanged context. Do not load both Rust guides in full.
+- Run recurring checks when triggered, using
+  [the reference](docs/agent-reference.md#recurring-checks). Report blocked
+  checks honestly; do not silently count them as completed.
 
-- **Raidcore Nexus addons** (the main focus) — DLLs loaded by the
-  [Raidcore Nexus](https://raidcore.gg/Nexus) addon loader and published to the
-  Nexus addon library.
-- **Data pipeline** — a Rust CLI run by a daily scheduled job that publishes
-  static data files and archives prices (see `docs/plans/data-pipeline.md`).
-  A Rust backend server is planned for later (`docs/plans/backend.md`, deferred).
-
-Planning documents live in [`docs/plans/`](docs/plans/README.md).
-
-**Start every session** with [`docs/plans/NEXT_SESSION.md`](docs/plans/NEXT_SESSION.md),
-section "Resume here". Before UI work, read
-[`current-design.md`](.agents/skills/trailkit-ui/references/current-design.md): it
-says what the addon looks like today and which snapshot PNGs show it.
+| Task | Read when needed |
+|------|------------------|
+| Unsettled decision | `.agents/skills/grilling/SKILL.md` |
+| Addon/runtime code in `addons/` or `crates/` | `.agents/skills/nexus-addon-dev/SKILL.md`; structure/threading/FFI sections relevant to the task |
+| Addon UI | `.agents/skills/trailkit-ui/SKILL.md` and `references/current-design.md`; relevant token/UX rules |
+| Rust writing/review | `.agents/skills/rust-best-practices/SKILL.md`; specific chapters only when needed |
+| Detailed Rust rule | `.agents/skills/rust-skills/SKILL.md`; look up the specific rule |
+| Files, names, build, deploy, checks | [Agent reference](docs/agent-reference.md) — relevant section only |
 
 ## Hard rules
 
-1. **Pushing and merging.** Agents work on a work branch (`feature/`,
-   `chore/`, `bugfix/`, `hotfix/`) and commit logical steps there. When a
-   task is done they **deploy the DLL into the game** (`cargo xtask deploy
-   <addon>`) and **ask the user whether they may merge**; the user tests in
-   game first. Follow-up changes stay on the same branch, redeployed, until
-   the user says OK (ROADMAP R74). Only after that OK in the current
-   conversation: push, open the PR into `develop` and arm
-   `gh pr merge --auto --merge --delete-branch` (GitHub merges only when
-   every required CI check is green, R70; red means fix, never bypass).
-   Changes without anything to test in game (docs, plans) need the same OK.
-   Group related logical commits into one PR instead of one PR per commit.
-   Everything else that publishes needs the user's explicit approval in the
-   current conversation, every time: merging into `main`, release PRs, tags,
-   GitHub releases, force pushes, and changes to branch protection or CI
-   workflows. Direct pushes to `develop`/`main` stay blocked by the pre-push
-   hook. Commits use Conventional Commits.
-   **No AI attribution:** commit messages and PR descriptions carry no
-   `Co-Authored-By` trailer for an AI and no "Generated with …" footer
-   (ROADMAP R68).
-   *Exception:* the scheduled data-pipeline CI job may push the `gh-pages`
-   branch and create daily archive releases on its own
-   (`docs/plans/data-pipeline.md` D9); changing that workflow still needs
-   approval.
-2. **Decisions go through the grill-me skill.** Whenever a decision is needed
-   (architecture, scope, libraries, naming, UX, data model, …) that is not
-   already settled in `docs/plans/` or by the user, run the `grilling` skill
-   (`.agents/skills/grilling/SKILL.md`; `grill-me` only forwards to it, so agents
-   without a Skill tool read that file directly): ask numbered questions
-   in rounds with a recommended answer each, until the decision tree is fully
-   resolved. Do not silently assume. Record settled decisions in the relevant
-   plan document.
-3. **Every project has a README.** Every crate, addon, app or package directory
-   gets a `README.md` describing what it is, how to build it and how to use it.
-   Keep it up to date when behavior changes.
-4. **Every function is documented.** In Rust use rustdoc comments (`///` on
-   items, `//!` for modules/crates) on *every* function, method, struct, enum,
-   trait and module — public and private — describing what it does, and, where
-   relevant, its errors (`# Errors`), panics (`# Panics`) and safety
-   requirements (`# Safety`). Other languages use their equivalent
-   (JSDoc/TSDoc for TypeScript, docstrings for Python).
-5. **English only** for code comments, doc comments, READMEs, plans, commit
-   messages and identifiers. (Conversation with the user may be in German.)
-   User-facing addon strings are localized (English + German), never
-   hard-coded.
-6. **Help pages stay current.** Every addon has an in-game help page
-   (`addons/<name>/help/{en,de}.md`). Any change to user-visible behavior
-   updates the help page in the same change.
-7. **Avoid code duplication — but extract only on real reuse.** Before writing
-   a helper, component or type, search the workspace (`crates/` and other
-   addons) for an existing one. Code moves into a shared crate as soon as a
-   **second** place needs it, not speculatively. When you extract, replace
-   all copies in the same change. UI components (popover, dialogs, buttons…)
-   always come from `crates/trailkit-ui` once shared, so every addon looks
-   identical.
-8. **Type everything.** Prefer newtypes (`struct NoteId(Uuid)`), enums over
-   strings/booleans, `serde`-derived structs over untyped JSON
-   (`serde_json::Value` only at boundaries), compile-time checked SQL
-   (`sqlx::query!`). Invalid states should be unrepresentable.
-9. **Performance and security are requirements, not polish.** Follow the
-   threading rules in the `nexus-addon-dev` skill; treat API keys and user
-   data as secrets (see the same skill, §6).
-10. **GDPR (DSGVO) compliance is mandatory.** Any service, provider, log,
-    backup, CDN or website must be GDPR-compliant. Collect as little personal
-    data as possible (IP addresses count as personal data), prefer EU
-    providers with a data processing agreement (AVV/DPA), no tracking or
-    analytics without consent. Flag any GDPR impact of a change to the user.
+1. **Publish only after approval (R74).** Work and commit logical steps on
+   `feature/`, `chore/`, `bugfix/` or `hotfix/` branches. New branches start
+   from freshly fetched `origin/develop`; keep follow-ups on the active branch.
+   For addon changes, deploy with `cargo xtask deploy <addon>` and let the user
+   test in game before asking to merge. Only after their explicit OK in the
+   **current conversation**: push the work branch, open the PR into `develop`,
+   arm `gh pr merge --auto --merge --delete-branch`. Every required CI check
+   must pass; fix failures, never bypass. Docs/plans need the same merge OK.
+   Group related commits in one PR. Direct pushes to `develop`/`main` are
+   forbidden. Every other publication needs separate explicit approval each
+   time: `main` merges, release PRs, tags, releases, force pushes, protection
+   or CI workflow changes. Exception: the scheduled data-pipeline job may
+   publish `gh-pages` and archive releases (D9); changing its workflow still
+   needs approval. Historical R69 and tool allowlists grant no standing OK.
+2. **Decisions belong to the user.** For any decision not settled in plans or
+   by the user (architecture, scope, libraries, naming, UX, data model, etc.),
+   use `grilling`: numbered rounds, a recommendation for each, wait for answers.
+   Do not silently assume or reopen settled decisions. Record decisions in
+   the relevant plan; do not ask the user for facts you can inspect yourself.
+   **Visual approval first (R87).** Before every visible addon design change
+   (even small layout, wording, typography, color, icon or state changes), show
+   a labelled visual proposal and get explicit approval in this conversation.
+   Show every affected state in Dark/Light, plus minimum width and German text
+   where layout is affected. Isolated prototypes are allowed before approval;
+   addon implementation waits. Material deviations need another visual OK.
+   Afterwards review the whole changed snapshots against `tokens.md` §10
+   (R82), then test in game and obtain merge approval separately.
+3. **Every project has a README:** purpose, build and usage for each
+   crate/addon/app/package; keep it current when behavior changes.
+4. **Document every item:** functions, methods, structs, enums, traits and
+   modules, public/private. Use Rust `///`/`//!`, JSDoc/TSDoc or Python
+   docstrings; include relevant errors, panics and safety contracts.
+5. **English in files.** Code, identifiers, comments, docs, plans and commits
+   are English; addon strings are localized en/de, never inline UI literals.
+6. **Help stays current.** User-visible behavior changes update
+   `addons/<name>/help/{en,de}.md` in the same change.
+7. **Share on real reuse.** Search the workspace before adding a helper/type.
+   Extract at the second real use, replacing all copies in the same change,
+   never speculatively. Shared UI comes from `crates/trailkit-ui`.
+8. **Type everything.** Prefer typed/newtype IDs, enums, serde structs and
+   checked `sqlx::query!`; untyped JSON belongs only at boundaries.
+   Make invalid states unrepresentable.
+9. **Performance and security.** Follow Nexus threading/FFI/API-key
+   rules; performance beats DLL size (R72). Treat keys and user data as secrets.
+10. **GDPR is mandatory.** Every service/provider/log/backup/CDN/site must
+   comply: minimize personal data (IPs count), prefer EU providers with
+   DPA/AVV, no tracking or
+   analytics without consent, and flag privacy impact to the user.
 
-## What an agent may do
-
-Rule 1 is binding; this is its overview, plus what the tools block.
-
-| When | What |
-|------|------|
-| Without asking | Commits on a work branch, builds, tests, `cargo xtask deploy` into the game, reading `Nexus.log` |
-| After the user's OK in the current conversation | Push the work branch, open the PR into `develop`, arm auto-merge |
-| Explicit approval, every time | Merging into `main`, release PRs, tags, GitHub releases, force pushes, changing branch protection or CI workflows |
-| Blocked by the tools | Direct pushes to `develop`/`main` (pre-push hook, always). In Claude Code's auto mode: changing branch protection, which the user ran themselves, and `git commit --amend`, so use a follow-up commit |
-
-**A block is not a puzzle.** Do not work around a hook, a permission prompt or a
-sandbox with another command or flag. Report what was blocked and let the user
-decide. Codex has its own approval and sandbox settings, and these have not been
-tried in this repository yet: note what it blocks here, for instance writing the
-DLL to `/mnt/c` or pushing. Commit without `--amend` in every tool, so that no
-agent rewrites what another may have seen.
-
-## Working with the user
-
-The user tests everything in game and decides. What has proved to matter:
-
-- **German in conversation**, English in everything that gets committed. The
-  user's GitHub login is `tobia-codes`. The public commit address is
-  `tobiacodes@gmail.com`; a private address must never reach the git history
-  (ROADMAP R62).
-- **Comes from TypeScript and is learning Rust.** Explain Rust concepts with a
-  TypeScript comparison.
-- **Decides visual questions from images** and wants to see every state before
-  deciding (see `current-design.md`, last section). Build only after the OK.
-- **Cares strongly about UI quality, theming, performance and security.**
-  Performance beats DLL size (R72).
-- **Asks why when an argument is weak.** Give honest trade-offs and correct
-  yourself openly. Say plainly what you chose yourself and what you did not
-  verify.
-- **Review snapshots before handing over** (R82): look at the whole element
-  against `tokens.md` §10, not only the property you changed. The user once found
-  a square hover in game that an already-viewed snapshot showed.
-
-Conversation memory stays with the tool that wrote it, so a decision only
-reaches other agents once it is written into this repository: decisions into
-`docs/plans/`, lasting facts into the skills, and only the current state and next
-steps into `NEXT_SESSION.md`, which stays under 100 lines.
-
-## Recurring checks
-
-- **GW2 wiki availability:** the wiki is behind a login since 2026-10-31, so
-  event schedules come from the Wayback Machine. Re-check regularly — see
-  [`data/events/README.md`](data/events/README.md) for the rule.
-
-- **EU-US Data Privacy Framework:** core's data downloads from GitHub Pages
-  rely on it (`docs/plans/data-pipeline.md`, GDPR assessment). At the start
-  of every session that touches planning, hosting or core — and at least at
-  the start of every phase — check the status of CJEU appeal **C-703/25 P
-  (Latombe v Commission)**. If the framework is annulled or suspended, tell
-  the user immediately and plan the move to an EU host (D11 base-URL switch).
+Never bypass a hook, refusal or sandbox through another command/flag; use
+supported tool approvals and report blocks. Conventional Commits, never
+`--amend`, no AI attribution/footer/trailer. Public commit email:
+`tobiacodes@gmail.com`; never a private address.
 
 ## Naming conventions
 
-Binding for every language and every file (ROADMAP R40–R46). Checked by the
-compiler/clippy (Rust) and `cargo xtask check-names` (paths, CI).
+Readable names, standard Rust casing, no opaque abbreviations or catch-all
+names. Paths are `kebab-case`, Rust modules `snake_case`, crates `trailkit-*`,
+data keys `snake_case`, Nexus IDs typed `trailkit.<addon>.<kind>.<name>` constants.
+Before adding/renaming paths or identifiers, consult the binding
+[full conventions](docs/agent-reference.md#naming-conventions), including exceptions.
 
-**Readable over short.** Names must be understandable by any developer without
-context: prefer a long, descriptive name (`package_json_version`,
-`render_main_window`) over abbreviations (`pkg_ver`, `rmw`). Only widely known
-abbreviations are allowed (`id`, `url`, `api`, `http`, `json`, `ui`, `dll`,
-`gw2`). No single-letter names except trivial index loops. No catch-all names
-(`Manager`, `Helper`, `Utils`, `Misc`, `Data`, `Info`).
+## Validation
 
-| What | Convention | Example |
-|------|-----------|---------|
-| Rust types, traits, enum variants | `UpperCamelCase`, acronyms as words | `NoteTree`, `ApiKey`, `HttpClient` |
-| Rust functions, methods, variables, modules | `snake_case` | `load_notes`, `mod sync_versions` |
-| Rust constants, statics | `SCREAMING_SNAKE_CASE` | `KEYBIND_TOGGLE` |
-| Rust source files | `snake_case.rs`; module dirs as `foo.rs` + `foo/` (no `mod.rs`, lint `clippy::mod_module_files`) | `src/note_tree.rs` |
-| Crates, packages, addon directories | `kebab-case`, prefix `trailkit-` | `trailkit-memo`, `trailkit-ui` |
-| All other directories and files (Rust module directories below `src/` are `snake_case` like their module) | `kebab-case`, lowercase extensions | `data-pipeline.md`, `plan-template.md` |
-| Fixed upper-case meta files | only these: `README.md`, `AGENTS.md`, `CLAUDE.md`, `LICENSE`, `CHANGELOG.md`, `CONTRIBUTING.md`, `PRIVACY.md`, `ROADMAP.md`, `BACKLOG.md`, `NEXT_SESSION.md`, `SKILL.md` | |
-| Tool-mandated files | as the tool requires | `Cargo.toml`, `package.json` |
-| Data identifiers (ids, slugs, JSON/TOML keys, settings) | `snake_case`; files named after a data id keep it | `world_bosses`, `schema_version`, `world_bosses.toml` |
-| Nexus runtime identifiers (global namespace shared with all addons) | `trailkit.<addon>.<kind>.<name>`, `snake_case` segments, `<kind>` ∈ `keybind`, `texture`, `shortcut`, `event`, `datalink`, `localization`, `font`; cross-addon: `trailkit.shared.…`; always typed constants, never inline | `trailkit.memo.keybind.toggle`, `trailkit.core.event.data_updated` |
-| TypeScript/React (later) | files `kebab-case` (also components); components/types `PascalCase`, hooks `useXyz`, else `camelCase` | `note-tree.tsx` → `NoteTree` |
-| Git branches | `feature/`, `chore/`, `bugfix/`, `hotfix/` + `kebab-case` (R9, R14) | `feature/memo-tree` |
+- Before cargo: `source ~/.cargo/env`. Rust changes: `cargo fmt --all`,
+  `cargo clippy --all-targets -- -D warnings`, `cargo test`.
+- Addon/Windows code also needs Windows clippy; UI changes need snapshot tests
+  and visual review. Commands: [reference](docs/agent-reference.md#development-environment).
+- Changed Rust: `cargo xtask check-file-length` (R77). For hints on touched
+  files/functions, propose a split by concern via grilling; never split unasked.
+- Paths: `cargo xtask check-names`; tokens: `cargo xtask tokens`; added icons:
+  `cargo xtask subset-fonts`. Generated token values are never edited by hand.
 
-Vendored third-party skills keep their upstream names.
+## Work and communicate efficiently
 
-## Token economy
-
-Every turn re-reads the whole conversation, so output that enters it stays
-expensive for the rest of the session. Keep it small:
-
-- **Short tool output.** Filter commands (`| tail -n 5`, `grep -E 'error|FAILED|test result'`,
-  `--quiet`/`-q`); push with `git push -q`; watch CI with
-  `gh pr checks --watch | tail -3`. The git hooks already run quietly.
-- **Read narrowly.** Grep for the lines you need or read a range instead of
-  whole files; don't re-read a file you just edited.
-- **Images only when needed.** Look at the snapshot PNGs a UI test reports as
-  changed or new (`tests/snapshots/failures/`) and review them as R82 demands
-  (`.agents/skills/trailkit-ui/references/tokens.md` §10); skip unchanged ones.
-- **Batch work.** One edit/script per logical change, one PR per step; don't
-  repeat large code or plans in chat — link files and decision ids instead.
-- **Concise answers.** Report results and open questions, not the full
-  history.
-- **Fresh sessions.** When a session gets long, update
-  `docs/plans/NEXT_SESSION.md` and continue in a new session.
-
-## Development environment
-
-- Development happens in **WSL** (Linux). Addons are cross-compiled with
-  `cargo-xwin` to `x86_64-pc-windows-msvc` and copied into the Windows GW2
-  `addons` folder by a deploy script; CI additionally builds on a Windows
-  runner.
-- Start a new branch from a fresh `develop`: `git fetch origin` and branch from
-  `origin/develop`. After a merge the local `develop` is stale until pulled, and a
-  branch from it silently drops what was just merged (it undid M170 once, seen only
-  in game).
-- Run `source ~/.cargo/env` before cargo. Plain `grep` may fail in this shell;
-  use `command grep`.
-- Commands used daily:
-  | Command | Purpose |
-  |---------|---------|
-  | `cargo xtask deploy trailkit-memo` | Build and hot-reload into the running game; `addons/Nexus/Nexus.log` in the game folder logs "Loaded addon" 1-2 s later |
-  | `cargo xtask ui-test [--update]` | Snapshot tests, about 4 minutes. Adding one, coordinates, reviewing, measuring in game: [`tokens.md` §10](.agents/skills/trailkit-ui/references/tokens.md) |
-  | `cargo xwin clippy --target x86_64-pc-windows-msvc --all-targets -- -D warnings` | Needed besides host clippy, which skips Windows-only code |
-  | `cargo xtask subset-fonts` | After adding an icon to `Icon::ALL` |
-  | `cargo xtask tokens` | After changing a token |
-  | `cargo xtask check-names` | Naming conventions of paths |
-- Game folder `C:\Guild Wars 2\addons` (WSL: `/mnt/c/Guild Wars 2/addons`), log
-  `addons/Nexus/Nexus.log`. Node 24 via fnm, pnpm 11.17.0. `gh` is logged in as
-  `tobia-codes` over ssh.
-
-## Architecture decisions
-
-Fundamental design decisions are recorded so any agent can pick them up:
-
-- Addon runtime, threading, inter-addon protocol, i18n, help pages, API key
-  handling, facts learned in game → `.agents/skills/nexus-addon-dev/SKILL.md`
-- How an addon is structured (app, shared and slice crates; template and
-  checklist for new addons) →
-  `.agents/skills/nexus-addon-dev/references/addon-structure.md`
-- What the addons look like today, and how to see it →
-  `.agents/skills/trailkit-ui/references/current-design.md`
-- Theme, design tokens, shared components, UX rules →
-  `.agents/skills/trailkit-ui/SKILL.md`; token values are generated into
-  `references/token-values.md` (`cargo xtask tokens`, R84), never edited by hand
-- Per-component decisions → the "Decisions" table in `docs/plans/**`
-
-When a new fundamental decision is made, add it to the matching place above
-in the same change.
-
-## Skills
-
-Skills live in [`.agents/skills/`](.agents/skills) (read by Codex);
-`.claude/skills` is a symlink to the same directory (read by Claude Code).
-Add new skills only under `.agents/skills/`.
-
-| Skill | Use for |
-|-------|---------|
-| `grill-me` / `grilling` | All decisions and plan refinement (mandatory, see rule 2) |
-| `rust-best-practices` | Writing/reviewing Rust (Apollo handbook, compact) |
-| `rust-skills` | Detailed Rust rule lookup (265 rules incl. unsafe/FFI, async, API design) |
-| `nexus-addon-dev` | **Project skill:** Nexus API facts, threading/performance, inter-addon protocol, i18n, help pages, API keys |
-| `trailkit-ui` | **Project skill:** design system, themes, shared components, full UX rule set for in-game ImGui overlays (`references/ux-rules.md`) — the only UI/UX authority |
-
-Third-party skills keep their upstream `LICENSE` file; see
-[`.agents/skills/README.md`](.agents/skills/README.md) for sources.
-
-## Rust conventions
-
-- Cargo workspace at the repo root; lints configured once in the workspace
-  `Cargo.toml` (`missing_docs`, `clippy::missing_docs_in_private_items`,
-  `clippy::undocumented_unsafe_blocks`) so rule 4 is enforced by the compiler.
-- Before considering work done: `cargo fmt --all`, `cargo clippy --all-targets
-  -- -D warnings`, `cargo test`.
-- **File length hints (R77):** at the end of every task that changed Rust
-  code, run `cargo xtask check-file-length` (silent when all is fine). For
-  each hint on a file the task touched, propose a split to the user as a
-  grill question with a recommendation (split by concern, see
-  `addon-structure.md`); never split unasked.
+German conversation; explain Rust concepts with TypeScript comparisons when
+helpful. State evidence, trade-offs and unverified assumptions plainly.
+Read narrow ranges, cap/filter tool output, batch independent reads, avoid
+reprinting code/plans and use file links/decision IDs. Review only new/changed
+snapshots, the whole element. Cover each affected state once; no unnecessary
+cross product of independent states (tokens.md §10). Start with a small proposal.
+Use sub-agents only for independent work whose benefit justifies extra context;
+never for a trivial lookup. Keep progress/final responses concise. For long
+sessions, update the handoff and suggest a fresh session.

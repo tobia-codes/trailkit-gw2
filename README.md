@@ -39,7 +39,7 @@ Checks before a PR: `cargo fmt --all`, `cargo clippy --all-targets -- -D warning
   (`snake_case` files/functions, `UpperCamelCase` types); all other files and
   directories `kebab-case`; data keys `snake_case`; Nexus identifiers
   `trailkit.<addon>.<kind>.<name>`. Full table:
-  [AGENTS.md → Naming conventions](AGENTS.md#naming-conventions)
+  [Agent reference → Naming conventions](docs/agent-reference.md#naming-conventions)
   (checked by `cargo xtask check-names`).
 - Every directory that is a project has a `README.md`.
 - Every function is documented (rustdoc `///`).
