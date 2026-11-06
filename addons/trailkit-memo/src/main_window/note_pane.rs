@@ -4,6 +4,7 @@
 //! (M102) and the draft hint.
 
 use nexus::imgui::Ui;
+use trailkit_ui::tooltip::draw_tooltip;
 use trailkit_ui::{
     button::{
         button_width, draw_button, draw_icon_button, draw_icon_toggle,
@@ -97,7 +98,7 @@ impl MemoWindow {
                 self.actions.push(WindowAction::FinishEditing);
             }
             if ui.is_item_hovered() {
-                ui.tooltip_text(Text::SaveTooltip.get(language));
+                draw_tooltip(ui, Text::SaveTooltip.get(language));
             }
         } else if self.selected_note().is_some() {
             // Editing is the main action of the reading view: the one brass

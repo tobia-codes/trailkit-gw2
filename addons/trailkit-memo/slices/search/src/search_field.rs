@@ -6,6 +6,7 @@
 //! rule 7); the settings window will be the likely second user.
 
 use nexus::imgui::{StyleColor, StyleVar, Ui, WindowHoveredFlags};
+use trailkit_ui::tooltip::draw_tooltip;
 use trailkit_ui::{
     font_registry::FontScope, fonts::FontRole, glyph_metrics::glyph_ink_box, icons::Icon,
     theme::Theme,
@@ -205,7 +206,7 @@ impl SearchField {
                 .filled(true)
                 .rounding(theme.radius.small)
                 .build();
-            ui.tooltip_text(tooltip);
+            draw_tooltip(ui, tooltip);
         }
         let color = if hovered {
             theme.text.primary

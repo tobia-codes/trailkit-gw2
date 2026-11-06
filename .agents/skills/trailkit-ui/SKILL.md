@@ -170,7 +170,8 @@ move it into `crates/trailkit-ui` (see AGENTS.md "Code sharing").
   give the box the parity whose centre matches the ink centre's fraction
   (never round the ink size). Boxes of one kind keep one width so they line
   up (memo M132; `badge_geometry` in the memo note-list slice).
-- Tooltips: plain ImGui tooltips; `StyleScope` moves them right of the real
+- Tooltips: always `tooltip::draw_tooltip` or `draw_tooltip_with`, which center the
+  text by its capitals (M171; clippy bans the ImGui calls); `StyleScope` moves them right of the real
   cursor (GW2's cursor is large, memo M84) — never position them by hand.
 - Overlays inside a window (scrims): ImGui renders a child window's
   *background* into the parent's draw list, i.e. below every sibling child

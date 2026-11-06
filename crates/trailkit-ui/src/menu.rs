@@ -4,6 +4,7 @@
 //! Lucide `check` and `chevron-right` icons like the dropdown, and submenus
 //! open flush beside their parent instead of overlapping it.
 
+use crate::tooltip::draw_tooltip;
 use nexus::imgui::{ItemHoveredFlags, MenuItem, MenuToken, StyleColor, StyleVar, Ui};
 
 use crate::{
@@ -203,7 +204,7 @@ pub fn draw_menu_item_with_icon(
     if let Some(tooltip) = disabled_tooltip
         && ui.is_item_hovered_with_flags(ItemHoveredFlags::ALLOW_WHEN_DISABLED)
     {
-        ui.tooltip_text(tooltip);
+        draw_tooltip(ui, tooltip);
     }
     clicked && enabled
 }

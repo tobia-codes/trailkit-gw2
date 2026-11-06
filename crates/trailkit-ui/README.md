@@ -31,6 +31,7 @@ Latin up to Extended-B plus punctuation, the icon font only the icons in
 | `selection_bar` | `draw_selection_bar` — the brass bar on the left edge of the selected row (R71) | Windows |
 | `tree_arrow` | `draw_tree_arrow` — the Lucide chevron of an expandable tree row (R71) | Windows |
 | `title_bar` | `draw_window` — a window with the trailkit title bar (collapse chevron, bold title, close `x`) instead of ImGui's (R71) | Windows |
+| `tooltip` | `draw_tooltip`, `draw_tooltip_with`: every tooltip, text centered by its capitals (M171) | Windows |
 | `toolbar` | `begin_toolbar_group` (thin separator line, wraps when the group does not fit), `move_to_toolbar_end` (right-aligned items, wrap in narrow windows; `lay-responsive`) | Windows |
 | `splitter` | `draw_vertical_splitter` — resizable gap between two panes (accent line on hover/drag) | Windows |
 | `text_layout` | `centered_text`, `indent_to_center`, `truncate_to_width` ("…", `lay-truncation`), `format_count` (allocation-free count labels) | Windows |

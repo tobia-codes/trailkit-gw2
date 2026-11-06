@@ -6,6 +6,7 @@
 //! drawn as a child window, so it lies above the window's content and takes
 //! the clicks there.
 
+use crate::tooltip::draw_tooltip;
 use nexus::imgui::{ChildWindow, Ui, WindowHoveredFlags};
 
 use crate::{
@@ -197,7 +198,7 @@ pub fn draw_toast(
         if let Some(tooltip) = action.tooltip
             && ui.is_item_hovered()
         {
-            ui.tooltip_text(tooltip);
+            draw_tooltip(ui, tooltip);
         }
         if layout == ToastLayout::ActionsStacked {
             position[1] += row_step;

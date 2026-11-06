@@ -5,6 +5,7 @@
 
 use jiff::Timestamp;
 use nexus::imgui::{ChildWindow, Ui};
+use trailkit_ui::tooltip::draw_tooltip_with;
 use trailkit_ui::{
     menu::{begin_submenu, draw_menu_item},
     theme::Theme,
@@ -107,7 +108,7 @@ impl MemoWindow {
                 return;
             };
             let lines = reset_tooltip_lines(period, language, Timestamp::now());
-            ui.tooltip(|| {
+            draw_tooltip_with(ui, || {
                 for line in &lines {
                     ui.text(line);
                 }

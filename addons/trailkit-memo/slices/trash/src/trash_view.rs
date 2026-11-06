@@ -3,6 +3,7 @@
 //! toolbar and group preview of the note pane.
 
 use std::borrow::Cow;
+use trailkit_ui::tooltip::draw_tooltip;
 
 use jiff::Timestamp;
 use nexus::imgui::{MouseButton, Selectable, StyleColor, Ui};
@@ -157,10 +158,13 @@ fn draw_entry_row(
     }
     let title_truncated = draw_entry_texts(ui, language, theme, entry, row, now);
     if title_truncated && ui.is_item_hovered() {
-        ui.tooltip_text(match &entry.node {
-            TreeNode::Note(note) => &note.title,
-            TreeNode::Group(group) => &group.title,
-        });
+        draw_tooltip(
+            ui,
+            match &entry.node {
+                TreeNode::Note(note) => &note.title,
+                TreeNode::Group(group) => &group.title,
+            },
+        );
     }
     let mut action = clicked.then_some(TrashAction::Select(id));
     if ui.is_item_hovered() && ui.is_mouse_clicked(MouseButton::Right) {

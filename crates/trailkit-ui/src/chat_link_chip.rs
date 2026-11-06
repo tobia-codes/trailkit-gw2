@@ -3,6 +3,7 @@
 //! with gold, silver and copper dots, and a warning chip for codes that
 //! cannot be decoded. Used by the markdown view and the editor.
 
+use crate::tooltip::draw_tooltip_with;
 use nexus::imgui::{DrawListMut, ImColor32, Ui};
 
 use crate::{
@@ -317,7 +318,7 @@ pub fn chip_tooltip(
     context: ChipContext<'_>,
     copyable: bool,
 ) {
-    ui.tooltip(|| {
+    draw_tooltip_with(ui, || {
         match chip.link {
             Ok(ChatLink::Coins { .. }) => {}
             Ok(link) => {

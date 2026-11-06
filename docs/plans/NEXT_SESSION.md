@@ -104,13 +104,13 @@ Last updated: 2026-11-06 (session 18: window menu replaces the tool rail, on the
 
 ## ▶ Resume here
 
-Next ids: **M171+, R87+, questions from 128.** The new look is described in
+Next ids: **M172+, R87+, questions from 128.** The new look is described in
 [`current-design.md`](../../.agents/skills/trailkit-ui/references/current-design.md).
 
 1. **Finish branch `feature/memo-ux-round`** (local only, nothing pushed; work
-   continues here, on no other branch). Decisions M157-M170 are in
+   continues here, on no other branch). Decisions M157-M171 are in
    `docs/plans/addons/trailkit-memo.md`.
-   - **The user tests in game, then says whether it may merge.** Deployed: M157-M170.
+   - **The user tests in game, then says whether it may merge.** Deployed: M157-M171.
      Not yet confirmed in game: the window menu and its rows, the backdrop, the
      minimum width (at 18 px text), the list hiding and returning around editing,
      the search field's `x`, the `⋯` menu, Rename from it (title selected), toast

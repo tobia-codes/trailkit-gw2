@@ -5,6 +5,7 @@
 //! that opens a popup list below it. The field has the width of its widest
 //! option, so it does not jump when the choice changes.
 
+use crate::tooltip::draw_tooltip;
 use nexus::imgui::{ImColor32, Selectable, StyleColor, Ui};
 
 use crate::{
@@ -114,7 +115,7 @@ pub fn draw_dropdown(
         }
     });
     if is_hovered && !is_open {
-        ui.tooltip_text(tooltip);
+        draw_tooltip(ui, tooltip);
     }
     let border = tint.unwrap_or(if is_open {
         theme.border.focus

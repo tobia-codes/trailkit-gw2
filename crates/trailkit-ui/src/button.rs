@@ -2,6 +2,7 @@
 //!
 //! `lay-one-primary`: at most one primary button per window or dialog.
 
+use crate::tooltip::draw_tooltip;
 use nexus::imgui::{ImColor32, StyleColor, Ui};
 
 use crate::{
@@ -248,7 +249,7 @@ pub fn draw_icon_toggle(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str, activ
     };
     draw_icon_centered(ui, icon, [ui.item_rect_min(), ui.item_rect_max()], color);
     if ui.is_item_hovered() {
-        ui.tooltip_text(tooltip);
+        draw_tooltip(ui, tooltip);
     }
     clicked
 }

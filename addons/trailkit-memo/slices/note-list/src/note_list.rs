@@ -12,6 +12,7 @@ mod delete;
 mod rows;
 
 use std::collections::HashSet;
+use trailkit_ui::tooltip::{draw_tooltip, draw_tooltip_with};
 
 use nexus::imgui::{MouseButton, StyleColor, Ui, WindowHoveredFlags};
 use trailkit_memo_shared::{
@@ -269,7 +270,7 @@ impl NoteList {
                 ui.button_with_size(icon.as_str(&mut buffer), [width, 0.0])
             };
             if ui.is_item_hovered() {
-                ui.tooltip_text(tooltip.get(language));
+                draw_tooltip(ui, tooltip.get(language));
             }
             if clicked {
                 clicked_action = Some(action);
@@ -331,7 +332,7 @@ impl NoteList {
             } else if self.drag_blocked_by_search
                 && ui.is_mouse_dragging_with_threshold(MouseButton::Left, DRAG_THRESHOLD)
             {
-                ui.tooltip_text(search.texts.clear_search_to_move);
+                draw_tooltip(ui, search.texts.clear_search_to_move);
             }
         } else if let Some(node) = pressed {
             self.drag = Some(TreeDrag {
@@ -495,7 +496,7 @@ impl NoteList {
             theme.accent.text
         };
         let _border = ui.push_style_color(StyleColor::Border, border.to_array());
-        ui.tooltip(|| {
+        draw_tooltip_with(ui, || {
             let _danger = is_impossible
                 .then(|| ui.push_style_color(StyleColor::Text, theme.status.danger.to_array()));
             if is_impossible {
