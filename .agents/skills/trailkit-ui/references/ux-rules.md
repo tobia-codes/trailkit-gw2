@@ -180,8 +180,8 @@ Each rule has an id (`area-name`) so reviews can cite it.
   stay in reach. It appears instantly (`overlay-motion`) and is opened and closed
   by a flat `menu` toggle at the left of the title bar (R86). A click on the dimmed
   area or choosing a row closes it. It marks the area the window shows like a
-  selected list row and offers a row back to the addon's regular page. Width: its
-  widest row, at most 85 % of the window. **A window never folds a column away
+  selected list row and offers a row back to the addon's regular page. Width: at
+  least 27 average characters or its widest row, at most 85 % of the window. **A window never folds a column away
   because of its size:** it has a minimum width instead. Escape closes the drawer
   first, then the window (`overlay-escape`).
 - `lay-inline-edit` — Inline editing in a list (e.g. renaming a row) keeps

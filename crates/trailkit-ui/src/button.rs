@@ -9,7 +9,7 @@ use crate::{
     dropdown::{draw_border, draw_icon_into, icon_width},
     font_registry::FontScope,
     fonts::FontRole,
-    glyph_metrics::{capital_middle, glyph_ink_box, glyph_visible_ink},
+    glyph_metrics::{capital_middle, glyph_icon_ink, glyph_ink_box},
     icons::Icon,
     theme::Theme,
 };
@@ -260,7 +260,7 @@ pub fn draw_icon_toggle(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str, activ
 fn draw_icon_centered(ui: &Ui, icon: Icon, [min, max]: [[f32; 2]; 2], color: u32) {
     let _icons = FontScope::push(ui, FontRole::Icons);
     let line = ui.text_line_height();
-    let ink = glyph_visible_ink(icon.glyph())
+    let ink = glyph_icon_ink(icon.glyph())
         .or_else(|| glyph_ink_box(icon.glyph()))
         .unwrap_or([0.0, 0.0, line, line]);
     let position = nexus::imgui::sys::ImVec2 {
