@@ -167,3 +167,50 @@ fn keyboard_stays_captured_when_the_editor_is_scrolled() {
         "Nexus routes keys to ImGui only while a text input is active"
     );
 }
+
+/// A click into the game world takes the keyboard from ImGui without ImGui
+/// reporting a click; here another input takes it, which looks the same to the
+/// sink. The editor must not take it back (M178), or no key reaches the game.
+#[test]
+fn a_focus_lost_from_outside_stays_lost_until_a_click_in_the_editor() {
+    let size = [320.0, 200.0];
+    let mut harness = UiHarness::new(size);
+    let mut editor = TextEditor::new("Some text");
+    let rest = FrameInput::default();
+    let mut take_focus = false;
+    let mut other_input = String::new();
+    for _ in 0..3 {
+        harness.step(&rest, |ui| {
+            draw(ui, &mut editor, ThemeKind::Dark);
+        });
+    }
+    assert!(editor.is_focused(), "a new editor has the focus");
+    for _ in 0..4 {
+        harness.step(&rest, |ui| {
+            draw(ui, &mut editor, ThemeKind::Dark);
+            Window::new("other").build(ui, || {
+                if !take_focus {
+                    ui.set_keyboard_focus_here();
+                    take_focus = true;
+                }
+                ui.input_text("##other", &mut other_input).build();
+            });
+        });
+    }
+    assert!(
+        !editor.is_focused(),
+        "the sink must not take the keyboard back"
+    );
+    let at_text = [100.0, 40.0];
+    for down in [false, true, false, false, false] {
+        let input = FrameInput {
+            mouse_position: at_text,
+            left_button_down: down,
+            ..FrameInput::default()
+        };
+        harness.step(&input, |ui| {
+            draw(ui, &mut editor, ThemeKind::Dark);
+        });
+    }
+    assert!(editor.is_focused(), "a click in the editor gives it back");
+}

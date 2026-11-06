@@ -17,11 +17,11 @@ facts into the skills, and the history stays in git.
 
 ## ▶ Resume here
 
-Next ids: **M178+, R87+, questions from 138.** Work on a new branch from a freshly
+Next ids: **M179+, R87+, questions from 141.** Work on a new branch from a freshly
 fetched `origin/develop`.
 
-0. **Branch `feature/ui-roomier-menus` (M177, Q135 B, Q136):** merge after the user's in-game
-   OK. Confirmed in game: the game does not react to Ctrl+F or Delete while memo catches them.
+0. **Branch `bugfix/editor-release-keyboard` (M178):** merge after the user's in-game OK.
+   Confirmed in game: the game does not react to Ctrl+F or Delete while memo catches them.
 1. **Splits (R77), each a small own step:** Q91 `note_list.rs` + `draw_group`, Q95
    `draw_dropdown`, Q96 `editor/view.rs`, Q105 `markdown_view.rs`. All answered yes.
    Q92 `Text::get`: the recommendation is no, the user has not objected. `Editor::draw`
@@ -44,8 +44,8 @@ offered in the trash, as in the approved mockup.
 **Merged branches stay on GitHub** until deleted by hand (`git push origin --delete`, which
 the pre-push hook allows since Q129): `gh pr merge --auto --delete-branch` cannot delete
 them, because GitHub merges later without `gh`. See the user to-do below for the fix. 47 old
-ones were removed on 2026-11-06 (Q137). `bugfix/ui-theme-in-game-fixes` stays, local and
-remote: 2 commits are not in `develop` (`5281bc5`, `2826e7c`), for the user to look at.
+ones were removed on 2026-11-06 (Q137). `bugfix/ui-theme-in-game-fixes` is obsolete (compared with
+`develop`, Q138): the user deletes it, as auto mode refuses to delete an unmerged branch.
 
 ## Open with the user
 

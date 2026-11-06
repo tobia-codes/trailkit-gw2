@@ -98,7 +98,9 @@ for new addons: [`references/addon-structure.md`](references/addon-structure.md)
   and Ctrl+0 reached ImGui, Ctrl+F and Delete did not, while tests pass either way.
   Try each new key in game. One that does not arrive uses a `WndProc` callback that
   flips an atomic and consumes the key while it belongs to the window (memo M174,
-  M175). A custom text
+  M175). A click into the game world takes the keyboard from ImGui without being
+  reported as a click, so never reactivate an input that lost it (memo M178). A
+  custom text
   widget keeps an invisible ImGui text input active while focused
   (`trailkit_ui::editor::view`, "keyboard sink"), reads
   `InputQueueCharacters` before that input consumes them, and writes the
