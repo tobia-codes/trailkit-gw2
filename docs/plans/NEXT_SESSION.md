@@ -107,11 +107,12 @@ Last updated: 2026-11-06 (session 18: window menu replaces the tool rail, merged
 Next ids: **M172+, R87+, questions from 128.** The new look is described in
 [`current-design.md`](../../.agents/skills/trailkit-ui/references/current-design.md).
 
-1. **`feature/memo-ux-round` is merged into `develop`** with the user's OK (M157-M171).
-   Pull `develop` and start follow-ups on a new branch. Check first:
-   - **In game:** the last icon fix (M170, visible pixels) was deployed right before
-     the merge; before it the `menu` icon sat 1 px below "Notes". Ask the user for a
-     screenshot if unsure and measure it.
+1. **`feature/memo-ux-round` is merged into `develop`** with the user's OK (M157-M171), as is
+   `bugfix/title-bar-row-height`. The first branch's remote copy still exists: `git push --delete` fails in the pre-push hook while
+   `develop` is checked out, the user can delete it on GitHub. Start follow-ups on a new
+   branch.
+   - The `menu` icon's alignment with "Notes" (M170, final form) is confirmed in game by
+     the user and merged.
    - Settled: Q112, Q121 and Q122 split, Q113 keeps the menu order (Reset type below
      Move to). The user answered "alle ja" to Q122, whose recommendation was to wait;
      it was taken as a yes to splitting.
@@ -173,6 +174,9 @@ Next ids: **M172+, R87+, questions from 128.** The new look is described in
   game, measure the screenshot before changing anything; the test renderer hid
   1.5 px. A scanner over the glyph's texels runs per icon button per frame, a few
   hundred bytes each.
+- In the running game a one-off `log::info!` shows up in `Nexus.log` a few seconds
+  after a deploy while the window is open: font sizes differ from the tests (window
+  frame height 26.75, icons 28, both 16 px fonts equal in tests). Remove it afterwards.
 
 ## Session 17 summary (2026-11-05, branch `feature/memo-ux-round`)
 
