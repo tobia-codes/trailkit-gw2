@@ -20,8 +20,8 @@ generic web/mobile UI guidelines (touch targets, breakpoints, CSS, …) here.
 How the addons look today, with the snapshots to open: [`references/current-design.md`](references/current-design.md).
 
 **Design approval first (R87):** AGENTS.md rule 2 applies to every visible
-change, including small changes and states. The full visual review workflow
-is in [`current-design.md`](references/current-design.md#showing-the-user-a-visual-decision).
+change, including small changes and states. How to show a proposal is in
+[`current-design.md`](references/current-design.md#showing-the-user-a-visual-decision).
 Read only reference sections relevant to the task, rather than every linked file.
 
 ## 1. Principles
