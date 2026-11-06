@@ -74,8 +74,7 @@ repeat a completed check during the same session without new evidence.
   to an EU host (data-pipeline D11). Core's planned GitHub Pages downloads
   rely on the framework; do not treat an old handoff entry as a current check.
 - **Scheduled jobs:** follow due reminders and archive checks in
-  `NEXT_SESSION.md`, including the requested WvW EU snapshot of 2026-11-06
-  17:23 UTC. Report an unverified or blocked check explicitly.
+  `NEXT_SESSION.md`. Report an unverified or blocked check explicitly.
 
 ## Operational facts and instruction maintenance
 
@@ -92,8 +91,8 @@ repeat a completed check during the same session without new evidence.
 - Avoid unnecessary environment setup for a design review: a local HTML
   mockup using the existing tokens is acceptable (current-design.md). Check
   existing rendering tools first; agree before expanding the setup.
-- `rust-best-practices` and `grilling` retain their upstream licenses and
-  names, with small local workflow adaptations documented in
+- `rust-best-practices`, `rust-skills` and `grilling` retain their upstream
+  licenses and names, with local workflow adaptations documented in
   `.agents/skills/README.md`. Preserve those adaptations when updating upstream.
 - Decisions live in `docs/plans/`; lasting project facts live in the relevant
   skill. `NEXT_SESSION.md` holds only current state and next steps, under

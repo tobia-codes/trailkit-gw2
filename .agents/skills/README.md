@@ -15,9 +15,10 @@ Reapply these local workflow adaptations (R88, 2026-11-06):
 
 - `rust-best-practices`: use the quick reference first and read only the
   relevant chapter sections; no default full-handbook reads.
-- `rust-skills`: the entrypoint routes by category; the original complete
-  catalogue, examples and attribution live in `references/rule-index.md`.
-  Individual rule files and their contents are unchanged.
+- `rust-skills`: the description limits automatic use to concrete lookups and
+  the entrypoint routes by category; the original complete catalogue, examples
+  and attribution live in `references/rule-index.md`. Individual rule files and
+  their contents are unchanged.
 - `grilling`: inspect simple facts directly; use sub-agents only for worthwhile
   independent investigations. Numbered decision rounds and user approval stay
   mandatory; do not ask settled questions again.

@@ -109,11 +109,5 @@ behind a test and show the rendered PNG, or write a standalone HTML page with th
 values from [`token-values.md`](token-values.md) and give the user its path. Say
 clearly when an image is a mockup and not rendered by the addon.
 
-**Approval is mandatory before addon implementation (R87).** This applies to
-every visible design change, including small changes to wording, layout,
-colors, icons, typography and interaction states. Show the affected states in
-Dark and Light, plus minimum width and German text where layout is affected,
-and wait for explicit approval in the current conversation. Isolated
-prototypes may be created for this review. If the implementation must deviate
-materially, show the revised design and ask again. Afterwards, the snapshot
-review (R82), in-game test and merge approval still apply.
+What the proposal must show and when addon implementation may start is binding
+in AGENTS.md rule 2 (R87).
