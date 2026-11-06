@@ -35,6 +35,8 @@ use super::{MemoWindow, WindowToast, WindowToastKind};
 pub(super) enum WindowAction {
     /// Select a note or group.
     Select(NodeId),
+    /// A click on a group's row: selects it and toggles it (M172).
+    ClickGroup(GroupId),
     /// A group was expanded or collapsed.
     SetExpanded(GroupId, bool),
     /// Rename a note or group (inline rename committed, M44).
@@ -114,7 +116,8 @@ impl WindowAction {
     pub(super) fn leaves_editor_of(&self, note: NoteId) -> bool {
         match self {
             Self::Select(node) => *node != NodeId::Note(note),
-            Self::NewNote(_)
+            Self::ClickGroup(_)
+            | Self::NewNote(_)
             | Self::NewGroup(_)
             | Self::OpenTrash
             | Self::ShowNotes
@@ -159,6 +162,7 @@ impl MemoWindow {
         }
         match action {
             WindowAction::Select(_)
+            | WindowAction::ClickGroup(_)
             | WindowAction::SetExpanded(..)
             | WindowAction::Move(..)
             | WindowAction::Rename(..)
@@ -209,6 +213,10 @@ impl MemoWindow {
     fn apply_tree_action(&mut self, action: &WindowAction, language: Language, now: Timestamp) {
         match action {
             WindowAction::Select(node) => self.change_selected(*node),
+            WindowAction::ClickGroup(group) => {
+                self.change_selected(NodeId::Group(*group));
+                self.toggle_group(*group);
+            }
             WindowAction::SetExpanded(group, expanded) => {
                 if let Some(group) = self.document.group_mut(*group)
                     && group.expanded != *expanded
@@ -370,7 +378,7 @@ impl MemoWindow {
                 self.saver.save_ui_state(self.ui_state);
             }
             WindowAction::Markdown(MarkdownAction::ToggleTask(marker)) => {
-                let Some(NodeId::Note(id)) = self.ui_state.selected else {
+                let Some(id) = self.ui_state.shown_note else {
                     return;
                 };
                 let Some(note) = self.document.note_mut(id) else {
@@ -427,15 +435,34 @@ impl MemoWindow {
         }
     }
 
-    /// Makes `node` the selected entry, shows it from its top and remembers it.
+    /// Expands or collapses `group`, during a search only for that search (M124).
+    fn toggle_group(&mut self, group: GroupId) {
+        if self.search.current.is_some() {
+            if !self.collapsed_in_search.remove(&group) {
+                self.collapsed_in_search.insert(group);
+            }
+        } else if let Some(group) = self.document.group_mut(group) {
+            group.expanded = !group.expanded;
+            self.save_notes();
+        }
+    }
+
+    /// Makes `node` the selected entry and remembers it. A note also moves into
+    /// the note pane, shown from its top; a group leaves the pane as it is (M173).
     pub(super) fn change_selected(&mut self, node: NodeId) {
-        if self.ui_state.selected != Some(node) {
-            self.ui_state.selected = Some(node);
+        if self.ui_state.selected == Some(node) {
+            return;
+        }
+        self.ui_state.selected = Some(node);
+        if let NodeId::Note(note) = node
+            && self.ui_state.shown_note != Some(note)
+        {
+            self.ui_state.shown_note = Some(note);
             self.ui_state.note_scroll = 0.0;
             self.note_view
                 .show_other_note(self.search.current.is_some());
-            self.saver.save_ui_state(self.ui_state);
         }
+        self.saver.save_ui_state(self.ui_state);
     }
 
     /// Resolves where a new entry goes: `point` from a context menu (M96),

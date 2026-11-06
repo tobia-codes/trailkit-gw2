@@ -400,6 +400,12 @@ fn list_rows() {
         assert_state(name, WIDE, selected, &hover(position));
     }
     assert_state("pressed-row", WIDE, selected, &press(DAILIES_ROW));
+    // A click on the row collapses the group; the note stays (M172, M173).
+    assert_state("group-clicked", WIDE, selected, &{
+        let mut steps = click(RAIDS_ROW);
+        steps.extend(hover(NOWHERE));
+        steps
+    });
     assert_state("collapsed-group", WIDE, selected, &{
         let mut steps = click([36.0, RAIDS_ROW[1]]);
         steps.extend(hover(NOWHERE));
@@ -535,6 +541,11 @@ fn search() {
     assert_state("search-hits", WIDE, searching, &typing(field, "ecto"));
     assert_state("search-no-hits", WIDE, searching, &typing(field, "xyzzy"));
     assert_state("search-hover-close", WIDE, searching, &hover([185.0, 68.0]));
+    assert_state("search-hover-clear", WIDE, searching, &{
+        let mut steps = typing(field, "ecto");
+        steps.extend(hover([185.0, 68.0]));
+        steps
+    });
 }
 
 #[test]

@@ -8,9 +8,10 @@ use trailkit_memo_shared::i18n::{Language, LocalizedText};
 pub enum SearchText {
     /// Placeholder of the search field (M123).
     SearchHint,
-    /// Button of the empty search result (M126).
+    /// Button of the empty search result (M126), tooltip of the `x` while the
+    /// field holds text (M176).
     ClearSearch,
-    /// Tooltip of the `x` that closes the search field (M169).
+    /// Tooltip of the `x` while the field is empty (M176).
     CloseSearch,
     /// Empty search result; `{query}` is replaced by the search text (M126).
     NoSearchResults,

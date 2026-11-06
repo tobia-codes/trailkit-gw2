@@ -888,3 +888,182 @@ fn the_snapshots_use_the_minimum_window_width() {
         MINIMUM_WINDOW[0]
     );
 }
+
+/// The first group of `document`.
+fn first_group(document: &NotesDocument) -> Option<GroupId> {
+    document.root.iter().find_map(|node| match node {
+        Node::Group(group) => Some(group.id),
+        Node::Note(_) => None,
+    })
+}
+
+#[test]
+fn clicking_a_group_toggles_it_and_keeps_the_shown_note() {
+    let document = sample_document();
+    let Some(group) = first_group(&document) else {
+        panic!("the sample has a group");
+    };
+    let shown = first_note(&document);
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    let is_expanded = |memo: &MemoWindow| memo.document.group(group).is_some_and(|g| g.expanded);
+    let before = is_expanded(&memo);
+    memo.apply(&WindowAction::ClickGroup(group), Language::English);
+    assert_eq!(is_expanded(&memo), !before, "the click toggles (M172)");
+    assert_eq!(memo.ui_state.selected, Some(NodeId::Group(group)));
+    assert_eq!(
+        memo.selected_note().map(|note| NodeId::Note(note.id)),
+        shown,
+        "the note stays (M173)"
+    );
+    memo.apply(&WindowAction::ClickGroup(group), Language::English);
+    assert_eq!(is_expanded(&memo), before);
+}
+
+#[test]
+fn clicking_a_group_during_a_search_changes_only_the_search() {
+    let document = sample_document();
+    let Some(group) = first_group(&document) else {
+        panic!("the sample has a group");
+    };
+    let (mut memo, _worker, _directory) =
+        memo_window(document.clone(), selected_first_with_search(&document));
+    memo.search_field.text = "clears".to_owned();
+    memo.update_search();
+    let saved = memo.document.group(group).is_some_and(|g| g.expanded);
+    memo.apply(&WindowAction::ClickGroup(group), Language::English);
+    assert!(memo.collapsed_in_search.contains(&group));
+    assert_eq!(
+        memo.document.group(group).is_some_and(|g| g.expanded),
+        saved,
+        "the saved state stays (M124)"
+    );
+}
+
+#[test]
+fn the_shown_note_ticks_its_tasks_while_a_group_is_selected() {
+    let document = sample_document();
+    let Some(group) = first_group(&document) else {
+        panic!("the sample has a group");
+    };
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    memo.apply(&WindowAction::ClickGroup(group), Language::English);
+    memo.apply(&WindowAction::StartEditing, Language::English);
+    assert!(memo.editor.is_some(), "Edit acts on the shown note");
+}
+
+#[test]
+fn the_search_key_toggles_the_search_except_in_the_editor() {
+    let document = sample_document();
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    memo.window_menu_open = true;
+    memo.toggle_search_by_key();
+    assert!(
+        memo.ui_state.search_visible,
+        "the caught key shows it (M174)"
+    );
+    assert!(!memo.window_menu_open, "and closes the menu above it");
+    memo.search_field.text = "ecto".to_owned();
+    memo.toggle_search_by_key();
+    assert!(!memo.ui_state.search_visible, "again closes it (M176)");
+    assert!(memo.search_field.text.is_empty(), "no hidden filter (M138)");
+    memo.apply(&WindowAction::OpenTrash, Language::English);
+    memo.ui_state.search_visible = true;
+    memo.toggle_search_by_key();
+    assert!(memo.ui_state.search_visible, "the trash makes way for it");
+    assert!(!memo.trash.visible);
+    memo.apply(&WindowAction::HideSearch, Language::English);
+    memo.apply(&WindowAction::StartEditing, Language::English);
+    memo.toggle_search_by_key();
+    assert!(
+        !memo.ui_state.search_visible,
+        "a key must not end an edit (M167)"
+    );
+    assert!(!memo.takes_search_key(), "and the game keeps it there");
+}
+
+#[test]
+fn the_search_x_clears_the_text_and_then_closes_the_field() {
+    let document = sample_document();
+    let (mut memo, _worker, _directory) =
+        memo_window(document.clone(), selected_first_with_search(&document));
+    memo.search_field.text = "ecto".to_owned();
+    let size = [640.0, 360.0];
+    let mut harness = UiHarness::new(size);
+    let end_of_field = [185.0, 68.0];
+    let mut click_x = |memo: &mut MemoWindow| {
+        for down in [false, false, true, false, false] {
+            let input = FrameInput {
+                mouse_position: end_of_field,
+                left_button_down: down,
+                ..FrameInput::default()
+            };
+            harness.step(&input, |ui| draw(ui, memo, size, ThemeKind::Dark));
+        }
+    };
+    click_x(&mut memo);
+    assert!(memo.search_field.text.is_empty(), "text first (M176)");
+    assert!(memo.ui_state.search_visible, "the field stays");
+    click_x(&mut memo);
+    assert!(!memo.ui_state.search_visible, "the empty field closes");
+}
+
+#[test]
+fn the_delete_key_belongs_to_a_focused_list_only() {
+    let document = sample_document();
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    let size = [640.0, 360.0];
+    let mut harness = UiHarness::new(size);
+    let at = |position: [f32; 2], down: bool| FrameInput {
+        mouse_position: position,
+        left_button_down: down,
+        ..FrameInput::default()
+    };
+    let mut draw_frame = |memo: &mut MemoWindow, input: &FrameInput| {
+        harness.step(input, |ui| draw(ui, memo, size, ThemeKind::Dark));
+    };
+    let list_row = [100.0, 138.0];
+    for input in [
+        at(list_row, false),
+        at(list_row, true),
+        at(list_row, false),
+        at(list_row, false),
+    ] {
+        draw_frame(&mut memo, &input);
+    }
+    assert!(
+        memo.takes_delete_key(),
+        "a click in the list gives it the key (M175)"
+    );
+    let note_text = [420.0, 300.0];
+    for input in [
+        at(note_text, false),
+        at(note_text, true),
+        at(note_text, false),
+        at(note_text, false),
+    ] {
+        draw_frame(&mut memo, &input);
+    }
+    assert!(
+        !memo.takes_delete_key(),
+        "a click in the note takes it away"
+    );
+    memo.delete_selected_by_key(Language::English);
+    assert!(
+        memo.document.trash.is_empty(),
+        "reading a note cannot delete it"
+    );
+    for input in [
+        at(list_row, false),
+        at(list_row, true),
+        at(list_row, false),
+        at(list_row, false),
+    ] {
+        draw_frame(&mut memo, &input);
+    }
+    memo.delete_selected_by_key(Language::English);
+    assert_eq!(
+        memo.document.trash.len(),
+        1,
+        "the caught key deletes (M133)"
+    );
+}

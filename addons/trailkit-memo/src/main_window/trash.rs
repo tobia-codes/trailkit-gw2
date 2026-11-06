@@ -168,6 +168,7 @@ impl MemoWindow {
             Some(node) => self.change_selected(node),
             None => {
                 self.ui_state.selected = None;
+                self.ui_state.shown_note = None;
                 self.saver.save_ui_state(self.ui_state);
             }
         }
@@ -200,6 +201,25 @@ impl MemoWindow {
                 self.change_selection(selection);
             }
             self.save_notes();
+        }
+    }
+
+    /// Whether the Delete key belongs to this window (M175): the list claimed it
+    /// and nothing lies above the list.
+    #[must_use]
+    pub const fn takes_delete_key(&self) -> bool {
+        self.note_list_takes_delete_key
+            && !self.window_menu_open
+            && self.leave_prompt.is_none()
+            && self.confirmation.is_none()
+    }
+
+    /// Deletes the selected entry after the Delete key was caught (M133, M175).
+    pub fn delete_selected_by_key(&mut self, language: Language) {
+        if self.takes_delete_key()
+            && let Some(node) = self.ui_state.selected
+        {
+            self.apply(&WindowAction::Delete(node), language);
         }
     }
 

@@ -27,7 +27,7 @@ use trailkit_memo_shared::{
     note_tree::Note,
 };
 
-use super::{MemoWindow, WindowAction, note_list::draw_reset_type_submenu, selected_note_in};
+use super::{MemoWindow, WindowAction, note_list::draw_reset_type_submenu, shown_note_in};
 
 impl MemoWindow {
     /// Draws the note pane: the note toolbar, then the note in its own
@@ -126,7 +126,7 @@ impl MemoWindow {
         if draw_icon_button(ui, theme, Icon::ELLIPSIS, Text::MoreActions.get(language)) {
             ui.open_popup(POPUP_ID);
         }
-        let Some(note) = selected_note_in(&self.document, self.ui_state.selected) else {
+        let Some(note) = shown_note_in(&self.document, self.ui_state.shown_note) else {
             return;
         };
         let (right, bottom) = (ui.item_rect_max()[0], ui.item_rect_max()[1]);
@@ -190,7 +190,7 @@ impl MemoWindow {
     /// behind its title.
     pub(super) fn draw_note_body(&mut self, ui: &Ui, language: Language, theme: &Theme) {
         // Borrow only the document, so the view's state can change below.
-        let note = selected_note_in(&self.document, self.ui_state.selected);
+        let note = shown_note_in(&self.document, self.ui_state.shown_note);
         if let Some(note) = note
             && let Some(draft) = self.drafts.get(note.id)
         {

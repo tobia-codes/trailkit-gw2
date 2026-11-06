@@ -9,7 +9,7 @@ the results through the shared `ListFilter` trait.
 |--------|---------|
 | `note_search` | search index over titles and content, the rows a search shows, match counts per group and content hits per note (ImGui-free) |
 | `no_search_results` | the empty search result with its clear button, drawn by the app instead of the list (M126, Windows only) |
-| `search_field` | the search field above the note list: magnifier, hint, closing `x` (M169), brass focus frame (Windows only) |
+| `search_field` | the search field above the note list: magnifier, hint, an `x` that clears and then closes (M176), brass focus frame (Windows only) |
 | `i18n` | the slice's texts (`SearchText`, en/de) |
 
 ## Build and test

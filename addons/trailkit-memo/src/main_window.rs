@@ -42,7 +42,7 @@ use trailkit_memo_shared::i18n::LocalizedText;
 use trailkit_memo_shared::{
     drafts::DraftsDocument,
     i18n::{Language, Text},
-    note_tree::{GroupId, NodeId, Note, NotesDocument},
+    note_tree::{GroupId, NodeId, Note, NoteId, NotesDocument},
     settings::{Settings, TextScale, UnsavedChanges},
     storage_worker::StorageSaver,
     ui_state::UiState,
@@ -123,6 +123,8 @@ pub struct MemoWindow {
     note_view: NoteView,
     /// Whether the window menu is open (M166).
     window_menu_open: bool,
+    /// Whether the note list claimed the Delete key in the last frame (M175).
+    note_list_takes_delete_key: bool,
     /// Actions collected while drawing; reused every frame.
     actions: Vec<WindowAction>,
     /// Drafts kept from earlier unloads (M54, M55).
@@ -202,6 +204,18 @@ impl MemoWindow {
         {
             ui_state.selected = None;
         }
+        // State saved before M173 only knows the selection.
+        if ui_state.shown_note.is_none()
+            && let Some(NodeId::Note(note)) = ui_state.selected
+        {
+            ui_state.shown_note = Some(note);
+        }
+        if ui_state
+            .shown_note
+            .is_some_and(|note| document.note(note).is_none())
+        {
+            ui_state.shown_note = None;
+        }
         Self {
             document,
             problem,
@@ -211,6 +225,7 @@ impl MemoWindow {
             note_list: NoteList::default(),
             note_view: NoteView::default(),
             window_menu_open: false,
+            note_list_takes_delete_key: false,
             actions: Vec::new(),
             drafts,
             editor: None,
@@ -332,6 +347,8 @@ impl MemoWindow {
         self.update_text_scale(ui, language);
         self.draw_problem(ui, language, theme);
 
+        // Only a list that is drawn claims the key again below.
+        self.note_list_takes_delete_key = false;
         let content_start = ui.cursor_screen_pos();
         let content_size = ui.content_region_avail();
         self.draw_content(ui, language, theme);
@@ -418,9 +435,9 @@ impl MemoWindow {
         self.next_reset_check = Some(next_reset_of_any_period(now));
     }
 
-    /// The selected note, if a note (not a group) is selected.
+    /// The note in the note pane (M173).
     fn selected_note(&self) -> Option<&Note> {
-        selected_note_in(&self.document, self.ui_state.selected)
+        shown_note_in(&self.document, self.ui_state.shown_note)
     }
 }
 
@@ -431,12 +448,9 @@ pub fn minimum_window_width(ui: &Ui) -> f32 {
     ui.calc_text_size("n")[0] * MINIMUM_WINDOW_CHARACTERS
 }
 
-/// The note `selected` refers to, if it is a note that exists.
-fn selected_note_in(document: &NotesDocument, selected: Option<NodeId>) -> Option<&Note> {
-    match selected? {
-        NodeId::Note(id) => document.note(id),
-        NodeId::Group(_) => None,
-    }
+/// The note `shown`, if it exists.
+fn shown_note_in(document: &NotesDocument, shown: Option<NoteId>) -> Option<&Note> {
+    document.note(shown?)
 }
 
 /// The localized title and tooltips of the main window's title bar (R71).

@@ -32,16 +32,18 @@ pub struct SearchField {
 pub struct SearchFieldTexts<'text> {
     /// Placeholder while empty ("Search …").
     pub hint: &'text str,
-    /// Tooltip of the `x` that closes the field.
+    /// Tooltip of the `x` while the field holds text.
+    pub clear: &'text str,
+    /// Tooltip of the `x` while the field is empty.
     pub close: &'text str,
 }
 
 /// What the user did with the field in this frame.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SearchFieldResponse {
-    /// The text changed by typing.
+    /// The text changed by typing or the `x`.
     pub text_changed: bool,
-    /// The `x` was clicked: the app closes the field and clears it (M169).
+    /// The `x` of the empty field was clicked: the app closes it (M176).
     pub close_clicked: bool,
 }
 
@@ -115,7 +117,13 @@ impl SearchField {
             (end[0] - clear_width - input_x).max(1.0),
         );
 
-        let close_clicked = self.draw_close_button(ui, theme, clear_position, clear, texts.close);
+        // The `x` empties a field with text and closes an empty one (M176).
+        let has_text = !self.text.is_empty();
+        let tooltip = if has_text { texts.clear } else { texts.close };
+        let clicked = self.draw_end_button(ui, theme, clear_position, clear, tooltip);
+        if clicked && has_text {
+            self.clear(true);
+        }
 
         let frame = if self.is_active {
             theme.border.focus
@@ -131,8 +139,8 @@ impl SearchField {
         ui.set_cursor_screen_pos([start[0], end[1]]);
         ui.dummy([0.0, 0.0]);
         SearchFieldResponse {
-            text_changed: changed,
-            close_clicked,
+            text_changed: changed || (clicked && has_text),
+            close_clicked: clicked && !has_text,
         }
     }
 
@@ -164,10 +172,10 @@ impl SearchField {
         changed
     }
 
-    /// Draws the closing `x` at pen `position` (`ink` box relative to it):
+    /// Draws the `x` at the field's end at pen `position` (`ink` box relative to it):
     /// `text.secondary`, on hover `text.primary` over a small `bg.hover`
     /// square centered on the glyph. Returns whether it was clicked.
-    fn draw_close_button(
+    fn draw_end_button(
         &self,
         ui: &Ui,
         theme: &Theme,
@@ -186,7 +194,7 @@ impl SearchField {
         ui.set_cursor_screen_pos(box_start);
         let clicked = {
             let _id = ui.push_id(self.generation);
-            ui.invisible_button("##close_search", box_size)
+            ui.invisible_button("##search_end", box_size)
         };
         let hovered = ui.is_item_hovered();
         if hovered {
@@ -214,7 +222,7 @@ impl SearchField {
     }
 }
 
-/// The ink boxes of the field's magnifier and closing `x` (M128). Both icons are
+/// The ink boxes of the field's magnifier and `x` (M128). Both icons are
 /// placed by their ink, not their line box, in which Lucide glyphs sit off center,
 /// so they mirror each other: same size, color and distance to the frame.
 fn field_icon_inks(ui: &Ui) -> ([f32; 4], [f32; 4]) {

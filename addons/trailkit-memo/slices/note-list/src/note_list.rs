@@ -89,6 +89,8 @@ pub struct NoteListInput<'a> {
 pub enum NoteListAction {
     /// Select a note or group.
     Select(NodeId),
+    /// A click on a group's row: select it and toggle it (M172).
+    ClickGroup(GroupId),
     /// A group was expanded or collapsed.
     SetExpanded(GroupId, bool),
     /// An inline rename was committed with this title (M44).
@@ -112,6 +114,9 @@ pub enum NoteListAction {
 pub struct NoteListOutput {
     /// The user's actions, in order.
     pub actions: Vec<NoteListAction>,
+    /// Whether the Delete key belongs to the list: it has the focus, an entry is
+    /// selected and no text is being typed (M133, M175).
+    pub takes_delete_key: bool,
 }
 
 /// An inline rename in progress (M44).
@@ -363,11 +368,10 @@ impl NoteList {
             );
         });
         self.apply_rename_steps(document);
-        if self.rename.is_none()
-            && let Some(action) = delete::delete_key_action(ui, document, selected, edited)
-        {
-            output.actions.push(action);
-        }
+        output.takes_delete_key = self.rename.is_none()
+            && selected.is_some()
+            && ui.is_window_focused()
+            && !ui.io().want_text_input;
         output
     }
 
@@ -468,7 +472,10 @@ impl NoteList {
         let drag = self.drag.as_mut()?;
         if !ui.is_mouse_down(MouseButton::Left) {
             let action = if !drag.is_dragging {
-                Some(NoteListAction::Select(drag.node))
+                Some(match drag.node {
+                    NodeId::Group(group) => NoteListAction::ClickGroup(group),
+                    NodeId::Note(_) => NoteListAction::Select(drag.node),
+                })
             } else if drag.check == MoveCheck::Changes
                 && let Some(target) = drag.target
             {

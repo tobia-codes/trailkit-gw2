@@ -19,6 +19,14 @@ use std::{
 
 use jiff::Timestamp;
 
+use windows::Win32::{
+    Foundation::{HWND, LPARAM, WPARAM},
+    UI::{
+        Input::KeyboardAndMouse::{GetKeyState, VK_CONTROL},
+        WindowsAndMessaging::WM_KEYDOWN,
+    },
+};
+
 use nexus::{
     AddonFlags, UpdateProvider,
     data_link::{NexusLink, get_nexus_link},
@@ -31,6 +39,7 @@ use nexus::{
     paths::get_addon_dir,
     quick_access::add_quick_access,
     texture::load_texture_from_memory,
+    wnd_proc::register_wnd_proc,
 };
 
 use trailkit_storage::{BACKUPS_DIRECTORY_NAME, DocumentStore, LoadOutcome, ReadOnlyReason};
@@ -142,6 +151,29 @@ static SEARCH_TAKES_ESCAPE: AtomicBool = AtomicBool::new(false);
 /// callback shows it again and clears the search (M124).
 static SEARCH_ESCAPED: AtomicBool = AtomicBool::new(false);
 
+/// Whether Ctrl+F belongs to the window: it has the focus and no editor is open
+/// (M174). Written by the render callback, false while it does not draw.
+static SEARCH_KEY_ARMED: AtomicBool = AtomicBool::new(false);
+
+/// Set when Ctrl+F was caught; the render callback shows the search (M174).
+static SEARCH_KEY_PRESSED: AtomicBool = AtomicBool::new(false);
+
+/// Whether the Delete key belongs to the note list (M175). Written by the render
+/// callback, false while it does not draw.
+static DELETE_KEY_ARMED: AtomicBool = AtomicBool::new(false);
+
+/// Set when the Delete key was caught; the render callback deletes (M175).
+static DELETE_KEY_PRESSED: AtomicBool = AtomicBool::new(false);
+
+/// Windows virtual-key code of `F`.
+const VIRTUAL_KEY_F: usize = 0x46;
+/// Windows virtual-key code of Delete.
+const VIRTUAL_KEY_DELETE: usize = 0x2E;
+/// What a `WndProc` callback returns for a message it consumed.
+const MESSAGE_CONSUMED: u32 = 0;
+/// What a `WndProc` callback returns for a message others should see.
+const MESSAGE_PASSED: u32 = 1;
+
 /// Effective UI language, stored as the [`Language`] discriminant.
 static LANGUAGE: AtomicU8 = AtomicU8::new(Language::English as u8);
 
@@ -184,6 +216,7 @@ fn load() {
         }
     });
     register_keybind_with_string(KEYBIND_TOGGLE, on_toggle, UNBOUND).revert_on_unload();
+    register_wnd_proc(catch_window_keys).revert_on_unload();
     register_fonts(GLYPHS_KEY, &crate::all_texts());
 
     NEXUS_LINK.store(get_nexus_link().cast_mut(), Ordering::Release);
@@ -317,6 +350,10 @@ fn detect_nexus_language() -> Option<String> {
 /// Draws the main window. Returns immediately while the window is closed, and
 /// skips drawing (keeping it open) outside gameplay unless the settings allow it.
 fn render_main_window(ui: &nexus::imgui::Ui) {
+    // Stay false on every path that does not draw the window, so the game keeps
+    // these keys while memo is hidden.
+    SEARCH_KEY_ARMED.store(false, Ordering::Relaxed);
+    DELETE_KEY_ARMED.store(false, Ordering::Relaxed);
     reopen_hidden_window_if_needed();
     if !VISIBLE.load(Ordering::Relaxed) || !settings().allows_drawing(is_gameplay()) {
         return;
@@ -365,6 +402,12 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
                 if SEARCH_ESCAPED.swap(false, Ordering::Relaxed) {
                     window.clear_search_by_escape();
                 }
+                if SEARCH_KEY_PRESSED.swap(false, Ordering::Relaxed) {
+                    window.toggle_search_by_key();
+                }
+                if DELETE_KEY_PRESSED.swap(false, Ordering::Relaxed) {
+                    window.delete_selected_by_key(language);
+                }
                 window.draw(ui, language, &theme);
             }
         },
@@ -377,6 +420,39 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
         window.draw_dialog(ui, language, &theme);
     }
     apply_close_request(&mut notes, open);
+    if let NotesState::Ready(window) = &*notes {
+        let visible = VISIBLE.load(Ordering::Relaxed);
+        SEARCH_KEY_ARMED.store(window.takes_search_key() && visible, Ordering::Relaxed);
+        DELETE_KEY_ARMED.store(window.takes_delete_key() && visible, Ordering::Relaxed);
+    }
+}
+
+/// Catches memo's keys that would not reach ImGui on the input thread (M174,
+/// M175), while they belong to the window; otherwise the game gets them. Only
+/// flips atomics (nexus-addon-dev skill §2).
+extern "C-unwind" fn catch_window_keys(
+    _window: HWND,
+    message: u32,
+    key: WPARAM,
+    _details: LPARAM,
+) -> u32 {
+    if message != WM_KEYDOWN {
+        return MESSAGE_PASSED;
+    }
+    if key.0 == VIRTUAL_KEY_DELETE && DELETE_KEY_ARMED.load(Ordering::Relaxed) {
+        DELETE_KEY_PRESSED.store(true, Ordering::Relaxed);
+        return MESSAGE_CONSUMED;
+    }
+    if key.0 == VIRTUAL_KEY_F && SEARCH_KEY_ARMED.load(Ordering::Relaxed) {
+        // SAFETY: `GetKeyState` only reads the calling thread's key state, and this
+        // thread is processing the window's messages. The high bit means "down".
+        let control_is_down = unsafe { GetKeyState(i32::from(VK_CONTROL.0)) } < 0;
+        if control_is_down {
+            SEARCH_KEY_PRESSED.store(true, Ordering::Relaxed);
+            return MESSAGE_CONSUMED;
+        }
+    }
+    MESSAGE_PASSED
 }
 
 /// Shows the hidden window again when Nexus hid it too early: Escape in the

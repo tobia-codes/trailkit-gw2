@@ -35,7 +35,7 @@ The menu takes you to the different parts of memo:
 - **Note menu:** the button with three dots next to *Edit* offers *Rename*, *Move to*, *Reset type* and *Delete* for the open note. *Rename* opens the editor with the title selected; finish with *Save*.
 - **Reorder:** drag a note or group to a new place. A line shows where it lands; on the lower half of an open group it becomes the group's first entry, below the last entry it goes to the end of the list. Drop on the middle of a closed group to put it at its end; rest there a moment and the group opens. A red "no entry" sign means it cannot go there (a group cannot go into itself). Near the top or bottom edge the list scrolls. Escape cancels.
 - **Move to:** right-click › *Move to* › *Top level* or a group moves the entry to the end of it, without dragging.
-- **Groups** have bold names and show how many notes they contain on the right.
+- **Groups** have bold names and show how many notes they contain on the right. Click anywhere on a group's row to open or close it; the note you are reading stays on the right.
 - **Delete:** right-click › *Delete*, or select the entry and press **Delete** while the list has the focus. The entry goes to the trash; a group with notes asks first. The note you are editing cannot be deleted until you save or cancel.
 - **Undo:** after deleting, a message at the bottom of the window says *Moved to the trash* and offers *Undo* and *Open trash* for a few seconds (pointing at it keeps it open). **Ctrl+Z** undoes the last delete or move, **Ctrl+Y** (or Ctrl+Shift+Z) does it again — up to 20 steps, until the game restarts. While you type, Ctrl+Z undoes your typing instead.
 - **Badges** at the right end of a row: **D** marks a daily note (reset at 00:00 UTC), **W** a weekly note (reset on Mondays at 07:30 UTC). Hover a badge to see how long it is until the next reset.
@@ -51,7 +51,7 @@ Choose **Trash** in the menu to see the trash in place of the note list; the **b
 
 ## Searching
 
-Show the **Search** field from the menu or press **Ctrl+F** (not while editing); it stays above the note list until you close it with its **×**, also after a restart. Closing it also clears what you typed. Type into it: The list shows only notes that contain every word you typed — in their title or text, upper or lower case alike. Umlauts count as their own letters: "ä" finds "Ä", but not "a".
+Show the **Search** field from the menu or press **Ctrl+F** (not while editing); it stays above the note list until you close it, also after a restart. The **×** in the field first clears what you typed; on the empty field it closes the search. **Ctrl+F** again closes it at once. Type into it: The list shows only notes that contain every word you typed — in their title or text, upper or lower case alike. Umlauts count as their own letters: "ä" finds "Ä", but not "a".
 
 - Groups with hits open by themselves; their number shows how many notes match. A group whose name matches shows everything inside.
 - Hits are marked in the titles and in the open note, which jumps to the first hit. Notes that match only through their text show the number of hits at the end of the row.

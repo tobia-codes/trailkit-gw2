@@ -135,15 +135,20 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut RowContext<'_, '_>) {
         count,
     );
     let is_open = token.is_some();
-    if ui.is_item_hovered() {
+    let is_hovered = ui.is_item_hovered();
+    // The first click of a double-click toggled the group: the second, which
+    // starts the rename, turns it back. The arrow's second click already did.
+    let turn_back =
+        is_hovered && ui.is_mouse_double_clicked(MouseButton::Left) && !ui.is_item_toggled_open();
+    if is_hovered {
         handle_hovered_row(ui, node, &group.title, &label, context);
     }
     context_menu::draw_context_menu(ui, node, None, context);
-    if is_open != expanded {
+    if is_open != expanded || turn_back {
         let action = if context.search.is_some() {
-            NoteListAction::SetCollapsedInSearch(group.id, !is_open)
+            NoteListAction::SetCollapsedInSearch(group.id, expanded)
         } else {
-            NoteListAction::SetExpanded(group.id, is_open)
+            NoteListAction::SetExpanded(group.id, !expanded)
         };
         context.actions.push(action);
     }
@@ -279,9 +284,14 @@ fn handle_hovered_row(
     }
     if ui.is_mouse_double_clicked(MouseButton::Left) {
         context.rename_steps.push(RenameStep::Start(node));
-    } else if ui.is_mouse_clicked(MouseButton::Left) && !ui.is_item_toggled_open() {
-        // Selects on release unless it becomes a drag (M106).
-        context.pressed = Some(node);
+    } else if ui.is_mouse_clicked(MouseButton::Left) {
+        if ui.is_item_toggled_open() {
+            // The arrow toggled the group: it selects like the rest of the row.
+            context.actions.push(NoteListAction::Select(node));
+        } else {
+            // Acts on release unless it becomes a drag (M106).
+            context.pressed = Some(node);
+        }
     }
     if ui.is_mouse_clicked(MouseButton::Right) {
         context.actions.push(NoteListAction::Select(node));

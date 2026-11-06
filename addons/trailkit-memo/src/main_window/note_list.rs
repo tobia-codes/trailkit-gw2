@@ -33,6 +33,7 @@ impl From<NoteListAction> for WindowAction {
     fn from(action: NoteListAction) -> Self {
         match action {
             NoteListAction::Select(node) => Self::Select(node),
+            NoteListAction::ClickGroup(group) => Self::ClickGroup(group),
             NoteListAction::SetExpanded(group, expanded) => Self::SetExpanded(group, expanded),
             NoteListAction::Rename(node, title) => Self::Rename(node, title),
             NoteListAction::NewNote(point) => Self::NewNote(point),
@@ -58,6 +59,7 @@ impl MemoWindow {
         if self.ui_state.search_visible {
             let search_texts = SearchFieldTexts {
                 hint: SearchText::SearchHint.get(language),
+                clear: SearchText::ClearSearch.get(language),
                 close: SearchText::CloseSearch.get(language),
             };
             let response = self.search_field.draw(ui, theme, search_texts);
@@ -137,6 +139,7 @@ impl MemoWindow {
         );
         self.actions
             .extend(output.actions.into_iter().map(WindowAction::from));
+        self.note_list_takes_delete_key = output.takes_delete_key;
     }
 }
 
