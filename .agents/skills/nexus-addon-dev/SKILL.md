@@ -93,11 +93,12 @@ for new addons: [`references/addon-structure.md`](references/addon-structure.md)
 - **Keyboard routing (verified 2026-11-01):** Nexus passes key presses
   (arrows, Backspace, Enter, …) to ImGui instead of the game only while a
   real ImGui text input is active (`io.WantTextInput`); typed characters
-  always reach ImGui. `CaptureKeyboardFromApp` is not enough, so a shortcut
-  checked through ImGui fires only while an input is active, however green the
-  tests are. A shortcut for a window without an active input uses a `WndProc`
-  callback that flips an atomic and consumes the key while the window has the
-  focus (memo M174). A custom text
+  always reach ImGui. `CaptureKeyboardFromApp` is not enough. Shortcuts vary and
+  the reason is unknown (tried in game 2026-11-06, no input active): Ctrl+Z, Ctrl+Y
+  and Ctrl+0 reached ImGui, Ctrl+F and Delete did not, while tests pass either way.
+  Try each new key in game. One that does not arrive uses a `WndProc` callback that
+  flips an atomic and consumes the key while it belongs to the window (memo M174,
+  M175). A custom text
   widget keeps an invisible ImGui text input active while focused
   (`trailkit_ui::editor::view`, "keyboard sink"), reads
   `InputQueueCharacters` before that input consumes them, and writes the

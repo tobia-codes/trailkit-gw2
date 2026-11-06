@@ -138,6 +138,7 @@ impl MemoWindow {
         );
         self.actions
             .extend(output.actions.into_iter().map(WindowAction::from));
+        self.note_list_takes_delete_key = output.takes_delete_key;
     }
 }
 

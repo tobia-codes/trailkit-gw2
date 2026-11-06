@@ -68,8 +68,8 @@ impl MemoWindow {
         self.search_field.clear(true);
     }
 
-    /// Ctrl+F while a text input is active, the only time Nexus hands it to ImGui;
-    /// otherwise `addon::catch_search_key` gets it (M174). It shows and focuses
+    /// Ctrl+F as ImGui sees it; in game `addon::catch_window_keys` gets it first
+    /// while it belongs to the window (M174). It shows and focuses
     /// the search field (M124, M138). The search sits
     /// in the note list, which the editor hides, so it does nothing there
     /// (M167): a shortcut must not end an edit.

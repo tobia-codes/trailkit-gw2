@@ -114,6 +114,9 @@ pub enum NoteListAction {
 pub struct NoteListOutput {
     /// The user's actions, in order.
     pub actions: Vec<NoteListAction>,
+    /// Whether the Delete key belongs to the list: it has the focus, an entry is
+    /// selected and no text is being typed (M133, M175).
+    pub takes_delete_key: bool,
 }
 
 /// An inline rename in progress (M44).
@@ -365,11 +368,10 @@ impl NoteList {
             );
         });
         self.apply_rename_steps(document);
-        if self.rename.is_none()
-            && let Some(action) = delete::delete_key_action(ui, document, selected, edited)
-        {
-            output.actions.push(action);
-        }
+        output.takes_delete_key = self.rename.is_none()
+            && selected.is_some()
+            && ui.is_window_focused()
+            && !ui.io().want_text_input;
         output
     }
 

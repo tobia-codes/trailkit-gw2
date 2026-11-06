@@ -971,3 +971,64 @@ fn the_search_key_opens_the_search_except_in_the_editor() {
     );
     assert!(!memo.takes_search_key(), "and the game keeps it there");
 }
+
+#[test]
+fn the_delete_key_belongs_to_a_focused_list_only() {
+    let document = sample_document();
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    let size = [640.0, 360.0];
+    let mut harness = UiHarness::new(size);
+    let at = |position: [f32; 2], down: bool| FrameInput {
+        mouse_position: position,
+        left_button_down: down,
+        ..FrameInput::default()
+    };
+    let mut draw_frame = |memo: &mut MemoWindow, input: &FrameInput| {
+        harness.step(input, |ui| draw(ui, memo, size, ThemeKind::Dark));
+    };
+    let list_row = [100.0, 138.0];
+    for input in [
+        at(list_row, false),
+        at(list_row, true),
+        at(list_row, false),
+        at(list_row, false),
+    ] {
+        draw_frame(&mut memo, &input);
+    }
+    assert!(
+        memo.takes_delete_key(),
+        "a click in the list gives it the key (M175)"
+    );
+    let note_text = [420.0, 300.0];
+    for input in [
+        at(note_text, false),
+        at(note_text, true),
+        at(note_text, false),
+        at(note_text, false),
+    ] {
+        draw_frame(&mut memo, &input);
+    }
+    assert!(
+        !memo.takes_delete_key(),
+        "a click in the note takes it away"
+    );
+    memo.delete_selected_by_key(Language::English);
+    assert!(
+        memo.document.trash.is_empty(),
+        "reading a note cannot delete it"
+    );
+    for input in [
+        at(list_row, false),
+        at(list_row, true),
+        at(list_row, false),
+        at(list_row, false),
+    ] {
+        draw_frame(&mut memo, &input);
+    }
+    memo.delete_selected_by_key(Language::English);
+    assert_eq!(
+        memo.document.trash.len(),
+        1,
+        "the caught key deletes (M133)"
+    );
+}

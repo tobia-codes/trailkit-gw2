@@ -204,6 +204,25 @@ impl MemoWindow {
         }
     }
 
+    /// Whether the Delete key belongs to this window (M175): the list claimed it
+    /// and nothing lies above the list.
+    #[must_use]
+    pub const fn takes_delete_key(&self) -> bool {
+        self.note_list_takes_delete_key
+            && !self.window_menu_open
+            && self.leave_prompt.is_none()
+            && self.confirmation.is_none()
+    }
+
+    /// Deletes the selected entry after the Delete key was caught (M133, M175).
+    pub fn delete_selected_by_key(&mut self, language: Language) {
+        if self.takes_delete_key()
+            && let Some(node) = self.ui_state.selected
+        {
+            self.apply(&WindowAction::Delete(node), language);
+        }
+    }
+
     /// Ctrl+Z undoes, Ctrl+Y and Ctrl+Shift+Z redo while the window has the
     /// focus and no text input is active (M135).
     pub(super) fn handle_undo_keys(&mut self, ui: &Ui) {

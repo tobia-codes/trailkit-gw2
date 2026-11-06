@@ -123,6 +123,8 @@ pub struct MemoWindow {
     note_view: NoteView,
     /// Whether the window menu is open (M166).
     window_menu_open: bool,
+    /// Whether the note list claimed the Delete key in the last frame (M175).
+    note_list_takes_delete_key: bool,
     /// Actions collected while drawing; reused every frame.
     actions: Vec<WindowAction>,
     /// Drafts kept from earlier unloads (M54, M55).
@@ -223,6 +225,7 @@ impl MemoWindow {
             note_list: NoteList::default(),
             note_view: NoteView::default(),
             window_menu_open: false,
+            note_list_takes_delete_key: false,
             actions: Vec::new(),
             drafts,
             editor: None,
@@ -344,6 +347,8 @@ impl MemoWindow {
         self.update_text_scale(ui, language);
         self.draw_problem(ui, language, theme);
 
+        // Only a list that is drawn claims the key again below.
+        self.note_list_takes_delete_key = false;
         let content_start = ui.cursor_screen_pos();
         let content_size = ui.content_region_avail();
         self.draw_content(ui, language, theme);
