@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-06 (session 18). This file holds only the current state and
+Last updated: 2026-11-06 (shared agent context cleanup). This file holds only the current state and
 the next steps. Keep it under 100 lines: decisions go into `docs/plans/`, lasting
 facts into the skills, and the history stays in git.
 
@@ -17,10 +17,17 @@ facts into the skills, and the history stays in git.
 
 ## ▶ Resume here
 
-Next ids: **M179+, R87+, questions from 141.** Work on a new branch from a freshly
-fetched `origin/develop`.
+Next ids: **M179+, R89+, questions from 144.** R87/R88 and the shared context
+cleanup are in this change; the user explicitly requested its merge into `develop`.
+Q141 answered yes (keep flat token tables, R77); Q142 answered yes (one consolidated
+memo changeset at first-release preparation, R16). Claude/Codex share the shorter rules.
 
-0. **Split `xtask/src/token_docs.rs`** (500 code lines, Q140 answered yes), a small own step.
+**Separate pending work:** `feature/memo-save-error-design` holds the local HTML
+proposal and Q143; visual approval is still outstanding. No save-error runtime change.
+`chore/codex-handoff` holds `7a9ee6c` (token table split, Q140) and `cd17a9b` (handoff),
+not in `origin/develop`; preserve these and do not repeat the split.
+
+0. Resolve the separate pending branches above before continuing runtime work.
 1. **Splits (R77), each a small own step:** Q91 `note_list.rs` + `draw_group`, Q95
    `draw_dropdown`, Q96 `editor/view.rs`, Q105 `markdown_view.rs`. All answered yes.
    Q92 `Text::get`: the recommendation is no, the user has not objected. `Editor::draw`
