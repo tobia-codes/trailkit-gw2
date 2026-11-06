@@ -107,13 +107,12 @@ Last updated: 2026-11-06 (session 18: window menu replaces the tool rail, merged
 Next ids: **M172+, R87+, questions from 128.** The new look is described in
 [`current-design.md`](../../.agents/skills/trailkit-ui/references/current-design.md).
 
-1. **`feature/memo-ux-round` is merged into `develop`** with the user's OK (M157-M171).
-   Its remote branch still exists: `git push --delete` fails in the pre-push hook while
+1. **`feature/memo-ux-round` is merged into `develop`** with the user's OK (M157-M171), as is
+   `bugfix/title-bar-row-height`. The first branch's remote copy still exists: `git push --delete` fails in the pre-push hook while
    `develop` is checked out, the user can delete it on GitHub. Start follow-ups on a new
-   branch. Check first:
-   - **Branch `bugfix/title-bar-row-height` (unmerged):** the `menu` icon sat 1.5 px
-     below "Notes" in game. Fixed by M170's final form, deployed, not yet confirmed
-     by the user; merge after the user's OK. Predicted: about 0.5 px left, from rounding.
+   branch.
+   - The `menu` icon's alignment with "Notes" (M170, final form) is confirmed in game by
+     the user and merged.
    - Settled: Q112, Q121 and Q122 split, Q113 keeps the menu order (Reset type below
      Move to). The user answered "alle ja" to Q122, whose recommendation was to wait;
      it was taken as a yes to splitting.
