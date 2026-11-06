@@ -202,6 +202,10 @@ expensive for the rest of the session. Keep it small:
   `cargo-xwin` to `x86_64-pc-windows-msvc` and copied into the Windows GW2
   `addons` folder by a deploy script; CI additionally builds on a Windows
   runner.
+- Start a new branch from a fresh `develop`: `git fetch origin` and branch from
+  `origin/develop`. After a merge the local `develop` is stale until pulled, and a
+  branch from it silently drops what was just merged (it undid M170 once, seen only
+  in game).
 - Run `source ~/.cargo/env` before cargo. Plain `grep` may fail in this shell;
   use `command grep`.
 - Commands used daily:
