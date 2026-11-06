@@ -952,24 +952,59 @@ fn the_shown_note_ticks_its_tasks_while_a_group_is_selected() {
 }
 
 #[test]
-fn the_search_key_opens_the_search_except_in_the_editor() {
+fn the_search_key_toggles_the_search_except_in_the_editor() {
     let document = sample_document();
     let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
     memo.window_menu_open = true;
-    memo.open_search_by_key();
+    memo.toggle_search_by_key();
     assert!(
         memo.ui_state.search_visible,
         "the caught key shows it (M174)"
     );
     assert!(!memo.window_menu_open, "and closes the menu above it");
+    memo.search_field.text = "ecto".to_owned();
+    memo.toggle_search_by_key();
+    assert!(!memo.ui_state.search_visible, "again closes it (M176)");
+    assert!(memo.search_field.text.is_empty(), "no hidden filter (M138)");
+    memo.apply(&WindowAction::OpenTrash, Language::English);
+    memo.ui_state.search_visible = true;
+    memo.toggle_search_by_key();
+    assert!(memo.ui_state.search_visible, "the trash makes way for it");
+    assert!(!memo.trash.visible);
     memo.apply(&WindowAction::HideSearch, Language::English);
     memo.apply(&WindowAction::StartEditing, Language::English);
-    memo.open_search_by_key();
+    memo.toggle_search_by_key();
     assert!(
         !memo.ui_state.search_visible,
         "a key must not end an edit (M167)"
     );
     assert!(!memo.takes_search_key(), "and the game keeps it there");
+}
+
+#[test]
+fn the_search_x_clears_the_text_and_then_closes_the_field() {
+    let document = sample_document();
+    let (mut memo, _worker, _directory) =
+        memo_window(document.clone(), selected_first_with_search(&document));
+    memo.search_field.text = "ecto".to_owned();
+    let size = [640.0, 360.0];
+    let mut harness = UiHarness::new(size);
+    let end_of_field = [185.0, 68.0];
+    let mut click_x = |memo: &mut MemoWindow| {
+        for down in [false, false, true, false, false] {
+            let input = FrameInput {
+                mouse_position: end_of_field,
+                left_button_down: down,
+                ..FrameInput::default()
+            };
+            harness.step(&input, |ui| draw(ui, memo, size, ThemeKind::Dark));
+        }
+    };
+    click_x(&mut memo);
+    assert!(memo.search_field.text.is_empty(), "text first (M176)");
+    assert!(memo.ui_state.search_visible, "the field stays");
+    click_x(&mut memo);
+    assert!(!memo.ui_state.search_visible, "the empty field closes");
 }
 
 #[test]

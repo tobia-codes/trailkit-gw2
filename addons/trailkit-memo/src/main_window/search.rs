@@ -54,10 +54,16 @@ impl MemoWindow {
         self.window_focused && self.editor.is_none()
     }
 
-    /// Shows and focuses the search after Ctrl+F was caught (M174).
-    pub fn open_search_by_key(&mut self) {
-        if self.editor.is_none() {
-            self.window_menu_open = false;
+    /// Toggles the search after Ctrl+F was caught (M174, M176). The editor keeps
+    /// the key from ending an edit (M167).
+    pub fn toggle_search_by_key(&mut self) {
+        if self.editor.is_some() {
+            return;
+        }
+        self.window_menu_open = false;
+        if self.ui_state.search_visible && !self.trash.visible {
+            self.hide_search_field();
+        } else {
             self.show_search_field();
         }
     }
@@ -69,8 +75,8 @@ impl MemoWindow {
     }
 
     /// Ctrl+F as ImGui sees it; in game `addon::catch_window_keys` gets it first
-    /// while it belongs to the window (M174). It shows and focuses
-    /// the search field (M124, M138). The search sits
+    /// while it belongs to the window (M174). It toggles the search
+    /// field (M124, M138, M176). The search sits
     /// in the note list, which the editor hides, so it does nothing there
     /// (M167): a shortcut must not end an edit.
     pub(super) fn handle_search_keys(&mut self, ui: &Ui) {
@@ -79,7 +85,7 @@ impl MemoWindow {
         {
             return;
         }
-        self.show_search_field();
+        self.toggle_search_by_key();
     }
 
     /// Shows the search field (M138) with the note list it sits in, and moves

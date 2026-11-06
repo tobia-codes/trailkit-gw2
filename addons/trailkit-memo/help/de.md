@@ -51,7 +51,7 @@ Wähle im Menü **Papierkorb**, um statt der Notizliste den Papierkorb zu sehen;
 
 ## Suchen
 
-Blende das Feld **Suchen** über das Menü ein oder drücke **Strg+F** (nicht beim Bearbeiten); es bleibt über der Notizliste, bis du es mit seinem **×** schließt, auch nach einem Neustart. Das Schließen leert auch deine Eingabe. Tippe hinein: Die Liste zeigt dann nur Notizen, die jedes eingegebene Wort enthalten — im Titel oder im Text, egal ob groß oder klein geschrieben. Umlaute zählen als eigene Buchstaben: „ä“ findet „Ä“, aber nicht „a“.
+Blende das Feld **Suchen** über das Menü ein oder drücke **Strg+F** (nicht beim Bearbeiten); es bleibt über der Notizliste, bis du es schließt, auch nach einem Neustart. Das **×** im Feld leert zuerst deine Eingabe; beim leeren Feld schließt es die Suche. Erneutes **Strg+F** schließt sie sofort. Tippe hinein: Die Liste zeigt dann nur Notizen, die jedes eingegebene Wort enthalten — im Titel oder im Text, egal ob groß oder klein geschrieben. Umlaute zählen als eigene Buchstaben: „ä“ findet „Ä“, aber nicht „a“.
 
 - Gruppen mit Treffern klappen von selbst auf; ihre Zahl zeigt, wie viele Notizen passen. Passt der Name einer Gruppe, erscheint alles darin.
 - Treffer sind in den Titeln und in der geöffneten Notiz markiert; die Notiz springt zum ersten Treffer. Notizen, die nur über ihren Text passen, zeigen am Ende der Zeile die Zahl der Treffer.

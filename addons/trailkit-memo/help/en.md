@@ -51,7 +51,7 @@ Choose **Trash** in the menu to see the trash in place of the note list; the **b
 
 ## Searching
 
-Show the **Search** field from the menu or press **Ctrl+F** (not while editing); it stays above the note list until you close it with its **×**, also after a restart. Closing it also clears what you typed. Type into it: The list shows only notes that contain every word you typed — in their title or text, upper or lower case alike. Umlauts count as their own letters: "ä" finds "Ä", but not "a".
+Show the **Search** field from the menu or press **Ctrl+F** (not while editing); it stays above the note list until you close it, also after a restart. The **×** in the field first clears what you typed; on the empty field it closes the search. **Ctrl+F** again closes it at once. Type into it: The list shows only notes that contain every word you typed — in their title or text, upper or lower case alike. Umlauts count as their own letters: "ä" finds "Ä", but not "a".
 
 - Groups with hits open by themselves; their number shows how many notes match. A group whose name matches shows everything inside.
 - Hits are marked in the titles and in the open note, which jumps to the first hit. Notes that match only through their text show the number of hits at the end of the row.

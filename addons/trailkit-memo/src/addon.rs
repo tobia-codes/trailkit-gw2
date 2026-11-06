@@ -403,7 +403,7 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
                     window.clear_search_by_escape();
                 }
                 if SEARCH_KEY_PRESSED.swap(false, Ordering::Relaxed) {
-                    window.open_search_by_key();
+                    window.toggle_search_by_key();
                 }
                 if DELETE_KEY_PRESSED.swap(false, Ordering::Relaxed) {
                     window.delete_selected_by_key(language);

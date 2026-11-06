@@ -541,6 +541,11 @@ fn search() {
     assert_state("search-hits", WIDE, searching, &typing(field, "ecto"));
     assert_state("search-no-hits", WIDE, searching, &typing(field, "xyzzy"));
     assert_state("search-hover-close", WIDE, searching, &hover([185.0, 68.0]));
+    assert_state("search-hover-clear", WIDE, searching, &{
+        let mut steps = typing(field, "ecto");
+        steps.extend(hover([185.0, 68.0]));
+        steps
+    });
 }
 
 #[test]

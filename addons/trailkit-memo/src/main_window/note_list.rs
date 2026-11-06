@@ -59,6 +59,7 @@ impl MemoWindow {
         if self.ui_state.search_visible {
             let search_texts = SearchFieldTexts {
                 hint: SearchText::SearchHint.get(language),
+                clear: SearchText::ClearSearch.get(language),
                 close: SearchText::CloseSearch.get(language),
             };
             let response = self.search_field.draw(ui, theme, search_texts);
