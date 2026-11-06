@@ -33,6 +33,7 @@ impl From<NoteListAction> for WindowAction {
     fn from(action: NoteListAction) -> Self {
         match action {
             NoteListAction::Select(node) => Self::Select(node),
+            NoteListAction::ClickGroup(group) => Self::ClickGroup(group),
             NoteListAction::SetExpanded(group, expanded) => Self::SetExpanded(group, expanded),
             NoteListAction::Rename(node, title) => Self::Rename(node, title),
             NoteListAction::NewNote(point) => Self::NewNote(point),

@@ -8,7 +8,7 @@
 use serde::{Deserialize, Serialize};
 use trailkit_storage::{SchemaVersion, VersionedDocument};
 
-use crate::note_tree::NodeId;
+use crate::note_tree::{NodeId, NoteId};
 
 /// Default content width of the note list in average characters (`n`),
 /// the regular pane minimum (M40, M74).
@@ -22,6 +22,8 @@ pub const DEFAULT_NOTE_LIST_CHARACTERS: f32 = 22.0;
 pub struct UiState {
     /// The selected note or group.
     pub selected: Option<NodeId>,
+    /// The note in the note pane. It stays while a group is selected (M173).
+    pub shown_note: Option<NoteId>,
     /// Content width of the note list in average characters (two-pane
     /// layout, M74): a fixed width, so a wider window gives the note the
     /// extra room; measured in characters so it follows the font size.
@@ -50,6 +52,7 @@ impl Default for UiState {
     fn default() -> Self {
         Self {
             selected: None,
+            shown_note: None,
             note_list_characters: DEFAULT_NOTE_LIST_CHARACTERS,
             note_scroll: 0.0,
             note_list_hidden: false,

@@ -888,3 +888,86 @@ fn the_snapshots_use_the_minimum_window_width() {
         MINIMUM_WINDOW[0]
     );
 }
+
+/// The first group of `document`.
+fn first_group(document: &NotesDocument) -> Option<GroupId> {
+    document.root.iter().find_map(|node| match node {
+        Node::Group(group) => Some(group.id),
+        Node::Note(_) => None,
+    })
+}
+
+#[test]
+fn clicking_a_group_toggles_it_and_keeps_the_shown_note() {
+    let document = sample_document();
+    let Some(group) = first_group(&document) else {
+        panic!("the sample has a group");
+    };
+    let shown = first_note(&document);
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    let is_expanded = |memo: &MemoWindow| memo.document.group(group).is_some_and(|g| g.expanded);
+    let before = is_expanded(&memo);
+    memo.apply(&WindowAction::ClickGroup(group), Language::English);
+    assert_eq!(is_expanded(&memo), !before, "the click toggles (M172)");
+    assert_eq!(memo.ui_state.selected, Some(NodeId::Group(group)));
+    assert_eq!(
+        memo.selected_note().map(|note| NodeId::Note(note.id)),
+        shown,
+        "the note stays (M173)"
+    );
+    memo.apply(&WindowAction::ClickGroup(group), Language::English);
+    assert_eq!(is_expanded(&memo), before);
+}
+
+#[test]
+fn clicking_a_group_during_a_search_changes_only_the_search() {
+    let document = sample_document();
+    let Some(group) = first_group(&document) else {
+        panic!("the sample has a group");
+    };
+    let (mut memo, _worker, _directory) =
+        memo_window(document.clone(), selected_first_with_search(&document));
+    memo.search_field.text = "clears".to_owned();
+    memo.update_search();
+    let saved = memo.document.group(group).is_some_and(|g| g.expanded);
+    memo.apply(&WindowAction::ClickGroup(group), Language::English);
+    assert!(memo.collapsed_in_search.contains(&group));
+    assert_eq!(
+        memo.document.group(group).is_some_and(|g| g.expanded),
+        saved,
+        "the saved state stays (M124)"
+    );
+}
+
+#[test]
+fn the_shown_note_ticks_its_tasks_while_a_group_is_selected() {
+    let document = sample_document();
+    let Some(group) = first_group(&document) else {
+        panic!("the sample has a group");
+    };
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    memo.apply(&WindowAction::ClickGroup(group), Language::English);
+    memo.apply(&WindowAction::StartEditing, Language::English);
+    assert!(memo.editor.is_some(), "Edit acts on the shown note");
+}
+
+#[test]
+fn the_search_key_opens_the_search_except_in_the_editor() {
+    let document = sample_document();
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    memo.window_menu_open = true;
+    memo.open_search_by_key();
+    assert!(
+        memo.ui_state.search_visible,
+        "the caught key shows it (M174)"
+    );
+    assert!(!memo.window_menu_open, "and closes the menu above it");
+    memo.apply(&WindowAction::HideSearch, Language::English);
+    memo.apply(&WindowAction::StartEditing, Language::English);
+    memo.open_search_by_key();
+    assert!(
+        !memo.ui_state.search_visible,
+        "a key must not end an edit (M167)"
+    );
+    assert!(!memo.takes_search_key(), "and the game keeps it there");
+}

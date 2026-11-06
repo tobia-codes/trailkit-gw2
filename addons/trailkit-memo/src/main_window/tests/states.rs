@@ -400,6 +400,12 @@ fn list_rows() {
         assert_state(name, WIDE, selected, &hover(position));
     }
     assert_state("pressed-row", WIDE, selected, &press(DAILIES_ROW));
+    // A click on the row collapses the group; the note stays (M172, M173).
+    assert_state("group-clicked", WIDE, selected, &{
+        let mut steps = click(RAIDS_ROW);
+        steps.extend(hover(NOWHERE));
+        steps
+    });
     assert_state("collapsed-group", WIDE, selected, &{
         let mut steps = click([36.0, RAIDS_ROW[1]]);
         steps.extend(hover(NOWHERE));

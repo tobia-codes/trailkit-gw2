@@ -89,6 +89,8 @@ pub struct NoteListInput<'a> {
 pub enum NoteListAction {
     /// Select a note or group.
     Select(NodeId),
+    /// A click on a group's row: select it and toggle it (M172).
+    ClickGroup(GroupId),
     /// A group was expanded or collapsed.
     SetExpanded(GroupId, bool),
     /// An inline rename was committed with this title (M44).
@@ -468,7 +470,10 @@ impl NoteList {
         let drag = self.drag.as_mut()?;
         if !ui.is_mouse_down(MouseButton::Left) {
             let action = if !drag.is_dragging {
-                Some(NoteListAction::Select(drag.node))
+                Some(match drag.node {
+                    NodeId::Group(group) => NoteListAction::ClickGroup(group),
+                    NodeId::Note(_) => NoteListAction::Select(drag.node),
+                })
             } else if drag.check == MoveCheck::Changes
                 && let Some(target) = drag.target
             {

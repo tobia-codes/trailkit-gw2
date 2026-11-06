@@ -168,6 +168,7 @@ impl MemoWindow {
             Some(node) => self.change_selected(node),
             None => {
                 self.ui_state.selected = None;
+                self.ui_state.shown_note = None;
                 self.saver.save_ui_state(self.ui_state);
             }
         }
