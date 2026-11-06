@@ -90,6 +90,24 @@ says what the addon looks like today and which snapshot PNGs show it.
     providers with a data processing agreement (AVV/DPA), no tracking or
     analytics without consent. Flag any GDPR impact of a change to the user.
 
+## What an agent may do
+
+Rule 1 is binding; this is its overview, plus what the tools block.
+
+| When | What |
+|------|------|
+| Without asking | Commits on a work branch, builds, tests, `cargo xtask deploy` into the game, reading `Nexus.log` |
+| After the user's OK in the current conversation | Push the work branch, open the PR into `develop`, arm auto-merge |
+| Explicit approval, every time | Merging into `main`, release PRs, tags, GitHub releases, force pushes, changing branch protection or CI workflows |
+| Blocked by the tools | Direct pushes to `develop`/`main` (pre-push hook, always). In Claude Code's auto mode: changing branch protection, which the user ran themselves, and `git commit --amend`, so use a follow-up commit |
+
+**A block is not a puzzle.** Do not work around a hook, a permission prompt or a
+sandbox with another command or flag. Report what was blocked and let the user
+decide. Codex has its own approval and sandbox settings, and these have not been
+tried in this repository yet: note what it blocks here, for instance writing the
+DLL to `/mnt/c` or pushing. Commit without `--amend` in every tool, so that no
+agent rewrites what another may have seen.
+
 ## Working with the user
 
 The user tests everything in game and decides. What has proved to matter:
