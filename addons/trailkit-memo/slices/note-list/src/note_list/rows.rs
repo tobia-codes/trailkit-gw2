@@ -278,14 +278,11 @@ fn handle_hovered_row(
     if ui.is_mouse_double_clicked(MouseButton::Left) {
         context.rename_steps.push(RenameStep::Start(node));
     } else if ui.is_mouse_clicked(MouseButton::Left) && !ui.is_item_toggled_open() {
-        // Selects on release unless it becomes a drag (M106), so dragging a
-        // note keeps the drawer open (M113).
+        // Selects on release unless it becomes a drag (M106).
         context.pressed = Some(node);
     }
     if ui.is_mouse_clicked(MouseButton::Right) {
-        context
-            .actions
-            .push(NoteListAction::SelectForContextMenu(node));
+        context.actions.push(NoteListAction::Select(node));
         ui.open_popup("context");
     }
 }

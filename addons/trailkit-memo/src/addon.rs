@@ -41,7 +41,7 @@ use trailkit_ui::{
     title_bar::{TitleBarState, draw_window},
 };
 
-use crate::main_window::{MemoWindow, NotesProblem, title_bar_texts};
+use crate::main_window::{MemoWindow, NotesProblem, minimum_window_width, title_bar_texts};
 use trailkit_memo_shared::i18n::LocalizedText;
 use trailkit_memo_shared::{
     i18n::{Language, Text},
@@ -354,7 +354,7 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
     let mut title_bar = TITLE_BAR
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
-    // The memo toggle (note list; R78) exists once notes are loaded.
+    // The memo toggle (window menu; R78) exists once notes are loaded.
     let toggles = match &*notes {
         NotesState::Ready(window) => Some(window.title_bar_toggles(language)),
         NotesState::Loading { .. } | NotesState::Unavailable => None,
@@ -362,7 +362,9 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
     let clicked_toggle = draw_window(
         ui,
         &theme,
-        Window::new(title).size([640.0, 420.0], Condition::FirstUseEver),
+        Window::new(title)
+            .size([640.0, 420.0], Condition::FirstUseEver)
+            .size_constraints([minimum_window_width(ui), 0.0], [f32::MAX, f32::MAX]),
         title_bar_texts(language),
         toggles.as_ref().map_or(&[][..], |toggles| &toggles[..]),
         &mut title_bar,
@@ -381,9 +383,12 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
     drop(title_bar);
     if let NotesState::Ready(window) = &mut *notes {
         if let Some(index) = clicked_toggle {
-            window.apply_title_bar_toggle(index, language);
+            window.apply_title_bar_toggle(index);
         }
         window.draw_dialog(ui, language, &theme);
+    }
+    if !open && let NotesState::Ready(window) = &mut *notes {
+        window.close_window_menu();
     }
     let close_requested = !open || CLOSE_REQUESTED.swap(false, Ordering::Relaxed);
     let may_close = match &mut *notes {

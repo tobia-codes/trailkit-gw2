@@ -58,7 +58,6 @@ pub mod title_bar;
 #[cfg(windows)]
 pub mod toast;
 #[cfg(windows)]
-pub mod tool_rail;
 #[cfg(windows)]
 pub mod toolbar;
 #[cfg(windows)]

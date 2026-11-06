@@ -14,6 +14,7 @@ mod search;
 mod text_scale;
 mod trash;
 mod trash_pane;
+mod window_menu;
 
 use std::{collections::HashSet, path::PathBuf};
 
@@ -27,7 +28,6 @@ use trailkit_ui::{
     theme::Theme,
     title_bar::{TitleBarTexts, TitleBarToggle},
     toast::Toast,
-    tool_rail::{ToolRailClick, ToolRailItem, draw_tool_rail},
 };
 
 use trailkit_memo_drafts::draft_hint::DraftHint;
@@ -48,7 +48,6 @@ use trailkit_memo_shared::{
     ui_state::UiState,
     undo::UndoHistory,
 };
-use trailkit_memo_trash::i18n::TrashText;
 
 use self::{
     actions::{LeaveReason, WindowAction},
@@ -62,6 +61,9 @@ const MINIMUM_PANE_CHARACTERS: f32 = 22.0;
 /// Minimum content width of the note list in average characters (M73): the
 /// user may drag it narrower than the other panes.
 const MINIMUM_TREE_CHARACTERS: f32 = 10.0;
+/// Minimum window width in average characters (M168): the note list and the
+/// note always fit beside each other, nothing folds away by itself.
+const MINIMUM_WINDOW_CHARACTERS: f32 = 60.0;
 
 /// A toast of the window and what it offers.
 #[derive(Debug)]
@@ -86,14 +88,9 @@ enum WindowToastKind {
 struct PaneWidths {
     /// Narrowest the note list may be dragged.
     tree_minimum: f32,
-    /// Room the note pane needs: two panes while editor and preview are
-    /// side by side, one otherwise.
+    /// Room the note pane keeps beside the note list.
     note_minimum: f32,
 }
-
-/// Largest share of the window the note list drawer may cover, so a strip
-/// of the dimmed note stays visible to click away (M48, `lay-drawer`).
-const DRAWER_MAXIMUM_FRACTION: f32 = 0.85;
 
 /// A problem with `notes.json` shown above the notes (M31).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -123,11 +120,8 @@ pub struct MemoWindow {
     note_list: NoteList,
     /// The reading view of the selected note.
     note_view: NoteView,
-    /// Narrow window: whether the note list drawer is open (M48).
-    drawer_open: bool,
-    /// Whether the window was too narrow for two panes in the last frame;
-    /// decides what the menu button does.
-    is_narrow: bool,
+    /// Whether the window menu is open (M166).
+    window_menu_open: bool,
     /// Actions collected while drawing; reused every frame.
     actions: Vec<WindowAction>,
     /// Drafts kept from earlier unloads (M54, M55).
@@ -215,8 +209,7 @@ impl MemoWindow {
             addon_directory,
             note_list: NoteList::default(),
             note_view: NoteView::default(),
-            drawer_open: false,
-            is_narrow: false,
+            window_menu_open: false,
             actions: Vec::new(),
             drafts,
             editor: None,
@@ -271,6 +264,11 @@ impl MemoWindow {
             self.leave_prompt = None;
             return false;
         }
+        // Escape closes the open window menu first (M166).
+        if self.window_menu_open {
+            self.window_menu_open = false;
+            return false;
+        }
         if self.has_unsaved_changes()
             && self.settings.unsaved_changes == UnsavedChanges::SaveAutomatically
         {
@@ -284,6 +282,12 @@ impl MemoWindow {
         }
         self.editor = None;
         true
+    }
+
+    /// Closes the window menu, so the close button closes the window at once
+    /// instead of only the menu.
+    pub fn close_window_menu(&mut self) {
+        self.window_menu_open = false;
     }
 
     /// Whether the unsaved changes dialog allowed closing the window since the
@@ -327,12 +331,11 @@ impl MemoWindow {
         self.update_text_scale(ui, language);
         self.draw_problem(ui, language, theme);
 
-        // Always there, so the tools can be found (M157).
-        self.draw_tool_rail(ui, language, theme);
-        ui.same_line_with_spacing(0.0, theme.pane.gap);
-        // A group keeps every line of the content right of the rail.
-        ui.group(|| self.draw_content(ui, language, theme));
-        // Last, so it lies above the content (M148).
+        let content_start = ui.cursor_screen_pos();
+        let content_size = ui.content_region_avail();
+        self.draw_content(ui, language, theme);
+        self.draw_window_menu(ui, language, theme, content_start, content_size);
+        // Last, so it lies above the content and the menu (M148).
         self.draw_toast_message(ui, language, theme);
 
         if let Some(action) = self.note_list.finish_drag(ui, theme, &self.document) {
@@ -350,8 +353,8 @@ impl MemoWindow {
         self.actions = actions;
     }
 
-    /// Draws the notes area: the empty state, two panes, or the note pane
-    /// with the drawer in a narrow window.
+    /// Draws the notes area: the empty state, two panes, or only the note
+    /// pane while the note list is hidden.
     fn draw_content(&mut self, ui: &Ui, language: Language, theme: &Theme) {
         if self.document.root.is_empty() && !self.trash.visible {
             draw_empty_state(ui, language, theme, &mut self.actions);
@@ -360,89 +363,40 @@ impl MemoWindow {
             let pane_minimum = character_width * MINIMUM_PANE_CHARACTERS + 2.0 * theme.pane.padding;
             let widths = PaneWidths {
                 tree_minimum: character_width * MINIMUM_TREE_CHARACTERS + 2.0 * theme.pane.padding,
-                // Editor and preview side by side need room for two panes
-                // (M73), so the note list turns into a drawer earlier.
-                note_minimum: if self.editor.is_some() && self.ui_state.preview_visible {
-                    2.0 * pane_minimum + theme.pane.gap
-                } else {
-                    pane_minimum
-                },
+                note_minimum: pane_minimum,
             };
-            let available = ui.content_region_avail();
-            // The drawer threshold keeps the regular pane minimum for the
-            // list; only dragging the splitter may make it narrower (M73).
-            self.is_narrow = available[0] < pane_minimum + theme.pane.gap + widths.note_minimum;
-            if !self.is_narrow && !self.ui_state.note_list_hidden {
+            if self.note_list_shown() {
                 self.draw_two_panes(ui, language, theme, widths);
             } else {
-                let area_start = ui.cursor_screen_pos();
                 draw_pane(ui, theme, "note", [0.0, 0.0], || {
                     self.draw_note_pane(ui, language, theme);
                 });
-                // Without a selected note there is nothing to show but the list.
-                if self.is_narrow && (self.drawer_open || self.selected_note().is_none()) {
-                    self.draw_drawer(ui, language, theme, area_start, available, pane_minimum);
-                }
             }
         }
     }
 
-    /// Draws the tool rail (M136) and applies its clicks: the search toggle
-    /// (M138) and the trash; settings follow in their step.
-    fn draw_tool_rail(&mut self, ui: &Ui, language: Language, theme: &Theme) {
-        let search_visible = self.ui_state.search_visible && !self.trash.visible;
-        let top = [
-            ToolRailItem {
-                icon: Icon::SEARCH,
-                tooltip: if search_visible {
-                    Text::HideSearch.get(language)
-                } else {
-                    Text::ShowSearch.get(language)
-                },
-                active: search_visible,
-            },
-            ToolRailItem {
-                icon: Icon::TRASH_2,
-                tooltip: if self.trash.visible {
-                    TrashText::HideTrash.get(language)
-                } else {
-                    TrashText::ShowTrash.get(language)
-                },
-                active: self.trash.visible,
-            },
-        ];
-        match draw_tool_rail(ui, theme, &top, &[]) {
-            Some(ToolRailClick::Top(0)) => self.actions.push(WindowAction::ToggleSearch),
-            Some(ToolRailClick::Top(1)) => self.actions.push(WindowAction::ToggleTrash),
-            _ => {}
-        }
+    /// Whether the note list stands beside the note: not while the user hid
+    /// it, and not in the editor, which returns it when it ends (M167).
+    fn note_list_shown(&self) -> bool {
+        !self.ui_state.note_list_hidden && self.editor.is_none()
     }
 
-    /// The memo toggle of the title bar (R78): the note list (M137, M153). The
+    /// The memo toggle of the title bar (R78): the window menu (M166). The
     /// caller shows none while the notes are not loaded.
     #[must_use]
     pub fn title_bar_toggles(&self, language: Language) -> [TitleBarToggle<'static>; 1] {
-        let list_visible = if self.is_narrow {
-            self.drawer_open
-        } else {
-            !self.ui_state.note_list_hidden
-        };
         [TitleBarToggle {
-            icon: Icon::PANEL_LEFT,
-            tooltip: if list_visible {
-                Text::HideSidebar.get(language)
-            } else {
-                Text::ShowSidebar.get(language)
-            },
-            active: list_visible,
+            icon: Icon::MENU,
+            tooltip: Text::WindowMenu.get(language),
+            active: self.window_menu_open,
         }]
     }
 
     /// Applies a click on the title bar toggle at `index` (see
     /// [`Self::title_bar_toggles`]).
-    pub fn apply_title_bar_toggle(&mut self, index: usize, language: Language) {
+    pub fn apply_title_bar_toggle(&mut self, index: usize) {
         if index == 0 {
-            self.apply(&WindowAction::ToggleNoteList, language);
+            self.window_menu_open = !self.window_menu_open;
         }
     }
 
@@ -467,6 +421,13 @@ impl MemoWindow {
     fn selected_note(&self) -> Option<&Note> {
         selected_note_in(&self.document, self.ui_state.selected)
     }
+}
+
+/// The narrowest the window may get (M168), in the body font it is drawn with.
+#[must_use]
+pub fn minimum_window_width(ui: &Ui) -> f32 {
+    let _body_font = FontScope::push(ui, FontRole::Body);
+    ui.calc_text_size("n")[0] * MINIMUM_WINDOW_CHARACTERS
 }
 
 /// The note `selected` refers to, if it is a note that exists.

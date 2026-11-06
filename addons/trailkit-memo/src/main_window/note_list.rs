@@ -32,7 +32,6 @@ impl From<NoteListAction> for WindowAction {
     fn from(action: NoteListAction) -> Self {
         match action {
             NoteListAction::Select(node) => Self::Select(node),
-            NoteListAction::SelectForContextMenu(node) => Self::SelectForContextMenu(node),
             NoteListAction::SetExpanded(group, expanded) => Self::SetExpanded(group, expanded),
             NoteListAction::Rename(node, title) => Self::Rename(node, title),
             NoteListAction::NewNote(point) => Self::NewNote(point),
@@ -50,7 +49,7 @@ impl MemoWindow {
     /// Draws the fixed header (search field while shown, M138; toolbar) and
     /// below it the scrolling tree (M129).
     pub(super) fn draw_tree_pane(&mut self, ui: &Ui, language: Language, theme: &Theme) {
-        // The trash tool shows the trash in place of the notes (M136).
+        // The trash takes the place of the notes (M136).
         if self.trash.visible {
             self.draw_trash_column(ui, language, theme);
             return;
@@ -58,11 +57,15 @@ impl MemoWindow {
         if self.ui_state.search_visible {
             let search_texts = SearchFieldTexts {
                 hint: SearchText::SearchHint.get(language),
-                clear: SearchText::ClearSearch.get(language),
+                close: SearchText::CloseSearch.get(language),
             };
-            if self.search_field.draw(ui, theme, search_texts) {
+            let response = self.search_field.draw(ui, theme, search_texts);
+            if response.text_changed {
                 // Apply the new text in this frame already.
                 self.update_search();
+            }
+            if response.close_clicked {
+                self.actions.push(WindowAction::HideSearch);
             }
         }
         if let Some(action) = NoteList::draw_header(ui, language, theme) {

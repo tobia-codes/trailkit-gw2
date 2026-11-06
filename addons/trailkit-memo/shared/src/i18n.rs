@@ -211,16 +211,20 @@ pub enum Text {
     NoNotesYet,
     /// Primary empty-state button.
     CreateFirstNote,
-    /// Tooltip of the left column toggle while the column is hidden (M153).
-    ShowSidebar,
-    /// Tooltip of the left column toggle while the column is shown (M153).
-    HideSidebar,
+    /// Tooltip of the title bar's menu button (M166).
+    WindowMenu,
+    /// Window menu: back to the regular notes page (M166).
+    MenuNotes,
+    /// Window menu: show the search field (M166).
+    MenuSearch,
+    /// The search shortcut shown in the window menu (M166).
+    SearchShortcut,
+    /// Window menu: show the hidden note list (M166).
+    ShowNoteList,
+    /// Window menu: hide the note list (M166).
+    HideNoteList,
     /// Tooltip of the note toolbar's menu button (M160).
     MoreActions,
-    /// Tooltip of the search toggle while the field is hidden (M138).
-    ShowSearch,
-    /// Tooltip of the search toggle while the field is shown (M138).
-    HideSearch,
     /// Tooltip of the button that makes the note view compact (M139).
     CompactNoteView,
     /// Tooltip of the button that ends the compact note view (M139).
@@ -264,11 +268,13 @@ impl LocalizedText for Text {
         Self::NewGroup,
         Self::NoNotesYet,
         Self::CreateFirstNote,
-        Self::ShowSidebar,
-        Self::HideSidebar,
+        Self::WindowMenu,
+        Self::MenuNotes,
+        Self::MenuSearch,
+        Self::SearchShortcut,
+        Self::ShowNoteList,
+        Self::HideNoteList,
         Self::MoreActions,
-        Self::ShowSearch,
-        Self::HideSearch,
         Self::CompactNoteView,
         Self::RegularNoteView,
         Self::EditNote,
@@ -340,16 +346,20 @@ impl LocalizedText for Text {
             (Self::NoNotesYet, Language::German) => "Noch keine Notizen",
             (Self::CreateFirstNote, Language::English) => "Create your first note",
             (Self::CreateFirstNote, Language::German) => "Erste Notiz anlegen",
-            (Self::ShowSidebar, Language::English) => "Show sidebar",
-            (Self::ShowSidebar, Language::German) => "Seitenleiste einblenden",
-            (Self::HideSidebar, Language::English) => "Hide sidebar",
-            (Self::HideSidebar, Language::German) => "Seitenleiste ausblenden",
+            (Self::WindowMenu, Language::English) => "Menu",
+            (Self::WindowMenu, Language::German) => "Menü",
+            (Self::MenuNotes, Language::English) => "Notes",
+            (Self::MenuNotes, Language::German) => "Notizen",
+            (Self::MenuSearch, Language::English) => "Search",
+            (Self::MenuSearch, Language::German) => "Suchen",
+            (Self::SearchShortcut, Language::English) => "Ctrl+F",
+            (Self::SearchShortcut, Language::German) => "Strg+F",
+            (Self::ShowNoteList, Language::English) => "Show note list",
+            (Self::ShowNoteList, Language::German) => "Notizliste einblenden",
+            (Self::HideNoteList, Language::English) => "Hide note list",
+            (Self::HideNoteList, Language::German) => "Notizliste ausblenden",
             (Self::MoreActions, Language::English) => "More actions",
             (Self::MoreActions, Language::German) => "Weitere Aktionen",
-            (Self::ShowSearch, Language::English) => "Show search (Ctrl+F)",
-            (Self::ShowSearch, Language::German) => "Suche einblenden (Strg+F)",
-            (Self::HideSearch, Language::English) => "Hide search",
-            (Self::HideSearch, Language::German) => "Suche ausblenden",
             (Self::CompactNoteView, Language::English) => "Compact view",
             (Self::CompactNoteView, Language::German) => "Kompakte Ansicht",
             (Self::RegularNoteView, Language::English) => "Leave compact view",

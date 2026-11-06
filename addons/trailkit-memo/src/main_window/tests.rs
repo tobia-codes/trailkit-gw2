@@ -24,6 +24,9 @@ use trailkit_memo_shared::{
     storage_worker::{SavingAllowed, StorageWorker},
 };
 
+/// The narrowest window (M168) at the test fonts.
+const MINIMUM_WINDOW: [f32; 2] = [480.0, 360.0];
+
 /// A fixed point in time, so rendered dates never change.
 fn fixed_time() -> Timestamp {
     Timestamp::from_second(1_793_520_000).unwrap_or(Timestamp::UNIX_EPOCH)
@@ -111,7 +114,7 @@ fn draw(ui: &Ui, memo: &mut MemoWindow, size: [f32; 2], theme: ThemeKind) {
         || memo.draw(ui, Language::English, &theme),
     );
     if let Some(index) = clicked {
-        memo.apply_title_bar_toggle(index, Language::English);
+        memo.apply_title_bar_toggle(index);
     }
     memo.draw_dialog(ui, Language::English, &theme);
 }
@@ -165,17 +168,6 @@ fn wide_window_in_both_themes() {
 }
 
 #[test]
-fn narrow_window_shows_the_drawer_without_a_selected_note() {
-    let (mut memo, _worker, _directory) = memo_window(sample_document(), UiState::default());
-    assert_window(
-        &mut memo,
-        [360.0, 360.0],
-        ThemeKind::Dark,
-        "memo-narrow-drawer",
-    );
-}
-
-#[test]
 fn empty_state() {
     let (mut memo, _worker, _directory) = memo_window(NotesDocument::default(), UiState::default());
     assert_window(&mut memo, [480.0, 300.0], ThemeKind::Dark, "memo-empty");
@@ -206,7 +198,6 @@ fn narrow_editor_keeps_editor_and_preview_side_by_side() {
     let document = sample_document();
     let ui_state = UiState {
         preview_visible: true,
-        note_list_hidden: true,
         ..selected_first(&document)
     };
     let (mut memo, _worker, _directory) = memo_window(document, ui_state);
@@ -216,7 +207,7 @@ fn narrow_editor_keeps_editor_and_preview_side_by_side() {
     }
     assert_window(
         &mut memo,
-        [280.0, 360.0],
+        MINIMUM_WINDOW,
         ThemeKind::Dark,
         "memo-editor-preview-narrow",
     );
@@ -282,21 +273,6 @@ fn unsaved_changes_dialog_stacks_buttons_in_a_narrow_window() {
 }
 
 #[test]
-fn narrow_window_dims_the_edited_note_behind_the_drawer() {
-    let document = sample_document();
-    let ui_state = selected_first(&document);
-    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
-    memo.apply(&WindowAction::StartEditing, Language::English);
-    memo.drawer_open = true;
-    assert_window(
-        &mut memo,
-        [360.0, 420.0],
-        ThemeKind::Dark,
-        "memo-narrow-drawer-editing",
-    );
-}
-
-#[test]
 fn note_list_can_be_dragged_narrower_than_the_note_pane_minimum() {
     let document = sample_document();
     let ui_state = UiState {
@@ -309,26 +285,6 @@ fn note_list_can_be_dragged_narrower_than_the_note_pane_minimum() {
         [640.0, 360.0],
         ThemeKind::Dark,
         "memo-narrow-note-list",
-    );
-}
-
-#[test]
-fn editing_with_preview_turns_the_note_list_into_a_drawer_earlier() {
-    let document = sample_document();
-    let ui_state = UiState {
-        preview_visible: true,
-        ..selected_first(&document)
-    };
-    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
-    memo.apply(&WindowAction::StartEditing, Language::English);
-    if let Some(editor) = memo.editor.as_mut() {
-        editor.unfocus_body();
-    }
-    assert_window(
-        &mut memo,
-        [600.0, 360.0],
-        ThemeKind::Dark,
-        "memo-editor-preview-hides-note-list",
     );
 }
 
@@ -423,7 +379,7 @@ fn kind_dropdown_lists_the_kinds_and_changes_the_note() {
         left_button_down: down,
         ..FrameInput::default()
     };
-    let field = [400.0, 106.0];
+    let field = [360.0, 106.0];
     let mut draw_light = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Light);
     harness.settle(2, &at(field, false), &mut draw_light);
     harness.frame(&at(field, true), &mut draw_light);
@@ -435,7 +391,7 @@ fn kind_dropdown_lists_the_kinds_and_changes_the_note() {
         &image,
     );
 
-    let daily_row = [400.0, 160.0];
+    let daily_row = [360.0, 160.0];
     harness.frame(&at(daily_row, false), &mut draw_light);
     harness.frame(&at(daily_row, true), &mut draw_light);
     harness.frame(&at(daily_row, false), &mut draw_light);
@@ -652,10 +608,10 @@ fn search_for(
             ..FrameInput::default()
         },
     );
-    // Rest the mouse on the clear button: its hover square must sit
-    // centered on the `x` (M128).
+    // Rest the mouse on the closing `x`: its hover square must sit
+    // centered on it (M128).
     let over_clear = FrameInput {
-        mouse_position: [225.0, 70.0],
+        mouse_position: [185.0, 70.0],
         ..FrameInput::default()
     };
     let mut image = draw_frame(&mut harness, &over_clear);
@@ -727,19 +683,6 @@ fn only_the_tree_scrolls_below_the_fixed_list_header() {
 }
 
 #[test]
-fn tool_rail_and_search_field_stay_shown() {
-    let document = sample_document();
-    let ui_state = selected_first_with_search(&document);
-    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
-    assert_window(
-        &mut memo,
-        [640.0, 360.0],
-        ThemeKind::Dark,
-        "memo-tool-rail-search",
-    );
-}
-
-#[test]
 fn compact_note_view_shows_only_the_note() {
     let document = sample_document();
     let ui_state = UiState {
@@ -752,49 +695,21 @@ fn compact_note_view_shows_only_the_note() {
 }
 
 #[test]
-fn title_bar_toggle_switches_the_note_list() {
-    let document = sample_document();
-    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
-    let toggles = memo.title_bar_toggles(Language::English);
-    assert!(toggles[0].active, "the note list starts shown");
-    memo.apply_title_bar_toggle(0, Language::English);
-    assert!(memo.ui_state.note_list_hidden);
-    assert!(!memo.title_bar_toggles(Language::English)[0].active);
-}
-
-#[test]
 fn rename_from_the_note_menu_opens_the_editor_in_the_title() {
     let document = sample_document();
     let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
-    let list_hidden = memo.ui_state.note_list_hidden;
     memo.apply(&WindowAction::StartRenaming, Language::English);
     assert!(
         memo.editor.is_some(),
         "renaming happens in the editor (M161)"
     );
-    assert_eq!(
-        memo.ui_state.note_list_hidden, list_hidden,
-        "the sidebar stays as it is (M161)"
-    );
+    assert!(!memo.note_list_shown(), "the editor hides the list (M167)");
     assert_window(
         &mut memo,
         [640.0, 360.0],
         ThemeKind::Dark,
         "memo-rename-title-focus",
     );
-}
-
-#[test]
-fn hiding_the_search_field_clears_the_search() {
-    let document = sample_document();
-    let (mut memo, _worker, _directory) =
-        memo_window(document.clone(), selected_first_with_search(&document));
-    memo.search_field.text = "ecto".to_owned();
-    memo.apply(&WindowAction::ToggleSearch, Language::English);
-    assert!(!memo.ui_state.search_visible);
-    assert!(memo.search_field.text.is_empty(), "no hidden filter (M138)");
-    memo.apply(&WindowAction::ToggleSearch, Language::English);
-    assert!(memo.ui_state.search_visible);
 }
 
 #[test]
@@ -810,5 +725,153 @@ fn editing_leaves_the_compact_note_view() {
     assert!(
         !memo.ui_state.compact_note_view,
         "the editor ends it (M139)"
+    );
+}
+
+#[test]
+fn search_field_stays_shown() {
+    let document = sample_document();
+    let ui_state = selected_first_with_search(&document);
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    assert_window(
+        &mut memo,
+        [640.0, 360.0],
+        ThemeKind::Dark,
+        "memo-search-shown",
+    );
+}
+
+#[test]
+fn title_bar_toggle_opens_and_closes_the_window_menu() {
+    let document = sample_document();
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    assert!(!memo.title_bar_toggles(Language::English)[0].active);
+    memo.apply_title_bar_toggle(0);
+    assert!(memo.title_bar_toggles(Language::English)[0].active);
+    memo.apply_title_bar_toggle(0);
+    assert!(!memo.window_menu_open);
+}
+
+#[test]
+fn escape_closes_the_window_menu_before_the_window() {
+    let document = sample_document();
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    memo.apply_title_bar_toggle(0);
+    assert!(!memo.request_close(), "the menu closes first (M166)");
+    assert!(!memo.window_menu_open);
+    assert!(memo.request_close(), "then the window closes");
+}
+
+#[test]
+fn hiding_the_search_field_clears_the_search() {
+    let document = sample_document();
+    let (mut memo, _worker, _directory) =
+        memo_window(document.clone(), selected_first_with_search(&document));
+    memo.search_field.text = "ecto".to_owned();
+    memo.apply(&WindowAction::HideSearch, Language::English);
+    assert!(!memo.ui_state.search_visible);
+    assert!(memo.search_field.text.is_empty(), "no hidden filter (M138)");
+    memo.apply(&WindowAction::ShowSearch, Language::English);
+    assert!(memo.ui_state.search_visible);
+}
+
+#[test]
+fn showing_the_notes_returns_to_the_regular_page() {
+    let document = sample_document();
+    let selected = selected_first(&document);
+    let ui_state = UiState {
+        note_list_hidden: true,
+        search_visible: true,
+        ..selected
+    };
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    memo.search_field.text = "ecto".to_owned();
+    memo.apply(&WindowAction::OpenTrash, Language::English);
+    memo.apply(&WindowAction::ShowNotes, Language::English);
+    assert!(!memo.trash.visible);
+    assert!(memo.note_list_shown());
+    assert!(!memo.ui_state.search_visible, "the search closes (Q120)");
+    assert!(memo.search_field.text.is_empty());
+    assert_eq!(memo.ui_state.selected, selected.selected, "the note stays");
+}
+
+#[test]
+fn the_editor_hides_the_note_list_until_it_ends() {
+    let document = sample_document();
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    assert!(memo.note_list_shown());
+    memo.apply(&WindowAction::StartEditing, Language::English);
+    assert!(!memo.note_list_shown(), "editing hides the list (M167)");
+    memo.apply(&WindowAction::CancelEditing, Language::English);
+    assert!(memo.note_list_shown(), "cancelling brings it back");
+    memo.apply(&WindowAction::StartEditing, Language::English);
+    memo.apply(&WindowAction::FinishEditing, Language::English);
+    assert!(memo.note_list_shown(), "saving brings it back");
+}
+
+#[test]
+fn the_editor_keeps_a_list_the_user_hid_hidden_after_it_ends() {
+    let document = sample_document();
+    let ui_state = UiState {
+        note_list_hidden: true,
+        ..selected_first(&document)
+    };
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    memo.apply(&WindowAction::StartEditing, Language::English);
+    memo.apply(&WindowAction::CancelEditing, Language::English);
+    assert!(!memo.note_list_shown(), "the user's choice stays (M167)");
+}
+
+#[test]
+fn leaving_the_editor_from_the_menu_asks_about_unsaved_changes() {
+    let document = sample_document();
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    memo.apply(&WindowAction::StartEditing, Language::English);
+    if let Some(editor) = memo.editor.as_mut() {
+        editor.title_mut().push_str(" (changed)");
+    }
+    for action in [WindowAction::ShowNotes, WindowAction::ShowSearch] {
+        memo.apply(&action, Language::English);
+        assert!(memo.editor.is_some(), "nothing is lost silently (M54)");
+        assert_eq!(memo.leave_prompt, Some(LeaveReason::Action(action)));
+        memo.apply(&WindowAction::LeaveCancelled, Language::English);
+    }
+}
+
+#[test]
+fn ctrl_f_does_nothing_in_the_editor() {
+    let document = sample_document();
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    memo.apply(&WindowAction::StartEditing, Language::English);
+    let size = [640.0, 360.0];
+    let mut harness = UiHarness::new(size);
+    let mut draw_frame = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
+    harness.step(&FrameInput::default(), &mut draw_frame);
+    harness.step(
+        &FrameInput {
+            control: true,
+            keys: vec![0x46],
+            ..FrameInput::default()
+        },
+        &mut draw_frame,
+    );
+    assert!(
+        memo.editor.is_some(),
+        "a shortcut must not end an edit (M167)"
+    );
+    assert!(!memo.ui_state.search_visible);
+}
+
+#[test]
+fn the_snapshots_use_the_minimum_window_width() {
+    let mut measured = 0.0;
+    let mut harness = UiHarness::new(MINIMUM_WINDOW);
+    harness.step(&FrameInput::default(), |ui| {
+        measured = minimum_window_width(ui);
+    });
+    assert!(
+        (measured - MINIMUM_WINDOW[0]).abs() <= 24.0,
+        "{measured} is far from {}",
+        MINIMUM_WINDOW[0]
     );
 }

@@ -31,8 +31,17 @@ pub struct SearchField {
 pub struct SearchFieldTexts<'text> {
     /// Placeholder while empty ("Search …").
     pub hint: &'text str,
-    /// Tooltip of the clear button.
-    pub clear: &'text str,
+    /// Tooltip of the `x` that closes the field.
+    pub close: &'text str,
+}
+
+/// What the user did with the field in this frame.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SearchFieldResponse {
+    /// The text changed by typing.
+    pub text_changed: bool,
+    /// The `x` was clicked: the app closes the field and clears it (M169).
+    pub close_clicked: bool,
 }
 
 impl SearchField {
@@ -54,9 +63,14 @@ impl SearchField {
         self.is_active
     }
 
-    /// Draws the field over the full available width. Returns whether the
-    /// text changed (typing or the clear button).
-    pub fn draw(&mut self, ui: &Ui, theme: &Theme, texts: SearchFieldTexts<'_>) -> bool {
+    /// Draws the field over the full available width and reports what the
+    /// user did.
+    pub fn draw(
+        &mut self,
+        ui: &Ui,
+        theme: &Theme,
+        texts: SearchFieldTexts<'_>,
+    ) -> SearchFieldResponse {
         let start = ui.cursor_screen_pos();
         let width = ui.content_region_avail()[0];
         // A little taller than a button (M128); the input inside keeps the
@@ -82,7 +96,7 @@ impl SearchField {
             .rounding(theme.radius.medium)
             .build();
 
-        // Magnifier on the left, the clear `x` mirrored on the right: same
+        // Magnifier on the left, the closing `x` mirrored on the right: same
         // size, color and distance to the frame (M128). Both are placed by
         // their ink, not their line box, in which Lucide glyphs sit off
         // center.
@@ -111,11 +125,7 @@ impl SearchField {
             );
         }
         let input_x = start[0] + padding[0] + (magnifier[2] - magnifier[0]) + theme.spacing.small;
-        let clear_width = if self.text.is_empty() {
-            0.0
-        } else {
-            padding[0] + (clear[2] - clear[0]) + theme.spacing.small
-        };
+        let clear_width = padding[0] + (clear[2] - clear[0]) + theme.spacing.small;
 
         let changed = {
             let _id = ui.push_id(self.generation);
@@ -139,11 +149,7 @@ impl SearchField {
             changed
         };
 
-        let cleared = !self.text.is_empty()
-            && self.draw_clear_button(ui, theme, clear_position, clear, texts.clear);
-        if cleared {
-            self.clear(true);
-        }
+        let close_clicked = self.draw_close_button(ui, theme, clear_position, clear, texts.close);
 
         let frame = if self.is_active {
             theme.border.focus
@@ -158,13 +164,16 @@ impl SearchField {
         // Leave the cursor below the field, as a regular item would.
         ui.set_cursor_screen_pos([start[0], end[1]]);
         ui.dummy([0.0, 0.0]);
-        changed || cleared
+        SearchFieldResponse {
+            text_changed: changed,
+            close_clicked,
+        }
     }
 
-    /// Draws the clear `x` at pen `position` (`ink` box relative to it):
+    /// Draws the closing `x` at pen `position` (`ink` box relative to it):
     /// `text.secondary`, on hover `text.primary` over a small `bg.hover`
     /// square centered on the glyph. Returns whether it was clicked.
-    fn draw_clear_button(
+    fn draw_close_button(
         &self,
         ui: &Ui,
         theme: &Theme,
@@ -183,7 +192,7 @@ impl SearchField {
         ui.set_cursor_screen_pos(box_start);
         let clicked = {
             let _id = ui.push_id(self.generation);
-            ui.invisible_button("##clear_search", box_size)
+            ui.invisible_button("##close_search", box_size)
         };
         let hovered = ui.is_item_hovered();
         if hovered {

@@ -15,6 +15,10 @@ impl Icon {
     pub const FILE_PLUS: Self = Self('\u{e0c9}');
     /// `folder-plus`: create a group.
     pub const FOLDER_PLUS: Self = Self('\u{e0d9}');
+    /// `menu`: opens a window's menu (memo M166).
+    pub const MENU: Self = Self('\u{e115}');
+    /// `file-text`: the way back to the notes in a window's menu (memo M166).
+    pub const FILE_TEXT: Self = Self('\u{e0cc}');
     /// `panel-left`: shows or hides a window's left column (memo M153).
     pub const PANEL_LEFT: Self = Self('\u{e12a}');
     /// `arrow-left`: goes back to the previous view (memo M154).
@@ -101,7 +105,9 @@ impl Icon {
     /// `rotate-ccw`: restores an entry from the trash (memo M145).
     pub const ROTATE_CCW: Self = Self('\u{e148}');
     /// Every icon above; keep in sync when adding one.
-    pub const ALL: [Self; 43] = [
+    pub const ALL: [Self; 45] = [
+        Self::MENU,
+        Self::FILE_TEXT,
         Self::TRASH_2,
         Self::ROTATE_CCW,
         Self::ELLIPSIS,

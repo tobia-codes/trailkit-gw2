@@ -149,7 +149,7 @@ pub fn draw_toast(
     ]);
     // A child without a border has no window padding. ImGui renders a child's
     // background into the parent's draw list, below everything drawn before
-    // (the drawer, a note's text), so the card goes into the toast's own list.
+    // (the window menu, a note's text), so the card goes into the toast's own list.
     let Some(_toast) = ChildWindow::new("##toast")
         .size([width, height])
         .draw_background(false)

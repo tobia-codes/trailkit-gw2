@@ -7,12 +7,8 @@ use trailkit_memo_shared::i18n::{Language, LocalizedText};
 /// A translatable string of the trash slice.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TrashText {
-    /// Heading of the trash view and name of its tool (M136).
+    /// Heading of the trash view and its row in the window menu (M136, M166).
     Trash,
-    /// Tooltip of the trash tool while the notes are shown.
-    ShowTrash,
-    /// Tooltip of the trash tool while the trash is shown.
-    HideTrash,
     /// Button that empties the trash (asks first, M146).
     EmptyTrash,
     /// Empty state of the trash.
@@ -83,8 +79,6 @@ pub enum TrashText {
 impl LocalizedText for TrashText {
     const ALL: &'static [Self] = &[
         Self::Trash,
-        Self::ShowTrash,
-        Self::HideTrash,
         Self::EmptyTrash,
         Self::TrashIsEmpty,
         Self::TrashKeepsEntries,
@@ -130,8 +124,6 @@ impl LocalizedText for TrashText {
 const fn english(text: TrashText) -> &'static str {
     match text {
         TrashText::Trash => "Trash",
-        TrashText::ShowTrash => "Show trash",
-        TrashText::HideTrash => "Hide trash",
         TrashText::EmptyTrash => "Empty",
         TrashText::TrashIsEmpty => "The trash is empty.",
         TrashText::TrashKeepsEntries => "Deleted entries stay here for 30 days.",
@@ -182,8 +174,6 @@ const fn english(text: TrashText) -> &'static str {
 const fn german(text: TrashText) -> &'static str {
     match text {
         TrashText::Trash => "Papierkorb",
-        TrashText::ShowTrash => "Papierkorb anzeigen",
-        TrashText::HideTrash => "Papierkorb ausblenden",
         TrashText::EmptyTrash => "Leeren",
         TrashText::TrashIsEmpty => "Der Papierkorb ist leer.",
         TrashText::TrashKeepsEntries => "Gelöschtes bleibt hier 30 Tage.",

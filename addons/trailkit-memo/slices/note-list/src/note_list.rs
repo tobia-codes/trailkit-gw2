@@ -88,9 +88,6 @@ pub struct NoteListInput<'a> {
 pub enum NoteListAction {
     /// Select a note or group.
     Select(NodeId),
-    /// A right click selects the row its menu opens for; unlike [`Self::Select`]
-    /// this keeps a narrow window's drawer open, the menu lives in it (M163).
-    SelectForContextMenu(NodeId),
     /// A group was expanded or collapsed.
     SetExpanded(GroupId, bool),
     /// An inline rename was committed with this title (M44).
@@ -460,7 +457,7 @@ impl NoteList {
     /// target (M106–M111). While dragging, the title floats next to the
     /// cursor with a gold border, red with a ban icon over an impossible
     /// target (M109, M116). Call once per frame after the whole window, as
-    /// the list may not be drawn (drawer closed).
+    /// the list may not be drawn (list hidden).
     pub fn finish_drag(
         &mut self,
         ui: &Ui,
@@ -486,7 +483,7 @@ impl NoteList {
         }
         let title = node_title(document, drag.node).unwrap_or_default();
         let is_impossible = drag.target.is_some() && drag.check == MoveCheck::Impossible;
-        // The list may not be drawn next frame (drawer closed); its target
+        // The list may not be drawn next frame (list hidden); its target
         // is only valid for this one.
         drag.target = None;
         drag.check = MoveCheck::Unchanged;

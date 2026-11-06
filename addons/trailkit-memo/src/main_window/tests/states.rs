@@ -14,8 +14,8 @@ type Fixture = (MemoWindow, StorageWorker, tempfile::TempDir);
 
 /// The usual window size of these snapshots.
 const WIDE: [f32; 2] = [640.0, 360.0];
-/// A window too narrow for the note list beside the note.
-const NARROW: [f32; 2] = [360.0, 360.0];
+/// A spot on the window menu's rows, by row (see [`window_menu`]).
+const MENU_ROW_X: f32 = 60.0;
 
 /// Center of the "Shopping list" row (selected in most fixtures).
 const SHOPPING_ROW: [f32; 2] = [100.0, 106.0];
@@ -26,7 +26,7 @@ const RAIDS_ROW: [f32; 2] = [100.0, 170.0];
 /// An empty spot of the note list.
 const EMPTY_LIST_SPOT: [f32; 2] = [100.0, 300.0];
 /// The kind dropdown of the selected note.
-const KIND_FIELD: [f32; 2] = [440.0, 114.0];
+const KIND_FIELD: [f32; 2] = [400.0, 114.0];
 /// A spot that shows nothing on hover.
 const NOWHERE: [f32; 2] = [420.0, 330.0];
 
@@ -194,9 +194,7 @@ fn with_body(body: &str, ui_state_change: impl Fn(&mut UiState)) -> Fixture {
 fn trash_view(document: NotesDocument, select: bool) -> Fixture {
     let selected = document.trash.first().map(TrashEntry::id);
     let mut fixture = memo_window(document, UiState::default());
-    fixture
-        .0
-        .apply(&WindowAction::ToggleTrash, Language::English);
+    fixture.0.apply(&WindowAction::OpenTrash, Language::English);
     if let (true, Some(selected)) = (select, selected) {
         fixture.0.apply(
             &WindowAction::Trash(TrashAction::Select(selected)),
@@ -237,7 +235,7 @@ fn views() {
     assert_state("note", WIDE, selected, &[]);
     assert_state("daily-note", WIDE, || selected_titled("Dailies"), &[]);
     assert_state(
-        "rail-search",
+        "search-shown",
         WIDE,
         || selected_with(|state| state.search_visible = true),
         &[],
@@ -254,13 +252,7 @@ fn views() {
         || selected_with(|state| state.compact_note_view = true),
         &[],
     );
-    assert_state(
-        "narrow-drawer",
-        NARROW,
-        || memo_window(sample_document(), UiState::default()),
-        &[],
-    );
-    assert_state("narrow-note", NARROW, selected, &[]);
+    assert_state("minimum-width", MINIMUM_WINDOW, selected, &[]);
     let long_body = (1..=30)
         .map(|line| format!("- Line {line}"))
         .collect::<Vec<_>>()
@@ -287,24 +279,18 @@ fn views() {
 #[test]
 fn window_chrome_hovers() {
     for (name, position) in [
-        ("hover-toggle-list", [28.0, 25.0]),
+        ("hover-menu-button", [28.0, 25.0]),
         ("hover-collapse", [576.0, 25.0]),
         ("hover-close", [612.0, 25.0]),
-        ("hover-new-note", [102.0, 65.0]),
-        ("hover-new-group", [193.0, 65.0]),
-        ("hover-compact", [276.0, 65.0]),
+        ("hover-new-note", [62.0, 65.0]),
+        ("hover-new-group", [153.0, 65.0]),
+        ("hover-compact", [236.0, 65.0]),
         ("hover-edit", [590.0, 65.0]),
     ] {
         assert_state(name, WIDE, selected, &hover(position));
     }
     assert_state("pressed-edit", WIDE, selected, &press([590.0, 65.0]));
-    assert_state("pressed-new-note", WIDE, selected, &press([102.0, 65.0]));
-    assert_state(
-        "hover-rail",
-        WIDE,
-        || selected_with(|_| {}),
-        &hover([28.0, 57.0]),
-    );
+    assert_state("pressed-new-note", WIDE, selected, &press([62.0, 65.0]));
 }
 
 #[test]
@@ -313,15 +299,15 @@ fn list_rows() {
         ("hover-selected-row", SHOPPING_ROW),
         ("hover-row", DAILIES_ROW),
         ("hover-group", RAIDS_ROW),
-        ("hover-group-arrow", [76.0, RAIDS_ROW[1]]),
+        ("hover-group-arrow", [36.0, RAIDS_ROW[1]]),
         ("hover-child-row", [100.0, 202.0]),
-        ("hover-badge-count", [224.0, RAIDS_ROW[1]]),
+        ("hover-badge-count", [184.0, RAIDS_ROW[1]]),
     ] {
         assert_state(name, WIDE, selected, &hover(position));
     }
     assert_state("pressed-row", WIDE, selected, &press(DAILIES_ROW));
     assert_state("collapsed-group", WIDE, selected, &{
-        let mut steps = click([76.0, RAIDS_ROW[1]]);
+        let mut steps = click([36.0, RAIDS_ROW[1]]);
         steps.extend(hover(NOWHERE));
         steps
     });
@@ -370,13 +356,13 @@ fn list_rows() {
 #[test]
 fn note_content_hovers() {
     for (name, position) in [
-        ("hover-checkbox", [268.0, 225.0]),
-        ("hover-task-text", [340.0, 225.0]),
-        ("hover-link", [350.0, 249.0]),
+        ("hover-checkbox", [228.0, 225.0]),
+        ("hover-task-text", [300.0, 225.0]),
+        ("hover-link", [310.0, 249.0]),
     ] {
         assert_state(name, WIDE, selected, &hover(position));
     }
-    assert_state("pressed-checkbox", WIDE, selected, &press([268.0, 225.0]));
+    assert_state("pressed-checkbox", WIDE, selected, &press([228.0, 225.0]));
 }
 
 #[test]
@@ -397,13 +383,6 @@ fn context_menus() {
         WIDE,
         selected,
         &menu_row_hover(EMPTY_LIST_SPOT, 0),
-    );
-    // The edited note cannot be deleted (M141).
-    assert_state(
-        "menu-delete-blocked",
-        WIDE,
-        editing,
-        &menu_row_hover(SHOPPING_ROW, 3),
     );
     let mut renaming = right_click(DAILIES_ROW);
     renaming.extend(click([
@@ -446,7 +425,6 @@ fn editor() {
         fixture
     };
     assert_state("editor-preview", [720.0, 360.0], with_preview, &[]);
-    assert_state("editor-narrow-drawer", NARROW, editing_narrow, &[]);
 }
 
 /// The first note open in the editor with the keyboard focus in its body.
@@ -469,21 +447,15 @@ fn editing_with_selection() -> Fixture {
     fixture
 }
 
-/// The editor in a narrow window, with the note list open over it.
-fn editing_narrow() -> Fixture {
-    let mut fixture = editing();
-    fixture.0.drawer_open = true;
-    fixture
-}
-
 #[test]
 fn search() {
     let searching = || selected_with(|state| state.search_visible = true);
-    let field = [120.0, 68.0];
+    let field = [80.0, 68.0];
     assert_state("search-focused", WIDE, searching, &click(field));
     assert_state("search-hover-field", WIDE, searching, &hover(field));
     assert_state("search-hits", WIDE, searching, &typing(field, "ecto"));
     assert_state("search-no-hits", WIDE, searching, &typing(field, "xyzzy"));
+    assert_state("search-hover-close", WIDE, searching, &hover([185.0, 68.0]));
 }
 
 #[test]
@@ -497,7 +469,7 @@ fn dialogs() {
         fixture
     };
     assert_state("dialog-unsaved", WIDE, unsaved, &[]);
-    assert_state("dialog-unsaved-narrow", [360.0, 300.0], unsaved, &[]);
+    assert_state("dialog-unsaved-narrow", [480.0, 300.0], unsaved, &[]);
     let delete_group = || {
         let document = sample_document();
         let raids = document.root.iter().find_map(|node| match node {
@@ -549,11 +521,10 @@ fn trash() {
     assert_state("trash-nothing-selected", WIDE, entries, &[]);
     assert_state("trash-selected", WIDE, chosen, &[]);
     for (name, position) in [
-        ("trash-hover-note", [148.0, 160.0]),
-        ("trash-hover-group", [148.0, 112.0]),
-        ("trash-hover-empty", [203.0, 65.0]),
-        ("trash-hover-rail", [28.0, 89.0]),
-        ("trash-hover-back", [72.0, 65.0]),
+        ("trash-hover-note", [108.0, 160.0]),
+        ("trash-hover-group", [108.0, 112.0]),
+        ("trash-hover-empty", [163.0, 65.0]),
+        ("trash-hover-back", [32.0, 65.0]),
     ] {
         assert_state(name, WIDE, entries, &hover(position));
     }
@@ -563,9 +534,9 @@ fn trash() {
     ] {
         assert_state(name, WIDE, chosen, &hover(position));
     }
-    assert_state("trash-menu", WIDE, entries, &right_click([148.0, 160.0]));
-    let mut menu_hover = right_click([148.0, 160.0]);
-    menu_hover.extend(hover([178.0, 180.0]));
+    assert_state("trash-menu", WIDE, entries, &right_click([108.0, 160.0]));
+    let mut menu_hover = right_click([108.0, 160.0]);
+    menu_hover.extend(hover([138.0, 180.0]));
     assert_state("trash-menu-hover", WIDE, entries, &menu_hover);
 }
 
@@ -581,8 +552,7 @@ fn toast() {
         fixture
     };
     assert_state("toast", WIDE, deleted, &[]);
-    // The buttons move below the message in a narrow window (M159).
-    assert_state("toast-narrow", NARROW, deleted, &[]);
+    assert_state("toast-minimum-width", MINIMUM_WINDOW, deleted, &[]);
     let copied = || {
         let mut fixture = selected();
         fixture.0.apply(
@@ -609,23 +579,78 @@ fn note_menu() {
     assert_state("note-menu", WIDE, selected, &click(NOTE_MENU_BUTTON));
 }
 
+/// The sample with the window menu open.
+fn menu_open() -> Fixture {
+    let mut fixture = selected();
+    fixture.0.window_menu_open = true;
+    fixture
+}
+
 #[test]
-fn context_menu_in_the_drawer() {
-    let in_drawer = || {
-        let mut fixture = selected();
-        fixture.0.drawer_open = true;
+fn window_menu() {
+    assert_state("window-menu", WIDE, menu_open, &hover(NOWHERE));
+    assert_state(
+        "window-menu-minimum-width",
+        MINIMUM_WINDOW,
+        menu_open,
+        &hover(NOWHERE),
+    );
+    assert_state(
+        "window-menu-hover-selected",
+        WIDE,
+        menu_open,
+        &hover([MENU_ROW_X, 67.0]),
+    );
+    assert_state(
+        "window-menu-hover-row",
+        WIDE,
+        menu_open,
+        &hover([MENU_ROW_X, 99.0]),
+    );
+    assert_state(
+        "window-menu-pressed-row",
+        WIDE,
+        menu_open,
+        &press([MENU_ROW_X, 99.0]),
+    );
+    assert_state(
+        "window-menu-button-open",
+        WIDE,
+        menu_open,
+        &hover([28.0, 25.0]),
+    );
+    let in_trash = || {
+        let mut fixture = trash_view(document_with_trash([0, 25]), false);
+        fixture.0.window_menu_open = true;
         fixture
     };
-    // A right click selects the row, but its menu needs the drawer (M163).
+    assert_state("window-menu-in-trash", WIDE, in_trash, &hover(NOWHERE));
+    let list_hidden = || {
+        let mut fixture = selected_with(|state| state.note_list_hidden = true);
+        fixture.0.window_menu_open = true;
+        fixture
+    };
     assert_state(
-        "narrow-drawer-context-menu",
-        NARROW,
-        in_drawer,
-        &right_click(DAILIES_ROW),
+        "window-menu-list-hidden",
+        WIDE,
+        list_hidden,
+        &hover(NOWHERE),
     );
-    // Deleting keeps it open and the toast lies above it (M164).
-    let deleted_in_drawer = || {
-        let mut fixture = in_drawer();
+    let while_editing = || {
+        let mut fixture = editing();
+        fixture.0.window_menu_open = true;
+        fixture
+    };
+    assert_state("window-menu-editing", WIDE, while_editing, &hover(NOWHERE));
+    let without_notes = || {
+        let mut fixture = memo_window(NotesDocument::default(), UiState::default());
+        fixture.0.window_menu_open = true;
+        fixture
+    };
+    assert_state("window-menu-no-notes", WIDE, without_notes, &hover(NOWHERE));
+    // The toast lies above the menu (M165).
+    let with_toast = || {
+        let mut fixture = menu_open();
         if let Some(first) = first_note(&fixture.0.document) {
             fixture
                 .0
@@ -633,7 +658,7 @@ fn context_menu_in_the_drawer() {
         }
         fixture
     };
-    assert_state("narrow-drawer-toast", NARROW, deleted_in_drawer, &[]);
+    assert_state("window-menu-toast", WIDE, with_toast, &hover(NOWHERE));
 }
 
 #[test]

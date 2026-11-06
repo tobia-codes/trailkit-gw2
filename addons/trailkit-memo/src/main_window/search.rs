@@ -39,10 +39,12 @@ pub(super) struct CurrentSearch {
 
 impl MemoWindow {
     /// Whether Escape should clear the search instead of closing the window:
-    /// the focused search field holds text (M124).
+    /// the focused search field holds text (M124) and no menu lies above it.
     #[must_use]
     pub fn search_takes_escape(&self) -> bool {
-        self.search_field.is_active() && !self.search_field.text.is_empty()
+        !self.window_menu_open
+            && self.search_field.is_active()
+            && !self.search_field.text.is_empty()
     }
 
     /// Clears the search after Escape (see [`Self::search_takes_escape`]);
@@ -51,32 +53,35 @@ impl MemoWindow {
         self.search_field.clear(true);
     }
 
-    /// Ctrl+F focuses the search field (M124, M127, M138): it shows the
-    /// field, the note list or the drawer first and takes the focus from the
-    /// editor, which stays in edit mode.
+    /// Ctrl+F shows and focuses the search field (M124, M138). The search sits
+    /// in the note list, which the editor hides, so it does nothing there
+    /// (M167): a shortcut must not end an edit.
     pub(super) fn handle_search_keys(&mut self, ui: &Ui) {
-        if !(self.window_focused && ui.io().key_ctrl && ui.is_key_index_pressed(VIRTUAL_KEY_F)) {
+        if self.editor.is_some()
+            || !(self.window_focused && ui.io().key_ctrl && ui.is_key_index_pressed(VIRTUAL_KEY_F))
+        {
             return;
         }
         self.show_search_field();
     }
 
-    /// Shows the search field (M138) with the note list or the drawer it
-    /// sits in, and moves the keyboard focus into it.
+    /// Shows the search field (M138) with the note list it sits in, and moves
+    /// the keyboard focus into it.
     pub(super) fn show_search_field(&mut self) {
         // The search filters the notes, so the trash makes way (M136).
         self.trash.visible = false;
         self.ui_state.search_visible = true;
-        if self.is_narrow {
-            self.drawer_open = true;
-        } else {
-            self.ui_state.note_list_hidden = false;
-        }
+        self.ui_state.note_list_hidden = false;
         self.saver.save_ui_state(self.ui_state);
-        if let Some(editor) = &mut self.editor {
-            editor.unfocus_body();
-        }
         self.search_field.request_focus();
+    }
+
+    /// Hides the search field and clears its text, because a hidden field
+    /// must not keep filtering the list (M138, M169).
+    pub(super) fn hide_search_field(&mut self) {
+        self.search_field.clear(false);
+        self.ui_state.search_visible = false;
+        self.saver.save_ui_state(self.ui_state);
     }
 
     /// Brings the search index and results up to date with the field text,

@@ -15,7 +15,7 @@ M43–M50, M96–M117). Depends only on
 - The app draws the menu button and the search field, then
   `NoteList::draw_header`, then `NoteList::draw` inside the scrolling child
   window, and calls `NoteList::finish_drag` once per frame after the whole
-  window (the list may not be drawn while the drawer is closed).
+  window (the list may not be drawn while it is hidden).
 - A search comes in as `ListSearch` (query, a `&dyn ListFilter` — the search
   slice's results — the groups collapsed for this search and its texts).
 - Other slices' row extras come in as closures (`NoteRowExtras`): the reset

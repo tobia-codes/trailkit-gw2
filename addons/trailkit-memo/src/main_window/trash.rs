@@ -165,7 +165,6 @@ impl MemoWindow {
     /// Selects `selection` or clears the selection, and remembers it.
     fn change_selection(&mut self, selection: Option<NodeId>) {
         match selection {
-            // Deleting several entries in a row keeps the drawer open (M164).
             Some(node) => self.change_selected(node),
             None => {
                 self.ui_state.selected = None;
@@ -230,9 +229,7 @@ impl MemoWindow {
     /// Shows the trash in place of the note list, which must show for that.
     fn show_trash(&mut self) {
         self.trash.visible = true;
-        if self.is_narrow {
-            self.drawer_open = true;
-        } else if self.ui_state.note_list_hidden {
+        if self.ui_state.note_list_hidden {
             self.ui_state.note_list_hidden = false;
             self.saver.save_ui_state(self.ui_state);
         }
@@ -245,13 +242,6 @@ impl MemoWindow {
             WindowAction::Undo => self.undo_last_step(),
             WindowAction::Redo => self.redo_last_step(),
             WindowAction::DismissToast => self.toast = None,
-            WindowAction::ToggleTrash => {
-                if self.trash.visible {
-                    self.trash.visible = false;
-                } else {
-                    self.show_trash();
-                }
-            }
             WindowAction::OpenTrash => {
                 self.toast = None;
                 self.show_trash();
@@ -262,7 +252,6 @@ impl MemoWindow {
                     self.trash.scroll = 0.0;
                     self.note_view.show_other_note(false);
                 }
-                self.drawer_open = false;
             }
             WindowAction::Trash(TrashAction::Restore(node)) => {
                 let next = self.trash_neighbour(*node);

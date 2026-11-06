@@ -25,7 +25,6 @@ use trailkit_ui::{
     theme::{Theme, ThemeKind},
     title_bar::{TitleBarState, TitleBarTexts, TitleBarToggle, draw_window as draw_title_bar},
     toast::{Toast, ToastAction, draw_toast},
-    tool_rail::{ToolRailItem, draw_tool_rail},
 };
 use trailkit_ui_testing::{
     harness::{FrameInput, UiHarness},
@@ -348,56 +347,6 @@ fn toast_with_two_actions_in_every_width() {
                 &mut harness,
                 ("toast", state, theme_name),
                 &mouse([4.0, 4.0], false),
-                &mut draw,
-            );
-        }
-    }
-}
-
-#[test]
-fn every_tool_rail_state() {
-    let size = [180.0, 180.0];
-    let top = [
-        ToolRailItem {
-            icon: Icon::SEARCH,
-            tooltip: "Search",
-            active: true,
-        },
-        ToolRailItem {
-            icon: Icon::TRASH_2,
-            tooltip: "Trash",
-            active: false,
-        },
-    ];
-    let bottom = [ToolRailItem {
-        icon: Icon::X,
-        tooltip: "Bottom tool",
-        active: false,
-    }];
-    for (kind, theme_name) in THEMES {
-        let theme = kind.theme();
-        let mut harness = UiHarness::new(size);
-        let mut draw = |ui: &Ui| {
-            in_window(ui, &theme, size, || {
-                draw_tool_rail(ui, &theme, &top, &bottom);
-            });
-        };
-        let names = |state| ("tool-rail", state, theme_name);
-        assert_state(
-            &mut harness,
-            names("rest"),
-            &mouse([160.0, 170.0], false),
-            &mut draw,
-        );
-        for (state, position) in [
-            ("hover-on", [24.0, 24.0]),
-            ("hover-off", [24.0, 60.0]),
-            ("hover-bottom", [24.0, 154.0]),
-        ] {
-            assert_state(
-                &mut harness,
-                names(state),
-                &mouse(position, false),
                 &mut draw,
             );
         }
