@@ -254,9 +254,9 @@ Project contract (to be finalized in `docs/plans/addons/trailkit-core.md`):
   persists, ask in the Raidcore Discord.
 - The game's hover cursor (gear, speech bubble) leaks through addon windows: a Nexus
   issue.
-- Font sizes differ in game, unlike in tests: at the default scale the body and icons
-  draw at 20 px, and a frame is 26.75 px high in the window's font but 28 px in the icon
-  font (measured 2026-11-06).
+- Font sizes differ in game, unlike in tests. Measured 2026-11-06 at the user's text size:
+  body and icons draw at 20 px, and a frame is 26.75 px high in the window's font but
+  28 px in the icon font.
 
 **ImGui 1.80**
 
