@@ -95,7 +95,7 @@ pub fn draw_window<Label: AsRef<str>>(
     let mut window = window;
     if state.collapsed {
         flags |= WindowFlags::NO_RESIZE | WindowFlags::NO_SCROLLBAR;
-        let height = ui.frame_height() + 2.0 * ui.clone_style().window_padding[1];
+        let height = title_row_height(ui) + 2.0 * ui.clone_style().window_padding[1];
         window = window.size([state.expanded_size[0], height], Condition::Always);
     } else if let Some(size) = state.restore_size.take() {
         window = window.size(size, Condition::Always);
@@ -118,6 +118,13 @@ pub fn draw_window<Label: AsRef<str>>(
         }
     });
     clicked_toggle
+}
+
+/// The height of the title row: that of its icon buttons. The window's own font
+/// can be smaller than the icon font in game, though not in the tests.
+fn title_row_height(ui: &Ui) -> f32 {
+    let _icons = FontScope::push(ui, FontRole::Icons);
+    ui.frame_height()
 }
 
 /// What was clicked in the title row.
@@ -157,7 +164,8 @@ fn draw_title_row(
             title_x = ui.item_rect_max()[0] + theme.spacing.small;
         }
     }
-    let row_bottom = row_top + ui.frame_height();
+    let row_height = title_row_height(ui);
+    let row_bottom = row_top + row_height;
     {
         let _bold = FontScope::push(ui, FontRole::BodyBold);
         draw_label(
@@ -177,7 +185,7 @@ fn draw_title_row(
     let buttons_width = icon_button_width(ui, icon) + spacing + icon_button_width(ui, Icon::X);
     if toggles.is_empty() || state.collapsed {
         // Nothing was drawn on the left yet: keep the row's height.
-        ui.dummy([0.0, ui.frame_height()]);
+        ui.dummy([0.0, row_height]);
     }
     ui.same_line_with_pos(right - buttons_width);
     clicks.collapse_clicked = draw_icon_button(ui, theme, icon, tooltip);

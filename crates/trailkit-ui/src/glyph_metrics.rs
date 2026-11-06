@@ -52,6 +52,10 @@ pub fn capital_middle() -> Option<f32> {
 /// not widen the box.
 const INK_COVERAGE_THRESHOLD: u8 = 128;
 
+/// Atlas coverage from which a texel of an icon counts as ink: a thin line that
+/// straddles two pixel rows stays below 50 % on both and would be missed.
+const ICON_INK_COVERAGE_THRESHOLD: u8 = 48;
+
 /// The visible ink box `[left, top, right, bottom]` of `character` in the
 /// current font at the current size, relative to the pen position at the
 /// line top, measured from the font atlas pixels (memo R76 question 56).
@@ -63,6 +67,19 @@ const INK_COVERAGE_THRESHOLD: u8 = 128;
 /// in memory; callers fall back to [`glyph_ink_box`]. Scans only the
 /// glyph's own texels (a few hundred bytes).
 pub fn glyph_visible_ink(character: char) -> Option<[f32; 4]> {
+    glyph_ink_above(character, INK_COVERAGE_THRESHOLD)
+}
+
+/// Like [`glyph_visible_ink`] for line icons (memo M170): also counts the faint
+/// pixels of thin strokes, such as the bars of `menu`, so an icon is centered by
+/// everything the eye sees of it.
+pub fn glyph_icon_ink(character: char) -> Option<[f32; 4]> {
+    glyph_ink_above(character, ICON_INK_COVERAGE_THRESHOLD)
+}
+
+/// The box of the texels of `character` with at least `threshold` coverage, in
+/// the terms of [`glyph_visible_ink`].
+fn glyph_ink_above(character: char, threshold: u8) -> Option<[f32; 4]> {
     let character = u16::try_from(u32::from(character)).ok()?;
     // SAFETY: as in `glyph_bounds`: render thread, valid current font and
     // its atlas; `ImFont_FindGlyph` only reads. The atlas pixel buffers are
@@ -104,7 +121,7 @@ pub fn glyph_visible_ink(character: char) -> Option<[f32; 4]> {
         let [left, right] = [texel(glyph.U0, width), texel(glyph.U1, width)];
         let [top, bottom] = [texel(glyph.V0, height), texel(glyph.V1, height)];
         let ink = ink_texels(left, top, right, bottom, |x, y| {
-            coverage_at(x, y) >= INK_COVERAGE_THRESHOLD
+            coverage_at(x, y) >= threshold
         })?;
         let scale = nexus::imgui::sys::igGetFontSize() / (*font).FontSize;
         #[expect(
