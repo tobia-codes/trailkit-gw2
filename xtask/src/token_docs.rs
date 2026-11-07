@@ -3,8 +3,8 @@
 //! The themes are the only source of the values, so the document cannot drift:
 //! the test [`tests::the_committed_document_is_current`] fails in `cargo test`
 //! (pre-push hook and CI) when it is out of date. Every token struct is
-//! destructured without `..`, so a new token does not compile until it is
-//! documented here.
+//! destructured without `..` in `token_groups`, so a new token does not compile
+//! until it is documented there.
 
 use std::fs;
 
