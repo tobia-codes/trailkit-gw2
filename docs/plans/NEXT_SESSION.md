@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-07 (save-error toast design, R89). Current state and
+Last updated: 2026-11-07 (session 19, branch integration). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -27,17 +27,11 @@ Implementation outline: typed worker → UI result channel; retry state (3 write
 
 - Context cleanup merged (PR #92, R87/R88): read references narrowly; keep Claude's shared import.
   Q141 yes (token tables stay together, R77); Q142 yes (one memo changeset, R16).
-- **Branch integration — do this first, each step needs the user's explicit OK (R74):** analysis 2026-11-07
-  (fetched develop `3db0bd2`). Nothing is pushed yet.
-  1. **PR A:** `chore/agent-guidance-followups` as is (3 docs commits: handoff, R89/M179, M180 + mockup;
-     merges cleanly, docs-only). Push, PR into `develop`, `gh pr merge --auto --merge --delete-branch`.
-  2. **PR B:** new branch from freshly fetched `origin/develop`; `git cherry-pick 7a9ee6c` (xtask token split,
-     Q140 — real code: run `cargo xtask tokens`, fmt, clippy, tests, `check-file-length`); then add as one docs
-     commit only the three non-handoff parts of `cd17a9b`: `current-design.md` (+10 lines), the `SKILL.md`
-     window-menu sentence, the trash README sentence. **Drop the handoff part** of `cd17a9b` (conflicts
-     with this file and is stale).
-  3. Afterwards ask before deleting `chore/codex-handoff`. Keep `feature/memo-save-error-design` (old panel draft,
-     superseded by M180) until M180 ships.
+- **Branch integration (session 19, 2026-11-07):** PR A #94 merged (docs). **PR B #95** (token split Q140, docs
+  refresh, 3 commits) is open with auto-merge armed; check it merged. Dropped from `cd17a9b`: its stale handoff part.
+  Then, each with the user's OK: delete local-only `chore/codex-handoff` (`git branch -D`, commits were
+  cherry-picked) and the merged remote branches. Keep `feature/memo-save-error-design` until M180 ships.
+  Disclosed: `token_groups.rs` has 419 code lines (hint 400, kept together by Q141); `editor/view.rs` hints remain.
 
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
@@ -68,7 +62,7 @@ normal note snapshots inspected in Dark/Light. No complete audit or UI-suite rer
 
 ## Earlier implementation queue — after the review work
 
-- Branch integration (above) comes before runtime work. Approved splits (R77): Q91
+- Approved splits (R77): Q91
   `note_list.rs`/`draw_group`, Q95 `draw_dropdown`, Q96 `editor/view.rs`, Q105 `markdown_view.rs`.
   Q92 `Text::get`: recommendation no, no objection recorded. Grill remaining hints for
   `Editor::draw`, `draw_lines` and the large main-window test file before splitting.
