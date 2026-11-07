@@ -11,6 +11,10 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## ▶ Resume here
 
+**Mobile, to review the save-error design (M180):** https://claude.ai/artifact/DyA5k7uYVKGhuTARYTzyJ7
+— a visual mockup (R87, still unapproved) with the error toast, busy dialog and `danger.subtle`. Decide there:
+Q151, Q164, Q165, Q166, Q167–Q171 (listed below), then the visual OK.
+
 Next ids: **M181+, R90+, questions from 172.** Order: save errors (review item 1), then R89 (help `?`).
 **Everything decided about save errors is in memo M180** (toasts, retry, dialog; mockup
 `docs/plans/addons/memo-save-error-toast-design.html`, same as the artifact
