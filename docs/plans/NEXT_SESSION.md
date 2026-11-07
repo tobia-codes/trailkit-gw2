@@ -13,7 +13,10 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## ▶ Resume here
 
-Next ids: **M179+, R89+, questions from 144.** Revisit unanswered Q143 first.
+Next ids: **M180+, R90+, questions from 172.** New instruction 2026-11-07: R89/M179 (title bar `?`, problem
+page, one log per addon); Q167–Q171 are open. Save-error design Q143–Q166 was discussed in chat
+(mockup: https://claude.ai/artifact/DyA5k7uYVKGhuTARYTzyJ7); its answers are **not yet recorded** in the
+plans; Q151 and Q164–Q166 are unanswered. Record them first.
 The user wants the review improvements below handled **one at a time**, starting with
 storage failures. **First show a design and obtain explicit visual approval (R87).**
 No save-error runtime implementation, deployment or design approval has happened.

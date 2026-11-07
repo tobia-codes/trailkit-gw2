@@ -39,6 +39,7 @@ references with autocompletion and status.
 ### Project-wide
 - Own settings window, help page, en/de, themes, performance (sleep when
   closed).
+- Title bar `?` button, problem page and own log (ROADMAP R89, M179).
 
 ## Technical design (proposal)
 
@@ -56,8 +57,21 @@ references with autocompletion and status.
 
 ## Open questions
 
-- None currently (session 4 settled M16–M46; details are settled per
-  implementation step).
+- **Q167 – Own log file.** Each addon writes `trailkit-<addon>.log` in its own data folder through a shared crate
+  (rule 7): one line per event, ISO 8601 time with the UTC offset, `addon=`, `version=`, then `event` and `key=value`
+  fields (the save-error format, Q166); no content, no absolute paths; two files of 1 MiB at most; warnings and
+  errors are also forwarded to `Nexus.log`. Recommendation: yes.
+- **Q168 – Export button.** The button writes one text file `trailkit-<addon>-log-<date>.txt` (header with addon,
+  version, Nexus version, language, time zone, then the log) to the user's Downloads folder and opens Explorer with
+  the file selected. Feedback is a line next to the button, not a toast. Recommendation: yes.
+- **Q169 – Help window.** `?` opens the shared help window with the problem page first, then the addon's help pages
+  (`help/{en,de}.md`). The Nexus options button "Open help" (R53) opens the same window; the window menu gets no
+  second entry. Recommendation: yes.
+- **Q170 – Problem link.** "Report a problem" opens the repository's GitHub issue form in the default browser with
+  addon and version in the URL; nothing else is sent. Needs an issue form template in the repository and a line in
+  `PRIVACY.md` (the link goes to GitHub, USA). Recommendation: yes.
+- **Q171 – Placement.** `?` sits at the right end of the title bar, before the collapse chevron and the `x`.
+  Visual proposal in Dark and Light, with tooltip, minimum width and German, before any implementation (R87).
 
 ## Decisions
 
@@ -237,6 +251,7 @@ references with autocompletion and status.
 | M176 | **Ctrl+F toggles the search, the `x` clears before it closes** (user decision): Ctrl+F on a shown search closes it and clears its text, also from a focused field; from the trash it still opens the search. The `x` of a field with text empties it and keeps the focus (tooltip "Clear search"); on the empty field it closes it ("Close search"). | 2026-11-06 |
 | M177 | **Menus with more room, an icon in every command row** (user: the menu looks squeezed; Q135 variant B, Q136 for all menus, mockups board 9 of https://claude.ai/artifact/GzpgDiBgz5VrzFMdtvTYWN, private): rows 30 px high with a 2 px gap at test fonts, content 10 px from the row's edge, 6 px from the menu's edge (`menu.*` tokens). Command menus are at least 14 × the font size wide; dropdowns and submenus have no minimum; their rows pick a value and so carry no icon. New icons: `pencil` Rename, `folder-input` Move to, `rotate-ccw` Reset type, `file-plus` New note, `folder-plus` New group. Icons beside text center on the capitals by their visible pixels. | 2026-11-06 |
 | M178 | **A click into the game releases the editor's keyboard** (user report: no way to chat while editing): such a click takes the keyboard from ImGui but is not reported as a click, so the code that unfocuses on a click elsewhere never ran, and the keyboard sink took the keyboard back about 30 ms later (measured in game). The sink now takes it only when the editor gets the focus; a loss from outside ends the focus until a click in the editor. | 2026-11-06 |
+| M179 | **Help button, problem page and own log** (user instruction 2026-11-07, ROADMAP R89): memo's title bar gets a `?` button that opens the help window; its start page explains how to report a problem, links to the repository and offers a button that exports memo's log. Memo writes its own log (`trailkit-memo`), every line names the addon and its version; the save-error events use the same lines. Questions Q167-Q171 are open; the design needs visual approval (R87) before implementation | 2026-11-07 |
 | M50 | Groups are recognizable by a **bold** title (bold text font) and the number of notes they contain (nested groups included), right-aligned in `text.secondary`; no own background (`lay-hierarchy`). Drag & drop stays in step 5 (M28 order unchanged) | 2026-11-01 |
 | M49 | Replaces the badge column of M45/M47: note titles start flush left (where a group's arrow starts), reset badges and any later row icons sit right-aligned at the row's right edge; the title is shortened with "…" before them. Groups keep the expand arrow on the left, so group titles start one arrow width further right | 2026-11-01 |
 | M48 | *Superseded by M166, M168.* Replaces the single-pane "tree → note → back" of M21/M40: the note pane has its own toolbar row with a flat menu button (Lucide `menu`, tooltip) on the left (step 3 adds the edit/view toggle on the right). Wide window: the button hides/shows the note list column (stored in `ui_state.json`). Narrow window: the note fills the window and the button opens the note list as a drawer (`lay-drawer`) over the dimmed note — instantly, no slide animation (`overlay-motion`); width = minimum pane width, at most 85 % of the window; closes on choosing a note, a click on the dimmed note or the menu button (repeated in the drawer's toolbar); stays open for groups, expand/collapse and rename; open automatically while no note is selected; Escape still closes the window. Drawer code starts in memo (rule 7) | 2026-11-01 |

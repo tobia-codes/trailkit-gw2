@@ -24,6 +24,7 @@ configurable tables, and highlighting of events referenced in trailkit-memo.
 - **Multiple event tables**, each configurable (e.g. table A: official
   events only; table B: custom events only).
 - Project-wide: own settings window, help page, en/de, themes, performance.
+- Title bar `?` button, problem page and own log (ROADMAP R89).
 
 ## Technical design (proposal)
 

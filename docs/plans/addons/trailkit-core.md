@@ -26,6 +26,7 @@ small and the backend load stays minimal.
   another addon needs is disabled, that addon shows a guided hint explaining
   what to enable (and a button to jump there).
 - Own settings window, help page, en/de, dark/light theme (project-wide rules).
+- Title bar `?` button, problem page and own log (ROADMAP R89).
 
 ## Technical design (proposal)
 
