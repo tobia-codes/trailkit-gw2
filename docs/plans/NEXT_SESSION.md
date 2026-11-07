@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-06 (review findings and resume order). Current state and
+Last updated: 2026-11-07 (save-error toast design, R89). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -13,34 +13,36 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## ▶ Resume here
 
-Next ids: **M180+, R90+, questions from 172.** New instruction 2026-11-07: R89/M179 (title bar `?`, problem
-page, one log per addon); Q167–Q171 are open. Save-error design Q143–Q166 was discussed in chat
-(mockup: https://claude.ai/artifact/DyA5k7uYVKGhuTARYTzyJ7); its answers are **not yet recorded** in the
-plans; Q151 and Q164–Q166 are unanswered. Record them first.
-The user wants the review improvements below handled **one at a time**, starting with
-storage failures. **First show a design and obtain explicit visual approval (R87).**
-No save-error runtime implementation, deployment or design approval has happened.
+Next ids: **M181+, R90+, questions from 172.** Order: save errors (review item 1), then R89 (help `?`).
+**Everything decided about save errors is in memo M180** (toasts, retry, dialog; mockup
+`docs/plans/addons/memo-save-error-toast-design.html`, same as the artifact
+https://claude.ai/artifact/DyA5k7uYVKGhuTARYTzyJ7). **Open, ask first (recommendation yes unless noted):**
+Q151 restart a dead worker with "Erneut versuchen"; Q164 close button on the error toast;
+Q165 shorten the text to "Speichern fehlgeschlagen" (not wrap); Q166 log format;
+Q167–Q171 (R89/M179): own log per addon, export button, help window, problem link, `?` placement.
+Then: get **visual approval of the mockup (R87)**, including the new `danger.subtle` token, busy/status-line
+dialog, error toast; only then implement (outline below). No runtime code, deploy or approval exists yet.
+
+Implementation outline: typed result channel worker → UI; worker retry state (3 writes, 5 s, parked state);
+immediate write for editor "Übernehmen"; toast error kind + counter + spinner + close; dialog busy button and
+status line; `danger.subtle` via `cargo xtask tokens` with contrast tests; en/de texts, help pages, READMEs;
+failure tests (no endless retry, no content in logs); snapshots reviewed against tokens.md §10.
 
 - **Token/context cleanup is merged:** PR #92, R87/R88. Shared AGENTS.md: 283 → 112 lines;
   Rust skill entrypoint: 499 → 73. Read references narrowly; keep Claude's shared import.
 - Q141 answered yes: keep the flat token tables together (R77). Q142 answered yes:
   one consolidated memo changeset at first-release preparation (R16).
-- **Design draft:** local branch `feature/memo-save-error-design`, commit `cf6c9f4`, has
-  `docs/plans/addons/memo-save-error-design.{md,html}`. Q143 is unapproved. The proposal
-  shows a persistent error panel, retry/busy state and recovery toast in Dark/Light.
-  Main preview was rendered; extended image review was interrupted. Continue from the
-  existing HTML; do not install more rendering infrastructure without a concrete need.
+- **Old panel draft is superseded:** branch `feature/memo-save-error-design` (`cf6c9f4`, panel + Q143) stays
+  unmerged; M180 replaces it. Keep the branch until the toast design is merged, then ask about deleting it.
 - **Other pending work:** `chore/codex-handoff` has `7a9ee6c` (token split, Q140) and
   `cd17a9b` (handoff), absent from the last fetched develop. Preserve; do not redo the split.
   Current local branch: `chore/agent-guidance-followups`; preserve its documentation work.
   Fetch before a new branch and check which commits are already integrated.
 
-## Review improvements — agreed order, solutions still proposals
+## Review improvements — one at a time, agreed order, solutions still proposals
 
-1. **Storage failures (highest priority):** `addons/trailkit-memo/shared/src/storage_worker.rs`
-   `save_pending` / `save_pending_drafts` log failures and drop the pending request;
-   the UI gets no result. Propose retaining the latest revision, retry and visible status.
-   Settle retry timing, shutdown/worker failure, read-only files and failed draft deletion.
+1. **Storage failures (highest priority):** designed in memo M180 (`storage_worker.rs` drops failed
+   writes today; the UI gets no result). Not implemented.
 2. **Pre-push protection:** `.githooks/pre-push` checks protected destination refs only
    for deletions; normal pushes check the current branch via `xtask/src/check_branch.rs`.
    Validate every destination ref. Server-side protection was not inspected in the review.
