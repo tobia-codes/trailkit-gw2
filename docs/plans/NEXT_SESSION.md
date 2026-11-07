@@ -8,8 +8,7 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 - Phase 0 + 0b complete; daily archives sometimes run hours late.
 - Memo standalone: storage, tree, editor/preview, chips, resets, drag & drop, search,
   trash/undo and UX/keyboard improvements through M178 are implemented and tested in game.
-- Decisions: `addons/trailkit-memo.md`, `ROADMAP.md`. Appearance and snapshot entrypoints:
-  `.agents/skills/trailkit-ui/references/current-design.md`; snapshot review: tokens.md §10.
+- Decisions: `addons/trailkit-memo.md`, `ROADMAP.md`. Appearance: trailkit-ui `current-design.md`; review: tokens.md §10.
 
 ## ▶ Resume here
 
@@ -23,21 +22,23 @@ Q167–Q171 (R89/M179): own log per addon, export button, help window, problem l
 Then: get **visual approval of the mockup (R87)**, including the new `danger.subtle` token, busy/status-line
 dialog, error toast; only then implement (outline below). No runtime code, deploy or approval exists yet.
 
-Implementation outline: typed result channel worker → UI; worker retry state (3 writes, 5 s, parked state);
-immediate write for editor "Übernehmen"; toast error kind + counter + spinner + close; dialog busy button and
-status line; `danger.subtle` via `cargo xtask tokens` with contrast tests; en/de texts, help pages, READMEs;
-failure tests (no endless retry, no content in logs); snapshots reviewed against tokens.md §10.
+Implementation outline: typed worker → UI result channel; retry state (3 writes, 5 s, parked); immediate write for
+"Übernehmen"; toast error kind, counter, spinner, close; dialog busy button + status line; `danger.subtle` via
+`cargo xtask tokens` + contrast tests; en/de texts, help, READMEs; tests (no endless retry, no content in logs).
 
-- **Token/context cleanup is merged:** PR #92, R87/R88. Shared AGENTS.md: 283 → 112 lines;
-  Rust skill entrypoint: 499 → 73. Read references narrowly; keep Claude's shared import.
-- Q141 answered yes: keep the flat token tables together (R77). Q142 answered yes:
-  one consolidated memo changeset at first-release preparation (R16).
-- **Old panel draft is superseded:** branch `feature/memo-save-error-design` (`cf6c9f4`, panel + Q143) stays
-  unmerged; M180 replaces it. Keep the branch until the toast design is merged, then ask about deleting it.
-- **Other pending work:** `chore/codex-handoff` has `7a9ee6c` (token split, Q140) and
-  `cd17a9b` (handoff), absent from the last fetched develop. Preserve; do not redo the split.
-  Current local branch: `chore/agent-guidance-followups`; preserve its documentation work.
-  Fetch before a new branch and check which commits are already integrated.
+- Context cleanup merged (PR #92, R87/R88): read references narrowly; keep Claude's shared import.
+  Q141 yes (token tables stay together, R77); Q142 yes (one memo changeset, R16).
+- **Branch integration — do this first, each step needs the user's explicit OK (R74):** analysis 2026-11-07
+  (fetched develop `3db0bd2`). Nothing is pushed yet.
+  1. **PR A:** `chore/agent-guidance-followups` as is (3 docs commits: handoff, R89/M179, M180 + mockup;
+     merges cleanly, docs-only). Push, PR into `develop`, `gh pr merge --auto --merge --delete-branch`.
+  2. **PR B:** new branch from freshly fetched `origin/develop`; `git cherry-pick 7a9ee6c` (xtask token split,
+     Q140 — real code: run `cargo xtask tokens`, fmt, clippy, tests, `check-file-length`); then add as one docs
+     commit only the three non-handoff parts of `cd17a9b`: `current-design.md` (+10 lines), the `SKILL.md`
+     window-menu sentence, the trash README sentence. **Drop the handoff part** of `cd17a9b` (conflicts
+     with this file and is stale).
+  3. Afterwards ask before deleting `chore/codex-handoff`. Keep `feature/memo-save-error-design` (old panel draft,
+     superseded by M180) until M180 ships.
 
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
@@ -68,7 +69,7 @@ normal note snapshots inspected in Dark/Light. No complete audit or UI-suite rer
 
 ## Earlier implementation queue — after the review work
 
-- Resolve pending branch integration before runtime work. Approved splits (R77): Q91
+- Branch integration (above) comes before runtime work. Approved splits (R77): Q91
   `note_list.rs`/`draw_group`, Q95 `draw_dropdown`, Q96 `editor/view.rs`, Q105 `markdown_view.rs`.
   Q92 `Text::get`: recommendation no, no objection recorded. Grill remaining hints for
   `Editor::draw`, `draw_lines` and the large main-window test file before splitting.
@@ -88,8 +89,8 @@ Triggers/consequences: [agent reference](../agent-reference.md#recurring-checks)
 - **C-703/25 P:** Nov 6 CURIA check: pending, order dated June 4, 2026 (ECLI:EU:C:2026:465).
   Previous “sources only from 2025” note was stale. Recheck when triggered; source:
   https://juris.curia.europa.eu/juris/liste.jsf?language=en&num=C-703%2F25
-- **WvW EU Nov 6, 17:23 UTC:** actual run/assets still unverified. Initial GitHub query
-  was blocked; later GitHub access worked. Inspect capture time/content, not just green CI.
+- **WvW reset snapshots (checked 2026-11-07):** both Nov 6 EU (ran 22:12 UTC, +4.8 h) and Nov 7 NA (07:16 UTC,
+  +5.9 h) assets hold the **post-reset** matches; CI was green. Confirms review item 3. Also Nov 6 14:13 catch-up failed on GemExchange.
 - **DPF cron:** Nov 1 skipped, issue #11 opened manually. If Dec 1 skips, grill shifting off :00.
 - **Flipping volumes (BL9):** DataWars2 vs GW2BLTC differs 3–10×; Silver allowed free use/
   archiving Nov 1 and confirmed suspicious `calculate_sold` branch; user sent the fix.
