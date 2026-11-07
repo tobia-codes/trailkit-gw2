@@ -35,8 +35,8 @@ pub struct TitleBarTexts<'texts> {
     pub close: &'texts str,
 }
 
-/// A toggle of the addon on the left of the title (e.g. memo's tool rail
-/// and note list, memo M136/M137), drawn with [`draw_icon_toggle`].
+/// A toggle of the addon on the left of the title (e.g. memo's window menu,
+/// memo M166), drawn with [`draw_icon_toggle`].
 #[derive(Debug, Clone, Copy)]
 pub struct TitleBarToggle<'texts> {
     /// The Lucide icon.
@@ -194,7 +194,7 @@ fn draw_title_row(
         *open = false;
     }
     // The toggles keep `spacing.small` to each other and the regular item
-    // spacing (also `spacing.small`) to the tool rail below, so the gaps
+    // spacing (also `spacing.small`) to the content below, so the gaps
     // match in both directions.
     clicks
 }

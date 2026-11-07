@@ -86,7 +86,7 @@ Build once, use everywhere. Planned:
 - Window menu — **pattern, in memo** (`main_window/window_menu.rs`, M166, R86): the
   title bar's `menu` toggle opens a panel over the full content height with an
   `overlay.modal` backdrop (`lay-drawer`). Moves to this crate when a second
-  addon needs it (rule 7). The former tool rail is gone
+  addon needs it (rule 7)
 - `SettingsWindow` scaffold (left navigation list, right content, search)
 - `HelpWindow` (renders bundled markdown help in active language)
 - Buttons — **exist**: `button::draw_button` (secondary, `bg.hover` fill),
