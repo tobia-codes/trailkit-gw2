@@ -26,6 +26,11 @@ proposal and Q143; visual approval is still outstanding. No save-error runtime c
 `chore/codex-handoff` holds `7a9ee6c` (token table split, Q140) and `cd17a9b` (handoff),
 not in `origin/develop`; preserve these and do not repeat the split.
 
+**Release gate (B22, 2026-11-07):** before any addon is published (memo release
+preparation included), the backend must exist, so the owner can lock an addon until
+the user has updated after a breaking change; the addon queries update info from the
+backend. Grill the design first (endpoint, GDPR, offline behavior, lock UX, R49).
+
 0. Resolve the separate pending branches above before continuing runtime work.
 1. **Splits (R77), each a small own step:** Q91 `note_list.rs` + `draw_group`, Q95
    `draw_dropdown`, Q96 `editor/view.rs`, Q105 `markdown_view.rs`. All answered yes.

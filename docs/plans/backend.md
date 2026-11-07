@@ -102,6 +102,7 @@ API" is not enforceable; we can only raise the bar and limit damage:
 
 - ~~Event data format~~ → TOML (data-pipeline D23).
 - ~~Waypoints scope~~ → all waypoints (data-pipeline D20).
+- **Forced-update lock (B22):** design still to grill before the first addon release.
 
 ## Decisions
 
@@ -128,3 +129,4 @@ API" is not enforceable; we can only raise the bar and limit damage:
 | B16 | **No Neon.** Postgres runs in Docker on our own server; code stays provider-agnostic (`DATABASE_URL`, `sqlx` migrations); nightly off-site backups | 2026-10-31 |
 | B17 | **GDPR (DSGVO) compliance is mandatory** for every component (hosting, backups, logs, CDN, websites) | 2026-10-31 |
 | B18 | GDPR measures: IPs in logs truncated (last octet removed), logs deleted after 7 days; rate-limit counters in memory only; no tracking/analytics; every website has Impressum + privacy policy; addons send only addon name + version (no account/character data) | 2026-10-31 |
+| B22 | **Backend before the first addon release; forced updates.** The backend must exist before any addon is published (supersedes the "deferred" status for this feature). Reason: the owner must be able to lock an addon version after a breaking change until the user has updated. The addon asks the backend for update information (e.g. minimum supported version) and blocks itself while it is too old. Exact design (endpoint, privacy under B18/GDPR, offline behavior, UX of the lock, relation to the Nexus `Direct` update provider R49) is open and goes into its own grilling round. | 2026-11-07 |
