@@ -1,90 +1,99 @@
 # Next session — handoff
 
-Last updated: 2026-11-06 (agent guidance follow-ups). This file holds only the current state and
-the next steps. Keep it under 100 lines: decisions go into `docs/plans/`, lasting
-facts into the skills, and the history stays in git.
+Last updated: 2026-11-07 (save-error toast design, R89). Current state and
+next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
 
-- **Phase 0 + 0b complete.** The daily archive runs, sometimes hours late.
-- **Phase 1 (trailkit-memo standalone):** merged into `develop` and tested in game:
-  storage, tree and note view, own editor with preview, chat-link chips, reset kinds,
-  drag & drop, search, trash & undo, the UX round with the window menu (M157-M171), group
-  click and the caught keys (M172-M176).
-- Decisions: `docs/plans/addons/trailkit-memo.md`, `docs/plans/ROADMAP.md`. Current
-  look: [`current-design.md`](../../.agents/skills/trailkit-ui/references/current-design.md).
-  Snapshots and testing: `tokens.md` §10. In-game facts: `nexus-addon-dev` skill §8.
+- Phase 0 + 0b complete; daily archives sometimes run hours late. Memo standalone: storage, tree, editor/preview, chips, resets, drag & drop, search,
+  trash/undo and UX/keyboard improvements through M178 are implemented and tested in game.
+- Decisions: `addons/trailkit-memo.md`, `ROADMAP.md`. Appearance: trailkit-ui `current-design.md`; review: tokens.md §10.
 
 ## ▶ Resume here
 
-Next ids: **M179+, R89+, questions from 144.** R87/R88 and the shared context
-cleanup are merged into `develop` (#92). Q141 answered yes (keep flat token tables, R77); Q142 answered yes (one consolidated
-memo changeset at first-release preparation, R16). Claude/Codex share the shorter rules.
+Next ids: **M181+, R90+, questions from 172.** Order: save errors (review item 1), then R89 (help `?`).
+**Everything decided about save errors is in memo M180** (toasts, retry, dialog; mockup
+`docs/plans/addons/memo-save-error-toast-design.html`, same as the artifact
+https://claude.ai/artifact/DyA5k7uYVKGhuTARYTzyJ7). **Open, ask first (recommendation yes unless noted):**
+Q151 restart a dead worker with "Erneut versuchen"; Q164 close button on the error toast;
+Q165 shorten the text to "Speichern fehlgeschlagen" (not wrap); Q166 log format;
+Q167–Q171 (R89/M179): own log per addon, export button, help window, problem link, `?` placement.
+Then: get **visual approval of the mockup (R87)**, including the new `danger.subtle` token, busy/status-line
+dialog, error toast; only then implement (outline below). No runtime code, deploy or approval exists yet.
 
-**Separate pending work:** `feature/memo-save-error-design` holds the local HTML
-proposal and Q143; visual approval is still outstanding. No save-error runtime change.
-`chore/codex-handoff` holds `7a9ee6c` (token table split, Q140) and `cd17a9b` (handoff),
-not in `origin/develop`; preserve these and do not repeat the split.
+Implementation outline: typed worker → UI result channel; retry state (3 writes, 5 s, parked); immediate write for
+"Übernehmen"; toast error kind, counter, spinner, close; dialog busy button + status line; `danger.subtle` via
+`cargo xtask tokens` + contrast tests; en/de texts, help, READMEs; tests (no endless retry, no content in logs).
 
-0. Resolve the separate pending branches above before continuing runtime work.
-1. **Splits (R77), each a small own step:** Q91 `note_list.rs` + `draw_group`, Q95
-   `draw_dropdown`, Q96 `editor/view.rs`, Q105 `markdown_view.rs`. All answered yes.
-   Q92 `Text::get`: the recommendation is no, the user has not objected. `Editor::draw`
-   (101 code lines) is a hint not yet put to the user: propose it with Q96.
-2. **Then the M28 order continues:** settings window (a row in the window menu),
-   export/import, backups, help page, release preparation (full test, screenshots M67,
-   docs, measure the release DLL size by hand, R72).
-3. **Its own grill round, the biggest change:** an editor that hides markdown outside
-   the active line ("row 4" of the UX round).
-4. Optional, offer once: Light contrast of `reset.daily` on `bg.pressed` is 4.16:1 while
-   a tinted dropdown is held (see R85's test scope).
+- Context cleanup merged (PR #92, R87/R88): read references narrowly; keep Claude's shared import.
+  Q141 yes (token tables stay together, R77); Q142 yes (one memo changeset, R16).
+- **Branch integration — do this first, each step needs the user's explicit OK (R74):** analysis 2026-11-07
+  (fetched develop `3db0bd2`). Nothing is pushed yet.
+  1. **PR A:** `chore/agent-guidance-followups` as is (3 docs commits: handoff, R89/M179, M180 + mockup;
+     merges cleanly, docs-only). Push, PR into `develop`, `gh pr merge --auto --merge --delete-branch`.
+  2. **PR B:** new branch from freshly fetched `origin/develop`; `git cherry-pick 7a9ee6c` (xtask token split,
+     Q140 — real code: run `cargo xtask tokens`, fmt, clippy, tests, `check-file-length`); then add as one docs
+     commit only the three non-handoff parts of `cd17a9b`: `current-design.md` (+10 lines), the `SKILL.md`
+     window-menu sentence, the trash README sentence. **Drop the handoff part** of `cd17a9b` (conflicts
+     with this file and is stale).
+  3. Afterwards ask before deleting `chore/codex-handoff`. Keep `feature/memo-save-error-design` (old panel draft,
+     superseded by M180) until M180 ships.
 
-**Agent's choices, disclosed to the user and easy to turn back:** Ctrl+F does nothing in
-the editor (M167); the menu marks the area shown as selected (M166); the Hide row is also
-offered in the trash, as in the approved mockup.
+## Review improvements — one at a time, agreed order, solutions still proposals
 
-**Q134:** split `actions.rs` (at the 400-line hint) at its next rebuild, not before:
-`tree_actions.rs` and `editor_actions.rs`, keeping the enum and `apply`.
+1. **Storage failures (highest priority):** designed in memo M180 (`storage_worker.rs` drops failed
+   writes today; the UI gets no result). Not implemented.
+2. **Pre-push protection:** `.githooks/pre-push` checks protected destination refs only
+   for deletions; normal pushes check the current branch via `xtask/src/check_branch.rs`.
+   Validate every destination ref. Server-side protection was not inspected in the review.
+3. **WvW snapshot validity:** `tools/trailkit-datagen/src/wvw.rs::write_reset_snapshot`
+   saves current matches without checking the intended pre-reset time/match period.
+   A delayed job can succeed with post-reset data. Check the actual Nov 6 EU run as well.
+4. **Search cache:** `addons/trailkit-memo/src/main_window/search.rs::update_search`
+   calls `SearchQuery::parse` before checking the cache, allocating for unchanged queries
+   every frame. Check unchanged inputs first. No performance benchmark was run.
+5. **Docs/skills accuracy:** root and memo READMEs have stale progress summaries.
+   `nexus-addon-dev/references/addon-structure.md` wrongly says Cargo forbids sibling-slice
+   dependencies (it only rejects cycles). `rust-best-practices/references/chapter_09.md`
+   wrongly marks `&mut T` as not Send; it is Send when T is Send. These remain unfixed.
+6. **Performance contract:** reconcile the Nexus skill's blanket render-thread parsing
+   ban with existing change-triggered Markdown parsing. Clarify allowed work and caching
+   before proposing an architectural rewrite; keep actual performance/security guarantees.
+7. **Decision/documentation workflow:** broad token-loading fixes are done (R88).
+   Relaxing grilling for routine implementation choices or rustdoc for trivial getters
+   was only suggested, not approved. Preserve current rules until explicitly settled.
 
-**Merged branches stay on GitHub** until deleted by hand (`git push origin --delete`, which
-the pre-push hook allows since Q129): `gh pr merge --auto --delete-branch` cannot delete
-them, because GitHub merges later without `gh`. See the user to-do below for the fix. 47 old
-ones were removed on 2026-11-06 (Q137). `bugfix/ui-theme-in-game-fixes` is obsolete (compared with
-`develop`, Q138): the user deletes it, as auto mode refuses to delete an unmerged branch.
+Review evidence (Nov 6): format, host/Windows Clippy and 205 host tests passed;
+normal note snapshots inspected in Dark/Light. No complete audit or UI-suite rerun.
 
-## Open with the user
+## Earlier implementation queue — after the review work
 
-- **Flipping addon, sales volumes:** DataWars2 (api.datawars2.ie, Hetzner DE, polls every
-  4 min) and GW2BLTC differ by factor 3-10; one hour of own 1-minute collection matched
-  Mithril roughly, not ecto or mystic coin. Silver (DataWars2) answered 2026-11-01: free
-  use and archiving allowed, attribution up to us, nginx may log IPs (BL9). He confirmed
-  the `calculate_sold` branch looks wrong (the untested `-total > cutoff` case overstates
-  `listed`), and the user sent him the fix. GW2BLTC e-mail drafted, no answer known. A
-  24 h own collection needs an always-on machine (BL5). PieOrCake also has a `flip_out`
-  addon, not looked at.
-- **Nexus hover cursor:** the user may post the drafted Discord message.
+- Branch integration (above) comes before runtime work. Approved splits (R77): Q91
+  `note_list.rs`/`draw_group`, Q95 `draw_dropdown`, Q96 `editor/view.rs`, Q105 `markdown_view.rs`.
+  Q92 `Text::get`: recommendation no, no objection recorded. Grill remaining hints for
+  `Editor::draw`, `draw_lines` and the large main-window test file before splitting.
+- Q134: split `actions.rs` into tree/editor actions at its next rebuild, not beforehand.
+- Continue M28: settings/options → export/import → backups → help → release preparation
+  (full tests, M67 screenshots, docs, manually measure release DLL size, R72).
+- Separate grill round: hide Markdown outside the active editor line. Optional once:
+  Light `reset.daily` on pressed tinted dropdown is 4.16:1 (R85 scope).
+- Disclosed choices: Ctrl+F does nothing in editor (M167); menu selects shown area (M166);
+  Hide is also offered in trash. Merged remote branches may need manual deletion;
+  `bugfix/ui-theme-in-game-fixes` is obsolete and awaits user deletion (Q138).
 
-## Recurring checks
+## Recurring checks and other open items
 
-Triggers and consequences: [agent reference](../agent-reference.md#recurring-checks).
-
-- **GW2 wiki** (checked 2026-10-31; due regularly, for event data work and at each phase
-  start): still behind Cognito login, the Wayback workaround stays.
-- **C-703/25 P** (checked 2026-11-06: no judgment, opinion or hearing found, sources only
-  from 2025; due at the start of each session touching planning, hosting or core and at
-  each phase start): pending, DPF in force. Microsoft intervened for
-  the Commission; noyb asked for repeal (2026-06-30) but has not sued yet.
-- **DPF reminder workflow:** the 2026-11-01 08:00 cron was silently skipped by GitHub and
-  triggered by hand (issue #11). If it skips again on 2026-12-01, grill moving the cron off
-  the full hour.
-- **Daily archive:** the WvW EU snapshot of Fri 2026-11-06 17:23 UTC is the real test of the
-  cron delay margin (D29). Check it after that time; the user asked for this.
-
-## User to-dos
-
-- Add and verify `tobiacodes@gmail.com` on GitHub (Settings → Emails).
-- Verify "trailkit" in TMview and DPMAregister.
-- Google Alert for C-703/25 (D18).
-- Optional: add `. "$HOME/.cargo/env"` to `~/.bashrc`.
-- Optional: turn on "Automatically delete head branches" on GitHub (`delete_branch_on_merge`).
-  Claude Code's auto mode refused to change it, so it stays with the user.
+Triggers/consequences: [agent reference](../agent-reference.md#recurring-checks).
+- **Wiki:** Nov 6 review got HTTP 403; public recovery/login status not confirmed; keep Wayback.
+- **C-703/25 P:** Nov 6 CURIA check: pending, order dated June 4, 2026 (ECLI:EU:C:2026:465).
+  Previous “sources only from 2025” note was stale. Recheck when triggered; source:
+  https://juris.curia.europa.eu/juris/liste.jsf?language=en&num=C-703%2F25
+- **WvW reset snapshots (checked 2026-11-07):** both Nov 6 EU (ran 22:12 UTC, +4.8 h) and Nov 7 NA (07:16 UTC,
+  +5.9 h) assets hold the **post-reset** matches; CI was green. Confirms review item 3. Also Nov 6 14:13 catch-up failed on GemExchange.
+- **DPF cron:** Nov 1 skipped, issue #11 opened manually. If Dec 1 skips, grill shifting off :00.
+- **Flipping volumes (BL9):** DataWars2 vs GW2BLTC differs 3–10×; Silver allowed free use/
+  archiving Nov 1 and confirmed suspicious `calculate_sold` branch; user sent the fix.
+  GW2BLTC reply unknown; 24 h comparison needs an always-on machine (BL5). `flip_out` unreviewed.
+- Nexus hover cursor: drafted Discord message remains with the user.
+- User to-dos: verify public GitHub email; TMview/DPMA name check; C-703/25 Google Alert.
+  Optional: cargo env in bashrc; GitHub “Automatically delete head branches”.
