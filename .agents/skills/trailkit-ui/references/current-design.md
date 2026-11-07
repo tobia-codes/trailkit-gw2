@@ -69,6 +69,8 @@ Names follow `memo-state-<state>-<dark|light>.png` and
 | Menu while editing | `window-menu-editing-dark` |
 | Compact note view | `compact-dark` |
 | Dialogs, toast | `dialog-unsaved-dark`, `toast-dark` |
+| Popup menus, submenus, dropdown | `menu-note-dark`, `menu-note-reset-submenu-dark`, `kind-open-dark` |
+| A group collapsed by a click, the note staying | `group-clicked-dark` |
 | Any view at the narrowest window | `min-<state>-dark`, in German `min-de-<state>-dark` |
 
 ## How the layout behaves
@@ -81,6 +83,14 @@ Names follow `memo-state-<state>-<dark|light>.png` and
   regular page.
 - **The editor hides the note list** and brings it back when it ends (M167). A
   list the user hid stays hidden.
+- **A click on a group's row toggles it** and selects it; the note pane keeps its note
+  (M172, M173).
+- **Ctrl+F toggles the search.** The field's `x` clears text first and closes an empty
+  field (M176).
+- **Popup menus have room** (`menu.*` tokens, M177): an icon in every command row, none in
+  a row that picks a value.
+- **A click into the game hands the keyboard back** to the game, also from the editor
+  (M178).
 - **At the narrowest window the list is barely readable by choice** (M168): nested
   notes show only their badge, and the search hint is cut to "Sea". The note stays
   fully usable. Everything else wraps or shortens with "…".

@@ -1,7 +1,7 @@
 # trailkit-memo-trash
 
 Trash slice of [trailkit-memo](../../README.md) (ROADMAP R76, memo plan
-M12, M133–M151): the trash column shown by the trash tool of the tool rail
+M12, M133–M151): the trash column shown from the window menu (M166)
 — header with "Empty", one two-line row per deleted note or group (newest
 first, "N days left" in `danger` during the last week), the context menu
 "Restore" / "Delete permanently …" and the empty state — plus the note
