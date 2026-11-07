@@ -5,8 +5,7 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## Where we are
 
-- Phase 0 + 0b complete; daily archives sometimes run hours late.
-- Memo standalone: storage, tree, editor/preview, chips, resets, drag & drop, search,
+- Phase 0 + 0b complete; daily archives sometimes run hours late. Memo standalone: storage, tree, editor/preview, chips, resets, drag & drop, search,
   trash/undo and UX/keyboard improvements through M178 are implemented and tested in game.
 - Decisions: `addons/trailkit-memo.md`, `ROADMAP.md`. Appearance: trailkit-ui `current-design.md`; review: tokens.md §10.
 
