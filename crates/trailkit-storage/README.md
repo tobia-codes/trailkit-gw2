@@ -2,7 +2,9 @@
 
 Versioned, crash-safe JSON persistence for all trailkit Nexus addons
 (ROADMAP R22, memo plan M29–M33). Every file an addon writes goes through
-this crate; addons never hand-roll file I/O.
+this crate; addons never hand-roll file I/O. The only exception is the
+append-only log file of [`trailkit-log`](../trailkit-log/README.md), which uses
+`write_atomically` for its cleanup.
 
 > **Status:** used by `trailkit-memo` for all its files.
 
@@ -11,6 +13,8 @@ this crate; addons never hand-roll file I/O.
 | `document_store` | `DocumentStore`, `VersionedDocument`, `LoadOutcome`: load, migrate, save one document type per file |
 | `atomic_write` | crash-safe replacement: write a temporary file, flush, rename |
 | `safety_copies` | migration and corrupt-file copies in `backups/` and their cleanup |
+| `trailkit_directory` | `TrailkitDirectory`, `AddonName`: the shared `trailkit/{<addon>,shared,logs}/` folders (R92) |
+| `file_name` | `FileName`: a path shown as its file name only, for log lines |
 
 ## What it does
 

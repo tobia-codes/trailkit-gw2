@@ -22,7 +22,8 @@ use std::{
 };
 
 use jiff::Timestamp;
-use trailkit_storage::{DocumentStore, LoadOutcome, ReadOnlyReason, VersionedDocument};
+use trailkit_log::ErrorChain;
+use trailkit_storage::{DocumentStore, FileName, LoadOutcome, ReadOnlyReason, VersionedDocument};
 
 use crate::{
     drafts::DraftsDocument, note_tree::NotesDocument, settings::Settings, ui_state::UiState,
@@ -162,7 +163,7 @@ impl StorageSaver {
     /// Sends `command` to the worker, logging if the worker is gone.
     fn send(&self, command: WorkerCommand) {
         if self.commands.send(command).is_err() {
-            log::error!("storage worker is not running; change not saved");
+            log::error!(reason = "worker_stopped"; "save_dropped");
         }
     }
 }
@@ -175,7 +176,7 @@ impl Drop for StorageWorker {
         if let Some(thread) = self.thread.take()
             && thread.join().is_err()
         {
-            log::error!("storage worker panicked");
+            log::error!("worker_died");
         }
     }
 }
@@ -190,13 +191,12 @@ fn run_worker(
     loaded: &Sender<LoadedDocuments>,
 ) {
     let now = Timestamp::now();
-    let notes = store.load::<NotesDocument>(now);
-    log_load_outcome(&notes);
+    let notes = load_logged::<NotesDocument>(store, now);
     let notes_saving_allowed = notes.allows_saving();
-    let ui_state_outcome = store.load::<UiState>(now);
+    let ui_state_outcome = load_logged::<UiState>(store, now);
     let ui_state_saving_allowed = ui_state_outcome.allows_saving();
     let ui_state = ui_state_outcome.into_document().unwrap_or_default();
-    let drafts_outcome = store.load::<DraftsDocument>(now);
+    let drafts_outcome = load_logged::<DraftsDocument>(store, now);
     let drafts_saving_allowed = drafts_outcome.allows_saving();
     let drafts = drafts_outcome.into_document().unwrap_or_default();
     // The render side may already be gone during a quick unload; that is fine.
@@ -256,7 +256,7 @@ fn run_worker(
                 | WorkerCommand::SaveUiState(_)
                 | WorkerCommand::SaveDrafts(_),
             ) => {
-                log::warn!("document is read-only; change not saved");
+                log::warn!(reason = "read_only"; "save_dropped");
             }
             Ok(WorkerCommand::Shutdown) | Err(RecvTimeoutError::Disconnected) => {
                 save_pending::<_, NotesDocument>(store, pending_notes.take(), None);
@@ -287,14 +287,13 @@ fn save_pending_drafts(
     if now.is_some_and(|now| pending.due_at > now) {
         return Some(pending);
     }
+    let started = Instant::now();
     let result = if pending.document.drafts.is_empty() {
         store.delete::<DraftsDocument>()
     } else {
         store.save(&pending.document)
     };
-    if let Err(error) = result {
-        log::error!("cannot write {}.json: {error}", DraftsDocument::FILE_STEM);
-    }
+    log_save_result::<DraftsDocument>(store, &result, started.elapsed());
     None
 }
 
@@ -314,36 +313,70 @@ where
     if now.is_some_and(|now| pending.due_at > now) {
         return Some(pending);
     }
-    if let Err(error) = store.save::<D>(pending.document.borrow()) {
-        log::error!("cannot save {}.json: {error}", D::FILE_STEM);
-    }
+    let started = Instant::now();
+    let result = store.save::<D>(pending.document.borrow());
+    log_save_result::<D>(store, &result, started.elapsed());
     None
 }
 
-/// Writes a log line describing how `notes.json` was loaded.
-fn log_load_outcome(outcome: &LoadOutcome<NotesDocument>) {
+/// Logs a save: `save_failed` (ERROR, with the whole error) or, at DEBUG,
+/// `save_finished`; both with the duration (ROADMAP R92).
+fn log_save_result<D: VersionedDocument>(
+    store: &DocumentStore,
+    result: &Result<(), trailkit_storage::StorageError>,
+    elapsed: Duration,
+) {
+    let path = store.path_of::<D>();
+    let ms = elapsed.as_millis();
+    match result {
+        Ok(()) => log::debug!(file:% = FileName::of(&path), ms; "save_finished"),
+        Err(error) => {
+            log::error!(file:% = FileName::of(&path), ms, error:% = ErrorChain(error); "save_failed");
+        }
+    }
+}
+
+/// Loads `D` from `store` and logs the outcome with its duration.
+fn load_logged<D: VersionedDocument>(store: &DocumentStore, now: Timestamp) -> LoadOutcome<D> {
+    let started = Instant::now();
+    let outcome = store.load::<D>(now);
+    log_load_outcome(&outcome, started.elapsed());
+    outcome
+}
+
+/// Logs how a document was loaded (ROADMAP R92): `load_finished` (INFO),
+/// `load_recovered` (ERROR, the unreadable file was moved to `backups/`) or
+/// `load_read_only` (newer version: WARN, I/O error: ERROR), each with the
+/// file name and the duration.
+pub fn log_load_outcome<D: VersionedDocument>(outcome: &LoadOutcome<D>, elapsed: Duration) {
+    let file = format!("{}.json", D::FILE_STEM);
+    let file = file.as_str();
+    let ms = elapsed.as_millis();
     match outcome {
-        LoadOutcome::Missing => log::info!("no notes.json yet; starting empty"),
+        LoadOutcome::Missing => log::info!(file, result = "missing", ms; "load_finished"),
         LoadOutcome::Loaded {
             migrated_from: None,
             ..
-        } => log::info!("notes loaded"),
+        } => log::info!(file, result = "loaded", ms; "load_finished"),
         LoadOutcome::Loaded {
             migrated_from: Some(version),
             ..
-        } => log::info!("notes migrated from schema version {version}"),
+        } => log::info!(file, result = "migrated", from_version = version.0, ms; "load_finished"),
         LoadOutcome::Recovered {
             reason,
             preserved_as,
         } => log::error!(
-            "notes.json was unreadable ({reason}); moved to {}",
-            preserved_as.display()
+            file,
+            error = reason.as_str(),
+            preserved_as:% = FileName::of(preserved_as),
+            ms;
+            "load_recovered"
         ),
-        LoadOutcome::ReadOnly(ReadOnlyReason::NewerVersion { found }) => log::warn!(
-            "notes.json has newer schema version {found}; read-only until the addon is updated"
-        ),
+        LoadOutcome::ReadOnly(ReadOnlyReason::NewerVersion { found }) => {
+            log::warn!(file, reason = "newer_version", found = found.0, ms; "load_read_only");
+        }
         LoadOutcome::ReadOnly(ReadOnlyReason::Io(error)) => {
-            log::error!("cannot access notes.json ({error}); read-only");
+            log::error!(file, reason = "io", error:% = ErrorChain(error), ms; "load_read_only");
         }
     }
 }

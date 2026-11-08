@@ -170,7 +170,7 @@ fn ink_texels(
 fn log_missing_atlas_pixels() {
     static LOGGED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
     if !LOGGED.swap(true, std::sync::atomic::Ordering::Relaxed) {
-        log::warn!("font atlas pixels are not in memory; glyphs are centered by their quads");
+        log::warn!("font_pixels_missing");
     }
 }
 

@@ -786,7 +786,6 @@ source = "git+https://github.com/zerthox/nexus-rs?rev=51bff5ab38ad11332316448b45
 dependencies = [
  "arcdps-imgui",
  "bitflags 2.13.2",
- "log",
  "nexus_codegen",
  "num_enum",
  "paste",
@@ -1481,6 +1480,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "trailkit-log"
+version = "0.0.0"
+dependencies = [
+ "jiff",
+ "log",
+ "tempfile",
+ "trailkit-storage",
+ "windows",
+]
+
+[[package]]
 name = "trailkit-memo"
 version = "0.0.0"
 dependencies = [
@@ -1490,6 +1500,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "trailkit-log",
  "trailkit-memo-drafts",
  "trailkit-memo-editor",
  "trailkit-memo-note-list",
@@ -1572,6 +1583,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "trailkit-log",
  "trailkit-storage",
  "trailkit-ui",
  "uuid",

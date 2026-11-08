@@ -57,8 +57,16 @@ impl MemoWindow {
             return;
         };
         let elapsed = ui.time() - changed_at;
-        if elapsed >= TEXT_SCALE_APPLY_DELAY_SECONDS {
+        if elapsed >= TEXT_SCALE_APPLY_DELAY_SECONDS
+            && self.applied_text_scale != self.settings.text_scale
+        {
             self.applied_text_scale = self.settings.text_scale;
+            // Once per resting wheel, not per step (ROADMAP R92).
+            log::info!(
+                key = "text_scale",
+                value = f64::from(self.settings.text_scale.factor());
+                "setting_changed"
+            );
         }
         if elapsed < TEXT_SCALE_INDICATOR_SECONDS {
             draw_tooltip(

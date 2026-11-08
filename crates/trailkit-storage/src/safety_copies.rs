@@ -16,7 +16,7 @@ use std::{
 
 use jiff::Timestamp;
 
-use crate::{SchemaVersion, write_atomically};
+use crate::{FileName, SchemaVersion, write_atomically};
 
 /// How many copies of unreadable files are kept per document.
 pub const MAX_UNREADABLE_COPIES: usize = 3;
@@ -103,7 +103,9 @@ pub fn prune_expired_migration_copies(backups_directory: &Path, file_stem: &str,
                     remove_logged(&path);
                 }
             }
-            Err(error) => log::warn!("cannot read age of {}: {error}", path.display()),
+            Err(error) => {
+                log::warn!(file:% = FileName::of(&path), error:% = error; "backup_age_unreadable");
+            }
         }
     }
 }
@@ -134,7 +136,7 @@ fn files_matching(directory: &Path, matches: impl Fn(&str) -> bool) -> Vec<PathB
         Ok(entries) => entries,
         Err(error) => {
             if error.kind() != io::ErrorKind::NotFound {
-                log::warn!("cannot list {}: {error}", directory.display());
+                log::warn!(folder:% = FileName::of(directory), error:% = error; "folder_unlistable");
             }
             return Vec::new();
         }
@@ -150,7 +152,7 @@ fn files_matching(directory: &Path, matches: impl Fn(&str) -> bool) -> Vec<PathB
 /// Deletes `path`, logging (not returning) a failure.
 fn remove_logged(path: &Path) {
     if let Err(error) = fs::remove_file(path) {
-        log::warn!("cannot delete {}: {error}", path.display());
+        log::warn!(file:% = FileName::of(path), error:% = error; "backup_delete_failed");
     }
 }
 

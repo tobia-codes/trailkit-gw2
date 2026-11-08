@@ -454,7 +454,7 @@ pub fn local_utc_offset(time: jiff::Timestamp) -> jiff::tz::Offset {
         )
     };
     if let Err(error) = conversion {
-        log::warn!("local time conversion failed, showing UTC: {error}");
+        log::warn!(error:% = error; "local_time_failed");
         return jiff::tz::Offset::UTC;
     }
     civil_from_system_time(local_system_time)

@@ -27,6 +27,7 @@ Every project has its own README with purpose, build, usage and its rules.
 | Shared crates | [`crates/trailkit-ui`](crates/trailkit-ui/README.md) | Design system: theme tokens, fonts, icons and shared ImGui components |
 | | [`crates/trailkit-ui-testing`](crates/trailkit-ui-testing/README.md) | Headless UI tests and snapshot comparison (dev-dependency only) |
 | | [`crates/trailkit-storage`](crates/trailkit-storage/README.md) | Versioned, crash-safe JSON files for everything an addon saves |
+| | [`crates/trailkit-log`](crates/trailkit-log/README.md) | One local log file per addon and the binding log format |
 | Services | [`services/trailkit-api`](services/trailkit-api/README.md) | REST API server, skeleton only (backend deferred) |
 | Tools | [`tools/trailkit-datagen`](tools/trailkit-datagen/README.md) | Daily data job: trading post price archive and WvW snapshots |
 | | [`xtask`](xtask/README.md) | Build and check commands: `cargo xtask <command>` |

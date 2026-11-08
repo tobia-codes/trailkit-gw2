@@ -95,4 +95,4 @@ Deine Notizen werden kurz nach jeder Änderung automatisch gespeichert, in `addo
 
 ## Probleme?
 
-Fehler landen im Nexus-Log (`addons/Nexus/Nexus.log` im Guild-Wars-2-Ordner). Bitte hänge die passenden Zeilen an, wenn du ein Issue auf GitHub eröffnest.
+memo führt eine Logdatei, `addons/trailkit/logs/memo.log` im Guild-Wars-2-Ordner. Sie enthält nur technische Ereignisse (Fehler, Laden und Speichern, Addon- und Windows-Version), nie deine Notizen, und bleibt auf deinem Computer. Einträge, die älter als 30 Tage sind, werden automatisch gelöscht. Bitte hänge die Datei an, wenn du ein Issue auf GitHub eröffnest. Fehler erscheinen außerdem im Nexus-Log (`addons/Nexus/Nexus.log`).
