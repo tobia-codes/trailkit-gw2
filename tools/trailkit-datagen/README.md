@@ -9,6 +9,11 @@ It only reads the public GW2 API (no API key) and writes into a local
 directory. It never talks to GitHub: the scheduled workflow creates the
 monthly release `archive-YYYY-MM` and uploads the files (D34).
 
+> **Status:** the price archive runs daily and the WvW reset snapshots weekly
+> (`.github/workflows/daily-archive.yml`); the served data files follow in
+> ROADMAP phase 2. Archives:
+> [releases `archive-YYYY-MM`](https://github.com/tobia-codes/trailkit-gw2/releases).
+
 ## Build and test
 
 ```sh
@@ -113,3 +118,10 @@ CREATE TABLE gem_exchange_quote (
 | `src/raw_json.rs`, `src/compact_json.rs` | lossless array → NDJSON lines |
 | `src/archive_file.rs` | gzip writer, size + SHA-256 |
 | `fixtures/` | small API responses for the tests |
+
+## Rules
+
+- Tests never call the live GW2 API; they use `fixtures/` (D36).
+- Blocking `ureq` HTTP, no Tokio (R65); requests stay throttled (D26).
+- Archived API data is stored unchanged except whitespace, so it can be
+  re-processed later; condensing happens only where a decision says so (D17).

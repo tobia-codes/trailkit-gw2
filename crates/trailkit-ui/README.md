@@ -1,11 +1,13 @@
 # trailkit-ui
 
-Shared design system for all trailkit Nexus addons. Rules and token
-documentation: the [`trailkit-ui` skill](../../.agents/skills/trailkit-ui/SKILL.md).
+Shared design system for all trailkit Nexus addons: theme tokens (Dark and
+Light), fonts, icons and the ImGui components every addon draws with. Runs in
+the game (addons only). Rules, tokens and the current look: the
+[`trailkit-ui` skill](../../.agents/skills/trailkit-ui/SKILL.md).
 
-> **Status:** phase 1 — theme tokens, style scope, shared fonts, icons and
-> the markdown view. Other components move in here once a second addon
-> needs them (AGENTS.md rule 7, ROADMAP R47).
+> **Status:** used by `trailkit-memo`. Components move in here once a second
+> addon needs them (rule 7, ROADMAP R47); until then some patterns stay in
+> memo (see the skill §3).
 
 Third-party assets: `assets/fonts/open-sans/` (SIL Open Font License) and
 `assets/fonts/lucide/` (ISC), each with its `LICENSE`. The embedded `.ttf`
@@ -23,6 +25,8 @@ Latin up to Extended-B plus punctuation, the icon font only the icons in
 | `theme` | `Theme` tokens, built-in `Theme::DARK` (default) / `Theme::LIGHT`, `ThemeKind` | any |
 | `fonts` | shared font roles (body, bold, italic, headings, icons), embedded Open Sans + Lucide | any |
 | `icons` | Lucide icon glyphs used by trailkit (add new ones here) | any |
+| `editor` | the word-wrapping text editor: platform-independent `buffer` (text, cursor, undo) and `layout`, plus `highlight` and the drawing `view` (Windows) (M58–M60) | any / Windows |
+| `text_search` | `SearchQuery`: whitespace-separated terms, case-insensitive, shared by list filtering and hit highlighting (M118–M120) | any |
 | `markdown` | markdown → blocks and styled spans; task toggling; `http(s)`-only links | any |
 | `button` | `draw_button` (label centered by its capitals, M85), `draw_primary_button` (accent, `lay-one-primary`), `draw_primary_button_with_icon` (icon + label), `draw_icon_button` / `draw_icon_toggle` (borderless, tooltip), `button_width`, `icon_button_width`, `icon_label_button_width`; text buttons are at least `button.min_width` wide (M131) | Windows |
 | `menu` | `draw_menu_item` (Lucide check mark), `begin_submenu` (Lucide chevron, opens flush beside the parent, M98/M99) | Windows |
@@ -33,6 +37,7 @@ Latin up to Extended-B plus punctuation, the icon font only the icons in
 | `title_bar` | `draw_window` — a window with the trailkit title bar (collapse chevron, bold title, close `x`) instead of ImGui's (R71) | Windows |
 | `tooltip` | `draw_tooltip`, `draw_tooltip_with`: every tooltip, text centered by its capitals (M171) | Windows |
 | `toolbar` | `begin_toolbar_group` (thin separator line, wraps when the group does not fit), `move_to_toolbar_end` (right-aligned items, wrap in narrow windows; `lay-responsive`) | Windows |
+| `toast` | one short message with optional actions at the bottom of the window; the timer pauses on hover (M142, `ix-toasts`) | Windows |
 | `splitter` | `draw_vertical_splitter` — resizable gap between two panes (accent line on hover/drag) | Windows |
 | `text_layout` | `centered_text`, `indent_to_center`, `truncate_to_width` ("…", `lay-truncation`), `format_count` (allocation-free count labels) | Windows |
 | `separator` | `draw_separator` — horizontal line that ends at the window/pane padding | Windows |
@@ -62,4 +67,17 @@ cargo test -p trailkit-ui   # logic tests, incl. the 4.5:1 text contrast check f
 cargo xtask ui-test         # ImGui tests (Windows binaries via WSL): editor snapshots and input
 ```
 
-Snapshot references live in `tests/snapshots/`; see `crates/trailkit-ui-testing`.
+Snapshot references live in `tests/snapshots/`; every state of a shared
+component has one in `tests/component_states.rs` (Dark and Light), see
+[`trailkit-ui-testing`](../trailkit-ui-testing/README.md).
+
+## Rules
+
+- No raw colors or sizes: everything comes from `Theme` tokens. A new token is
+  a decision ([`tokens.md`](../../.agents/skills/trailkit-ui/references/tokens.md));
+  `cargo xtask tokens` regenerates the token reference and a test fails while
+  it is out of date.
+- Drawing code runs on the render thread: no allocations in steady state, no blocking, no I/O.
+- Every component state gets a snapshot in Dark and Light in the same change.
+- Texts are passed in by the addon; this crate has no strings of its own.
+

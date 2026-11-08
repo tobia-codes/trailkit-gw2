@@ -4,6 +4,14 @@ Versioned, crash-safe JSON persistence for all trailkit Nexus addons
 (ROADMAP R22, memo plan M29–M33). Every file an addon writes goes through
 this crate; addons never hand-roll file I/O.
 
+> **Status:** used by `trailkit-memo` for all its files.
+
+| Module | Content |
+|--------|---------|
+| `document_store` | `DocumentStore`, `VersionedDocument`, `LoadOutcome`: load, migrate, save one document type per file |
+| `atomic_write` | crash-safe replacement: write a temporary file, flush, rename |
+| `safety_copies` | migration and corrupt-file copies in `backups/` and their cleanup |
+
 ## What it does
 
 | Concern | Behavior |

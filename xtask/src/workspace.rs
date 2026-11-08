@@ -1,6 +1,9 @@
 //! Workspace paths and addon discovery shared by the xtask commands.
 
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    process::Command,
+};
 
 use anyhow::{Context, Result, bail};
 
@@ -10,6 +13,34 @@ pub fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .map_or_else(|| PathBuf::from("."), Path::to_path_buf)
+}
+
+/// Every path in the repository that git does not ignore: tracked files and
+/// new, not yet added ones. Relative to the root, separated by `/`.
+///
+/// # Errors
+/// Returns an error if `git` cannot be run or prints a non-UTF-8 path.
+pub fn repository_paths() -> Result<Vec<String>> {
+    let output = Command::new("git")
+        .current_dir(root())
+        .args([
+            "ls-files",
+            "--cached",
+            "--others",
+            "--exclude-standard",
+            "-z",
+        ])
+        .output()
+        .context("failed to run `git ls-files`")?;
+    if !output.status.success() {
+        bail!("`git ls-files` failed ({})", output.status);
+    }
+    let listing = String::from_utf8(output.stdout).context("non-UTF-8 path in repository")?;
+    Ok(listing
+        .split('\0')
+        .filter(|path| !path.is_empty())
+        .map(str::to_owned)
+        .collect())
 }
 
 /// An addon crate that exists under `addons/<name>/`.

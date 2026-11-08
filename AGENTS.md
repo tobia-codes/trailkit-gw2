@@ -53,8 +53,10 @@ Shared rules for Codex and Claude Code. `CLAUDE.md` imports this file;
    addon implementation waits. Material deviations need another visual OK.
    Afterwards review the whole changed snapshots against `tokens.md` §10
    (R82), then test in game and obtain merge approval separately.
-3. **Every project has a README:** purpose, build and usage for each
-   crate/addon/app/package; keep it current when behavior changes.
+3. **Every project has a README** in the
+   [outline](docs/agent-reference.md#readme-outline), linked from its parent
+   README; keep it current. `CONTRIBUTING.md` explains these rules to humans:
+   update it when a rule changes.
 4. **Document every item:** functions, methods, structs, enums, traits and
    modules, public/private. Use Rust `///`/`//!`, JSDoc/TSDoc or Python
    docstrings; include relevant errors, panics and safety contracts.

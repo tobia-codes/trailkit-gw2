@@ -1,52 +1,87 @@
 # trailkit-gw2
 
-Monorepo for Guild Wars 2 tooling: [Raidcore Nexus](https://raidcore.gg/Nexus)
-addons and a Rust data pipeline (static data files + daily price archive;
-a Rust backend server is planned for later).
+Open-source tools for Guild Wars 2: [Raidcore Nexus](https://raidcore.gg/Nexus)
+addons written in Rust, the shared libraries behind them, and a data pipeline
+that archives the trading post prices every day. A REST backend is planned.
 
-> Status: phase 0 (foundation). See [`docs/plans/`](docs/plans/README.md).
+> **Status:** the first addon, `trailkit-memo` (notes), is in development and
+> not released yet. The daily price archive runs. Roadmap:
+> [`docs/plans/ROADMAP.md`](docs/plans/ROADMAP.md).
 
-## Layout
+## Contents
 
-| Path | Content |
-|------|---------|
-| `addons/` | Nexus addons (`trailkit-memo`: phase 0 skeleton) |
-| `crates/trailkit-storage/` | Shared persistence: versioned, crash-safe JSON files with safety copies |
-| `crates/trailkit-ui/` | Shared design system: theme tokens, ImGui style scope |
-| `services/trailkit-api/` | REST API server — skeleton only, backend deferred ([plan](docs/plans/backend.md)) |
-| `tools/trailkit-datagen/` | Daily data job: GW2 trading post price archive |
-| `.githooks/` | Versioned git hooks (`cargo xtask install-hooks`) |
-| `xtask/` | Task runner: `cargo xtask deploy`, `cargo xtask sync-versions` |
-| `data/events/` | Curated event schedules |
-| `.changeset/` | Changesets (versioning, ROADMAP R16) |
-| `docs/plans/` | Master roadmap and one plan per addon / component |
-| `.agents/skills/` | Agent skills shared by Claude Code and Codex |
-| `AGENTS.md` | Rules for coding agents (`CLAUDE.md` imports it) |
+- [Find your way](#find-your-way)
+- [I want to …](#i-want-to-)
+- [Setup (WSL)](#setup-wsl)
+- [Build, test and deploy](#build-test-and-deploy)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Find your way
+
+Every project has its own README with purpose, build, usage and its rules.
+
+| Area | Project | What it is |
+|------|---------|------------|
+| Addons | [`addons/trailkit-memo`](addons/trailkit-memo/README.md) | Notes addon; its README lists the slices it is built from |
+| Shared crates | [`crates/trailkit-ui`](crates/trailkit-ui/README.md) | Design system: theme tokens, fonts, icons and shared ImGui components |
+| | [`crates/trailkit-ui-testing`](crates/trailkit-ui-testing/README.md) | Headless UI tests and snapshot comparison (dev-dependency only) |
+| | [`crates/trailkit-storage`](crates/trailkit-storage/README.md) | Versioned, crash-safe JSON files for everything an addon saves |
+| Services | [`services/trailkit-api`](services/trailkit-api/README.md) | REST API server, skeleton only (backend deferred) |
+| Tools | [`tools/trailkit-datagen`](tools/trailkit-datagen/README.md) | Daily data job: trading post price archive and WvW snapshots |
+| | [`xtask`](xtask/README.md) | Build and check commands: `cargo xtask <command>` |
+| Data | [`data/events`](data/events/README.md) | Curated event schedules (source of truth) |
+| Docs | [`docs/plans`](docs/plans/README.md) | Roadmap, plans and every decision with its id |
+| | [`.agents/skills`](.agents/skills/README.md) | Detailed rules for addon code, UI and Rust (read by humans and coding agents) |
+| | [`.changeset`](.changeset/README.md) | Versioning and changelogs with Changesets |
+
+Rules for contributors: [`CONTRIBUTING.md`](CONTRIBUTING.md). Security reports:
+[`SECURITY.md`](SECURITY.md). Coding agents: [`AGENTS.md`](AGENTS.md).
+
+## I want to …
+
+| … | Start here |
+|---|-----------|
+| report a bug or suggest an idea | [Open an issue](https://github.com/tobia-codes/trailkit-gw2/issues) |
+| fix a bug in memo | [memo README](addons/trailkit-memo/README.md) → the slice's README → its tests |
+| change something visible in an addon | [CONTRIBUTING § UI rules](CONTRIBUTING.md#6-ui-rules) (visual proposal first) → [`trailkit-ui` skill](.agents/skills/trailkit-ui/SKILL.md) |
+| add or change a design token | [`tokens.md`](.agents/skills/trailkit-ui/references/tokens.md) → `cargo xtask tokens` |
+| build a new addon | [addon blueprint](.agents/skills/nexus-addon-dev/references/addon-structure.md) → [Nexus rules](.agents/skills/nexus-addon-dev/SKILL.md) |
+| fix or add event times | [`data/events`](data/events/README.md) |
+| use the price archive | [`tools/trailkit-datagen`](tools/trailkit-datagen/README.md) (monthly GitHub releases `archive-YYYY-MM`) |
+| understand why something is the way it is | [`docs/plans`](docs/plans/README.md), search the decision id (e.g. `R76`) |
 
 ## Setup (WSL)
 
-1. Rust: [rustup](https://rustup.rs) — the toolchain is pinned by `rust-toolchain.toml`.
+Development happens in WSL (Linux); addons are cross-compiled to Windows.
+
+1. Rust via [rustup](https://rustup.rs); the toolchain is pinned by `rust-toolchain.toml`.
 2. `cargo install --locked cargo-xwin cargo-deny`
 3. LLVM for cross-compiling: `sudo apt install clang lld llvm`
-4. Node via fnm (`.node-version`) and pnpm (`packageManager` in `package.json`), then `pnpm install`.
-5. Configure the GW2 addons folder for deploys (see [`xtask/README.md`](xtask/README.md)).
+4. Node via [fnm](https://github.com/Schniz/fnm) (`.node-version`) and pnpm
+   (`packageManager` in `package.json`), then `pnpm install`.
+5. Point deploys at the game's addons folder
+   ([xtask README](xtask/README.md#configuring-the-gw2-addons-folder)).
 6. Enable the git hooks: `cargo xtask install-hooks`.
 
-Checks before a PR: `cargo fmt --all`, `cargo clippy --all-targets -- -D warnings`,
-`cargo xwin clippy --target x86_64-pc-windows-msvc -- -D warnings`, `cargo test`, `cargo deny check`.
+## Build, test and deploy
 
-## Contributing rules (short)
+```sh
+cargo build                        # everything for Linux (addons need the Windows target)
+cargo test                         # unit tests, translations, generated docs, README links
+cargo xtask ui-test                # UI snapshot tests (Windows binaries via WSL)
+cargo xtask deploy trailkit-memo   # build the DLL and hot-reload it into the running game
+```
 
-- Naming: readable names over abbreviations; Rust per the API guidelines
-  (`snake_case` files/functions, `UpperCamelCase` types); all other files and
-  directories `kebab-case`; data keys `snake_case`; Nexus identifiers
-  `trailkit.<addon>.<kind>.<name>`. Full table:
-  [Agent reference → Naming conventions](docs/agent-reference.md#naming-conventions)
-  (checked by `cargo xtask check-names`).
-- Every directory that is a project has a `README.md`.
-- Every function is documented (rustdoc `///`).
-- Comments and docs are written in English.
-- Decisions are made via the `grill-me` skill and recorded in `docs/plans/`.
+The full list of checks before a pull request is in
+[CONTRIBUTING § Tests and checks](CONTRIBUTING.md#8-tests-and-checks); every
+`xtask` command is in [`xtask/README.md`](xtask/README.md).
+
+## Contributing
+
+Issues are welcome. For a pull request, agree on the change in an issue first.
+[`CONTRIBUTING.md`](CONTRIBUTING.md) explains how the code is organised and the
+rules it follows, and why.
 
 ## License
 

@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-08 (session 19, backend layout R90). Current state and
+Last updated: 2026-11-08 (session 19, contributor docs R91). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -15,7 +15,7 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 — a visual mockup (R87, still unapproved) with the error toast, busy dialog and `danger.subtle`. Decide there:
 Q151, Q164, Q165, Q166, Q167–Q171 (listed below), then the visual OK.
 
-Next ids: **M181+, R91+, questions from 181.** Order: save errors (review item 1), then R89 (help `?`).
+Next ids: **M181+, R92+, questions from 191.** Order: save errors (review item 1), then R89 (help `?`).
 **Everything decided about save errors is in memo M180** (toasts, retry, dialog; mockup
 `docs/plans/addons/memo-save-error-toast-design.html`, same as the artifact
 https://claude.ai/artifact/DyA5k7uYVKGhuTARYTzyJ7). **Open, ask first (recommendation yes unless noted):**
@@ -34,8 +34,9 @@ Implementation outline: typed worker → UI result channel; retry state (3 write
 - **Branch integration done (2026-11-07/08):** PR #94 and #95 merged. With the user's OK: delete
   local-only `chore/codex-handoff` (`git branch -D`, commits cherry-picked) and merged remote branches.
   Keep `feature/memo-save-error-design` until M180 ships. `token_groups.rs` 419 code lines (Q141 keeps it).
-- **Backend layout (R90, Q172–Q180):** skeleton `services/trailkit-api/` on `chore/backend-service-skeleton`,
-  CI excludes it from the Windows DLL build only (workflow change: merge needs explicit OK). Not pushed yet.
+- **Backend layout (R90)** merged (PR #97). **Contributor docs (R91, Q181–Q190)** on `chore/contributor-docs`:
+  CONTRIBUTING/SECURITY, all READMEs, README-link test. Private vulnerability reporting is **off** on GitHub;
+  enabling it is a repo setting (ask). Review item 5 (READMEs) done except the two skill errors.
 
 ## Review improvements — one at a time, agreed order, solutions still proposals
 

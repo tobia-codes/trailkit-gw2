@@ -2,8 +2,11 @@
 
 The official Guild Wars 2 API has **no event schedule endpoint**
 (`/v2/events` and `/v1/event_names` return 503). Schedules for world bosses and
-meta events are therefore maintained here by hand and published by the
-backend to trailkit-core.
+meta events are therefore maintained here by hand; the data pipeline will
+publish them as a static data file for trailkit-core (data-pipeline D1, D23).
+
+> **Status:** format decided, no event file yet. The files arrive with the
+> data pipeline (ROADMAP phase 2); plan: [`data-pipeline.md`](../../docs/plans/data-pipeline.md).
 
 ## Source
 
@@ -14,13 +17,13 @@ backend to trailkit-core.
   Wayback Machine instead
   (latest known snapshot: `web.archive.org/web/20261026205109/https://wiki.guildwars2.com/wiki/Event_timers`).
 
-## Maintenance rule (for every agent)
+## Maintenance rule (for every contributor and agent)
 
 Whenever working on event data — and at least at the start of every phase —
 check whether `https://wiki.guildwars2.com/wiki/Event_timers` answers with
 HTTP 200 without a login redirect. If it does, switch back to the live wiki,
-remove the Wayback workaround from this README and from
-`docs/plans/backend.md`, and re-verify the data against the live page.
+remove the Wayback workaround from this README and from the plans
+(`docs/plans/backend.md`, `data-pipeline.md`), and re-verify the data against the live page.
 
 ## License
 
@@ -34,8 +37,8 @@ the event data, derivatives under the same license. The generated
 
 One **TOML** file per category (e.g. `world_bosses.toml`, `meta_events.toml`),
 hand-maintained; comments are used for sources and change notes.
-`trailkit-datagen` validates the files (required fields, valid times, unique
-ids) and generates `/v1/events.json` for trailkit-core.
+`trailkit-datagen` will validate the files (required fields, valid times,
+unique ids) and generate `events.json` for trailkit-core (not implemented yet).
 
 Per event (`[[event]]` table):
 
