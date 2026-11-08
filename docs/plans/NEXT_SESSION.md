@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-08 (session 19, contributor docs R91). Current state and
+Last updated: 2026-11-08 (end of session 19). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -29,14 +29,20 @@ Implementation outline: typed worker → UI result channel; retry state (3 write
 "Übernehmen"; toast error kind, counter, spinner, close; dialog busy button + status line; `danger.subtle` via
 `cargo xtask tokens` + contrast tests; en/de texts, help, READMEs; tests (no endless retry, no content in logs).
 
-- Context cleanup merged (PR #92, R87/R88): read references narrowly; keep Claude's shared import.
-  Q141 yes (token tables stay together, R77); Q142 yes (one memo changeset, R16).
-- **Branch integration done (2026-11-07/08):** PR #94 and #95 merged. With the user's OK: delete
-  local-only `chore/codex-handoff` (`git branch -D`, commits cherry-picked) and merged remote branches.
-  Keep `feature/memo-save-error-design` until M180 ships. `token_groups.rs` 419 code lines (Q141 keeps it).
-- **Backend layout (R90)** merged (PR #97). **Contributor docs (R91, Q181–Q190)** on `chore/contributor-docs`:
-  CONTRIBUTING/SECURITY, all READMEs, README-link test. Private vulnerability reporting is **off** on GitHub;
-  enabling it is a repo setting (ask). Review item 5 (READMEs) done except the two skill errors.
+- **Session 19 (2026-11-07/08), merged:** #94 handoff/M180, #95 token split Q140 + docs, #97 backend
+  layout R90 (`services/trailkit-api/` skeleton, Q172–Q180). **#98 contributor docs R91** (Q181–Q190:
+  CONTRIBUTING, SECURITY, all READMEs, README-link test) has auto-merge armed: check it merged.
+  Private vulnerability reporting is now **on** (user, 2026-11-08).
+- **PR #96 is stuck** (B22 from another Claude session, 2026-11-07, auto-merge armed, no CI run,
+  merge state unknown; touches this file → likely conflicts). B22: the backend must exist **before the
+  first addon release** so an addon version can be locked until the user updates; design (endpoint, GDPR,
+  offline, lock UX, R49) needs its own grilling round. Ask the user: rebase #96 onto develop or redo it.
+  This changes the backend from "deferred" to a release prerequisite (affects R90 skeleton, B10, B19).
+- **Housekeeping (ask first):** remote branches of merged PRs were not deleted (`agent-guidance-followups`,
+  `backend-service-skeleton`, `xtask-token-split-and-docs`, `contributor-docs` after #98) plus obsolete
+  `bugfix/ui-theme-in-game-fixes` (Q138); local: `chore/agent-context-efficiency` and the merged branches.
+  `develop` locally is stale: `check-file-length` compares against it, so pull first. Keep
+  `feature/memo-save-error-design` until M180 ships. Q141 keeps `token_groups.rs` (419 lines) together.
 
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
@@ -51,19 +57,15 @@ Implementation outline: typed worker → UI result channel; retry state (3 write
 4. **Search cache:** `addons/trailkit-memo/src/main_window/search.rs::update_search`
    calls `SearchQuery::parse` before checking the cache, allocating for unchanged queries
    every frame. Check unchanged inputs first. No performance benchmark was run.
-5. **Docs/skills accuracy:** root and memo READMEs have stale progress summaries.
-   `nexus-addon-dev/references/addon-structure.md` wrongly says Cargo forbids sibling-slice
-   dependencies (it only rejects cycles). `rust-best-practices/references/chapter_09.md`
-   wrongly marks `&mut T` as not Send; it is Send when T is Send. These remain unfixed.
+5. **Docs/skills accuracy:** READMEs done (R91). Still wrong: `nexus-addon-dev/references/addon-structure.md`
+   says Cargo forbids sibling-slice dependencies (it only rejects cycles; the rule is enforced by review);
+   `rust-best-practices/references/chapter_09.md` marks `&mut T` as not Send (it is Send when T is Send).
 6. **Performance contract:** reconcile the Nexus skill's blanket render-thread parsing
    ban with existing change-triggered Markdown parsing. Clarify allowed work and caching
    before proposing an architectural rewrite; keep actual performance/security guarantees.
 7. **Decision/documentation workflow:** broad token-loading fixes are done (R88).
    Relaxing grilling for routine implementation choices or rustdoc for trivial getters
    was only suggested, not approved. Preserve current rules until explicitly settled.
-
-Review evidence (Nov 6): format, host/Windows Clippy and 205 host tests passed;
-normal note snapshots inspected in Dark/Light. No complete audit or UI-suite rerun.
 
 ## Earlier implementation queue — after the review work
 
@@ -77,8 +79,7 @@ normal note snapshots inspected in Dark/Light. No complete audit or UI-suite rer
 - Separate grill round: hide Markdown outside the active editor line. Optional once:
   Light `reset.daily` on pressed tinted dropdown is 4.16:1 (R85 scope).
 - Disclosed choices: Ctrl+F does nothing in editor (M167); menu selects shown area (M166);
-  Hide is also offered in trash. Merged remote branches may need manual deletion;
-  `bugfix/ui-theme-in-game-fixes` is obsolete and awaits user deletion (Q138).
+  Hide is also offered in trash.
 
 ## Recurring checks and other open items
 
