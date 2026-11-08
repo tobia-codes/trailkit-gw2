@@ -30,17 +30,12 @@ https://claude.ai/artifact/DyA5k7uYVKGhuTARYTzyJ7). **Open, ask first (recommend
 Q151 restart a dead worker with "Erneut versuchen"; Q164 close button on the error toast;
 Q165 shorten the text to "Speichern fehlgeschlagen" (not wrap); Q166 log format;
 Q167–Q171 (R89/M179): own log per addon, export button, help window, problem link, `?` placement.
-Then: get **visual approval of the mockup (R87)**, including the new `danger.subtle` token, busy/status-line
-dialog, error toast; only then implement (outline below). No runtime code, deploy or approval exists yet.
+Then **visual approval of the mockup (R87)** (`danger.subtle`, busy/status-line dialog, error toast); then implement.
 
 Implementation outline: typed worker → UI result channel; retry state (3 writes, 5 s, parked); immediate write for
 "Übernehmen"; toast error kind, counter, spinner, close; dialog busy button + status line; `danger.subtle` via
 `cargo xtask tokens` + contrast tests; en/de texts, help, READMEs; tests (no endless retry, no content in logs).
 
-- **Session 19 (2026-11-07/08), merged:** #94 handoff/M180, #95 token split Q140 + docs, #97 backend
-  layout R90 (`services/trailkit-api/` skeleton, Q172–Q180). **#98 contributor docs R91** (Q181–Q190:
-  CONTRIBUTING, SECURITY, all READMEs, README-link test) merged 2026-11-08.
-  Private vulnerability reporting is now **on** (user, 2026-11-08).
 - **PR #96 is stuck** (B22 from another Claude session, 2026-11-07, auto-merge armed, no CI run,
   merge state unknown; touches this file → likely conflicts). B22: the backend must exist **before the
   first addon release** so an addon version can be locked until the user updates; design (endpoint, GDPR,
@@ -86,8 +81,6 @@ Implementation outline: typed worker → UI result channel; retry state (3 write
   (full tests, M67 screenshots, docs, manually measure release DLL size, R72).
 - Separate grill round: hide Markdown outside the active editor line. Optional once:
   Light `reset.daily` on pressed tinted dropdown is 4.16:1 (R85 scope).
-- Disclosed choices: Ctrl+F does nothing in editor (M167); menu selects shown area (M166);
-  Hide is also offered in trash.
 
 ## Recurring checks and other open items
 
