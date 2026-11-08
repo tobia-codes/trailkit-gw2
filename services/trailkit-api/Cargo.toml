@@ -1,0 +1,13 @@
+[package]
+name = "trailkit-api"
+version = "0.0.0"
+description = "Trailkit REST API server (deferred; skeleton only, see docs/plans/backend.md)"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[lints]
+workspace = true

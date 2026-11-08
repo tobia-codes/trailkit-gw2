@@ -99,6 +99,7 @@ push/merge authorization. Detailed agent references are loaded on demand (R88).
 | R87 | **Visual approval before addon implementation** (user instruction 2026-11-06): every user-visible design change, including small changes to layout, wording, typography, colors, icons and interaction states, first needs a clearly labelled visual proposal and explicit user approval in the current conversation. Show every affected state in Dark and Light, plus minimum width and German text where layout is affected. Isolated prototypes are allowed before approval; material deviations need a revised visual proposal and approval. The implementation still needs snapshot review (R82), in-game testing and merge approval. Binding text: AGENTS.md rule 2 and the trailkit-ui skill. | 2026-11-06 |
 | R88 | **Shared agent instructions with context loaded on demand** (user instruction 2026-11-06): keep AGENTS.md concise for Codex and Claude Code, retain `CLAUDE.md`'s single import and the shared skill symlink, move full naming/environment/check details to `docs/agent-reference.md`, and read only relevant sections. Use the Rust quick reference first; keep the full detailed Rust catalogue behind a small skill router. Simple fact lookups do not require sub-agents. Preserve all hard rules, decision rounds, visual approval, validation and privacy requirements. Do not reopen settled decisions, reread unchanged context or expand a simple design review into unnecessary infrastructure. Mark superseded authorizations explicitly; local tool settings never grant workflow approval. | 2026-11-06 |
 | R89 | **Help button, problem page and one log per addon in every addon** (user instruction 2026-11-07; amends R25 and R53; the visible design waits for visual approval, R87): every addon's title bar has a `?` button that opens the addon's help window. Its **start page is the problem page**: how to report a problem, a link to the repository (GitHub issues, the issue form of R25) and a button that **exports the addon's logs** to a file the user can send. **Every addon writes its own log**, and every line names the addon and its version (`addon=trailkit-memo`), so a report shows which addon caused the problem even when several are installed. Logs hold no note or other user content and no absolute paths (GDPR, rule 10); nothing is sent automatically (R25). The code is shared in `crates/` (rule 7). Details: open questions Q167-Q171 in the memo plan | 2026-11-07 |
+| R90 | **Repository layout for the backend** (user decisions Q172–Q180, 2026-11-08; amends the proposed layout and backend.md): the server lives in **`services/trailkit-api/`** (pattern *kind/name* like `addons/` and `tools/`, room for further services); `crates/` stays **flat** for every shared library, each README names where it runs (addon, server, everywhere); the root and `xtask/` stay as they are. The crate is created **now as a skeleton**: no dependencies, empty documented `main`, version `0.0.0`, not managed by Changesets (versioning is decided with the first deploy, B10); the web stack is decided with the first real endpoint. It is linted and tested in CI but excluded from the Windows DLL release build. Later, when first needed: `sqlx` migrations in `services/trailkit-api/migrations/`, its `Dockerfile` beside them, server-wide compose/Caddyfile/deploy script in the root `deploy/` | 2026-11-08 |
 
 ## Proposed repository layout
 
@@ -109,13 +110,15 @@ trailkit-gw2/
 │  ├─ trailkit-core/
 │  ├─ trailkit-memo/
 │  └─ trailkit-event/
-├─ crates/                    # shared libraries (only once reused, see AGENTS.md rule 7)
+├─ crates/                    # flat, all shared libraries (only once reused, rule 7; R90)
 │  ├─ trailkit-ui/           # theme, tokens, shared ImGui components
 │  ├─ trailkit-i18n/         # language resolution + shared strings
 │  ├─ trailkit-protocol/     # repr(C) cross-addon contract + safe wrappers
 │  └─ trailkit-api-types/    # data-file DTOs shared by datagen and core
 ├─ tools/trailkit-datagen/   # daily job: static data files + price archive
-├─ backend/                   # (later) axum service, see backend.md
+├─ services/trailkit-api/     # REST server, skeleton now (R90), see backend.md
+├─ deploy/                    # (later) compose, Caddyfile, deploy script (R90)
+├─ apps/                      # (later) JS websites (R35)
 ├─ data/events/               # curated event schedules (source of truth)
 └─ docs/plans/
 ```

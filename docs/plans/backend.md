@@ -4,7 +4,9 @@
   target design for when a dynamic feature (e.g. price history) needs a server.
   Data formats and paths of the static files are chosen so this server can
   take over without changing core.
-- **Crate path:** `backend/` (binary) + shared types in `crates/trailkit-model` (R75)
+- **Crate path:** `services/trailkit-api/` (binary, skeleton since R90) + shared types in
+  `crates/trailkit-model` (R75); migrations and `Dockerfile` in the crate, server-wide
+  deploy configuration in the root `deploy/` (R90)
 
 ## Goal
 
