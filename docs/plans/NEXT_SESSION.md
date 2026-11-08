@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-08 (end of session 19). Current state and
+Last updated: 2026-11-08 (session 20). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -11,11 +11,19 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## ▶ Resume here
 
+**Session 20 — logging (R92, Q191–Q208) on `feature/trailkit-log`, not pushed:** crate `trailkit-log`
+(one `trailkit/logs/<addon>.log`, 30 days, 1 MiB cap, panic hook, event catalog test), `TrailkitDirectory`/
+`AddonName`/`FileName` in `trailkit-storage`, memo converted, help en/de, skill `trailkit-logs`. Deployed and
+seen working in game (session start/end on hot reload, load times). Waiting for: user's in-game test and merge
+OK; help wording OK; Q209 (split `addon.rs`, now 448 code lines, hint 400). Not in R92 scope yet: GW2 build and
+Nexus version in `session_start` (not exposed without MumbleLink; with core, C12). Then M180 below; Q166 becomes
+the save-error event fields on top of R92; Q167 settled, Q168 amended.
+
 **Mobile, to review the save-error design (M180):** https://claude.ai/artifact/DyA5k7uYVKGhuTARYTzyJ7
 — a visual mockup (R87, still unapproved) with the error toast, busy dialog and `danger.subtle`. Decide there:
 Q151, Q164, Q165, Q166, Q167–Q171 (listed below), then the visual OK.
 
-Next ids: **M181+, R92+, questions from 191.** Order: save errors (review item 1), then R89 (help `?`).
+Next ids: **M181+, R93+, questions from 210.** Order: save errors (review item 1), then R89 (help `?`).
 **Everything decided about save errors is in memo M180** (toasts, retry, dialog; mockup
 `docs/plans/addons/memo-save-error-toast-design.html`, same as the artifact
 https://claude.ai/artifact/DyA5k7uYVKGhuTARYTzyJ7). **Open, ask first (recommendation yes unless noted):**
@@ -31,7 +39,7 @@ Implementation outline: typed worker → UI result channel; retry state (3 write
 
 - **Session 19 (2026-11-07/08), merged:** #94 handoff/M180, #95 token split Q140 + docs, #97 backend
   layout R90 (`services/trailkit-api/` skeleton, Q172–Q180). **#98 contributor docs R91** (Q181–Q190:
-  CONTRIBUTING, SECURITY, all READMEs, README-link test) has auto-merge armed: check it merged.
+  CONTRIBUTING, SECURITY, all READMEs, README-link test) merged 2026-11-08.
   Private vulnerability reporting is now **on** (user, 2026-11-08).
 - **PR #96 is stuck** (B22 from another Claude session, 2026-11-07, auto-merge armed, no CI run,
   merge state unknown; touches this file → likely conflicts). B22: the backend must exist **before the
