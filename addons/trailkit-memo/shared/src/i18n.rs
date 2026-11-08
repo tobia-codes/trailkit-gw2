@@ -518,6 +518,20 @@ fn civil_from_system_time(
 mod tests {
     use super::*;
 
+    /// Real time-zone offsets are whole minutes; a fraction of a second in
+    /// the input once made the offset one second short (+00:59:59). Needs
+    /// Windows' time-zone settings, so it runs in the Windows CI job.
+    #[cfg(windows)]
+    #[test]
+    fn local_offset_is_whole_minutes_for_times_with_milliseconds() {
+        for nanoseconds in [0, 1_000_000, 500_000_000, 999_999_999] {
+            let time = jiff::Timestamp::new(1_794_146_531, nanoseconds)
+                .unwrap_or(jiff::Timestamp::UNIX_EPOCH);
+            let seconds = local_utc_offset(time).seconds();
+            assert_eq!(seconds % 60, 0, "offset {seconds} s at {time}");
+        }
+    }
+
     #[test]
     fn setting_wins_over_nexus_language() {
         assert_eq!(

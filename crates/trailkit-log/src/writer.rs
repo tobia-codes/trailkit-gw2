@@ -306,6 +306,53 @@ mod tests {
         Ok(())
     }
 
+    /// Texts forwarded by [`unavailable_file_is_reported_to_nexus`].
+    static FORWARDED: Mutex<Vec<String>> = Mutex::new(Vec::new());
+
+    /// Records a forwarded text.
+    fn record(level: log::Level, text: &str) {
+        FORWARDED
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .push(format!("{level} {text}"));
+    }
+
+    #[test]
+    fn unavailable_file_is_reported_to_nexus() -> io::Result<()> {
+        let folder = tempfile::tempdir()?;
+        // A folder in place of the log file: it can be neither read nor opened.
+        let path = folder.path().join("memo.log");
+        fs::create_dir_all(&path)?;
+        let shared = Shared {
+            forward: record,
+            ..shared()
+        };
+
+        let (sender, receiver) = mpsc::channel();
+        sender
+            .send(Command::Line(line(
+                &shared,
+                Timestamp::now(),
+                "load_finished",
+            )))
+            .map_err(io::Error::other)?;
+        sender.send(Command::Shutdown).map_err(io::Error::other)?;
+        run(&shared, &path, &receiver);
+
+        let forwarded = FORWARDED
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone();
+        assert_eq!(forwarded.len(), 1, "{forwarded:?}");
+        assert!(
+            forwarded[0].starts_with("WARN addon=memo version=0.3.0 log_unavailable at="),
+            "{forwarded:?}"
+        );
+        assert!(forwarded[0].contains(" stage=prepare "), "{forwarded:?}");
+        assert!(path.is_dir(), "the folder must be left alone");
+        Ok(())
+    }
+
     #[test]
     fn ends_with_log_full_at_the_cap() -> io::Result<()> {
         let folder = tempfile::tempdir()?;
