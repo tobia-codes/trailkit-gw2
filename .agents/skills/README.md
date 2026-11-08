@@ -1,11 +1,12 @@
 # Agent skills
 
 Shared skills for Claude Code and Codex. This directory is the single source of
-truth; `.claude/skills` is a symlink to it.
+truth; `.claude/skills` is a symlink to it. The **project skills** are also the
+detailed reference for human contributors: `CONTRIBUTING.md` links into them.
 
 | Skill | Source | License |
 |-------|--------|---------|
-| `grill-me` | [mattpocock/skills](https://github.com/mattpocock/skills/tree/main/skills/productivity/grill-me) | MIT |
+| `grill-me` (manual only; `grilling` is the one in use) | [mattpocock/skills](https://github.com/mattpocock/skills/tree/main/skills/productivity/grill-me) | MIT |
 | `grilling` | [mattpocock/skills](https://github.com/mattpocock/skills/tree/main/skills/productivity/grilling) | MIT |
 | `rust-best-practices` | [apollographql/skills](https://github.com/apollographql/skills/tree/main/skills/rust-best-practices) | MIT |
 | `rust-skills` | [leonardomso/rust-skills](https://github.com/leonardomso/rust-skills) (SKILL.md + rules only) | MIT |
@@ -29,8 +30,8 @@ Both agents read the same files through `.agents/skills` / `.claude/skills`.
 
 | Skill | Content |
 |-------|---------|
-| `nexus-addon-dev` | Nexus API facts, threading & performance research, inter-addon protocol, i18n, API key handling |
-| `trailkit-ui` | Design system, themes, shared components, full UX rule set for ImGui overlays (`references/ux-rules.md`) |
+| [`nexus-addon-dev`](nexus-addon-dev/SKILL.md) | Nexus API facts, threading & performance rules, addon structure (`references/addon-structure.md`), inter-addon protocol, i18n, API key handling |
+| [`trailkit-ui`](trailkit-ui/SKILL.md) | Design system, themes, shared components, tokens and snapshot review (`references/tokens.md`), current look (`references/current-design.md`), UX rules (`references/ux-rules.md`) |
 
 ## Inspiration (not vendored)
 
