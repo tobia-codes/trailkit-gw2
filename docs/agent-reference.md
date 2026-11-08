@@ -24,7 +24,7 @@ abbreviations are allowed (`id`, `url`, `api`, `http`, `json`, `ui`, `dll`,
 | Rust source files | `snake_case.rs`; module dirs as `foo.rs` + `foo/` (no `mod.rs`, lint `clippy::mod_module_files`) | `src/note_tree.rs` |
 | Crates, packages, addon directories | `kebab-case`, prefix `trailkit-` | `trailkit-memo`, `trailkit-ui` |
 | All other directories and files (Rust module directories below `src/` are `snake_case` like their module) | `kebab-case`, lowercase extensions | `data-pipeline.md`, `plan-template.md` |
-| Fixed upper-case meta files | only these: `README.md`, `AGENTS.md`, `CLAUDE.md`, `LICENSE`, `CHANGELOG.md`, `CONTRIBUTING.md`, `PRIVACY.md`, `ROADMAP.md`, `BACKLOG.md`, `NEXT_SESSION.md`, `SKILL.md` | |
+| Fixed upper-case meta files | only these: `README.md`, `AGENTS.md`, `CLAUDE.md`, `LICENSE`, `CHANGELOG.md`, `CONTRIBUTING.md`, `PRIVACY.md`, `SECURITY.md`, `ROADMAP.md`, `BACKLOG.md`, `NEXT_SESSION.md`, `SKILL.md` | |
 | Tool-mandated files | as the tool requires | `Cargo.toml`, `package.json` |
 | Data identifiers (ids, slugs, JSON/TOML keys, settings) | `snake_case`; files named after a data id keep it | `world_bosses`, `schema_version`, `world_bosses.toml` |
 | Nexus runtime identifiers (global namespace shared with all addons) | `trailkit.<addon>.<kind>.<name>`, `snake_case` segments, `<kind>` ∈ `keybind`, `texture`, `shortcut`, `event`, `datalink`, `localization`, `font`; cross-addon: `trailkit.shared.…`; always typed constants, never inline | `trailkit.memo.keybind.toggle`, `trailkit.core.event.data_updated` |
@@ -32,6 +32,22 @@ abbreviations are allowed (`id`, `url`, `api`, `http`, `json`, `ui`, `dll`,
 | Git branches | `feature/`, `chore/`, `bugfix/`, `hotfix/` + `kebab-case` (R9, R14) | `feature/memo-tree` |
 
 Vendored third-party skills keep their upstream names.
+
+## README outline
+
+Every project README (rule 3, ROADMAP R91) follows this order; a section that
+has nothing to say is left out, slices stay short:
+
+1. **Purpose**: one or two sentences, what it is and who uses it.
+2. **Status**: one line, linking the plan. No feature or progress lists; they
+   go stale. Behavior is described in the plan, the help page and the code.
+3. **Contents**: modules, files or sub-projects, each with one line; a parent
+   README links every child README (checked by a test).
+4. **Build and test**: the exact commands.
+5. **Usage** or **API**: how to run it or how other code uses it.
+6. **Rules**: what applies to this part only (allowed dependencies, threading,
+   what does not belong here), linking `CONTRIBUTING.md` for general rules.
+7. **Links**: plans, decisions, upstream docs.
 
 ## Development environment
 

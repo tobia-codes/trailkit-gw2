@@ -27,6 +27,8 @@ mod check_file_length;
 mod check_names;
 mod deploy;
 mod install_hooks;
+#[cfg(test)]
+mod readme_links;
 mod subset_fonts;
 mod sync_versions;
 mod token_docs;

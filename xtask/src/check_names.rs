@@ -1,6 +1,6 @@
 //! `cargo xtask check-names`: verifies that every file and directory in the
-//! repository follows the naming conventions in AGENTS.md ("Naming
-//! conventions", ROADMAP R40–R46).
+//! repository follows the naming conventions in `docs/agent-reference.md`
+//! ("Naming conventions", ROADMAP R40–R46).
 //!
 //! Rules per path segment:
 //! - directories: `kebab-case` (a leading `.` is allowed, e.g. `.github`);
@@ -15,9 +15,7 @@
 //!
 //! Vendored third-party content keeps its upstream names ([`VENDORED_PREFIXES`]).
 
-use std::process::Command;
-
-use anyhow::{Context, Result, bail};
+use anyhow::{Result, bail};
 
 use crate::workspace;
 
@@ -34,6 +32,7 @@ const FIXED_FILE_NAMES: &[&str] = &[
     "PRIVACY.md",
     "README.md",
     "ROADMAP.md",
+    "SECURITY.md",
     "SKILL.md",
     "Cargo.lock",
     "Cargo.toml",
@@ -52,25 +51,9 @@ const VENDORED_PREFIXES: &[&str] = &[
 /// # Errors
 /// Returns an error if `git` cannot be run or any path violates the rules.
 pub fn run() -> Result<()> {
-    let output = Command::new("git")
-        .current_dir(workspace::root())
-        .args([
-            "ls-files",
-            "--cached",
-            "--others",
-            "--exclude-standard",
-            "-z",
-        ])
-        .output()
-        .context("failed to run `git ls-files`")?;
-    if !output.status.success() {
-        bail!("`git ls-files` failed ({})", output.status);
-    }
-    let listing = String::from_utf8(output.stdout).context("non-UTF-8 path in repository")?;
-    let violations: Vec<String> = listing
-        .split('\0')
-        .filter(|path| !path.is_empty())
-        .filter_map(check_path)
+    let violations: Vec<String> = workspace::repository_paths()?
+        .iter()
+        .filter_map(|path| check_path(path))
         .collect();
     if !violations.is_empty() {
         bail!(
