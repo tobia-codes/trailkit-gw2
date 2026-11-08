@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-07 (session 19, branch integration). Current state and
+Last updated: 2026-11-08 (session 19, backend layout R90). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -15,7 +15,7 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 — a visual mockup (R87, still unapproved) with the error toast, busy dialog and `danger.subtle`. Decide there:
 Q151, Q164, Q165, Q166, Q167–Q171 (listed below), then the visual OK.
 
-Next ids: **M181+, R90+, questions from 172.** Order: save errors (review item 1), then R89 (help `?`).
+Next ids: **M181+, R91+, questions from 181.** Order: save errors (review item 1), then R89 (help `?`).
 **Everything decided about save errors is in memo M180** (toasts, retry, dialog; mockup
 `docs/plans/addons/memo-save-error-toast-design.html`, same as the artifact
 https://claude.ai/artifact/DyA5k7uYVKGhuTARYTzyJ7). **Open, ask first (recommendation yes unless noted):**
@@ -31,11 +31,11 @@ Implementation outline: typed worker → UI result channel; retry state (3 write
 
 - Context cleanup merged (PR #92, R87/R88): read references narrowly; keep Claude's shared import.
   Q141 yes (token tables stay together, R77); Q142 yes (one memo changeset, R16).
-- **Branch integration (session 19, 2026-11-07):** PR A #94 merged (docs). **PR B #95** (token split Q140, docs
-  refresh, 3 commits) is open with auto-merge armed; check it merged. Dropped from `cd17a9b`: its stale handoff part.
-  Then, each with the user's OK: delete local-only `chore/codex-handoff` (`git branch -D`, commits were
-  cherry-picked) and the merged remote branches. Keep `feature/memo-save-error-design` until M180 ships.
-  Disclosed: `token_groups.rs` has 419 code lines (hint 400, kept together by Q141); `editor/view.rs` hints remain.
+- **Branch integration done (2026-11-07/08):** PR #94 and #95 merged. With the user's OK: delete
+  local-only `chore/codex-handoff` (`git branch -D`, commits cherry-picked) and merged remote branches.
+  Keep `feature/memo-save-error-design` until M180 ships. `token_groups.rs` 419 code lines (Q141 keeps it).
+- **Backend layout (R90, Q172–Q180):** skeleton `services/trailkit-api/` on `chore/backend-service-skeleton`,
+  CI excludes it from the Windows DLL build only (workflow change: merge needs explicit OK). Not pushed yet.
 
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
