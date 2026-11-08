@@ -11,25 +11,27 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## ▶ Resume here
 
-**Session 20 — logging (R92, Q191–Q208) on `feature/trailkit-log`, not pushed:** crate `trailkit-log`
-(one `trailkit/logs/<addon>.log`, 30 days, 1 MiB cap, panic hook, event catalog test), `TrailkitDirectory`/
-`AddonName`/`FileName` in `trailkit-storage`, memo converted, help en/de, skill `trailkit-logs`. Deployed and
-seen working in game (session start/end on hot reload, load times). Waiting for: user's in-game test and merge
-OK; help wording OK; Q209 (split `addon.rs`, now 448 code lines, hint 400). Not in R92 scope yet: GW2 build and
-Nexus version in `session_start` (not exposed without MumbleLink; with core, C12). Then M180 below; Q166 becomes
-the save-error event fields on top of R92; Q167 settled, Q168 amended.
+**Session 20 (2026-11-08) — logging R92 (Q191–Q208), PR #99** (auto-merge armed after the user's merge OK;
+check it merged, fix CI if not; the Windows job runs the new whole-minute offset test, never run locally).
+Shipped: crate `trailkit-log` (`trailkit/logs/<addon>.log`, 30 days, 1 MiB + `log_full`, unclean session, panic
+hook, event catalog test, README = binding format), `TrailkitDirectory`/`AddonName`/`FileName` in storage, memo
+converted, help en/de, skill `trailkit-logs`, offset fix (`+00:59:59`). Tested in game; user OK'd help and merge.
+**Open:** Q209 split `addon.rs` (448 code lines, hint 400; proposal `addon/logging.rs`), not answered; GW2 build and
+Nexus version in `session_start` deferred (need MumbleLink → core, C12). User deletes old `TrailpackMemo/` by hand.
+Next: M180 save errors; Q166 now only names the save-error events/fields on top of R92 (`save_failed` exists);
+Q167 settled by R92, Q168 amended (export holds every addon's log).
 
 **Mobile, to review the save-error design (M180):** https://claude.ai/artifact/DyA5k7uYVKGhuTARYTzyJ7
 — a visual mockup (R87, still unapproved) with the error toast, busy dialog and `danger.subtle`. Decide there:
-Q151, Q164, Q165, Q166, Q167–Q171 (listed below), then the visual OK.
+Q151, Q164, Q165, Q166, Q168–Q171 (listed below), then the visual OK.
 
 Next ids: **M181+, R93+, questions from 210.** Order: save errors (review item 1), then R89 (help `?`).
 **Everything decided about save errors is in memo M180** (toasts, retry, dialog; mockup
 `docs/plans/addons/memo-save-error-toast-design.html`, same as the artifact
 https://claude.ai/artifact/DyA5k7uYVKGhuTARYTzyJ7). **Open, ask first (recommendation yes unless noted):**
 Q151 restart a dead worker with "Erneut versuchen"; Q164 close button on the error toast;
-Q165 shorten the text to "Speichern fehlgeschlagen" (not wrap); Q166 log format;
-Q167–Q171 (R89/M179): own log per addon, export button, help window, problem link, `?` placement.
+Q165 shorten the text to "Speichern fehlgeschlagen" (not wrap); Q166 save-error events;
+Q168–Q171 (R89/M179): export button, help window, problem link, `?` placement.
 Then **visual approval of the mockup (R87)** (`danger.subtle`, busy/status-line dialog, error toast); then implement.
 
 Implementation outline: typed worker → UI result channel; retry state (3 writes, 5 s, parked); immediate write for
@@ -41,11 +43,9 @@ Implementation outline: typed worker → UI result channel; retry state (3 write
   first addon release** so an addon version can be locked until the user updates; design (endpoint, GDPR,
   offline, lock UX, R49) needs its own grilling round. Ask the user: rebase #96 onto develop or redo it.
   This changes the backend from "deferred" to a release prerequisite (affects R90 skeleton, B10, B19).
-- **Housekeeping (ask first):** remote branches of merged PRs were not deleted (`agent-guidance-followups`,
-  `backend-service-skeleton`, `xtask-token-split-and-docs`, `contributor-docs` after #98) plus obsolete
-  `bugfix/ui-theme-in-game-fixes` (Q138); local: `chore/agent-context-efficiency` and the merged branches.
-  `develop` locally is stale: `check-file-length` compares against it, so pull first. Keep
-  `feature/memo-save-error-design` until M180 ships. Q141 keeps `token_groups.rs` (419 lines) together.
+- **Housekeeping (ask first):** delete remote branches of merged PRs (`agent-guidance-followups`, `backend-service-
+  skeleton`, `xtask-token-split-and-docs`, `contributor-docs`), obsolete `bugfix/ui-theme-in-game-fixes` (Q138), local
+  merged ones; pull stale local `develop` first. Keep `feature/memo-save-error-design` until M180 ships (Q141: keep `token_groups.rs`).
 
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
