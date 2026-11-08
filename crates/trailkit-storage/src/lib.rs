@@ -16,18 +16,24 @@
 //!   `backups/` folder and the caller starts fresh ([`LoadOutcome::Recovered`]).
 //! - All safety copies live in one `backups/` subfolder with a fixed cap per
 //!   kind, so the addon folder does not fill up with forgotten copies (M33).
+//! - Every addon keeps its files below one `trailkit/` folder
+//!   ([`TrailkitDirectory`], ROADMAP R92).
 //!
 //! This crate does no threading of its own: callers run it on their worker
 //! thread (nexus-addon-dev skill §2) — never on the render thread.
 
 mod atomic_write;
 mod document_store;
+mod file_name;
 mod safety_copies;
+mod trailkit_directory;
 
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 pub use atomic_write::write_atomically;
 pub use document_store::{DocumentStore, LoadOutcome, ReadOnlyReason, StorageError};
+pub use file_name::FileName;
+pub use trailkit_directory::{AddonName, TRAILKIT_DIRECTORY_NAME, TrailkitDirectory};
 
 /// Name of the subfolder (next to the live files) that holds every safety copy.
 pub const BACKUPS_DIRECTORY_NAME: &str = "backups";

@@ -1,0 +1,25 @@
+[package]
+name = "trailkit-log"
+version = "0.0.0"
+description = "One local log file per trailkit Nexus addon, written on a background thread"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+jiff.workspace = true
+log.workspace = true
+trailkit-storage.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+# The Windows version for `session_start` (ROADMAP R92).
+[target.'cfg(windows)'.dependencies]
+windows = { workspace = true, features = ["Wdk_System_SystemServices", "Win32_System_SystemInformation"] }
+
+[lints]
+workspace = true

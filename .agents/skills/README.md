@@ -32,6 +32,7 @@ Both agents read the same files through `.agents/skills` / `.claude/skills`.
 |-------|---------|
 | [`nexus-addon-dev`](nexus-addon-dev/SKILL.md) | Nexus API facts, threading & performance rules, addon structure (`references/addon-structure.md`), inter-addon protocol, i18n, API key handling |
 | [`trailkit-ui`](trailkit-ui/SKILL.md) | Design system, themes, shared components, tokens and snapshot review (`references/tokens.md`), current look (`references/current-design.md`), UX rules (`references/ux-rules.md`) |
+| [`trailkit-logs`](trailkit-logs/SKILL.md) | Procedure for analysing a log a user sends; the format itself is in `crates/trailkit-log/README.md` |
 
 ## Inspiration (not vendored)
 

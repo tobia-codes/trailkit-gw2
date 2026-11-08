@@ -7,6 +7,8 @@
 //! access icon depends on it. All registrations use `revert_on_unload`, so hot
 //! reload cleans up automatically; the cached `NexusLink` pointer is dropped
 //! and the storage worker is shut down (writing pending saves) in `unload`.
+//! Logging (`trailkit-log`, ROADMAP R92) starts first in `load` and stops last
+//! in `unload`, so the storage worker's last lines still reach the file.
 
 use std::{
     path::{Path, PathBuf},
@@ -15,6 +17,7 @@ use std::{
         atomic::{AtomicBool, AtomicPtr, AtomicU8, Ordering},
         mpsc::{Receiver, TryRecvError},
     },
+    time::Instant,
 };
 
 use jiff::Timestamp;
@@ -36,13 +39,18 @@ use nexus::{
     imgui::{Condition, Window},
     keybind::{keybind_handler, register_keybind_with_string},
     localization::{set_translation, translate},
+    log::{LogLevel, log as nexus_log},
     paths::get_addon_dir,
     quick_access::add_quick_access,
     texture::load_texture_from_memory,
     wnd_proc::register_wnd_proc,
 };
 
-use trailkit_storage::{BACKUPS_DIRECTORY_NAME, DocumentStore, LoadOutcome, ReadOnlyReason};
+use trailkit_log::{ErrorChain, LogConfig, LogSession};
+use trailkit_storage::{
+    AddonName, BACKUPS_DIRECTORY_NAME, DocumentStore, LoadOutcome, ReadOnlyReason,
+    TRAILKIT_DIRECTORY_NAME, TrailkitDirectory,
+};
 use trailkit_ui::{
     font_registry::{follow_body_size, font_size_of, register_fonts},
     style_scope::StyleScope,
@@ -53,10 +61,13 @@ use trailkit_ui::{
 use crate::main_window::{MemoWindow, NotesProblem, minimum_window_width, title_bar_texts};
 use trailkit_memo_shared::i18n::LocalizedText;
 use trailkit_memo_shared::{
-    i18n::{Language, Text},
+    i18n::{Language, Text, local_utc_offset},
     note_tree::NotesDocument,
     settings::{QuickAccessIcon, Settings, TextScale},
-    storage_worker::{LoadedDocuments, SAVE_DEBOUNCE, SavingAllowed, StorageSaver, StorageWorker},
+    storage_worker::{
+        LoadedDocuments, SAVE_DEBOUNCE, SavingAllowed, StorageSaver, StorageWorker,
+        log_load_outcome,
+    },
 };
 
 nexus::export! {
@@ -94,8 +105,15 @@ static QUICK_ACCESS_PNG: &[u8] = include_bytes!("../assets/icons/quick-access.pn
 /// Hover variant of [`QUICK_ACCESS_PNG`] (R58).
 static QUICK_ACCESS_HOVER_PNG: &[u8] = include_bytes!("../assets/icons/quick-access-hover.png");
 
-/// Folder below the Nexus `addons` folder holding memo's files (M17).
-const ADDON_DIRECTORY_NAME: &str = "trailkit/memo";
+/// Memo's short name: folder `trailkit/memo/`, log `trailkit/logs/memo.log`
+/// (M17, ROADMAP R92).
+const ADDON: AddonName = AddonName::new("memo");
+
+/// Channel name of memo's lines in `Nexus.log` (the name in `nexus::export!`).
+const NEXUS_LOG_CHANNEL: &str = "trailkit-memo";
+
+/// The running log; only touched in `load` and `unload`.
+static LOG_SESSION: Mutex<Option<LogSession>> = Mutex::new(None);
 
 /// User settings, read from `settings.json` once at load (defaults if absent).
 static SETTINGS: OnceLock<Settings> = OnceLock::new();
@@ -187,10 +205,23 @@ static WINDOW_TITLE: OnceLock<String> = OnceLock::new();
 /// Nexus link and registers the keybind (with its localized name), the quick
 /// access icon and the render callback.
 fn load() {
-    log::info!("loading");
-
     let language = Language::resolve(None, detect_nexus_language().as_deref());
     LANGUAGE.store(language as u8, Ordering::Relaxed);
+    let trailkit_directory = match get_addon_dir(TRAILKIT_DIRECTORY_NAME) {
+        Ok(path) => {
+            let directory = TrailkitDirectory::new(path);
+            start_logging(directory.clone(), language);
+            Some(directory)
+        }
+        Err(error) => {
+            // No folder, no log file: only Nexus can tell.
+            forward_to_nexus(
+                log::Level::Error,
+                &format!("folder_unavailable error=\"{error}\""),
+            );
+            None
+        }
+    };
     let window_title = WINDOW_TITLE
         .get_or_init(|| format!("{}###trailkit-memo", Text::MainWindowTitle.get(language)));
     // Escape closes the window (`overlay-escape`). Nexus handles the key
@@ -221,7 +252,7 @@ fn load() {
 
     NEXUS_LINK.store(get_nexus_link().cast_mut(), Ordering::Release);
 
-    let settings = start_storage();
+    let settings = start_storage(trailkit_directory);
 
     if settings.quick_access_icon == QuickAccessIcon::Shown {
         load_texture_from_memory(TEXTURE_QUICK_ACCESS, QUICK_ACCESS_PNG, None);
@@ -244,7 +275,6 @@ fn load() {
 /// (nexus-addon-dev skill §1) and the storage worker is shut down, which
 /// writes all pending saves before returning.
 fn unload() {
-    log::info!("unloading");
     if let Some(window_title) = WINDOW_TITLE.get() {
         deregister_close_on_escape(window_title);
     }
@@ -262,36 +292,69 @@ fn unload() {
     if let Ok(mut notes) = NOTES.lock() {
         *notes = NotesState::Unavailable;
     }
+    // Last, so every line above still reaches the file; writes `session_end`.
+    let log_session = LOG_SESSION
+        .lock()
+        .map_or(None, |mut session| session.take());
+    drop(log_session);
+}
+
+/// Starts memo's log file (ROADMAP R92). Without it the addon still works,
+/// but nothing is logged; the failure itself is sent to Nexus directly.
+fn start_logging(directory: TrailkitDirectory, language: Language) {
+    let config = LogConfig {
+        directory,
+        addon: ADDON,
+        version: env!("CARGO_PKG_VERSION"),
+        local_offset: local_utc_offset,
+        forward: forward_to_nexus,
+        session_fields: vec![
+            ("language", language.code().to_owned()),
+            ("theme", ThemeKind::default().code().to_owned()),
+        ],
+    };
+    match trailkit_log::start(config) {
+        Ok(session) => {
+            if let Ok(mut slot) = LOG_SESSION.lock() {
+                *slot = Some(session);
+            }
+        }
+        Err(error) => forward_to_nexus(
+            log::Level::Warn,
+            &format!("log_unavailable error=\"{}\"", ErrorChain(&error)),
+        ),
+    }
+}
+
+/// Writes `text` to `Nexus.log` in memo's channel.
+fn forward_to_nexus(level: log::Level, text: &str) {
+    let level = match level {
+        log::Level::Error => LogLevel::Critical,
+        log::Level::Warn => LogLevel::Warning,
+        log::Level::Info => LogLevel::Info,
+        log::Level::Debug => LogLevel::Debug,
+        log::Level::Trace => LogLevel::Trace,
+    };
+    nexus_log(level, NEXUS_LOG_CHANNEL, text);
 }
 
 /// Reads `settings.json` and starts the storage worker, which loads the
 /// notes in the background. Returns the settings to use (defaults if the file
 /// is missing or unusable). Problems are logged; the addon keeps working.
-fn start_storage() -> Settings {
-    let directory = match get_addon_dir(ADDON_DIRECTORY_NAME) {
-        Ok(directory) => directory,
-        Err(error) => {
-            log::error!("cannot resolve the addon folder: {error}; notes are unavailable");
-            return *SETTINGS.get_or_init(|| Settings::DEFAULT);
-        }
+fn start_storage(trailkit_directory: Option<TrailkitDirectory>) -> Settings {
+    // Without the folder `load` already reported the problem.
+    let Some(trailkit_directory) = trailkit_directory else {
+        return *SETTINGS.get_or_init(|| Settings::DEFAULT);
     };
+    let directory = trailkit_directory.addon_data(ADDON);
     let store = DocumentStore::new(directory.clone());
 
+    let started = Instant::now();
     let settings_outcome = store.load::<Settings>(Timestamp::now());
+    log_load_outcome(&settings_outcome, started.elapsed());
     let saving_allowed = SavingAllowed {
         settings: settings_outcome.allows_saving(),
     };
-    match &settings_outcome {
-        LoadOutcome::Missing | LoadOutcome::Loaded { .. } => {}
-        LoadOutcome::Recovered {
-            reason,
-            preserved_as,
-        } => log::error!(
-            "settings.json was unreadable ({reason}); moved to {}",
-            preserved_as.display()
-        ),
-        LoadOutcome::ReadOnly(reason) => log::warn!("settings.json is read-only: {reason:?}"),
-    }
     let settings = settings_outcome.into_document().unwrap_or_default();
     let settings = *SETTINGS.get_or_init(|| settings);
 
@@ -309,9 +372,7 @@ fn start_storage() -> Settings {
                 };
             }
         }
-        Err(error) => {
-            log::error!("cannot start the storage worker: {error}; notes are unavailable")
-        }
+        Err(error) => log::error!(error:% = ErrorChain(&error); "worker_start_failed"),
     }
     settings
 }

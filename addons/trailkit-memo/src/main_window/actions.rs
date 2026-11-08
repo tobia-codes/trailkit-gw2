@@ -402,7 +402,7 @@ impl MemoWindow {
                     .arg(&self.addon_directory)
                     .spawn()
                 {
-                    log::warn!("cannot open the addon folder: {error}");
+                    log::warn!(error:% = error; "folder_open_failed");
                 }
             }
             // The other actions are dispatched by `apply`.

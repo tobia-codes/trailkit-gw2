@@ -20,6 +20,15 @@ impl ThemeKind {
     /// Every built-in theme, in a stable order.
     pub const ALL: [Self; 2] = [Self::Dark, Self::Light];
 
+    /// Stable lowercase code of the theme for logs and files: `dark`, `light`.
+    #[must_use]
+    pub const fn code(self) -> &'static str {
+        match self {
+            Self::Dark => "dark",
+            Self::Light => "light",
+        }
+    }
+
     /// Returns the full token set of this built-in theme.
     #[must_use]
     pub const fn theme(self) -> Theme {

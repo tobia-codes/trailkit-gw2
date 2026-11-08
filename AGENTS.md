@@ -22,6 +22,7 @@ Shared rules for Codex and Claude Code. `CLAUDE.md` imports this file;
 | Addon UI | `.agents/skills/trailkit-ui/SKILL.md` and `references/current-design.md`; relevant token/UX rules |
 | Rust writing/review | `.agents/skills/rust-best-practices/SKILL.md`; specific chapters only when needed |
 | Detailed Rust rule | `.agents/skills/rust-skills/SKILL.md`; look up the specific rule |
+| Analyse a log a user sent | `.agents/skills/trailkit-logs/SKILL.md` |
 | Files, names, build, deploy, checks | [Agent reference](docs/agent-reference.md) — relevant section only |
 
 ## Hard rules

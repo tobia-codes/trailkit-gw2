@@ -13,6 +13,7 @@ publish = false
 jiff.workspace = true
 log.workspace = true
 serde.workspace = true
+trailkit-log.workspace = true
 trailkit-storage.workspace = true
 trailkit-ui.workspace = true
 uuid.workspace = true

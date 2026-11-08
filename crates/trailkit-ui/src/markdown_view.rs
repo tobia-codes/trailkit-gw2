@@ -219,7 +219,7 @@ pub fn open_web_link(url: &str) {
         .args(["url.dll,FileProtocolHandler", url])
         .spawn();
     if let Err(error) = result {
-        log::warn!("cannot open link: {error}");
+        log::warn!(error:% = error; "link_open_failed");
     }
 }
 

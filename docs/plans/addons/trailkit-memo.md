@@ -70,11 +70,11 @@ references with autocompletion and status.
   `worker_restarted`, `shutdown_save`. `document` is notes/drafts/settings/ui_state, `stage` write_temp/flush/rename/
   delete, `os_error` the raw Windows code (32 locked, 5 denied, 112 disk full). WARN per attempt, ERROR for giving
   up, INFO for recovery. Never note content or absolute paths; a test checks it. Recommendation: yes.
-- **Q167 – Own log file.** Each addon writes `trailkit-<addon>.log` in its own data folder through a shared crate
+- **Q167 – Own log file.** *Settled by ROADMAP R92 (central `trailkit/logs/<addon>.log`, 30 days); the text below is history.* Each addon writes `trailkit-<addon>.log` in its own data folder through a shared crate
   (rule 7): one line per event, ISO 8601 time with the UTC offset, `addon=`, `version=`, then `event` and `key=value`
   fields (the save-error format, Q166); no content, no absolute paths; two files of 1 MiB at most; warnings and
   errors are also forwarded to `Nexus.log`. Recommendation: yes.
-- **Q168 – Export button.** The button writes one text file `trailkit-<addon>-log-<date>.txt` (header with addon,
+- **Q168 – Export button.** *Amended by R92: the export holds every trailkit addon's log; the rest stays open.* The button writes one text file `trailkit-<addon>-log-<date>.txt` (header with addon,
   version, Nexus version, language, time zone, then the log) to the user's Downloads folder and opens Explorer with
   the file selected. Feedback is a line next to the button, not a toast. Recommendation: yes.
 - **Q169 – Help window.** `?` opens the shared help window with the problem page first, then the addon's help pages
