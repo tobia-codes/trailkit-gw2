@@ -110,8 +110,12 @@ for new addons: [`references/addon-structure.md`](references/addon-structure.md)
 - ImGui is **1.80**: no `BeginDisabled` (draw disabled items in
   `text.disabled` and ignore clicks), no line wrapping in multiline inputs,
   and Escape in an active input reverts it to its content at activation.
-- Paths: `Paths_GetAddonDirectory("trailkit/<addon>")` for settings and
-  caches; never write next to the game exe.
+- Paths: `Paths_GetAddonDirectory("trailkit")` wrapped in
+  `trailkit_storage::TrailkitDirectory` (R92): `addon_data(addon)` for settings
+  and caches, `logs()`, `shared()`; never write next to the game exe.
+- Logging (R92): nexus-rs' `log` feature is off; `trailkit_log::start` is the
+  first call in `load` and its `LogSession` is dropped last in `unload`. It
+  forwards WARN/ERROR to `Nexus.log` itself.
 
 ## 2. Threading & performance (mandatory)
 
@@ -149,7 +153,8 @@ Rules:
    refreshes during loading screens if not needed, never do I/O on the render
    thread — even "small" file reads.
 8. **Panics**: a panic must never cross the FFI boundary. nexus-rs installs a
-   panic hook; worker threads catch and log errors, never `unwrap()`.
+   panic hook; `trailkit-log` chains its own in front (writes a `panic` line).
+   Worker threads catch and log errors, never `unwrap()`.
 
 ## 3. Inter-addon communication
 

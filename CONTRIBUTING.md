@@ -138,6 +138,10 @@ the player, so these rules are strict. The reference with the details:
 - **All files go through [`trailkit-storage`](crates/trailkit-storage/README.md)**
   (R22): versioned, crash-safe writes with safety copies. Never hand-roll
   file I/O.
+- **Log through [`trailkit-log`](crates/trailkit-log/README.md)** (R92): the
+  message is a snake_case event listed in its README, details are `key = value`
+  pairs. Log file names, never paths, and never user content (GDPR); a test
+  checks the event list.
 - **Every text is localized in English and German** (rule 5): a typed text
   enum per slice, never a string literal in UI code. A test checks that every
   text is translated.
