@@ -438,7 +438,15 @@ pub fn format_local_time(time: jiff::Timestamp, language: Language) -> String {
 pub fn local_utc_offset(time: jiff::Timestamp) -> jiff::tz::Offset {
     use windows::Win32::{Foundation::SYSTEMTIME, System::Time::SystemTimeToTzSpecificLocalTime};
 
-    let utc = time.to_zoned(jiff::tz::TimeZone::UTC).datetime();
+    // Whole seconds only: `SYSTEMTIME` drops the milliseconds, and a fraction
+    // left here would make the offset one second short (+00:59:59).
+    let utc = time
+        .to_zoned(jiff::tz::TimeZone::UTC)
+        .datetime()
+        .with()
+        .subsec_nanosecond(0)
+        .build()
+        .unwrap_or_else(|_| time.to_zoned(jiff::tz::TimeZone::UTC).datetime());
     let Some(utc_system_time) = system_time_from_civil(utc) else {
         return jiff::tz::Offset::UTC;
     };
