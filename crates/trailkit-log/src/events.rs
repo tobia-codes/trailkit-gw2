@@ -6,18 +6,28 @@
 /// the addon adds (language, theme).
 pub(crate) const EVENT_SESSION_START: &str = "session_start";
 
+/// First line of a new day's file while a session keeps running: the same
+/// fields as `session_start`, so one day's file can be read on its own.
+pub(crate) const EVENT_SESSION_CONTINUES: &str = "session_continues";
+
 /// Last line of a session, written when the addon unloads cleanly.
 pub(crate) const EVENT_SESSION_END: &str = "session_end";
 
 /// The previous session has no `session_end`: the game or the addon crashed.
 pub(crate) const EVENT_PREVIOUS_SESSION_UNCLEAN: &str = "previous_session_unclean";
 
-/// The size cap was reached; nothing more is written in this session.
+/// The day's size cap was reached; nothing more is written until midnight
+/// except the critical events.
 pub(crate) const EVENT_LOG_FULL: &str = "log_full";
 
-/// The log file cannot be prepared or written; this line only reaches
-/// `Nexus.log`, and the file gets nothing more in this session.
+/// The log files cannot be prepared or written; this line only reaches
+/// `Nexus.log`. After `prepare` nothing is logged in this session, after
+/// `write` the next line tries again.
 pub(crate) const EVENT_LOG_UNAVAILABLE: &str = "log_unavailable";
+
+/// A housekeeping step at start failed (deleting old files, reading how the
+/// previous session ended); logging goes on.
+pub(crate) const EVENT_LOG_MAINTENANCE_FAILED: &str = "log_maintenance_failed";
 
 /// A Rust panic, written by the panic hook.
 pub(crate) const EVENT_PANIC: &str = "panic";
@@ -27,12 +37,30 @@ pub(crate) const EVENT_PANIC: &str = "panic";
 pub(crate) const EVENT_MESSAGE: &str = "message";
 
 /// Every event above, for the catalog test.
-pub const BUILT_IN_EVENTS: [&str; 7] = [
+pub const BUILT_IN_EVENTS: [&str; 9] = [
     EVENT_SESSION_START,
+    EVENT_SESSION_CONTINUES,
     EVENT_SESSION_END,
     EVENT_PREVIOUS_SESSION_UNCLEAN,
     EVENT_LOG_FULL,
     EVENT_LOG_UNAVAILABLE,
+    EVENT_LOG_MAINTENANCE_FAILED,
     EVENT_PANIC,
     EVENT_MESSAGE,
 ];
+
+/// Events that may use the reserve at the end of a day's last file, so a
+/// crash and the limits of a session are logged even when the day is full
+/// (ROADMAP R92). `worker_died` is written by the addons' storage worker.
+const CRITICAL_EVENTS: [&str; 5] = [
+    EVENT_PANIC,
+    EVENT_SESSION_START,
+    EVENT_SESSION_END,
+    EVENT_LOG_FULL,
+    "worker_died",
+];
+
+/// Whether `event` may use the reserve of a full day.
+pub(crate) fn is_critical(event: &str) -> bool {
+    CRITICAL_EVENTS.contains(&event)
+}

@@ -5,10 +5,10 @@
 use std::{fs, sync::Arc, time::Duration};
 
 use jiff::{Timestamp, tz::Offset};
-use trailkit_log::{LogConfig, start};
+use trailkit_log::{LogConfig, log_files, start};
 use trailkit_memo_shared::{
     note_tree::{Note, NoteKind, NotesDocument, TreeNode},
-    storage_worker::{SavingAllowed, StorageWorker},
+    storage_worker::{SavingAllowed, SettingsSummary, StorageWorker},
 };
 use trailkit_storage::{AddonName, DocumentStore, TrailkitDirectory};
 
@@ -47,6 +47,7 @@ fn a_failed_save_is_logged_without_note_content() -> Result<(), Box<dyn std::err
         DocumentStore::new(&data),
         Duration::from_secs(3600),
         SavingAllowed { settings: true },
+        SettingsSummary::default(),
     )?;
     loaded.recv_timeout(Duration::from_secs(5))?;
     let mut note = Note::new(SECRET_TITLE.to_owned(), NoteKind::Normal, Timestamp::now());
@@ -59,7 +60,10 @@ fn a_failed_save_is_logged_without_note_content() -> Result<(), Box<dyn std::err
     drop(worker);
     drop(session);
 
-    let log = fs::read_to_string(directory.logs().join("memo.log"))?;
+    let log = log_files(&directory.logs(), AddonName::new("memo"))?
+        .iter()
+        .map(fs::read_to_string)
+        .collect::<Result<String, _>>()?;
     let failure = log
         .lines()
         .find(|line| line.contains(" save_failed "))

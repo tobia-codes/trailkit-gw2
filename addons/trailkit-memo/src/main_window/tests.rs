@@ -21,7 +21,7 @@ use trailkit_ui_testing::{
 use super::*;
 use trailkit_memo_shared::{
     note_tree::{Group, NoteKind, ResetPeriod, TreeNode as Node},
-    storage_worker::{SavingAllowed, StorageWorker},
+    storage_worker::{SavingAllowed, SettingsSummary, StorageWorker},
 };
 
 /// The narrowest window (M168) at the test fonts.
@@ -80,6 +80,7 @@ fn memo_window(
         DocumentStore::new(directory.path()),
         Duration::from_secs(3600),
         SavingAllowed { settings: false },
+        SettingsSummary::default(),
     )
     .unwrap_or_else(|error| panic!("storage worker: {error}"));
     let window = MemoWindow::new(

@@ -130,7 +130,7 @@ impl TrailkitDirectory {
         self.root.join(addon.as_str())
     }
 
-    /// The folder holding every addon's log file, `trailkit/logs/`.
+    /// The folder holding every addon's log folder, `trailkit/logs/`.
     #[must_use]
     pub fn logs(&self) -> PathBuf {
         self.root.join(LOGS_DIRECTORY_NAME)

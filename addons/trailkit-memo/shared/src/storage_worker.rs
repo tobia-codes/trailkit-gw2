@@ -26,7 +26,10 @@ use trailkit_log::ErrorChain;
 use trailkit_storage::{DocumentStore, FileName, LoadOutcome, ReadOnlyReason, VersionedDocument};
 
 use crate::{
-    drafts::DraftsDocument, note_tree::NotesDocument, settings::Settings, ui_state::UiState,
+    drafts::DraftsDocument,
+    note_tree::{NotesDocument, TreeNode},
+    settings::{Settings, TextScale},
+    ui_state::UiState,
 };
 
 /// Delay after the last change before a document is written (M18).
@@ -99,7 +102,7 @@ impl StorageWorker {
     /// The worker first loads `notes.json` and `ui_state.json`; the returned
     /// receiver yields them exactly once as [`LoadedDocuments`]. Settings are loaded by the caller (they are
     /// needed synchronously at addon load), so only whether they may be saved
-    /// is passed in. `debounce` is [`SAVE_DEBOUNCE`] outside of tests.
+    /// and what the `load_finished` line reports about them is passed in. `debounce` is [`SAVE_DEBOUNCE`] outside of tests.
     ///
     /// # Errors
     ///
@@ -108,6 +111,7 @@ impl StorageWorker {
         store: DocumentStore,
         debounce: Duration,
         saving_allowed: SavingAllowed,
+        settings_summary: SettingsSummary,
     ) -> io::Result<(Self, Receiver<LoadedDocuments>)> {
         let (commands, command_receiver) = mpsc::channel();
         let (loaded_sender, loaded) = mpsc::channel();
@@ -118,6 +122,7 @@ impl StorageWorker {
                     &store,
                     debounce,
                     saving_allowed,
+                    settings_summary,
                     &command_receiver,
                     &loaded_sender,
                 );
@@ -181,30 +186,81 @@ impl Drop for StorageWorker {
     }
 }
 
+/// What the caller learned when it read `settings.json`, for the
+/// `load_finished` line.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct SettingsSummary {
+    /// Whether the file did not exist.
+    pub missing: bool,
+    /// The text size the addon starts with.
+    pub text_scale: TextScale,
+    /// How long reading it took.
+    pub elapsed: Duration,
+}
+
+/// Which of the documents the worker loaded may be saved.
+struct DocumentsSavingAllowed {
+    /// `notes.json`.
+    notes: bool,
+    /// `ui_state.json`.
+    ui_state: bool,
+    /// `drafts.json`.
+    drafts: bool,
+}
+
+/// Loads the worker's documents and logs the `load_finished` summary.
+fn load_documents(
+    store: &DocumentStore,
+    settings_summary: SettingsSummary,
+) -> (LoadedDocuments, DocumentsSavingAllowed) {
+    let started = Instant::now();
+    let now = Timestamp::now();
+    let notes = load_logged::<NotesDocument>(store, now);
+    let ui_state_outcome = load_logged::<UiState>(store, now);
+    let drafts_outcome = load_logged::<DraftsDocument>(store, now);
+    let allowed = DocumentsSavingAllowed {
+        notes: notes.allows_saving(),
+        ui_state: ui_state_outcome.allows_saving(),
+        drafts: drafts_outcome.allows_saving(),
+    };
+    let mut missing = Vec::new();
+    if settings_summary.missing {
+        missing.push(document_file_name::<Settings>());
+    }
+    missing.extend(missing_file(&notes));
+    missing.extend(missing_file(&ui_state_outcome));
+    let ui_state = ui_state_outcome.into_document().unwrap_or_default();
+    let drafts = drafts_outcome.into_document().unwrap_or_default();
+    log_load_finished(
+        &LoadCounts {
+            notes: note_count(&notes),
+            drafts: drafts.drafts.len(),
+        },
+        &missing,
+        settings_summary,
+        started.elapsed() + settings_summary.elapsed,
+    );
+    let documents = LoadedDocuments {
+        notes,
+        ui_state,
+        drafts,
+    };
+    (documents, allowed)
+}
+
 /// Body of the worker thread: loads the notes, then serves save requests until
 /// shutdown, writing each document once it was unchanged for `debounce`.
 fn run_worker(
     store: &DocumentStore,
     debounce: Duration,
     saving_allowed: SavingAllowed,
+    settings_summary: SettingsSummary,
     commands: &Receiver<WorkerCommand>,
     loaded: &Sender<LoadedDocuments>,
 ) {
-    let now = Timestamp::now();
-    let notes = load_logged::<NotesDocument>(store, now);
-    let notes_saving_allowed = notes.allows_saving();
-    let ui_state_outcome = load_logged::<UiState>(store, now);
-    let ui_state_saving_allowed = ui_state_outcome.allows_saving();
-    let ui_state = ui_state_outcome.into_document().unwrap_or_default();
-    let drafts_outcome = load_logged::<DraftsDocument>(store, now);
-    let drafts_saving_allowed = drafts_outcome.allows_saving();
-    let drafts = drafts_outcome.into_document().unwrap_or_default();
+    let (documents, allowed) = load_documents(store, settings_summary);
     // The render side may already be gone during a quick unload; that is fine.
-    let _ = loaded.send(LoadedDocuments {
-        notes,
-        ui_state,
-        drafts,
-    });
+    let _ = loaded.send(documents);
 
     let mut pending_notes: Option<PendingSave<Arc<NotesDocument>>> = None;
     let mut pending_settings: Option<PendingSave<Settings>> = None;
@@ -226,7 +282,7 @@ fn run_worker(
         };
 
         match received {
-            Ok(WorkerCommand::SaveNotes(document)) if notes_saving_allowed => {
+            Ok(WorkerCommand::SaveNotes(document)) if allowed.notes => {
                 pending_notes = Some(PendingSave {
                     document,
                     due_at: Instant::now() + debounce,
@@ -238,13 +294,13 @@ fn run_worker(
                     due_at: Instant::now() + debounce,
                 });
             }
-            Ok(WorkerCommand::SaveUiState(ui_state)) if ui_state_saving_allowed => {
+            Ok(WorkerCommand::SaveUiState(ui_state)) if allowed.ui_state => {
                 pending_ui_state = Some(PendingSave {
                     document: ui_state,
                     due_at: Instant::now() + debounce,
                 });
             }
-            Ok(WorkerCommand::SaveDrafts(drafts)) if drafts_saving_allowed => {
+            Ok(WorkerCommand::SaveDrafts(drafts)) if allowed.drafts => {
                 pending_drafts = Some(PendingSave {
                     document: drafts,
                     due_at: Instant::now() + debounce,
@@ -319,20 +375,17 @@ where
     None
 }
 
-/// Logs a save: `save_failed` (ERROR, with the whole error) or, at DEBUG,
-/// `save_finished`; both with the duration (ROADMAP R92).
+/// Logs a failed save as `save_failed` (ERROR, with the whole error and the
+/// duration). A successful save is routine and not logged (ROADMAP R92).
 fn log_save_result<D: VersionedDocument>(
     store: &DocumentStore,
     result: &Result<(), trailkit_storage::StorageError>,
     elapsed: Duration,
 ) {
-    let path = store.path_of::<D>();
-    let ms = elapsed.as_millis();
-    match result {
-        Ok(()) => log::debug!(file:% = FileName::of(&path), ms; "save_finished"),
-        Err(error) => {
-            log::error!(file:% = FileName::of(&path), ms, error:% = ErrorChain(error); "save_failed");
-        }
+    if let Err(error) = result {
+        let path = store.path_of::<D>();
+        let ms = elapsed.as_millis();
+        log::error!(file:% = FileName::of(&path), ms, error:% = ErrorChain(error); "save_failed");
     }
 }
 
@@ -344,24 +397,79 @@ fn load_logged<D: VersionedDocument>(store: &DocumentStore, now: Timestamp) -> L
     outcome
 }
 
-/// Logs how a document was loaded (ROADMAP R92): `load_finished` (INFO),
+/// The file name of document `D`, e.g. `notes.json`.
+fn document_file_name<D: VersionedDocument>() -> String {
+    format!("{}.json", D::FILE_STEM)
+}
+
+/// The file name of `D` if `outcome` found no file.
+fn missing_file<D: VersionedDocument>(outcome: &LoadOutcome<D>) -> Option<String> {
+    matches!(outcome, LoadOutcome::Missing).then(document_file_name::<D>)
+}
+
+/// How many notes `outcome` holds (0 without a document).
+fn note_count(outcome: &LoadOutcome<NotesDocument>) -> usize {
+    match outcome {
+        LoadOutcome::Loaded { document, .. } => document
+            .root
+            .iter()
+            .map(|node| match node {
+                TreeNode::Note(_) => 1,
+                TreeNode::Group(group) => group.note_count(),
+            })
+            .sum(),
+        _ => 0,
+    }
+}
+
+/// What the documents held when they were loaded.
+struct LoadCounts {
+    /// Notes in the tree, without the trash.
+    notes: usize,
+    /// Saved drafts.
+    drafts: usize,
+}
+
+/// Logs the one `load_finished` line of a session (ROADMAP R92): that loading
+/// ended, and how much there was. `missing` names the files that do not exist
+/// (drafts are normally absent and not listed); outside a first start a
+/// missing `notes.json` explains "my notes are gone".
+fn log_load_finished(
+    counts: &LoadCounts,
+    missing: &[String],
+    settings: SettingsSummary,
+    elapsed: Duration,
+) {
+    let LoadCounts { notes, drafts } = *counts;
+    let text_scale = f64::from(settings.text_scale.factor());
+    let ms = elapsed.as_millis();
+    if missing.is_empty() {
+        log::info!(notes, drafts, text_scale, ms; "load_finished");
+    } else {
+        let missing = missing.join(",");
+        log::info!(notes, drafts, missing = missing.as_str(), text_scale, ms; "load_finished");
+    }
+}
+
+/// Logs a load that was not routine (ROADMAP R92): `load_migrated` (INFO),
 /// `load_recovered` (ERROR, the unreadable file was moved to `backups/`) or
 /// `load_read_only` (newer version: WARN, I/O error: ERROR), each with the
-/// file name and the duration.
+/// file name and the duration. A found or missing file logs nothing here;
+/// [`log_load_finished`] sums those up.
 pub fn log_load_outcome<D: VersionedDocument>(outcome: &LoadOutcome<D>, elapsed: Duration) {
-    let file = format!("{}.json", D::FILE_STEM);
+    let file = document_file_name::<D>();
     let file = file.as_str();
     let ms = elapsed.as_millis();
     match outcome {
-        LoadOutcome::Missing => log::info!(file, result = "missing", ms; "load_finished"),
-        LoadOutcome::Loaded {
+        LoadOutcome::Missing
+        | LoadOutcome::Loaded {
             migrated_from: None,
             ..
-        } => log::info!(file, result = "loaded", ms; "load_finished"),
+        } => {}
         LoadOutcome::Loaded {
             migrated_from: Some(version),
             ..
-        } => log::info!(file, result = "migrated", from_version = version.0, ms; "load_finished"),
+        } => log::info!(file, from_version = version.0, ms; "load_migrated"),
         LoadOutcome::Recovered {
             reason,
             preserved_as,
@@ -427,7 +535,12 @@ mod tests {
         let document = document_with_note("Existing");
         store.save(document.as_ref())?;
 
-        let (_worker, loaded) = StorageWorker::spawn(store, TEST_DEBOUNCE, ALL_ALLOWED)?;
+        let (_worker, loaded) = StorageWorker::spawn(
+            store,
+            TEST_DEBOUNCE,
+            ALL_ALLOWED,
+            SettingsSummary::default(),
+        )?;
         let loaded = loaded.recv_timeout(TEST_TIMEOUT)?;
         assert_eq!(
             loaded.notes.into_document().as_ref(),
@@ -445,6 +558,7 @@ mod tests {
             DocumentStore::new(directory.path()),
             TEST_DEBOUNCE,
             ALL_ALLOWED,
+            SettingsSummary::default(),
         )?;
         loaded.recv_timeout(TEST_TIMEOUT)?;
 
@@ -475,6 +589,7 @@ mod tests {
             DocumentStore::new(directory.path()),
             Duration::from_secs(3600),
             ALL_ALLOWED,
+            SettingsSummary::default(),
         )?;
         loaded.recv_timeout(TEST_TIMEOUT)?;
         let saver = worker.saver();
@@ -519,6 +634,7 @@ mod tests {
                 DocumentStore::new(directory.path()),
                 Duration::from_secs(3600),
                 ALL_ALLOWED,
+                SettingsSummary::default(),
             )
         };
         let draft = Draft {
@@ -557,6 +673,7 @@ mod tests {
             store.clone(),
             TEST_DEBOUNCE,
             SavingAllowed { settings: false },
+            SettingsSummary::default(),
         )?;
         assert!(!loaded.recv_timeout(TEST_TIMEOUT)?.notes.allows_saving());
 
