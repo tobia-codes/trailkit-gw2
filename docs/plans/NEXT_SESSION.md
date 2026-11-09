@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-08 (session 20). Current state and
+Last updated: 2026-11-09 (session 21). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -11,39 +11,27 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## ▶ Resume here
 
-**Session 20 (2026-11-08) — logging R92 (Q191–Q208), PR #99** (auto-merge armed after the user's merge OK;
-check it merged, fix CI if not; the Windows job runs the new whole-minute offset test, never run locally).
-Shipped: crate `trailkit-log` (`trailkit/logs/<addon>.log`, 30 days, 1 MiB + `log_full`, unclean session, panic
-hook, event catalog test, README = binding format), `TrailkitDirectory`/`AddonName`/`FileName` in storage, memo
-converted, help en/de, skill `trailkit-logs`, offset fix (`+00:59:59`). Tested in game; user OK'd help and merge.
-**Open:** Q209 split `addon.rs` (448 code lines, hint 400; proposal `addon/logging.rs`), not answered; GW2 build and
-Nexus version in `session_start` deferred (need MumbleLink → core, C12). User deletes old `TrailpackMemo/` by hand.
-Next: M180 save errors; Q166 now only names the save-error events/fields on top of R92 (`save_failed` exists);
-Q167 settled by R92, Q168 amended (export holds every addon's log).
+**Session 21 (2026-11-09) — logs as day files (R92, Q213–Q221), PR `feature/log-daily-files`** (auto-merge armed after the
+user's merge OK; check it merged, fix CI if not). `trailkit/logs/<addon>/<addon>-<yyyymmdd>.log` plus `_1`–`_4`, 1 MiB each; newest
+14 days, none older than 30; a normal session is three lines (`session_start`, one `load_finished`, `session_end`).
+In game only start and file creation were seen; day change, parts and cleanup are unit-tested. User deletes old `trailkit/logs/memo.log`
+and `TrailpackMemo/` by hand. Format: `crates/trailkit-log/README.md`.
 
-**Mobile, to review the save-error design (M180):** https://claude.ai/artifact/DyA5k7uYVKGhuTARYTzyJ7
-— a visual mockup (R87, still unapproved) with the error toast, busy dialog and `danger.subtle`. Decide there:
-Q151, Q164, Q165, Q166, Q168–Q171 (listed below), then the visual OK.
+**Next: implement M180 save errors.** Answered yes 2026-11-09: Q151, Q164, Q165, Q166 (amended by Q219), Q168–Q171, Q209–Q211.
+Mockup V4 (`x` always top right, 8 px; https://claude.ai/artifact/DyA5k7uYVKGhuTARYTzyJ7) counts as visually approved (R87); use the
+short title "Speichern fehlgeschlagen" (Q165), the mockup still shows the long one. M180 adds `save_gave_up` to `CRITICAL_EVENTS`.
+Then R89 (help `?`, export, problem page; `PRIVACY.md` does not exist yet, Q170 needs it).
 
-Next ids: **M181+, R93+, questions from 210.** Order: save errors (review item 1), then R89 (help `?`).
-**Everything decided about save errors is in memo M180** (toasts, retry, dialog; mockup
-`docs/plans/addons/memo-save-error-toast-design.html`, same as the artifact
-https://claude.ai/artifact/DyA5k7uYVKGhuTARYTzyJ7). **Open, ask first (recommendation yes unless noted):**
-Q151 restart a dead worker with "Erneut versuchen"; Q164 close button on the error toast;
-Q165 shorten the text to "Speichern fehlgeschlagen" (not wrap); Q166 save-error events;
-Q168–Q171 (R89/M179): export button, help window, problem link, `?` placement.
-Then **visual approval of the mockup (R87)** (`danger.subtle`, busy/status-line dialog, error toast); then implement.
+Next ids: **M181+, R93+, questions from 222.** Still deferred: GW2 build and Nexus version in `session_start` (need MumbleLink → core,
+C12). Hints: `addon.rs` 416 code lines (limit 400), split only on request. If ever needed: limit repeated log events once core adds network paths.
 
 Implementation outline: typed worker → UI result channel; retry state (3 writes, 5 s, parked); immediate write for
 "Übernehmen"; toast error kind, counter, spinner, close; dialog busy button + status line; `danger.subtle` via
 `cargo xtask tokens` + contrast tests; en/de texts, help, READMEs; tests (no endless retry, no content in logs).
 
-- **PR #96 is stuck** (B22 from another Claude session, 2026-11-07, auto-merge armed, no CI run,
-  merge state unknown; touches this file → likely conflicts). B22: the backend must exist **before the
-  first addon release** so an addon version can be locked until the user updates; design (endpoint, GDPR,
-  offline, lock UX, R49) needs its own grilling round. Ask the user: rebase #96 onto develop or redo it.
-  This changes the backend from "deferred" to a release prerequisite (affects R90 skeleton, B10, B19).
-- **Housekeeping (ask first):** delete remote branches of merged PRs (`agent-guidance-followups`, `backend-service-
+- **PR #96 (B22, backend before the first release):** Q210 yes: after M180 close it and redo B22 on a new branch from `origin/develop`
+  (no force push); turn off its armed auto-merge first. B22's design needs its own grilling round (endpoint, GDPR, offline, lock UX, R49).
+- **Housekeeping (Q211 yes, not done yet):** delete remote branches of merged PRs (`agent-guidance-followups`, `backend-service-
   skeleton`, `xtask-token-split-and-docs`, `contributor-docs`), obsolete `bugfix/ui-theme-in-game-fixes` (Q138), local
   merged ones; pull stale local `develop` first. Keep `feature/memo-save-error-design` until M180 ships (Q141: keep `token_groups.rs`).
 

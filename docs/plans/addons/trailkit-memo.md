@@ -57,6 +57,8 @@ references with autocompletion and status.
 
 ## Open questions
 
+*Answered yes on 2026-11-09: Q151, Q164, Q165, Q166 (amended), Q168 (amended), Q169, Q170, Q171; mockup V4 approved (R87). Kept here until M180 and R89 are implemented.*
+
 - **Q151 – Dead storage worker.** Recommendation: the toast keeps "Erneut versuchen"; a click starts a new worker in
   "write only" mode (no reload, keeps the saving permissions) and writes the UI's current documents, once per click,
   only when the old thread has really ended (test), the panic stays logged with its cause.
