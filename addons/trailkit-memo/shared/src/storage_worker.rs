@@ -198,22 +198,31 @@ pub struct SettingsSummary {
     pub elapsed: Duration,
 }
 
-/// Body of the worker thread: loads the notes, then serves save requests until
-/// shutdown, writing each document once it was unchanged for `debounce`.
-fn run_worker(
+/// Which of the documents the worker loaded may be saved.
+struct DocumentsSavingAllowed {
+    /// `notes.json`.
+    notes: bool,
+    /// `ui_state.json`.
+    ui_state: bool,
+    /// `drafts.json`.
+    drafts: bool,
+}
+
+/// Loads the worker's documents and logs the `load_finished` summary.
+fn load_documents(
     store: &DocumentStore,
-    debounce: Duration,
-    saving_allowed: SavingAllowed,
     settings_summary: SettingsSummary,
-    commands: &Receiver<WorkerCommand>,
-    loaded: &Sender<LoadedDocuments>,
-) {
+) -> (LoadedDocuments, DocumentsSavingAllowed) {
     let started = Instant::now();
     let now = Timestamp::now();
     let notes = load_logged::<NotesDocument>(store, now);
-    let notes_saving_allowed = notes.allows_saving();
     let ui_state_outcome = load_logged::<UiState>(store, now);
-    let ui_state_saving_allowed = ui_state_outcome.allows_saving();
+    let drafts_outcome = load_logged::<DraftsDocument>(store, now);
+    let allowed = DocumentsSavingAllowed {
+        notes: notes.allows_saving(),
+        ui_state: ui_state_outcome.allows_saving(),
+        drafts: drafts_outcome.allows_saving(),
+    };
     let mut missing = Vec::new();
     if settings_summary.missing {
         missing.push(document_file_name::<Settings>());
@@ -221,8 +230,6 @@ fn run_worker(
     missing.extend(missing_file(&notes));
     missing.extend(missing_file(&ui_state_outcome));
     let ui_state = ui_state_outcome.into_document().unwrap_or_default();
-    let drafts_outcome = load_logged::<DraftsDocument>(store, now);
-    let drafts_saving_allowed = drafts_outcome.allows_saving();
     let drafts = drafts_outcome.into_document().unwrap_or_default();
     log_load_finished(
         &LoadCounts {
@@ -233,12 +240,27 @@ fn run_worker(
         settings_summary,
         started.elapsed() + settings_summary.elapsed,
     );
-    // The render side may already be gone during a quick unload; that is fine.
-    let _ = loaded.send(LoadedDocuments {
+    let documents = LoadedDocuments {
         notes,
         ui_state,
         drafts,
-    });
+    };
+    (documents, allowed)
+}
+
+/// Body of the worker thread: loads the notes, then serves save requests until
+/// shutdown, writing each document once it was unchanged for `debounce`.
+fn run_worker(
+    store: &DocumentStore,
+    debounce: Duration,
+    saving_allowed: SavingAllowed,
+    settings_summary: SettingsSummary,
+    commands: &Receiver<WorkerCommand>,
+    loaded: &Sender<LoadedDocuments>,
+) {
+    let (documents, allowed) = load_documents(store, settings_summary);
+    // The render side may already be gone during a quick unload; that is fine.
+    let _ = loaded.send(documents);
 
     let mut pending_notes: Option<PendingSave<Arc<NotesDocument>>> = None;
     let mut pending_settings: Option<PendingSave<Settings>> = None;
@@ -260,7 +282,7 @@ fn run_worker(
         };
 
         match received {
-            Ok(WorkerCommand::SaveNotes(document)) if notes_saving_allowed => {
+            Ok(WorkerCommand::SaveNotes(document)) if allowed.notes => {
                 pending_notes = Some(PendingSave {
                     document,
                     due_at: Instant::now() + debounce,
@@ -272,13 +294,13 @@ fn run_worker(
                     due_at: Instant::now() + debounce,
                 });
             }
-            Ok(WorkerCommand::SaveUiState(ui_state)) if ui_state_saving_allowed => {
+            Ok(WorkerCommand::SaveUiState(ui_state)) if allowed.ui_state => {
                 pending_ui_state = Some(PendingSave {
                     document: ui_state,
                     due_at: Instant::now() + debounce,
                 });
             }
-            Ok(WorkerCommand::SaveDrafts(drafts)) if drafts_saving_allowed => {
+            Ok(WorkerCommand::SaveDrafts(drafts)) if allowed.drafts => {
                 pending_drafts = Some(PendingSave {
                     document: drafts,
                     due_at: Instant::now() + debounce,
