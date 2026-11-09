@@ -1,0 +1,21 @@
+meta {
+  name: /v2/files
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{base_url}}/v2/files?ids=all
+  body: none
+  auth: none
+}
+
+params:query {
+  ids: all
+  ~page: 0
+  ~page_size: 50
+}
+
+docs {
+  https://wiki.guildwars2.com/wiki/API:2/files
+}

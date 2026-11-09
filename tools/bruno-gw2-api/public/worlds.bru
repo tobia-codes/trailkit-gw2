@@ -1,0 +1,22 @@
+meta {
+  name: /v2/worlds
+  type: http
+  seq: 38
+}
+
+get {
+  url: {{base_url}}/v2/worlds?ids=all&lang={{lang}}
+  body: none
+  auth: none
+}
+
+params:query {
+  ids: all
+  ~page: 0
+  ~page_size: 50
+  lang: {{lang}}
+}
+
+docs {
+  https://wiki.guildwars2.com/wiki/API:2/worlds
+}

@@ -1,0 +1,20 @@
+meta {
+  name: /v2/recipes/search
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/v2/recipes/search?input=19721
+  body: none
+  auth: none
+}
+
+params:query {
+  input: 19721
+  ~output: 
+}
+
+docs {
+  https://wiki.guildwars2.com/wiki/API:2/recipes/search
+}

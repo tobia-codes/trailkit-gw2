@@ -1,0 +1,21 @@
+meta {
+  name: /v2/pvp/seasons/:id/leaderboards/:board/:region
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{base_url}}/v2/pvp/seasons/:id/leaderboards/:board/:region
+  body: none
+  auth: none
+}
+
+params:path {
+  id: {{pvp_season_id}}
+  board: ladder
+  region: eu
+}
+
+docs {
+  https://wiki.guildwars2.com/wiki/API:2/pvp/seasons/:id/leaderboards/:board/:region
+}

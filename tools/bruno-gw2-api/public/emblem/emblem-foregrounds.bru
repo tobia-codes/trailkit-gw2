@@ -1,0 +1,21 @@
+meta {
+  name: /v2/emblem/foregrounds
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/v2/emblem/foregrounds
+  body: none
+  auth: none
+}
+
+params:query {
+  ~ids: 1
+  ~page: 0
+  ~page_size: 50
+}
+
+docs {
+  https://wiki.guildwars2.com/wiki/API:2/emblem/foregrounds
+}

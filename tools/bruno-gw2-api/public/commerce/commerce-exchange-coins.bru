@@ -1,0 +1,19 @@
+meta {
+  name: /v2/commerce/exchange/coins
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/v2/commerce/exchange/coins?quantity=100000
+  body: none
+  auth: none
+}
+
+params:query {
+  quantity: 100000
+}
+
+docs {
+  https://wiki.guildwars2.com/wiki/API:2/commerce/exchange/coins
+}

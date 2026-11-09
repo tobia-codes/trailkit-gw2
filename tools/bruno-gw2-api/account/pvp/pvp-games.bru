@@ -1,0 +1,21 @@
+meta {
+  name: /v2/pvp/games
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/v2/pvp/games?ids=all
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ids: all
+  ~page: 0
+  ~page_size: 50
+}
+
+docs {
+  https://wiki.guildwars2.com/wiki/API:2/pvp/games
+}

@@ -30,6 +30,7 @@ Every project has its own README with purpose, build, usage and its rules.
 | | [`crates/trailkit-log`](crates/trailkit-log/README.md) | One local log file per addon and the binding log format |
 | Services | [`services/trailkit-api`](services/trailkit-api/README.md) | REST API server, skeleton only (backend deferred) |
 | Tools | [`tools/trailkit-datagen`](tools/trailkit-datagen/README.md) | Daily data job: trading post price archive and WvW snapshots |
+| | [`tools/bruno-gw2-api`](tools/bruno-gw2-api/README.md) | Bruno collection for trying the GW2 API v2 by hand (public and account endpoints) |
 | | [`xtask`](xtask/README.md) | Build and check commands: `cargo xtask <command>` |
 | Data | [`data/events`](data/events/README.md) | Curated event schedules (source of truth) |
 | Docs | [`docs/plans`](docs/plans/README.md) | Roadmap, plans and every decision with its id |

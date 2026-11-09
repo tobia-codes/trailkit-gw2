@@ -1,0 +1,19 @@
+meta {
+  name: /v2/characters/:id/equipmenttabs
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{base_url}}/v2/characters/:id/equipmenttabs
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: {{character_name}}
+}
+
+docs {
+  https://wiki.guildwars2.com/wiki/API:2/characters/:id/equipmenttabs
+}

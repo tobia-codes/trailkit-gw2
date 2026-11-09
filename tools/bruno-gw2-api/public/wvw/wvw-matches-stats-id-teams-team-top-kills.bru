@@ -1,0 +1,20 @@
+meta {
+  name: /v2/wvw/matches/stats/:id/teams/:team/top/kills
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{base_url}}/v2/wvw/matches/stats/:id/teams/:team/top/kills
+  body: none
+  auth: none
+}
+
+params:path {
+  id: {{wvw_match_id}}
+  team: red
+}
+
+docs {
+  https://wiki.guildwars2.com/wiki/API:2/wvw/matches/stats/:id/teams/:team/top/kills
+}

@@ -1,0 +1,19 @@
+meta {
+  name: /v2/characters
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/v2/characters
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~ids: all
+}
+
+docs {
+  https://wiki.guildwars2.com/wiki/API:2/characters
+}

@@ -1,0 +1,19 @@
+meta {
+  name: /v2/guild/:id/teams
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{base_url}}/v2/guild/:id/teams
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: {{guild_id}}
+}
+
+docs {
+  https://wiki.guildwars2.com/wiki/API:2/guild/:id/teams
+}
