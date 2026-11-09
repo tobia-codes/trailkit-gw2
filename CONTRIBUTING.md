@@ -58,7 +58,7 @@ start from [Find your way](README.md#find-your-way).
 | `addons/<addon>/` | One Nexus addon (a Windows DLL), split into slices |
 | `crates/` | Libraries shared by several projects, flat (R90) |
 | `services/` | Server-side programs (the deferred REST API) |
-| `tools/` | Command line tools (the daily data job) |
+| `tools/` | Developer tools: the daily data job and a [Bruno collection](tools/bruno-gw2-api/README.md) for trying the GW2 API by hand |
 | `xtask/` | Build and check commands: `cargo xtask <command>` |
 | `data/` | Curated source data |
 | `docs/plans/` | Roadmap and decisions; each decision has an id (R…, M…, B…) |
