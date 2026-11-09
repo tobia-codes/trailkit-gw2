@@ -60,7 +60,7 @@ impl DayFile {
             .strip_suffix(".log")?;
         let (date, part) = match stem.split_once('_') {
             Some((date, part)) => {
-                if !is_digits(part) {
+                if !is_digits(part) || part.starts_with('0') {
                     return None;
                 }
                 (date, part.parse::<u8>().ok().filter(|part| *part > 0)?)
@@ -267,6 +267,7 @@ mod tests {
             "memo-2026-11-09.log",
             "memo-20261309.log",
             "memo-20261109_0.log",
+            "memo-20261109_01.log",
             "memo-20261109_+1.log",
             "memo-20261109_.log",
             "memo-20261109_1.log.bak",

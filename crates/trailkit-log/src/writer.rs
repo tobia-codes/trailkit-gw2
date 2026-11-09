@@ -20,8 +20,11 @@ use trailkit_storage::AddonName;
 
 use crate::{
     day_files::{self, DayFile, MAX_PARTS_PER_DAY},
-    events::{EVENT_LOG_FULL, EVENT_LOG_UNAVAILABLE, EVENT_PREVIOUS_SESSION_UNCLEAN},
-    line::{LineContent, LineIdentity, format_body, format_line},
+    events::{
+        EVENT_LOG_FULL, EVENT_LOG_MAINTENANCE_FAILED, EVENT_LOG_UNAVAILABLE,
+        EVENT_PREVIOUS_SESSION_UNCLEAN, EVENT_SESSION_CONTINUES,
+    },
+    line::{Field, LineContent, LineIdentity, format_body, format_line},
 };
 
 /// Largest size of one log file (ROADMAP R92); a full file continues in the
@@ -85,7 +88,7 @@ pub(crate) struct LogFile {
     logs: PathBuf,
     /// The addon whose folder inside `logs` is used.
     addon: AddonName,
-    /// `false` before the writer prepared the log, after a write error and
+    /// `false` before the writer prepared the log, if preparing failed and
     /// after shutdown: lines are dropped then.
     usable: bool,
     /// The file of the current day, once the first line was written.
@@ -93,17 +96,27 @@ pub(crate) struct LogFile {
     /// The day for which `log_full` was written; only critical events are
     /// written for it.
     full_day: Option<Date>,
+    /// The `session_start` fields, repeated when a new day begins.
+    session_fields: Vec<Field<'static>>,
+    /// Whether a write error was already sent to `Nexus.log`.
+    failure_reported: bool,
 }
 
 impl LogFile {
     /// A log that is not usable until the writer thread prepared it.
-    pub(crate) const fn new(logs: PathBuf, addon: AddonName) -> Self {
+    pub(crate) const fn new(
+        logs: PathBuf,
+        addon: AddonName,
+        session_fields: Vec<Field<'static>>,
+    ) -> Self {
         Self {
             logs,
             addon,
             usable: false,
             part: None,
             full_day: None,
+            session_fields,
+            failure_reported: false,
         }
     }
 
@@ -117,8 +130,10 @@ impl LogFile {
         self.usable
     }
 
-    /// Appends `line` to the file of `now`'s local day. A write error stops
-    /// the log and is reported to `Nexus.log`.
+    /// Appends `line` to the file of `now`'s local day. After an I/O error
+    /// the line is lost and the next one tries again (a virus scanner or
+    /// cloud sync may hold a file only briefly); `Nexus.log` hears of the
+    /// first error of a session.
     ///
     /// A file that cannot take the line continues in the next part of the
     /// day. In the last part a normal line stops at the reserve: `log_full`
@@ -136,8 +151,11 @@ impl LogFile {
             return;
         }
         if let Err(error) = self.append(line, critical, day, identity, now) {
-            self.close();
-            report_unavailable(identity, forward, "write", &error);
+            self.part = None;
+            if !self.failure_reported {
+                self.failure_reported = true;
+                report_unavailable(identity, forward, "write", &error);
+            }
         }
     }
 
@@ -150,9 +168,16 @@ impl LogFile {
         identity: &LineIdentity,
         now: Timestamp,
     ) -> io::Result<()> {
-        if self.part.as_ref().is_none_or(|open| open.id.day != day) {
+        let open_day = self.part.as_ref().map(|open| open.id.day);
+        if open_day != Some(day) {
             let latest = day_files::latest_part(&self.folder(), self.addon.as_str(), day)?;
             self.open_part(latest.unwrap_or(DayFile { day, part: 0 }))?;
+            if open_day.is_some() {
+                let header = session_continues_line(identity, now, &self.session_fields);
+                if let Some(open) = self.part.as_mut() {
+                    open.write(&header)?;
+                }
+            }
         }
         let limit = if critical {
             MAX_PART_BYTES
@@ -180,7 +205,11 @@ impl LogFile {
                 return Ok(());
             }
             self.full_day = Some(day);
+            // After a restart on a full day the reserve may be used up.
             let full = log_full_line(identity, now);
+            if open.size + full.len() > MAX_PART_BYTES {
+                return Ok(());
+            }
             return open.write(&full);
         }
     }
@@ -214,6 +243,24 @@ fn local_day(identity: &LineIdentity, now: Timestamp) -> Date {
         .date()
 }
 
+/// The first line of a new day's file in a running session.
+fn session_continues_line(
+    identity: &LineIdentity,
+    now: Timestamp,
+    fields: &[Field<'static>],
+) -> String {
+    format_line(
+        identity,
+        now,
+        &LineContent {
+            level: log::Level::Info,
+            event: EVENT_SESSION_CONTINUES,
+            at: concat!(module_path!(), ":", line!()),
+            fields,
+        },
+    )
+}
+
 /// The `log_full` line.
 fn log_full_line(identity: &LineIdentity, now: Timestamp) -> String {
     let fields = [(
@@ -236,8 +283,8 @@ fn log_full_line(identity: &LineIdentity, now: Timestamp) -> String {
 struct Prepared {
     /// Whether the previous session ended without `session_end`.
     previous_session_unclean: bool,
-    /// Why old files could not be deleted, if so; logging goes on.
-    cleanup_error: Option<io::Error>,
+    /// Housekeeping steps that failed, as stage and error; logging goes on.
+    failures: Vec<(&'static str, io::Error)>,
 }
 
 /// Body of the writer thread: prepares the log, then appends every received
@@ -252,8 +299,8 @@ pub(crate) fn run(shared: &Shared, commands: &Receiver<Command>) {
         Ok(prepared) => {
             let mut log_file = lock(&shared.file);
             log_file.usable = true;
-            if let Some(error) = &prepared.cleanup_error {
-                report_unavailable(&shared.identity, shared.forward, "cleanup", error);
+            for (stage, error) in &prepared.failures {
+                log_maintenance_failure(&mut log_file, shared, now, stage, error);
             }
             if prepared.previous_session_unclean {
                 let line = format_line(
@@ -289,22 +336,62 @@ pub(crate) fn run(shared: &Shared, commands: &Receiver<Command>) {
 ///
 /// # Errors
 ///
-/// Returns the I/O error of creating the folder or reading the newest file.
-/// Failing to delete old files is returned inside [`Prepared`] instead.
+/// Returns the I/O error of creating the folder. Failing to delete old files
+/// or to read the newest one does not stop logging; it is returned inside
+/// [`Prepared`], and an unknown previous session counts as clean.
 fn prepare(logs: &Path, addon: AddonName, today: Date) -> io::Result<Prepared> {
-    let cleanup_error = day_files::cleanup(logs, today).err();
+    let mut failures = Vec::new();
+    if let Err(error) = day_files::cleanup(logs, today) {
+        failures.push(("cleanup", error));
+    }
     let folder = logs.join(addon.as_str());
     fs::create_dir_all(&folder)?;
-    let previous_session_unclean = match day_files::latest(&folder, addon.as_str())? {
-        Some(newest) => {
-            day_files::previous_session_unclean(&folder.join(newest.file_name(addon.as_str())))?
-        }
-        None => false,
-    };
+    let previous_session_unclean =
+        newest_session_unclean(&folder, addon.as_str()).unwrap_or_else(|error| {
+            failures.push(("session_check", error));
+            false
+        });
     Ok(Prepared {
         previous_session_unclean,
-        cleanup_error,
+        failures,
     })
+}
+
+/// Whether the newest day file in `folder` ends without `session_end`.
+///
+/// # Errors
+///
+/// Returns the I/O error of listing the folder or reading the file.
+fn newest_session_unclean(folder: &Path, addon: &str) -> io::Result<bool> {
+    match day_files::latest(folder, addon)? {
+        Some(newest) => day_files::previous_session_unclean(&folder.join(newest.file_name(addon))),
+        None => Ok(false),
+    }
+}
+
+/// Writes that the housekeeping step `stage` failed into the log and tells
+/// `Nexus.log` (it is a warning like any other).
+fn log_maintenance_failure(
+    log_file: &mut LogFile,
+    shared: &Shared,
+    now: Timestamp,
+    stage: &'static str,
+    error: &io::Error,
+) {
+    let error = error.to_string();
+    let fields = [
+        (Cow::Borrowed("stage"), Cow::Borrowed(stage)),
+        (Cow::Borrowed("error"), Cow::Borrowed(error.as_str())),
+    ];
+    let content = LineContent {
+        level: log::Level::Warn,
+        event: EVENT_LOG_MAINTENANCE_FAILED,
+        at: concat!(module_path!(), ":", line!()),
+        fields: &fields,
+    };
+    let line = format_line(&shared.identity, now, &content);
+    log_file.write_line(&line, false, now, &shared.identity, shared.forward);
+    (shared.forward)(log::Level::Warn, &format_body(&shared.identity, &content));
 }
 
 /// Tells `Nexus.log` that the log files cannot be used.
@@ -359,7 +446,11 @@ mod tests {
                 local_offset: utc,
             },
             forward: ignore,
-            file: Mutex::new(LogFile::new(logs.to_path_buf(), AddonName::new("memo"))),
+            file: Mutex::new(LogFile::new(
+                logs.to_path_buf(),
+                AddonName::new("memo"),
+                vec![(Cow::Borrowed("commit"), Cow::Borrowed("abc"))],
+            )),
         }
     }
 
@@ -534,7 +625,7 @@ mod tests {
         );
         assert_eq!(
             events(&file(logs.path(), "memo-20261110.log"))?,
-            ["load_finished"]
+            ["session_continues", "load_finished"]
         );
         Ok(())
     }
@@ -627,8 +718,148 @@ mod tests {
 
         assert_eq!(
             events(&file(logs.path(), "memo-20261110.log"))?,
-            ["session_start"]
+            ["session_continues", "session_start"]
         );
+        Ok(())
+    }
+
+    #[test]
+    fn a_new_day_repeats_the_session_fields() -> io::Result<()> {
+        let logs = tempfile::tempdir()?;
+        let shared = shared(logs.path());
+        let mut log_file = open_log(&shared);
+        let first: Timestamp = "2026-11-09T23:59:50Z".parse().map_err(io::Error::other)?;
+        let second: Timestamp = "2026-11-10T00:00:10Z".parse().map_err(io::Error::other)?;
+        for time in [first, second] {
+            log_file.write_line(
+                &line(&shared, time, "load_finished"),
+                false,
+                time,
+                &shared.identity,
+                ignore,
+            );
+        }
+        drop(log_file);
+
+        let first_file = fs::read_to_string(file(logs.path(), "memo-20261109.log"))?;
+        assert!(!first_file.contains("session_continues"), "{first_file}");
+        let second_file = fs::read_to_string(file(logs.path(), "memo-20261110.log"))?;
+        let header = second_file.lines().next().unwrap_or_default();
+        assert!(header.contains(" session_continues "), "{header}");
+        assert!(header.ends_with(" commit=abc"), "{header}");
+        Ok(())
+    }
+
+    /// Writes a last part of the day 2026-11-09 with `size` bytes.
+    fn fill_last_part(logs: &Path, size: usize) -> io::Result<PathBuf> {
+        fs::create_dir_all(logs.join("memo"))?;
+        let path = file(logs, "memo-20261109_4.log");
+        fs::write(&path, format!("{}\n", "x".repeat(size - 1)))?;
+        Ok(path)
+    }
+
+    #[test]
+    fn a_restart_on_a_full_day_keeps_session_start_and_stays_below_the_cap() -> io::Result<()> {
+        let logs = tempfile::tempdir()?;
+        let shared = shared(logs.path());
+        let path = fill_last_part(logs.path(), MAX_PART_BYTES - CRITICAL_RESERVE_BYTES + 1)?;
+        let now: Timestamp = "2026-11-09T12:00:00Z".parse().map_err(io::Error::other)?;
+        let mut log_file = open_log(&shared);
+        let start = line(&shared, now, "session_start");
+        log_file.write_line(&start, true, now, &shared.identity, ignore);
+        let sample = line(&shared, now, "save_failed");
+        log_file.write_line(&sample, false, now, &shared.identity, ignore);
+        log_file.write_line(&sample, false, now, &shared.identity, ignore);
+        drop(log_file);
+
+        assert_eq!(events(&path)?, ["session_start", "log_full"]);
+        Ok(())
+    }
+
+    #[test]
+    fn log_full_never_exceeds_the_cap() -> io::Result<()> {
+        let logs = tempfile::tempdir()?;
+        let shared = shared(logs.path());
+        let path = fill_last_part(logs.path(), MAX_PART_BYTES - 10)?;
+        let now: Timestamp = "2026-11-09T12:00:00Z".parse().map_err(io::Error::other)?;
+        let mut log_file = open_log(&shared);
+        let sample = line(&shared, now, "save_failed");
+        log_file.write_line(&sample, false, now, &shared.identity, ignore);
+        drop(log_file);
+
+        assert_eq!(fs::metadata(&path)?.len(), MAX_PART_BYTES as u64 - 10);
+        Ok(())
+    }
+
+    /// Texts forwarded by [`a_failed_write_is_reported_once_and_the_next_line_retries`].
+    static RETRY_FORWARDED: Mutex<Vec<String>> = Mutex::new(Vec::new());
+
+    /// Records a forwarded text for the retry test.
+    fn record_retry(level: log::Level, text: &str) {
+        RETRY_FORWARDED
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .push(format!("{level} {text}"));
+    }
+
+    #[test]
+    fn a_failed_write_is_reported_once_and_the_next_line_retries() -> io::Result<()> {
+        let logs = tempfile::tempdir()?;
+        let shared = shared(logs.path());
+        // A file in place of the addon's folder makes every open fail.
+        fs::write(logs.path().join("memo"), "in the way")?;
+        let now: Timestamp = "2026-11-09T12:00:00Z".parse().map_err(io::Error::other)?;
+        let sample = line(&shared, now, "save_failed");
+        let mut log_file = open_log(&shared);
+        for _ in 0..2 {
+            log_file.write_line(&sample, false, now, &shared.identity, record_retry);
+        }
+        assert!(log_file.is_open(), "the log stays usable");
+        fs::remove_file(logs.path().join("memo"))?;
+        log_file.write_line(&sample, false, now, &shared.identity, record_retry);
+        drop(log_file);
+
+        let forwarded = RETRY_FORWARDED
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone();
+        assert_eq!(forwarded.len(), 1, "{forwarded:?}");
+        assert!(forwarded[0].contains(" stage=write "), "{forwarded:?}");
+        assert_eq!(
+            events(&file(logs.path(), "memo-20261109.log"))?,
+            ["save_failed"]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn an_unreadable_newest_file_does_not_stop_the_log() -> io::Result<()> {
+        let logs = tempfile::tempdir()?;
+        let shared = shared(logs.path());
+        // A folder with the name of yesterday's file cannot be read as a file.
+        let yesterday = DayFile {
+            day: Timestamp::now()
+                .to_zoned(TimeZone::UTC)
+                .date()
+                .yesterday()
+                .map_err(io::Error::other)?,
+            part: 0,
+        };
+        fs::create_dir_all(file(logs.path(), &yesterday.file_name("memo")))?;
+
+        let (sender, receiver) = mpsc::channel();
+        sender
+            .send(Command::Line {
+                text: line(&shared, Timestamp::now(), "session_start"),
+                critical: true,
+            })
+            .map_err(io::Error::other)?;
+        sender.send(Command::Shutdown).map_err(io::Error::other)?;
+        run(&shared, &receiver);
+
+        let path = file(logs.path(), &today_name());
+        assert_eq!(events(&path)?, ["log_maintenance_failed", "session_start"]);
+        assert!(fs::read_to_string(&path)?.contains(" stage=session_check "));
         Ok(())
     }
 

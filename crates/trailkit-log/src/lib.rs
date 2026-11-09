@@ -122,10 +122,28 @@ pub fn start(config: LogConfig) -> Result<LogSession, StartError> {
         version: config.version,
         local_offset: config.local_offset,
     };
+    let mut fields: Vec<Field<'static>> = vec![
+        (Cow::Borrowed("build"), Cow::Borrowed(system::BUILD_KIND)),
+        (Cow::Borrowed("commit"), Cow::Borrowed(system::COMMIT)),
+        (
+            Cow::Borrowed("windows"),
+            Cow::Owned(system::windows_version()),
+        ),
+    ];
+    fields.extend(
+        config
+            .session_fields
+            .into_iter()
+            .map(|(key, value)| (Cow::Borrowed(key), Cow::Owned(value))),
+    );
     let shared = Arc::new(Shared {
         identity,
         forward: config.forward,
-        file: Mutex::new(LogFile::new(config.directory.logs(), config.addon)),
+        file: Mutex::new(LogFile::new(
+            config.directory.logs(),
+            config.addon,
+            fields.clone(),
+        )),
     });
     let (commands, receiver) = mpsc::channel();
 
@@ -143,20 +161,6 @@ pub fn start(config: LogConfig) -> Result<LogSession, StartError> {
         .map_err(StartError::Spawn)?;
     panic_hook::install(Arc::clone(&shared), commands.clone());
 
-    let mut fields: Vec<Field<'_>> = vec![
-        (Cow::Borrowed("build"), Cow::Borrowed(system::BUILD_KIND)),
-        (Cow::Borrowed("commit"), Cow::Borrowed(system::COMMIT)),
-        (
-            Cow::Borrowed("windows"),
-            Cow::Owned(system::windows_version()),
-        ),
-    ];
-    fields.extend(
-        config
-            .session_fields
-            .into_iter()
-            .map(|(key, value)| (Cow::Borrowed(key), Cow::Owned(value))),
-    );
     let session = LogSession {
         shared,
         commands,

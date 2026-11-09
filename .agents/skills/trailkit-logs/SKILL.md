@@ -36,8 +36,8 @@ only adds the procedure. Decisions: ROADMAP R89, R92.
      after means the storage worker was the thread.
    - `log_full`: that day logged 5 MiB (five files); something logs in a loop
      (a bug). Find the repeated event just before it; normal lines after it
-     are missing until midnight, only `panic`, `worker_died` and
-     `session_end` still arrive.
+     are missing until midnight, only `panic`, `worker_died`,
+     `session_start` and `session_end` still arrive.
 4. **Group WARN and ERROR** by event, `at=` and `file=`. Read `reason`,
    `stage` and `error` (the whole cause chain). Typical causes:
    - `os error 5` access denied: read-only folder, permissions, controlled
@@ -67,6 +67,6 @@ only adds the procedure. Decisions: ROADMAP R89, R92.
 
 - Release builds write no DEBUG lines (`save_finished` is missing there).
 - Only the newest 14 days with a log are kept, none older than 30 days; a
-  session can span two day files (midnight). Ask for a fresh export after
+  session can span two day files (`session_continues` starts the second). Ask for a fresh export after
   reproducing the problem.
 - Times are the user's local time with offset; compare across users in UTC.

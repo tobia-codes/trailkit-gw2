@@ -462,7 +462,11 @@ pub fn local_utc_offset(time: jiff::Timestamp) -> jiff::tz::Offset {
         )
     };
     if let Err(error) = conversion {
-        log::warn!(error:% = error; "local_time_failed");
+        // This function is the logger's clock: logging here calls it again,
+        // so only the first failure may log, or the stack overflows.
+        if is_first_local_time_failure() {
+            log::warn!(error:% = error; "local_time_failed");
+        }
         return jiff::tz::Offset::UTC;
     }
     civil_from_system_time(local_system_time)
@@ -494,6 +498,13 @@ fn system_time_from_civil(
         wSecond: u16::try_from(date_time.second()).ok()?,
         wMilliseconds: 0,
     })
+}
+
+/// Whether this is the first failed time conversion of the process.
+#[cfg(any(windows, test))]
+fn is_first_local_time_failure() -> bool {
+    static REPORTED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+    !REPORTED.swap(true, std::sync::atomic::Ordering::Relaxed)
 }
 
 /// A Windows `SYSTEMTIME` as a civil date and time, or `None` if its fields
@@ -554,6 +565,12 @@ mod tests {
     #[test]
     fn every_text_is_translated_and_registered() {
         assert_all_translated::<Text>();
+    }
+
+    #[test]
+    fn only_the_first_time_conversion_failure_is_reported() {
+        assert!(is_first_local_time_failure());
+        assert!(!is_first_local_time_failure());
     }
 
     #[test]

@@ -63,7 +63,7 @@ event needs a row in the table below.
 | Path | `addons/trailkit/logs/<addon>/<addon>-<yyyymmdd>.log`, e.g. `memo/memo-20261109.log`; one folder per addon, one file per local day; a full file continues in `memo-20261109_1.log`, `_2`, … |
 | Encoding | UTF-8, one line per entry, `\n` line ends, appended unbuffered |
 | Retention | At start every addon deletes whole files of **all** addons' folders: only the newest **14 days with a log** stay, none older than **30 days**. Nothing is read or rewritten; empty folders go too |
-| Size cap | **1 MiB** per file, at most **5 files** per day. In the last file normal lines stop 8 KiB early: `log_full` is written once, then only critical events (`panic`, `worker_died`, `session_end`) until midnight |
+| Size cap | **1 MiB** per file, at most **5 files** per day. In the last file normal lines stop 8 KiB early: `log_full` is written once, then only critical events (`panic`, `worker_died`, `session_start`, `session_end`) until midnight |
 | Memory | Nothing is held in memory: lines are appended, only the last 8 KiB of the newest file are read at start to see whether the previous session ended with `session_end` |
 | Levels written | ERROR, WARN, INFO; DEBUG only in debug builds. Dependencies (targets not starting with `trailkit`): WARN and ERROR only |
 | Nexus | WARN and ERROR also go to `Nexus.log` in the addon's channel (without the time) |
@@ -102,10 +102,12 @@ changes. Nothing is sent anywhere: a user exports the log by hand (R89).
 | Event | Level | Fields | Meaning |
 |-------|-------|--------|---------|
 | `session_start` | INFO | `build` (`release`/`debug`), `commit`, `windows`, `language`, `theme` | The addon was loaded; first line of a session |
+| `session_continues` | INFO | the fields of `session_start` | First line of a new day's file while a session keeps running |
 | `session_end` | INFO | – | The addon unloaded cleanly; last line of a session |
 | `previous_session_unclean` | WARN | – | The previous session has no `session_end`: game or addon crashed, or the game was killed |
 | `log_full` | WARN | `max_bytes` | The day's size cap (5 files) was reached; normal lines are missing until midnight |
-| `log_unavailable` | WARN | `stage` (`prepare`/`write`/`cleanup`), `error` | The log cannot be used (`prepare`, `write`: nothing more is logged this session) or old files cannot be deleted (`cleanup`: logging goes on); only in `Nexus.log` |
+| `log_unavailable` | WARN | `stage` (`prepare`/`write`), `error` | The log cannot be used; only in `Nexus.log`. After `prepare` nothing is logged this session; after `write` the line is lost, the next one tries again (reported once per session) |
+| `log_maintenance_failed` | WARN | `stage` (`cleanup`/`session_check`), `error` | Old files could not be deleted, or the end of the previous session could not be read (it then counts as clean); logging goes on |
 | `panic` | ERROR | `thread`, `message` | A Rust panic; `at=` is `file.rs:line` |
 | `message` | any | `text` | A log message that is not an event (from a dependency) |
 | `folder_unavailable` | ERROR | `error` | Nexus did not return the `trailkit/` folder; nothing is saved or logged; only in `Nexus.log` |
