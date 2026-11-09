@@ -8,7 +8,7 @@ use jiff::{Timestamp, tz::Offset};
 use trailkit_log::{LogConfig, log_files, start};
 use trailkit_memo_shared::{
     note_tree::{Note, NoteKind, NotesDocument, TreeNode},
-    storage_worker::{SavingAllowed, StorageWorker},
+    storage_worker::{SavingAllowed, SettingsSummary, StorageWorker},
 };
 use trailkit_storage::{AddonName, DocumentStore, TrailkitDirectory};
 
@@ -47,6 +47,7 @@ fn a_failed_save_is_logged_without_note_content() -> Result<(), Box<dyn std::err
         DocumentStore::new(&data),
         Duration::from_secs(3600),
         SavingAllowed { settings: true },
+        SettingsSummary::default(),
     )?;
     loaded.recv_timeout(Duration::from_secs(5))?;
     let mut note = Note::new(SECRET_TITLE.to_owned(), NoteKind::Normal, Timestamp::now());

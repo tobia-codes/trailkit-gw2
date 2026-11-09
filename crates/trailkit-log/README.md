@@ -94,8 +94,7 @@ No note text, titles or other user content, and no absolute paths (they
 contain the Windows user name; GDPR, `CONTRIBUTING.md`). Paths are logged as
 `trailkit_storage::FileName`; every value additionally passes a scrubber that
 cuts absolute Windows paths down to the file name. User actions (clicks,
-searches, opened windows) are not logged; only technical events and setting
-changes. Nothing is sent anywhere: a user exports the log by hand (R89).
+searches, moved windows, key presses) are not logged. Nothing is sent anywhere: a user exports the log by hand (R89).
 
 ### Events
 
@@ -113,13 +112,12 @@ changes. Nothing is sent anywhere: a user exports the log by hand (R89).
 | `folder_unavailable` | ERROR | `error` | Nexus did not return the `trailkit/` folder; nothing is saved or logged; only in `Nexus.log` |
 | `worker_start_failed` | ERROR | `error` | The storage worker thread could not start; notes are unavailable |
 | `worker_died` | ERROR | – | The storage worker thread panicked (see the `panic` line before it) |
-| `load_finished` | INFO | `file`, `result` (`missing`/`loaded`/`migrated`), `from_version`, `ms` | A document was loaded |
+| `load_finished` | INFO | `notes`, `drafts`, `missing` (only when `settings.json`, `notes.json` or `ui_state.json` does not exist), `text_scale`, `ms` | All documents were read; one line per session. `missing=notes.json` outside a first start explains lost notes |
+| `load_migrated` | INFO | `file`, `from_version`, `ms` | A document was converted to the current version |
 | `load_recovered` | ERROR | `file`, `error`, `preserved_as`, `ms` | A document was unreadable; it was moved to `backups/` and the addon starts without it |
 | `load_read_only` | WARN/ERROR | `file`, `reason` (`newer_version`/`io`), `found`, `error`, `ms` | A document must not be overwritten: written by a newer version (WARN) or not accessible (ERROR) |
-| `save_finished` | DEBUG | `file`, `ms` | A document was written |
 | `save_failed` | ERROR | `file`, `ms`, `error` | Writing a document failed; the change is not on disk |
 | `save_dropped` | WARN/ERROR | `reason` (`read_only`/`worker_stopped`) | A change was not saved: read-only document (WARN) or no storage worker (ERROR) |
-| `setting_changed` | INFO | `key`, `value` | A setting changed (e.g. `text_scale`) |
 | `backup_age_unreadable` | WARN | `file`, `error` | The age of a safety copy cannot be read; it is kept |
 | `backup_delete_failed` | WARN | `file`, `error` | An expired safety copy cannot be deleted |
 | `folder_unlistable` | WARN | `folder`, `error` | A folder cannot be listed during the safety-copy cleanup |
@@ -137,6 +135,9 @@ file in use by another process (antivirus, cloud sync), `112` disk full,
 - Call `start` first in `load` and drop the `LogSession` last in `unload`.
 - The logger only formats and queues; it never touches the file, so it is
   safe on the render thread. Still, never log per frame.
+- Log only what answers a question in a bug report: failures, warnings and
+  changes to the user's data. Routine successes stay out, so a normal session
+  is `session_start`, `load_finished` and `session_end`.
 - Log file names, never paths; never user content. Add every new event to
   the table above (the catalog test fails otherwise).
 - nexus-rs' `log` feature stays off: this crate is the DLL's logger.

@@ -65,7 +65,7 @@ references with autocompletion and status.
   "sieht gut aus"; not yet answered explicitly.
 - **Q165 – Wording at minimum width.** The generic title does not fit one line at 320 px (toast max. 288 px). Either the
   toast wraps (component change) or the text is shortened to "Speichern fehlgeschlagen". Recommendation: shorten.
-- **Q166 – Log format of save errors.** One line per event, `event` plus `key=value`: `save_failed document= attempt=
+- **Q166 – Log format of save errors.** *Amended by Q219 (2026-11-09): `save_retry_manual` and `shutdown_save` are not logged; `file=` replaces `document=` (R92).* One line per event, `event` plus `key=value`: `save_failed document= attempt=
   stage= kind= os_error= bytes= unsaved_for=`, `save_recovered`, `save_gave_up`, `save_retry_manual`, `worker_died`,
   `worker_restarted`, `shutdown_save`. `document` is notes/drafts/settings/ui_state, `stage` write_temp/flush/rename/
   delete, `os_error` the raw Windows code (32 locked, 5 denied, 112 disk full). WARN per attempt, ERROR for giving

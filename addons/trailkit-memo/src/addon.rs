@@ -65,8 +65,8 @@ use trailkit_memo_shared::{
     note_tree::NotesDocument,
     settings::{QuickAccessIcon, Settings, TextScale},
     storage_worker::{
-        LoadedDocuments, SAVE_DEBOUNCE, SavingAllowed, StorageSaver, StorageWorker,
-        log_load_outcome,
+        LoadedDocuments, SAVE_DEBOUNCE, SavingAllowed, SettingsSummary, StorageSaver,
+        StorageWorker, log_load_outcome,
     },
 };
 
@@ -351,14 +351,21 @@ fn start_storage(trailkit_directory: Option<TrailkitDirectory>) -> Settings {
 
     let started = Instant::now();
     let settings_outcome = store.load::<Settings>(Timestamp::now());
-    log_load_outcome(&settings_outcome, started.elapsed());
+    let settings_elapsed = started.elapsed();
+    log_load_outcome(&settings_outcome, settings_elapsed);
+    let settings_missing = matches!(settings_outcome, LoadOutcome::Missing);
     let saving_allowed = SavingAllowed {
         settings: settings_outcome.allows_saving(),
     };
     let settings = settings_outcome.into_document().unwrap_or_default();
     let settings = *SETTINGS.get_or_init(|| settings);
 
-    match StorageWorker::spawn(store, SAVE_DEBOUNCE, saving_allowed) {
+    let settings_summary = SettingsSummary {
+        missing: settings_missing,
+        text_scale: settings.text_scale,
+        elapsed: settings_elapsed,
+    };
+    match StorageWorker::spawn(store, SAVE_DEBOUNCE, saving_allowed, settings_summary) {
         Ok((worker, loaded)) => {
             let saver = worker.saver();
             if let Ok(mut slot) = STORAGE_WORKER.lock() {

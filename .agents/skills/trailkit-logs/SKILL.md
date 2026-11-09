@@ -65,7 +65,9 @@ only adds the procedure. Decisions: ROADMAP R89, R92.
 
 ## Limits
 
-- Release builds write no DEBUG lines (`save_finished` is missing there).
+- A normal session is three lines: `session_start`, `load_finished`,
+  `session_end`. Successful saves are not logged. `missing=notes.json` on
+  `load_finished` outside a first start explains lost notes.
 - Only the newest 14 days with a log are kept, none older than 30 days; a
   session can span two day files (`session_continues` starts the second). Ask for a fresh export after
   reproducing the problem.
