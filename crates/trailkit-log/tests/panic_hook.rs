@@ -9,7 +9,7 @@ use std::{
 };
 
 use jiff::{Timestamp, tz::Offset};
-use trailkit_log::{LogConfig, start};
+use trailkit_log::{LogConfig, log_files, start};
 use trailkit_storage::{AddonName, TrailkitDirectory};
 
 /// Set by the hook installed before `start`.
@@ -38,10 +38,16 @@ fn a_panic_is_logged_and_the_previous_hook_still_runs() -> Result<(), Box<dyn st
         forward: ignore,
         session_fields: Vec::new(),
     })?;
-    let log_path = directory.logs().join("memo.log");
+    // The whole log of the test addon (one file per day).
+    let read_log = || -> std::io::Result<String> {
+        log_files(&directory.logs(), AddonName::new("memo"))?
+            .iter()
+            .map(fs::read_to_string)
+            .collect()
+    };
     // Wait until the writer has opened the file, so the hook writes directly.
     for _ in 0..500 {
-        if fs::read_to_string(&log_path).is_ok_and(|log| log.contains("session_start")) {
+        if read_log().is_ok_and(|log| log.contains("session_start")) {
             break;
         }
         thread::sleep(std::time::Duration::from_millis(10));
@@ -58,7 +64,7 @@ fn a_panic_is_logged_and_the_previous_hook_still_runs() -> Result<(), Box<dyn st
         PREVIOUS_HOOK_RAN.load(Ordering::SeqCst),
         "previous hook did not run"
     );
-    let log = fs::read_to_string(&log_path)?;
+    let log = read_log()?;
     let line = log
         .lines()
         .find(|line| line.contains(" panic "))

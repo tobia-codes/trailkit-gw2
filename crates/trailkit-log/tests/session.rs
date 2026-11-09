@@ -4,7 +4,7 @@
 use std::{fs, io, sync::Mutex};
 
 use jiff::{Timestamp, tz::Offset};
-use trailkit_log::{ErrorChain, LogConfig, start};
+use trailkit_log::{ErrorChain, LogConfig, log_files, start};
 use trailkit_storage::{AddonName, FileName, TrailkitDirectory};
 
 /// Target of the lines that stand for our own crates (module paths start
@@ -60,7 +60,10 @@ fn writes_a_whole_session_without_paths_or_content() -> Result<(), Box<dyn std::
     log::debug!(target: OWN_TARGET, file = "notes.json"; "save_finished");
     drop(session);
 
-    let content = fs::read_to_string(directory.logs().join("memo.log"))?;
+    let content = log_files(&directory.logs(), AddonName::new("memo"))?
+        .iter()
+        .map(fs::read_to_string)
+        .collect::<Result<String, _>>()?;
     let expected_debug: &[&str] = if cfg!(debug_assertions) {
         &["save_finished"]
     } else {

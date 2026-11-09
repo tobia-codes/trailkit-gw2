@@ -105,7 +105,7 @@ static QUICK_ACCESS_PNG: &[u8] = include_bytes!("../assets/icons/quick-access.pn
 /// Hover variant of [`QUICK_ACCESS_PNG`] (R58).
 static QUICK_ACCESS_HOVER_PNG: &[u8] = include_bytes!("../assets/icons/quick-access-hover.png");
 
-/// Memo's short name: folder `trailkit/memo/`, log `trailkit/logs/memo.log`
+/// Memo's short name: folder `trailkit/memo/`, logs `trailkit/logs/memo/`
 /// (M17, ROADMAP R92).
 const ADDON: AddonName = AddonName::new("memo");
 

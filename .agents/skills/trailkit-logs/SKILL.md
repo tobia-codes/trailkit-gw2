@@ -1,6 +1,6 @@
 ---
 name: trailkit-logs
-description: Analyse a trailkit addon log a user sends (a `trailkit/logs/<addon>.log` file or a log export) — find crashes, panics and failed saves, map `at=` to code and explain the cause. Use whenever a trailkit log file or pasted log lines appear, or a user reports an addon problem together with a log.
+description: Analyse a trailkit addon log a user sends (the day files `trailkit/logs/<addon>/<addon>-<yyyymmdd>.log` or a log export) — find crashes, panics and failed saves, map `at=` to code and explain the cause. Use whenever a trailkit log file or pasted log lines appear, or a user reports an addon problem together with a log.
 ---
 
 # Analysing trailkit logs
@@ -34,8 +34,10 @@ only adds the procedure. Decisions: ROADMAP R89, R92.
      `session_end` (crash or killed game). Its last lines are the best clue.
    - `panic`: message, `thread` and `at=file.rs:line`. A `worker_died` right
      after means the storage worker was the thread.
-   - `log_full`: the session logged 1 MiB; something logs in a loop (a bug).
-     Find the repeated event just before it.
+   - `log_full`: that day logged 5 MiB (five files); something logs in a loop
+     (a bug). Find the repeated event just before it; normal lines after it
+     are missing until midnight, only `panic`, `worker_died` and
+     `session_end` still arrive.
 4. **Group WARN and ERROR** by event, `at=` and `file=`. Read `reason`,
    `stage` and `error` (the whole cause chain). Typical causes:
    - `os error 5` access denied: read-only folder, permissions, controlled
@@ -64,6 +66,7 @@ only adds the procedure. Decisions: ROADMAP R89, R92.
 ## Limits
 
 - Release builds write no DEBUG lines (`save_finished` is missing there).
-- Entries older than 30 days are gone; ask for a fresh export after
+- Only the newest 14 days with a log are kept, none older than 30 days; a
+  session can span two day files (midnight). Ask for a fresh export after
   reproducing the problem.
 - Times are the user's local time with offset; compare across users in UTC.

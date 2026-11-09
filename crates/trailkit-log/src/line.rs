@@ -180,11 +180,6 @@ fn find_path_start(value: &str) -> Option<usize> {
     })
 }
 
-/// The time at the start of a line written by [`format_line`].
-pub(crate) fn parse_time(line: &str) -> Option<Timestamp> {
-    line.split(' ').next()?.parse().ok()
-}
-
 /// The event of a line written by [`format_line`] (the fifth word).
 pub(crate) fn parse_event(line: &str) -> Option<&str> {
     line.split(' ').nth(4).map(str::trim_end)
@@ -236,7 +231,12 @@ mod tests {
              at=trailkit_memo_shared::storage_worker:318 file=notes.json \
              error=\"Access is denied. (os error 5)\"\n"
         );
-        assert_eq!(parse_time(&line), Some(sample_time()));
+        assert_eq!(
+            line.split(' ')
+                .next()
+                .and_then(|time| time.parse::<Timestamp>().ok()),
+            Some(sample_time())
+        );
         assert_eq!(parse_event(&line), Some("save_failed"));
     }
 

@@ -10,7 +10,7 @@ use jiff::Timestamp;
 use log::kv::{self, VisitSource};
 
 use crate::{
-    events::EVENT_MESSAGE,
+    events::{EVENT_MESSAGE, is_critical},
     line::{Field, LineContent, TEXT_FIELD, format_body, format_line, is_event_name},
     writer::{Command, Shared},
 };
@@ -80,7 +80,10 @@ impl log::Log for TrailkitLogger {
         };
         let line = format_line(&self.shared.identity, Timestamp::now(), &content);
         // After shutdown the writer is gone; the line is then only forwarded.
-        let _ = self.commands.send(Command::Line(line));
+        let _ = self.commands.send(Command::Line {
+            text: line,
+            critical: is_critical(event),
+        });
         if record.level() <= log::Level::Warn {
             (self.shared.forward)(
                 record.level(),

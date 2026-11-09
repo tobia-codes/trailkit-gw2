@@ -95,4 +95,4 @@ Your notes are saved automatically a moment after every change, in `addons/trail
 
 ## Problems?
 
-memo keeps a log file, `addons/trailkit/logs/memo.log` in your Guild Wars 2 folder. It only holds technical events (errors, loading and saving, the addon and Windows version), never your notes, and it stays on your computer. Entries older than 30 days are removed automatically. Please attach the file when you open an issue on GitHub. Errors also appear in the Nexus log (`addons/Nexus/Nexus.log`).
+memo keeps a log with one file per day, `addons/trailkit/logs/memo/memo-YYYYMMDD.log` in your Guild Wars 2 folder. It only holds technical events (errors, loading and saving, the addon and Windows version), never your notes, and it stays on your computer. The last 14 days with a log are kept, and files older than 30 days are removed automatically. Please attach the files of the affected days when you open an issue on GitHub. Errors also appear in the Nexus log (`addons/Nexus/Nexus.log`).

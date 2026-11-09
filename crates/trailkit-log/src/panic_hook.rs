@@ -22,6 +22,7 @@ use crate::{
 pub(crate) fn install(shared: Arc<Shared>, commands: Sender<Command>) {
     let previous = panic::take_hook();
     panic::set_hook(Box::new(move |info| {
+        let now = Timestamp::now();
         let line = panic_line(&shared, info);
         // A panic in a DLL callback usually ends the process right after the
         // hook, so the line is written here and not left in the queue. If the
@@ -29,19 +30,26 @@ pub(crate) fn install(shared: Arc<Shared>, commands: Sender<Command>) {
         // only option left.
         let written = match shared.file.try_lock() {
             Ok(mut file) if file.is_open() => {
-                file.write_line(&line, &shared.identity, shared.forward);
+                file.write_line(&line, true, now, &shared.identity, shared.forward);
                 true
             }
             Err(TryLockError::Poisoned(poisoned)) if poisoned.get_ref().is_open() => {
-                poisoned
-                    .into_inner()
-                    .write_line(&line, &shared.identity, shared.forward);
+                poisoned.into_inner().write_line(
+                    &line,
+                    true,
+                    now,
+                    &shared.identity,
+                    shared.forward,
+                );
                 true
             }
             _ => false,
         };
         if !written {
-            let _ = commands.send(Command::Line(line));
+            let _ = commands.send(Command::Line {
+                text: line,
+                critical: true,
+            });
         }
         previous(info);
     }));
