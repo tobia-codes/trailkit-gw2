@@ -1,0 +1,22 @@
+headers {
+  X-Schema-Version: latest
+}
+
+auth {
+  mode: bearer
+}
+
+auth:bearer {
+  token: {{api_key}}
+}
+
+docs {
+  # Guild Wars 2 API v2
+
+  Requests in `public` send no key (`auth: none`). Requests in `account`
+  inherit this bearer auth and send the secret environment variable
+  `api_key`. Never write a key into a file of this collection.
+
+  Route list: https://api.guildwars2.com/v2
+  Reference: https://wiki.guildwars2.com/wiki/API:Main
+}

@@ -1,0 +1,19 @@
+meta {
+  name: /v2/commerce/exchange/gems
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/v2/commerce/exchange/gems?quantity=100
+  body: none
+  auth: none
+}
+
+params:query {
+  quantity: 100
+}
+
+docs {
+  https://wiki.guildwars2.com/wiki/API:2/commerce/exchange/gems
+}

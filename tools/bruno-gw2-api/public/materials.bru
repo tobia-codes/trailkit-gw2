@@ -1,0 +1,22 @@
+meta {
+  name: /v2/materials
+  type: http
+  seq: 21
+}
+
+get {
+  url: {{base_url}}/v2/materials?lang={{lang}}
+  body: none
+  auth: none
+}
+
+params:query {
+  ~ids: 1
+  ~page: 0
+  ~page_size: 50
+  lang: {{lang}}
+}
+
+docs {
+  https://wiki.guildwars2.com/wiki/API:2/materials
+}

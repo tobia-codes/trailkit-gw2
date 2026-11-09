@@ -1,0 +1,21 @@
+meta {
+  name: /v2/createsubtoken
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/v2/createsubtoken?expire=2030-01-01T00:00:00Z&permissions=account
+  body: none
+  auth: inherit
+}
+
+params:query {
+  expire: 2030-01-01T00:00:00Z
+  permissions: account
+  ~urls: /v2/account
+}
+
+docs {
+  https://wiki.guildwars2.com/wiki/API:2/createsubtoken
+}

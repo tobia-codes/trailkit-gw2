@@ -1,0 +1,19 @@
+meta {
+  name: /v2/pvp/seasons/:id/leaderboards
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_url}}/v2/pvp/seasons/:id/leaderboards
+  body: none
+  auth: none
+}
+
+params:path {
+  id: {{pvp_season_id}}
+}
+
+docs {
+  https://wiki.guildwars2.com/wiki/API:2/pvp/seasons/:id/leaderboards
+}

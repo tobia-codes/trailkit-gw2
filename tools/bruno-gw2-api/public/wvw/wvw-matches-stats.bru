@@ -1,0 +1,22 @@
+meta {
+  name: /v2/wvw/matches/stats
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{base_url}}/v2/wvw/matches/stats
+  body: none
+  auth: none
+}
+
+params:query {
+  ~ids: 1
+  ~page: 0
+  ~page_size: 50
+  ~world: {{world_id}}
+}
+
+docs {
+  https://wiki.guildwars2.com/wiki/API:2/wvw/matches/stats
+}

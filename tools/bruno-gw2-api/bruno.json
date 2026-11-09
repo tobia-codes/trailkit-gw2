@@ -1,0 +1,6 @@
+{
+  "version": "1",
+  "name": "Guild Wars 2 API v2",
+  "type": "collection",
+  "ignore": ["node_modules", ".git"]
+}

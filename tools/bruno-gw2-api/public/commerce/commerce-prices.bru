@@ -1,0 +1,21 @@
+meta {
+  name: /v2/commerce/prices
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/v2/commerce/prices?ids=19721
+  body: none
+  auth: none
+}
+
+params:query {
+  ids: 19721
+  ~page: 0
+  ~page_size: 50
+}
+
+docs {
+  https://wiki.guildwars2.com/wiki/API:2/commerce/prices
+}

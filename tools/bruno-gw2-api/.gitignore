@@ -1,0 +1,2 @@
+# Local Bruno dotenv files may hold API keys; never commit them.
+.env

@@ -1,0 +1,19 @@
+meta {
+  name: /v2/guild/:id/treasury
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{base_url}}/v2/guild/:id/treasury
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: {{guild_id}}
+}
+
+docs {
+  https://wiki.guildwars2.com/wiki/API:2/guild/:id/treasury
+}
