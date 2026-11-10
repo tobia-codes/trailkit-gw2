@@ -64,8 +64,8 @@ use trailkit_memo_shared::{
     note_tree::NotesDocument,
     settings::{QuickAccessIcon, Settings, TextScale},
     storage_worker::{
-        LoadedDocuments, SAVE_DEBOUNCE, SavingAllowed, SettingsSummary, StorageSaver,
-        StorageWorker, log_load_outcome,
+        LoadedDocuments, SavingAllowed, SettingsSummary, StorageSaver, StorageWorker, WorkerTiming,
+        log_load_outcome,
     },
 };
 
@@ -318,7 +318,12 @@ fn start_storage(trailkit_directory: Option<TrailkitDirectory>) -> Settings {
         text_scale: settings.text_scale,
         elapsed: settings_elapsed,
     };
-    match StorageWorker::spawn(store, SAVE_DEBOUNCE, saving_allowed, settings_summary) {
+    match StorageWorker::spawn(
+        store,
+        WorkerTiming::DEFAULT,
+        saving_allowed,
+        settings_summary,
+    ) {
         Ok((worker, loaded)) => {
             let saver = worker.saver();
             if let Ok(mut slot) = STORAGE_WORKER.lock() {
@@ -530,6 +535,8 @@ fn receive_loaded_notes(notes: &mut NotesState) {
             notes: outcome,
             ui_state,
             drafts,
+            // Save reports reach the window with M180's UI step.
+            reports: _,
         }) => {
             let (document, problem) = document_and_problem(outcome);
             NotesState::Ready(Box::new(MemoWindow::new(

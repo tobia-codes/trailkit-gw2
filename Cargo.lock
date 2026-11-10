@@ -1583,6 +1583,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "thiserror",
  "trailkit-log",
  "trailkit-storage",
  "trailkit-ui",

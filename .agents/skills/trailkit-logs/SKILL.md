@@ -37,7 +37,11 @@ only adds the procedure. Decisions: ROADMAP R89, R92.
    - `log_full`: that day logged 5 MiB (five files); something logs in a loop
      (a bug). Find the repeated event just before it; normal lines after it
      are missing until midnight, only `panic`, `worker_died`,
-     `session_start` and `session_end` still arrive.
+     `save_gave_up`, `session_start` and `session_end` still arrive.
+   - `save_gave_up`: a change is not on disk (all automatic writes or the
+     last write at unload failed). Followed by `save_recovered` if a later
+     write succeeded; without it the user lost that change. The
+     `save_failed` lines before it (`attempt=1…`) hold `stage`, `os_error`.
 4. **Group WARN and ERROR** by event, `at=` and `file=`. Read `reason`,
    `stage` and `error` (the whole cause chain). Typical causes:
    - `os error 5` access denied: read-only folder, permissions, controlled
