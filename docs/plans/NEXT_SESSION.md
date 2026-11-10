@@ -17,9 +17,9 @@ vs. 2,344,960 on `develop` (+73.5 KiB, +3.2 %). Storage errors carry `stage`/siz
 reports `SaveHealth`/`WriteFinished`, restarts write-only (Q151); memo shows the error/success toast, waits for the disk
 on Save (Q158) and asks with the save-failed dialog (Q157). Also fixed: trash texts were not registered with the font atlas.
 Deviations to confirm in game: Dark `danger.subtle` 20 % (not 22 %, contrast); a failed Save/"Try again" shows the toast at once;
-"Saving…" stays ≥ 0.6 s; Discard/Keep editing are locked while "Save again" runs (R93, no disabled look yet).
-Open length hints from this work (R77, grill before splitting): `storage_worker.rs` 411, `save_status.rs` 407,
-`actions.rs` 402 + `apply` 81, `addon.rs` 446, `theme.rs` 400. Then R89 (help `?`, export, problem page; `PRIVACY.md`, Q170).
+"Saving…" stays ≥ 0.6 s; disabled controls (variant A + reason tooltip with neutral `ban`, R93) are implemented.
+Splits done (loading, addon storage glue, editor commit, leave guard); `actions.rs` 413 waits for its rebuild (Q134).
+Remote branches of merged PRs #99–#102 deleted. Then R89 (help `?`, export, problem page; `PRIVACY.md`, Q170).
 
 Next ids: **M181+, R94+, questions from 222.** R93 (failure cases, busy buttons) added and implemented 2026-11-10. Still deferred: GW2 build and Nexus version in `session_start` (need MumbleLink → core,
 C12). If ever needed: limit repeated log events once core adds network paths.

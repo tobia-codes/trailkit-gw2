@@ -100,9 +100,11 @@ Each rule has an id (`area-name`) so reviews can cite it.
   UI responsive (work on the worker thread).
 - `ix-busy-buttons` — A button that starts an async action is disabled with a
   spinner until it completes, and at least 0.6 s, so an action that ends at
-  once is still seen to run (`busy::BusyState`, `button::draw_busy_button`).
+  once is still seen to run (`busy::BusyState`, `ButtonState::Busy`).
   Answers that depend on it (e.g. "Discard" beside "Save again") are locked
-  meanwhile (R93).
+  meanwhile: `ButtonState::Disabled { reason }`, label in `text.disabled`, no
+  hover, the reason in a tooltip with a neutral `ban` icon, never `danger`
+  (it is no error; R93).
 - `ix-drag-threshold` — Drag starts only after a few pixels of movement;
   show a drop indicator line between items and highlight target groups;
   Escape cancels the drag.

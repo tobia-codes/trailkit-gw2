@@ -8,10 +8,10 @@
 
 use std::ops::Range;
 
-use nexus::imgui::{Key, StyleColor, Ui};
+use nexus::imgui::{Key, Ui};
 use trailkit_memo_shared::i18n::{Language, LocalizedText};
 use trailkit_ui::{
-    button::{draw_icon_toggle, icon_button_width},
+    button::{ButtonState, draw_icon_button_with_state, draw_icon_toggle, icon_button_width},
     chat_link_chip::ChipContext,
     editor::view::TextEditor,
     font_registry::FontScope,
@@ -285,16 +285,22 @@ impl Editor {
                 }
                 id += 1;
                 let _id = ui.push_id(id);
-                // ImGui 1.80 has no disabled items: a disabled button is drawn
-                // in `text.disabled` and its clicks are ignored. Formatting at
-                // the cursor is a kept state, so neutral, not brass (R79).
-                let _disabled = command
-                    .is_none()
-                    .then(|| ui.push_style_color(StyleColor::Text, theme.text.disabled.to_array()));
-                let is_on = command.is_some_and(|command| active.is_active(command));
-                if draw_icon_toggle(ui, theme, *icon, tooltip.get(language), is_on)
-                    && let Some(command) = command
-                {
+                // Formatting at the cursor is a kept state, so neutral, not
+                // brass (R79).
+                let Some(command) = command else {
+                    // Disabled: grey icon, no hover, the reason as tooltip (R93).
+                    let reason = tooltip.get(language);
+                    draw_icon_button_with_state(
+                        ui,
+                        theme,
+                        *icon,
+                        reason,
+                        ButtonState::Disabled { reason },
+                    );
+                    continue;
+                };
+                let is_on = active.is_active(*command);
+                if draw_icon_toggle(ui, theme, *icon, tooltip.get(language), is_on) {
                     clicked = Some(ToolbarAction::Format(*command));
                 }
             }

@@ -4,7 +4,7 @@
 //! Lucide `check` and `chevron-right` icons like the dropdown, and submenus
 //! open flush beside their parent instead of overlapping it.
 
-use crate::tooltip::draw_tooltip;
+use crate::tooltip::draw_reason_tooltip;
 use nexus::imgui::{ItemHoveredFlags, MenuItem, MenuToken, StyleColor, StyleVar, Ui};
 
 use crate::{
@@ -202,7 +202,8 @@ pub enum MenuItemTone {
 
 /// Draws a menu item with a Lucide `icon` before `label` and returns
 /// whether it was clicked (memo M133). A disabled item is drawn in
-/// `text.disabled` and shows `disabled_tooltip` while hovered (M141).
+/// `text.disabled` and shows `disabled_tooltip` as its reason, with the
+/// neutral `ban` icon, while hovered (M141, R93).
 pub fn draw_menu_item_with_icon(
     ui: &Ui,
     theme: &Theme,
@@ -241,10 +242,10 @@ pub fn draw_menu_item_with_icon(
     draw_icon_into(draw_list, ui, icon, origin[0], span, packed(color));
     let label_x = origin[0] + icon_width(ui) + theme.spacing.small;
     draw_menu_row_label([label_x, origin[1]], color, label);
-    if let Some(tooltip) = disabled_tooltip
+    if let Some(reason) = disabled_tooltip
         && ui.is_item_hovered_with_flags(ItemHoveredFlags::ALLOW_WHEN_DISABLED)
     {
-        draw_tooltip(ui, tooltip);
+        draw_reason_tooltip(ui, theme, reason);
     }
     clicked && enabled
 }

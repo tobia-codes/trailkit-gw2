@@ -1,19 +1,26 @@
 //! Button variants shared by all addons (trailkit-ui skill §3).
 //!
 //! `lay-one-primary`: at most one primary button per window or dialog.
+//! Every text button is a [`Button`] with a [`ButtonKind`] and a
+//! [`ButtonState`] (R93); the `draw_*` functions are short forms.
+
+mod spec;
+
+pub use self::spec::{Button, ButtonKind, ButtonState};
 
 use crate::tooltip::draw_tooltip;
 use nexus::imgui::{ImColor32, StyleColor, Ui};
 
 use crate::{
     color::Color,
-    dropdown::{draw_border, draw_icon_into, icon_width},
+    dropdown::icon_width,
     font_registry::FontScope,
     fonts::FontRole,
     glyph_metrics::{capital_middle, glyph_icon_ink, glyph_ink_box},
     icons::Icon,
-    spinner::{draw_spinner, spinner_width},
+    spinner::draw_spinner,
     theme::Theme,
+    tooltip::draw_reason_tooltip,
 };
 
 /// Draws a button with `label` and returns whether it was clicked. Unlike
@@ -24,47 +31,10 @@ pub fn draw_button(ui: &Ui, theme: &Theme, label: &str) -> bool {
     draw_button_with_size(ui, theme, label, [0.0, 0.0])
 }
 
-/// Like [`draw_button`] with an explicit size (ImGui sizing: `0.0` fits the
-/// label but keeps `button.min_width`, negative values fill the available
-/// space).
+/// Like [`draw_button`] with an explicit width (`size[0]`; `0.0` fits the
+/// label but keeps `button.min_width`). The height is the frame height.
 pub fn draw_button_with_size(ui: &Ui, theme: &Theme, label: &str, size: [f32; 2]) -> bool {
-    let clicked = draw_filled_button(ui, theme, label, size);
-    // The fill alone can vanish on `bg.window` (R85), like on a dropdown.
-    draw_border(
-        ui.item_rect_min(),
-        ui.item_rect_max(),
-        theme.border.color,
-        theme.border.width,
-        theme.radius.medium,
-    );
-    clicked
-}
-
-/// Draws a button without a frame, in the current `Button*` colors, for
-/// [`draw_button_with_size`] and the fills that stand out on their own.
-fn draw_filled_button(ui: &Ui, theme: &Theme, label: &str, size: [f32; 2]) -> bool {
-    let padding = ui.clone_style().frame_padding;
-    let text_size = ui.calc_text_size(label);
-    let size = [
-        if size[0] == 0.0 {
-            button_width(ui, theme, label)
-        } else {
-            size[0]
-        },
-        if size[1] == 0.0 {
-            text_size[1] + 2.0 * padding[1]
-        } else {
-            size[1]
-        },
-    ];
-    // The label is the ID only; ImGui draws the frame, the label follows.
-    let _id = ui.push_id(label);
-    let clicked = ui.button_with_size("##button", size);
-    let [min, max] = [ui.item_rect_min(), ui.item_rect_max()];
-    let x = min[0] + ((max[0] - min[0] - text_size[0]) / 2.0).max(padding[0]);
-    let color = ImColor32::from(ui.style_color(StyleColor::Text)).to_bits();
-    draw_label(label, x, [min[1], max[1]], color);
-    clicked
+    Button::new(label).width(size[0]).draw(ui, theme)
 }
 
 /// Draws `label` starting at `x`, vertically centered by its capital letters
@@ -97,16 +67,13 @@ pub fn draw_primary_button(ui: &Ui, theme: &Theme, label: &str) -> bool {
     draw_primary_button_with_size(ui, theme, label, [0.0, 0.0])
 }
 
-/// Like [`draw_primary_button`] with an explicit size (ImGui sizing: `0.0`
+/// Like [`draw_primary_button`] with an explicit width (`size[0]`; `0.0`
 /// fits the label), e.g. full width in a stacked button column.
 pub fn draw_primary_button_with_size(ui: &Ui, theme: &Theme, label: &str, size: [f32; 2]) -> bool {
-    let _colors = [
-        ui.push_style_color(StyleColor::Button, theme.accent.base.to_array()),
-        ui.push_style_color(StyleColor::ButtonHovered, theme.accent.hover.to_array()),
-        ui.push_style_color(StyleColor::ButtonActive, theme.accent.active.to_array()),
-        ui.push_style_color(StyleColor::Text, theme.text.on_accent.to_array()),
-    ];
-    draw_filled_button(ui, theme, label, size)
+    Button::new(label)
+        .kind(ButtonKind::Primary)
+        .width(size[0])
+        .draw(ui, theme)
 }
 
 /// Draws a button for a destructive action that asks first (memo M146):
@@ -117,25 +84,18 @@ pub fn draw_danger_button(ui: &Ui, theme: &Theme, label: &str) -> bool {
 }
 
 /// Draws the confirming button of a destructive dialog (memo M146): a
-/// `danger` fill with a label in the window color, at `size` (ImGui sizing,
-/// `0.0` fits the label).
+/// `danger` fill with a label in the window color, `size[0]` wide (`0.0`
+/// fits the label).
 pub fn draw_danger_fill_button_with_size(
     ui: &Ui,
     theme: &Theme,
     label: &str,
     size: [f32; 2],
 ) -> bool {
-    let danger = theme.status.danger;
-    let _colors = [
-        ui.push_style_color(StyleColor::Button, danger.to_array()),
-        ui.push_style_color(
-            StyleColor::ButtonHovered,
-            danger.with_alpha(0.85).to_array(),
-        ),
-        ui.push_style_color(StyleColor::ButtonActive, danger.with_alpha(0.7).to_array()),
-        ui.push_style_color(StyleColor::Text, theme.surface.window.to_array()),
-    ];
-    draw_filled_button(ui, theme, label, size)
+    Button::new(label)
+        .kind(ButtonKind::DangerFill)
+        .width(size[0])
+        .draw(ui, theme)
 }
 
 /// Like [`draw_icon_button`] with a `danger` icon, for a destructive action
@@ -149,33 +109,10 @@ pub fn draw_danger_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str
 /// background, `text.on_accent` icon and label; R71) and returns whether it
 /// was clicked.
 pub fn draw_primary_button_with_icon(ui: &Ui, theme: &Theme, icon: Icon, label: &str) -> bool {
-    let _colors = [
-        ui.push_style_color(StyleColor::Button, theme.accent.base.to_array()),
-        ui.push_style_color(StyleColor::ButtonHovered, theme.accent.hover.to_array()),
-        ui.push_style_color(StyleColor::ButtonActive, theme.accent.active.to_array()),
-        ui.push_style_color(StyleColor::Text, theme.text.on_accent.to_array()),
-    ];
-    let gap = icon_label_gap(theme);
-    let content_width = icon_label_content_width(ui, theme, label);
-    let size = [icon_label_button_width(ui, theme, label), ui.frame_height()];
-    let _id = ui.push_id(label);
-    let clicked = ui.button_with_size("##button", size);
-    let [min, max] = [ui.item_rect_min(), ui.item_rect_max()];
-    let color = ImColor32::from(ui.style_color(StyleColor::Text)).to_bits();
-    // SAFETY: called on the render thread inside a frame, where ImGui has a
-    // current window and returns its draw list.
-    let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
-    // Icon and label are centered as one group when the minimum width makes
-    // the button wider than its content (M131).
-    let icon_x = (min[0] + (max[0] - min[0] - content_width) / 2.0).round();
-    draw_icon_into(draw_list, ui, icon, icon_x, [min[1], max[1]], color);
-    draw_label(
-        label,
-        icon_x + icon_width(ui) + gap,
-        [min[1], max[1]],
-        color,
-    );
-    clicked
+    Button::new(label)
+        .kind(ButtonKind::Primary)
+        .icon(icon)
+        .draw(ui, theme)
 }
 
 /// The width of an icon button showing `icon`.
@@ -196,7 +133,7 @@ pub fn icon_label_button_width(ui: &Ui, theme: &Theme, label: &str) -> f32 {
 }
 
 /// The width of icon, gap and `label` inside a button, without padding.
-fn icon_label_content_width(ui: &Ui, theme: &Theme, label: &str) -> f32 {
+pub(crate) fn icon_label_content_width(ui: &Ui, theme: &Theme, label: &str) -> f32 {
     icon_width(ui) + icon_label_gap(theme) + ui.calc_text_size(label)[0]
 }
 
@@ -207,7 +144,7 @@ fn min_text_button_width(ui: &Ui, theme: &Theme) -> f32 {
 }
 
 /// The gap between an icon and its label inside a button.
-fn icon_label_gap(theme: &Theme) -> f32 {
+pub(crate) fn icon_label_gap(theme: &Theme) -> f32 {
     theme.spacing.extra_small * 1.5
 }
 
@@ -224,57 +161,45 @@ pub fn draw_popup_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str)
     draw_icon_button_with_hover(ui, theme, icon, tooltip, false, theme.surface.active)
 }
 
-/// Draws a button whose action is running (memo M180, "Saving…"): a
-/// rotating spinner before `label`, in the regular or (`primary`) accent
-/// colors, `width` wide (`0.0` fits the content, e.g. full width in a
-/// stacked dialog column). It cannot be clicked while busy.
-pub fn draw_busy_button(ui: &Ui, theme: &Theme, label: &str, primary: bool, width: f32) {
-    let resting = if primary {
-        theme.accent.base
-    } else {
-        Color::from_array(ui.style_color(StyleColor::Button))
-    };
-    let text = if primary {
-        theme.text.on_accent
-    } else {
-        Color::from_array(ui.style_color(StyleColor::Text))
-    };
-    let _colors = [
-        ui.push_style_color(StyleColor::Button, resting.to_array()),
-        ui.push_style_color(StyleColor::ButtonHovered, resting.to_array()),
-        ui.push_style_color(StyleColor::ButtonActive, resting.to_array()),
-    ];
-    let gap = icon_label_gap(theme);
-    let content_width = icon_label_content_width(ui, theme, label);
-    let fitted = icon_label_button_width(ui, theme, label);
-    let size = [if width > 0.0 { width } else { fitted }, ui.frame_height()];
-    let _id = ui.push_id(label);
-    // Clicks are ignored: the action already runs.
-    let _ = ui.button_with_size("##busy", size);
-    let [min, max] = [ui.item_rect_min(), ui.item_rect_max()];
-    if !primary {
-        draw_border(
-            min,
-            max,
-            theme.border.color,
-            theme.border.width,
-            theme.radius.medium,
-        );
+/// Like [`draw_icon_button`] in `state` (R93): disabled it shows the icon in
+/// `text.disabled` without hover and names the reason in its tooltip (the
+/// reason replaces `tooltip`); busy it shows a spinner instead of the icon.
+/// Reports clicks only when ready.
+pub fn draw_icon_button_with_state(
+    ui: &Ui,
+    theme: &Theme,
+    icon: Icon,
+    tooltip: &str,
+    state: ButtonState<'_>,
+) -> bool {
+    match state {
+        ButtonState::Ready => draw_icon_button(ui, theme, icon, tooltip),
+        ButtonState::Disabled { reason } => {
+            {
+                let _text = ui.push_style_color(StyleColor::Text, theme.text.disabled.to_array());
+                draw_icon_button_with_hover(ui, theme, icon, "", false, Color::TRANSPARENT);
+            }
+            if ui.is_item_hovered() {
+                draw_reason_tooltip(ui, theme, reason);
+            }
+            false
+        }
+        ButtonState::Busy => {
+            let size = [icon_button_width(ui, icon), ui.frame_height()];
+            let _ = ui.invisible_button(icon.as_str(&mut [0; 4]), size);
+            let [min, max] = [ui.item_rect_min(), ui.item_rect_max()];
+            let color = Color::from_array(ui.style_color(StyleColor::Text));
+            draw_spinner(
+                ui,
+                [(min[0] + max[0]) / 2.0, (min[1] + max[1]) / 2.0],
+                color,
+            );
+            if ui.is_item_hovered() {
+                draw_tooltip(ui, tooltip);
+            }
+            false
+        }
     }
-    let spinner_x = (min[0] + (max[0] - min[0] - content_width) / 2.0).round();
-    let spinner_width = spinner_width(ui);
-    draw_spinner(
-        ui,
-        [spinner_x + spinner_width / 2.0, (min[1] + max[1]) / 2.0],
-        text,
-    );
-    let color = ImColor32::from(text.to_array()).to_bits();
-    draw_label(
-        label,
-        spinner_x + spinner_width + gap,
-        [min[1], max[1]],
-        color,
-    );
 }
 
 /// Like [`draw_icon_button`], but a toggle that keeps a state: while
@@ -320,7 +245,7 @@ fn draw_icon_button_with_hover(
         ui.button(icon.as_str(&mut buffer))
     };
     draw_icon_centered(ui, icon, [ui.item_rect_min(), ui.item_rect_max()], color);
-    if ui.is_item_hovered() {
+    if !tooltip.is_empty() && ui.is_item_hovered() {
         draw_tooltip(ui, tooltip);
     }
     clicked

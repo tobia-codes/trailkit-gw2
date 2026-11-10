@@ -106,10 +106,15 @@ Build once, use everywhere. Planned:
   `draw_toast_with_extras` a counter, a spinner and a close `x`. A busy
   action (`ToastAction::busy`) shows a spinner. `ToastTone::Success`:
   `circle-check` in `success`, 5 s
-- Busy button — **exists**: `button::draw_busy_button` (spinner + label,
-  cannot be clicked, e.g. "Saving…"), driven by `busy::BusyState` (busy
-  while running, at least 0.6 s; lock dependent answers too); `spinner::draw_spinner`; on popups and
-  toasts `draw_popup_icon_button` (hover on `bg.active`)
+- Button with kind and state — **exists** (R93): `button::Button` with
+  `ButtonKind` (`Regular`, `Primary`, `DangerFill`) and `ButtonState`
+  (`Ready`, `Busy` = spinner, `Disabled { reason }` = `text.disabled`
+  label, no hover, reason tooltip with a neutral `ban` icon via
+  `tooltip::draw_reason_tooltip`); `draw_button`, `draw_primary_button` …
+  are short forms. Icon buttons: `draw_icon_button_with_state`. Disabled
+  menu entries use the same reason tooltip. Drive `Busy` with
+  `busy::BusyState` (at least 0.6 s); on popups and toasts
+  `draw_popup_icon_button` (hover on `bg.active`)
 - `Popover` / `Tooltip`, `ConfirmDialog`, `UnsavedChangesDialog`
 - `DependencyHint` (greyed feature + explanation + "Open core settings"/
   "Get trailkit-core" button)

@@ -17,6 +17,7 @@ use std::{
 use nexus::imgui::Ui;
 use trailkit_ui::{
     busy::BusyState,
+    button::ButtonState,
     theme::Theme,
     toast::{Toast, ToastAction, ToastExtras, ToastTone, draw_toast_with_extras},
 };
@@ -261,7 +262,11 @@ impl MemoWindow {
                 SaveText::TryAgain.get(language)
             },
             tooltip: None,
-            busy: running,
+            state: if running {
+                ButtonState::Busy
+            } else {
+                ButtonState::Ready
+            },
         };
         let actions: &[ToastAction<'_>] = if retrying.is_some() {
             &[]

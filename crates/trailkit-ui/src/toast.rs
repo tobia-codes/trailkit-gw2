@@ -12,10 +12,7 @@ use crate::tooltip::draw_tooltip;
 use nexus::imgui::{ChildWindow, ImColor32, StyleColor, Ui, WindowHoveredFlags};
 
 use crate::{
-    button::{
-        button_width, draw_busy_button, draw_button, draw_popup_icon_button, icon_button_width,
-        icon_label_button_width,
-    },
+    button::{Button, ButtonState, draw_popup_icon_button, icon_button_width},
     color::Color,
     dropdown::{draw_icon_into, icon_width},
     icons::Icon,
@@ -58,9 +55,9 @@ pub struct ToastAction<'text> {
     pub label: &'text str,
     /// The tooltip, e.g. naming the action's shortcut (M162).
     pub tooltip: Option<&'text str>,
-    /// Whether the action runs: the button shows a spinner and cannot be
-    /// clicked (memo M180, "Saving…").
-    pub busy: bool,
+    /// What the button can do now: busy shows a spinner (memo M180,
+    /// "Saving…"); neither busy nor disabled report clicks (R93).
+    pub state: ButtonState<'text>,
 }
 
 /// What a toast shows besides its message and actions (memo M180).
@@ -172,13 +169,14 @@ impl ToastTone {
     }
 }
 
+/// The button of an action.
+const fn action_button<'text>(action: &ToastAction<'text>) -> Button<'text> {
+    Button::new(action.label).state(action.state)
+}
+
 /// The width of an action button.
 fn action_width(ui: &Ui, theme: &Theme, action: &ToastAction<'_>) -> f32 {
-    if action.busy {
-        icon_label_button_width(ui, theme, action.label)
-    } else {
-        button_width(ui, theme, action.label)
-    }
+    action_button(action).measure(ui, theme)
 }
 
 /// Where the parts of a toast go, measured once per frame.
@@ -407,9 +405,7 @@ fn draw_toast_actions(
             position[0] = right - button;
         }
         ui.set_cursor_screen_pos(position);
-        if action.busy {
-            draw_busy_button(ui, theme, action.label, false, 0.0);
-        } else if draw_button(ui, theme, action.label) {
+        if action_button(action).draw(ui, theme) {
             clicked = Some(index);
         }
         if let Some(tooltip) = action.tooltip

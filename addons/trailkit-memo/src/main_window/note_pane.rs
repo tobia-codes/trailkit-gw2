@@ -7,8 +7,9 @@ use nexus::imgui::Ui;
 use trailkit_ui::tooltip::draw_tooltip;
 use trailkit_ui::{
     button::{
-        button_width, draw_busy_button, draw_button, draw_icon_button, draw_icon_toggle,
-        draw_primary_button_with_icon, icon_button_width, icon_label_button_width,
+        Button, ButtonKind, ButtonState, button_width, draw_button, draw_icon_button,
+        draw_icon_toggle, draw_primary_button_with_icon, icon_button_width,
+        icon_label_button_width,
     },
     icons::Icon,
     menu::place_next_popup,
@@ -101,15 +102,20 @@ impl MemoWindow {
                 self.actions.push(WindowAction::CancelEditing);
             }
             ui.same_line();
-            if saving {
-                draw_busy_button(ui, theme, save, true, 0.0);
+            let state = if saving {
+                ButtonState::Busy
             } else {
-                if draw_primary_button_with_icon(ui, theme, Icon::SAVE, save) {
-                    self.actions.push(WindowAction::FinishEditing);
-                }
-                if ui.is_item_hovered() {
-                    draw_tooltip(ui, Text::SaveTooltip.get(language));
-                }
+                ButtonState::Ready
+            };
+            let save_button = Button::new(save)
+                .kind(ButtonKind::Primary)
+                .icon(Icon::SAVE)
+                .state(state);
+            if save_button.draw(ui, theme) {
+                self.actions.push(WindowAction::FinishEditing);
+            }
+            if !saving && ui.is_item_hovered() {
+                draw_tooltip(ui, Text::SaveTooltip.get(language));
             }
         } else if self.selected_note().is_some() {
             // Editing is the main action of the reading view: the one brass

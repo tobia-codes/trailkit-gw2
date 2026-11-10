@@ -511,6 +511,13 @@ fn editor() {
     assert_state("editor-focused", WIDE, selected_editing_focused, &[]);
     assert_state("editor-selection", WIDE, editing_with_selection, &[]);
     assert_state("editor-preview", [720.0, 360.0], editing_with_preview, &[]);
+    // The disabled "Insert event" button names its reason (R93).
+    assert_state(
+        "editor-event-disabled-hover",
+        WIDE,
+        editing,
+        &hover([360.0, 64.0]),
+    );
 }
 
 /// The first note open in the editor with the keyboard focus in its body.

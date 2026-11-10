@@ -4,10 +4,7 @@
 
 use nexus::imgui::{Condition, Key, MouseButton, StyleColor, StyleVar, Ui, Window, WindowFlags};
 use trailkit_ui::{
-    button::{
-        button_width, draw_busy_button, draw_button, draw_button_with_size,
-        draw_danger_fill_button_with_size, draw_primary_button_with_size, icon_label_button_width,
-    },
+    button::{Button, ButtonKind, ButtonState, draw_button},
     font_registry::FontScope,
     fonts::FontRole,
     icons::Icon,
@@ -78,27 +75,16 @@ pub(super) const DIALOG_MINIMUM_CHARACTERS: f32 = 28.0;
 /// Largest share of the window a dialog card may take.
 pub(super) const DIALOG_MAXIMUM_FRACTION: f32 = 0.9;
 
-/// How a dialog button looks.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum DialogButtonStyle {
-    /// A regular button.
-    Regular,
-    /// The one primary (brass) button (`lay-one-primary`).
-    Primary,
-    /// The `danger` button that confirms a destructive action (M146).
-    Danger,
-    /// The primary button while its action runs: spinner, cannot be
-    /// clicked (M180, "Saving…").
-    Busy,
-}
-
 /// A button of a dialog card and the answer it gives.
 #[derive(Debug, Clone)]
 pub(super) struct DialogButton<'a> {
     /// The label.
     pub(super) label: &'a str,
-    /// How it looks.
-    pub(super) style: DialogButtonStyle,
+    /// How it looks while it can be used.
+    pub(super) kind: ButtonKind,
+    /// What it can do now (R93): busy while its action runs, disabled
+    /// with a reason while another answer runs.
+    pub(super) state: ButtonState<'a>,
     /// The answer applied when it is clicked.
     pub(super) answer: WindowAction,
 }
@@ -123,29 +109,23 @@ pub(super) struct DialogContent<'a> {
     pub(super) enter: Option<WindowAction>,
 }
 
-/// The width a dialog button takes in a row.
-fn dialog_button_width(ui: &Ui, theme: &Theme, button: &DialogButton<'_>) -> f32 {
-    match button.style {
-        DialogButtonStyle::Busy => icon_label_button_width(ui, theme, button.label),
-        DialogButtonStyle::Regular | DialogButtonStyle::Primary | DialogButtonStyle::Danger => {
-            button_width(ui, theme, button.label)
-        }
-    }
+/// The shared button of a dialog button, `width` wide (`0.0` fits).
+fn button_of<'a>(button: &DialogButton<'a>, width: f32) -> Button<'a> {
+    Button::new(button.label)
+        .kind(button.kind)
+        .state(button.state)
+        .width(width)
 }
 
-/// Draws one dialog button at `size` (ImGui sizing).
+/// The width a dialog button takes in a row.
+fn dialog_button_width(ui: &Ui, theme: &Theme, button: &DialogButton<'_>) -> f32 {
+    button_of(button, 0.0).measure(ui, theme)
+}
+
+/// Draws one dialog button `size[0]` wide (`0.0` fits) and returns whether
+/// it was clicked.
 fn draw_dialog_button(ui: &Ui, theme: &Theme, button: &DialogButton<'_>, size: [f32; 2]) -> bool {
-    match button.style {
-        DialogButtonStyle::Busy => {
-            draw_busy_button(ui, theme, button.label, true, size[0]);
-            false
-        }
-        DialogButtonStyle::Regular => draw_button_with_size(ui, theme, button.label, size),
-        DialogButtonStyle::Primary => draw_primary_button_with_size(ui, theme, button.label, size),
-        DialogButtonStyle::Danger => {
-            draw_danger_fill_button_with_size(ui, theme, button.label, size)
-        }
-    }
+    button_of(button, size[0]).draw(ui, theme)
 }
 
 /// Draws a dialog card centered in the current window (M54, M56, M70,
@@ -314,18 +294,21 @@ pub(super) fn unsaved_changes_dialog(language: Language) -> DialogContent<'stati
         status: None,
         apart: Some(DialogButton {
             label: Text::DiscardChanges.get(language),
-            style: DialogButtonStyle::Regular,
+            kind: ButtonKind::Regular,
+            state: ButtonState::Ready,
             answer: WindowAction::LeaveDiscarding,
         }),
         buttons: vec![
             DialogButton {
                 label: Text::KeepEditing.get(language),
-                style: DialogButtonStyle::Regular,
+                kind: ButtonKind::Regular,
+                state: ButtonState::Ready,
                 answer: WindowAction::LeaveCancelled,
             },
             DialogButton {
                 label: Text::KeepChanges.get(language),
-                style: DialogButtonStyle::Primary,
+                kind: ButtonKind::Primary,
+                state: ButtonState::Ready,
                 answer: WindowAction::LeaveSaving,
             },
         ],
@@ -338,21 +321,26 @@ pub(super) fn unsaved_changes_dialog(language: Language) -> DialogContent<'stati
 /// Q157, mockup V4): "Discard" set apart on the left, "Keep editing" and
 /// the primary "Save again" (busy while it writes) on the right; after a
 /// failed "Save again" a red "Failed again" line. While "Save again" is
-/// busy, the other answers are locked (`ix-busy-buttons`). Enter saves again, Escape
-/// keeps editing.
+/// busy, the other answers are disabled and name the reason
+/// (`ix-busy-buttons`, R93). Enter saves again, Escape keeps editing.
 pub(super) fn save_failed_dialog(
     prompt: &SaveFailedPrompt,
     language: Language,
 ) -> DialogContent<'static> {
-    // A write that failed at once keeps "Saving…" for its minimum time.
+    // A write that failed at once keeps "Saving…" for its minimum time;
+    // meanwhile the other answers wait and say why (R93).
     let saving = prompt.save.is_busy();
-    let (save_label, save_style) = if saving {
-        (SaveText::Saving.get(language), DialogButtonStyle::Busy)
+    let (save_label, save_state) = if saving {
+        (SaveText::Saving.get(language), ButtonState::Busy)
     } else {
-        (
-            SaveText::SaveAgain.get(language),
-            DialogButtonStyle::Primary,
-        )
+        (SaveText::SaveAgain.get(language), ButtonState::Ready)
+    };
+    let others = if saving {
+        ButtonState::Disabled {
+            reason: SaveText::AvailableAfterSaving.get(language),
+        }
+    } else {
+        ButtonState::Ready
     };
     DialogContent {
         title: SaveText::SaveFailed.get(language),
@@ -360,18 +348,21 @@ pub(super) fn save_failed_dialog(
         status: (prompt.failed_again && !saving).then(|| SaveText::FailedAgain.get(language)),
         apart: Some(DialogButton {
             label: Text::DiscardChanges.get(language),
-            style: DialogButtonStyle::Regular,
+            kind: ButtonKind::Regular,
+            state: others,
             answer: WindowAction::SaveFailedDiscard,
         }),
         buttons: vec![
             DialogButton {
                 label: Text::KeepEditing.get(language),
-                style: DialogButtonStyle::Regular,
+                kind: ButtonKind::Regular,
+                state: others,
                 answer: WindowAction::SaveFailedKeepEditing,
             },
             DialogButton {
                 label: save_label,
-                style: save_style,
+                kind: ButtonKind::Primary,
+                state: save_state,
                 answer: WindowAction::SaveFailedRetry,
             },
         ],
@@ -394,12 +385,14 @@ fn confirmation_dialog<'a>(
         buttons: vec![
             DialogButton {
                 label: Text::Cancel.get(language),
-                style: DialogButtonStyle::Regular,
+                kind: ButtonKind::Regular,
+                state: ButtonState::Ready,
                 answer: WindowAction::ConfirmCancelled,
             },
             DialogButton {
                 label: confirmation.confirm_label,
-                style: DialogButtonStyle::Danger,
+                kind: ButtonKind::DangerFill,
+                state: ButtonState::Ready,
                 answer: WindowAction::ConfirmAccepted,
             },
         ],

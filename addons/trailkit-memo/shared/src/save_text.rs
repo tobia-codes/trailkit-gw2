@@ -25,6 +25,8 @@ pub enum SaveText {
     SaveAgain,
     /// The dialog's status line after "Save again" failed (Q157).
     FailedAgain,
+    /// Why the dialog's other answers wait while "Save again" runs (R93).
+    AvailableAfterSaving,
 }
 
 impl LocalizedText for SaveText {
@@ -37,6 +39,7 @@ impl LocalizedText for SaveText {
         Self::DiscardDeletesChanges,
         Self::SaveAgain,
         Self::FailedAgain,
+        Self::AvailableAfterSaving,
     ];
 
     fn get(self, language: Language) -> &'static str {
@@ -57,6 +60,10 @@ impl LocalizedText for SaveText {
             (Self::SaveAgain, Language::German) => "Erneut speichern",
             (Self::FailedAgain, Language::English) => "Failed again",
             (Self::FailedAgain, Language::German) => "Erneut fehlgeschlagen",
+            (Self::AvailableAfterSaving, Language::English) => "Available once saving has finished",
+            (Self::AvailableAfterSaving, Language::German) => {
+                "Möglich, sobald das Speichern fertig ist"
+            }
         }
     }
 

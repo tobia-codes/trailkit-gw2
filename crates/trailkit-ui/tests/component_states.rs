@@ -12,8 +12,9 @@ use std::cell::Cell;
 use nexus::imgui::{Condition, Ui, Window, WindowFlags};
 use trailkit_ui::{
     button::{
-        draw_button, draw_danger_button, draw_danger_icon_button, draw_icon_button,
-        draw_icon_toggle, draw_primary_button, draw_primary_button_with_icon,
+        Button, ButtonKind, ButtonState, draw_button, draw_danger_button, draw_danger_icon_button,
+        draw_icon_button, draw_icon_button_with_state, draw_icon_toggle, draw_primary_button,
+        draw_primary_button_with_icon,
     },
     dropdown::draw_dropdown,
     icons::Icon,
@@ -138,6 +139,66 @@ fn every_button_at_rest_hovered_and_pressed() {
     }
 }
 
+/// The states of the one button with a kind and a state (R93).
+const BUTTON_STATES: [(&str, DrawButton); 4] = [
+    ("button-disabled", |ui, theme| {
+        Button::new("Discard")
+            .state(ButtonState::Disabled {
+                reason: "Available once saving has finished",
+            })
+            .draw(ui, theme);
+    }),
+    ("button-primary-busy", |ui, theme| {
+        Button::new("Saving…")
+            .kind(ButtonKind::Primary)
+            .state(ButtonState::Busy)
+            .draw(ui, theme);
+    }),
+    ("button-regular-busy", |ui, theme| {
+        Button::new("Saving…")
+            .state(ButtonState::Busy)
+            .draw(ui, theme);
+    }),
+    ("button-icon-disabled", |ui, theme| {
+        draw_icon_button_with_state(
+            ui,
+            theme,
+            Icon::CALENDAR_CLOCK,
+            "",
+            ButtonState::Disabled {
+                reason: "Insert event — requires trailkit-core",
+            },
+        );
+    }),
+];
+
+#[test]
+fn every_button_state_at_rest_and_hovered() {
+    // Wide enough for the reason tooltip of a disabled button.
+    let size = [360.0, 90.0];
+    let over_button = [20.0, 22.0];
+    let mut harness = UiHarness::new(size);
+    for (kind, theme_name) in THEMES {
+        let theme = kind.theme();
+        for (name, draw_one) in BUTTON_STATES {
+            let mut draw = |ui: &Ui| in_window(ui, &theme, size, || draw_one(ui, &theme));
+            let names = |state| (name, state, theme_name);
+            assert_state(
+                &mut harness,
+                names("rest"),
+                &mouse([340.0, 80.0], false),
+                &mut draw,
+            );
+            assert_state(
+                &mut harness,
+                names("hover"),
+                &mouse(over_button, false),
+                &mut draw,
+            );
+        }
+    }
+}
+
 /// Draws a menu with every kind of entry; the popup opens in the first frame.
 fn draw_sample_menu(ui: &Ui, theme: &Theme, opened: &Cell<bool>) {
     if !opened.replace(true) {
@@ -188,7 +249,7 @@ fn every_menu_entry_at_rest_and_hovered() {
         ("hover-checked", row(44.0)),
         ("hover-icon", row(100.0)),
         ("hover-danger", row(124.0)),
-        ("hover-disabled", row(148.0)),
+        ("hover-disabled", row(182.0)),
         ("submenu-open", row(68.0)),
     ];
     for (kind, theme_name) in THEMES {
@@ -289,7 +350,7 @@ fn every_toast_state() {
                     &[ToastAction {
                         label: "Undo",
                         tooltip: None,
-                        busy: false,
+                        state: ButtonState::Ready,
                     }],
                 );
             });
@@ -322,12 +383,12 @@ fn toast_with_two_actions_in_every_width() {
         ToastAction {
             label: "Undo",
             tooltip: None,
-            busy: false,
+            state: ButtonState::Ready,
         },
         ToastAction {
             label: "Open trash",
             tooltip: None,
-            busy: false,
+            state: ButtonState::Ready,
         },
     ];
     // Wide enough for one row, for the buttons in a row below the message
@@ -459,7 +520,11 @@ fn every_error_and_success_toast_state() {
                 .map(|(label, busy)| ToastAction {
                     label,
                     tooltip: None,
-                    busy,
+                    state: if busy {
+                        ButtonState::Busy
+                    } else {
+                        ButtonState::Ready
+                    },
                 })
                 .into_iter()
                 .collect();

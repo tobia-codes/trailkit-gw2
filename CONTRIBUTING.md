@@ -177,7 +177,8 @@ before changing anything visible.
   they recover. Default: retry automatically a few times, then an error toast
   with "Try again", as memo does for saving (M180). Buttons whose action runs
   show a spinner for at least 0.6 s and cannot be clicked twice
-  (`trailkit_ui::busy::BusyState`).
+  (`trailkit_ui::busy::BusyState`). A control that cannot be used now is
+  disabled and says why in its tooltip (`ButtonState::Disabled { reason }`).
 - **Accessibility**: text contrast ≥ 4.5:1 in both themes, meaning never by
   color alone, icons always with a tooltip, destructive actions ask first.
 - **New icons**: add them to `Icon::ALL` and run `cargo xtask subset-fonts`.
