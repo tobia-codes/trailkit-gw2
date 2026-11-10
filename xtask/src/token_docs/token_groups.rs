@@ -157,6 +157,7 @@ fn status_group(colors: StatusColors) -> TokenGroup {
         success,
         warning,
         danger,
+        danger_subtle,
         info,
     } = colors;
     TokenGroup {
@@ -165,6 +166,7 @@ fn status_group(colors: StatusColors) -> TokenGroup {
             color("success", success, "Success"),
             color("warning", warning, "Warnings, invalid chat links"),
             color("danger", danger, "Destructive actions"),
+            color("danger.subtle", danger_subtle, "Fill of an error toast"),
             color("info", info, "Information"),
         ],
     }

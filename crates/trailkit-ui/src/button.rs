@@ -6,11 +6,13 @@ use crate::tooltip::draw_tooltip;
 use nexus::imgui::{ImColor32, StyleColor, Ui};
 
 use crate::{
+    color::Color,
     dropdown::{draw_border, draw_icon_into, icon_width},
     font_registry::FontScope,
     fonts::FontRole,
     glyph_metrics::{capital_middle, glyph_icon_ink, glyph_ink_box},
     icons::Icon,
+    spinner::{draw_spinner, spinner_width},
     theme::Theme,
 };
 
@@ -215,12 +217,84 @@ pub fn draw_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str) -> bo
     draw_icon_toggle(ui, theme, icon, tooltip, false)
 }
 
+/// Like [`draw_icon_button`] on a popup or toast surface, where `bg.hover`
+/// hardly differs from the fill: hovered it sits on `bg.active` (memo M180,
+/// a toast's close button).
+pub fn draw_popup_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str) -> bool {
+    draw_icon_button_with_hover(ui, theme, icon, tooltip, false, theme.surface.active)
+}
+
+/// Draws a button whose action is running (memo M180, "Saving…"): a
+/// rotating spinner before `label`, in the regular or (`primary`) accent
+/// colors. It cannot be clicked while busy.
+pub fn draw_busy_button(ui: &Ui, theme: &Theme, label: &str, primary: bool) {
+    let resting = if primary {
+        theme.accent.base
+    } else {
+        Color::from_array(ui.style_color(StyleColor::Button))
+    };
+    let text = if primary {
+        theme.text.on_accent
+    } else {
+        Color::from_array(ui.style_color(StyleColor::Text))
+    };
+    let _colors = [
+        ui.push_style_color(StyleColor::Button, resting.to_array()),
+        ui.push_style_color(StyleColor::ButtonHovered, resting.to_array()),
+        ui.push_style_color(StyleColor::ButtonActive, resting.to_array()),
+    ];
+    let gap = icon_label_gap(theme);
+    let content_width = icon_label_content_width(ui, theme, label);
+    let size = [icon_label_button_width(ui, theme, label), ui.frame_height()];
+    let _id = ui.push_id(label);
+    // Clicks are ignored: the action already runs.
+    let _ = ui.button_with_size("##busy", size);
+    let [min, max] = [ui.item_rect_min(), ui.item_rect_max()];
+    if !primary {
+        draw_border(
+            min,
+            max,
+            theme.border.color,
+            theme.border.width,
+            theme.radius.medium,
+        );
+    }
+    let spinner_x = (min[0] + (max[0] - min[0] - content_width) / 2.0).round();
+    let spinner_width = spinner_width(ui);
+    draw_spinner(
+        ui,
+        [spinner_x + spinner_width / 2.0, (min[1] + max[1]) / 2.0],
+        text,
+    );
+    let color = ImColor32::from(text.to_array()).to_bits();
+    draw_label(
+        label,
+        spinner_x + spinner_width + gap,
+        [min[1], max[1]],
+        color,
+    );
+}
+
 /// Like [`draw_icon_button`], but a toggle that keeps a state: while
 /// `active` it sits on `bg.active` with a `text.primary` icon, otherwise it
 /// looks like a plain icon button. Toggles never use the brass accent
 /// (ROADMAP R79, tokens.md §3). The icon is centered by its visible ink, so
 /// it lines up with a label centered by its capitals (memo M170).
 pub fn draw_icon_toggle(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str, active: bool) -> bool {
+    draw_icon_button_with_hover(ui, theme, icon, tooltip, active, theme.surface.hover)
+}
+
+/// The icon button behind [`draw_icon_toggle`] and
+/// [`draw_popup_icon_button`]: `hover` is the fill while hovered and not
+/// `active`.
+fn draw_icon_button_with_hover(
+    ui: &Ui,
+    theme: &Theme,
+    icon: Icon,
+    tooltip: &str,
+    active: bool,
+    hover: Color,
+) -> bool {
     let _active_text =
         active.then(|| ui.push_style_color(StyleColor::Text, theme.text.primary.to_array()));
     let resting = if active {
@@ -235,11 +309,7 @@ pub fn draw_icon_toggle(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str, activ
             ui.push_style_color(StyleColor::Button, resting),
             ui.push_style_color(
                 StyleColor::ButtonHovered,
-                if active {
-                    resting
-                } else {
-                    theme.surface.hover.to_array()
-                },
+                if active { resting } else { hover.to_array() },
             ),
             ui.push_style_color(StyleColor::ButtonActive, theme.surface.active.to_array()),
         ];

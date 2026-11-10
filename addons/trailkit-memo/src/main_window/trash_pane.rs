@@ -103,10 +103,12 @@ impl MemoWindow {
             ToastAction {
                 label: TrashText::Undo.get(language),
                 tooltip: Some(TrashText::UndoTooltip.get(language)),
+                busy: false,
             },
             ToastAction {
                 label: TrashText::OpenTrash.get(language),
                 tooltip: None,
+                busy: false,
             },
         ];
         let actions: &[ToastAction<'_>] = match toast.kind {

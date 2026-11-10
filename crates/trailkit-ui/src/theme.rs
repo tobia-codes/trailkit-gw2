@@ -143,6 +143,9 @@ pub struct StatusColors {
     pub warning: Color,
     /// `danger`.
     pub danger: Color,
+    /// `danger.subtle`: `danger` tinted into `bg.popup` (20 % Dark, 10 %
+    /// Light), the fill of an error toast (memo M180, Q144 B).
+    pub danger_subtle: Color,
     /// `info`.
     pub info: Color,
 }
@@ -437,6 +440,9 @@ impl Theme {
             success: Color::from_rgb_hex(0x5CC48A),
             warning: Color::from_rgb_hex(0xE9B44C),
             danger: Color::from_rgb_hex(0xF08A84),
+            // 20 % `danger` over `bg.popup` (#1A2029); 22 % would leave
+            // `text.secondary` below 4.5:1.
+            danger_subtle: Color::from_rgb_hex(0x45353B),
             info: Color::from_rgb_hex(0x7AB0F0),
         },
         border: BorderTokens {
@@ -520,6 +526,8 @@ impl Theme {
             success: Color::from_rgb_hex(0x176B3C),
             warning: Color::from_rgb_hex(0x8A5A00),
             danger: Color::from_rgb_hex(0xB3261E),
+            // 10 % `danger` over `bg.popup` (#FFFFFF).
+            danger_subtle: Color::from_rgb_hex(0xF7E9E8),
             info: Color::from_rgb_hex(0x1F5DB0),
         },
         border: BorderTokens {
@@ -641,6 +649,27 @@ mod tests {
                     &format!("text.on_accent on {accent_name}"),
                     theme.text.on_accent,
                     accent,
+                );
+            }
+        }
+    }
+
+    /// The error toast's message, counter and icon sit on `danger.subtle`;
+    /// its buttons use `bg.active` (memo M180).
+    #[test]
+    fn error_toast_content_meets_contrast_minimum() {
+        for kind in ThemeKind::ALL {
+            let theme = kind.theme();
+            for (name, text) in [
+                ("text.primary", theme.text.primary),
+                ("text.secondary", theme.text.secondary),
+                ("danger", theme.status.danger),
+            ] {
+                assert_readable(
+                    kind,
+                    &format!("{name} on danger.subtle"),
+                    text,
+                    theme.status.danger_subtle,
                 );
             }
         }

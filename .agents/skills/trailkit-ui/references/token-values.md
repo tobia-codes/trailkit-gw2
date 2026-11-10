@@ -45,6 +45,7 @@ use which token is binding in [`tokens.md`](tokens.md).
 | `success` | #5CC48A | #176B3C | Success |
 | `warning` | #E9B44C | #8A5A00 | Warnings, invalid chat links |
 | `danger` | #F08A84 | #B3261E | Destructive actions |
+| `danger.subtle` | #45353B | #F7E9E8 | Fill of an error toast |
 | `info` | #7AB0F0 | #1F5DB0 | Information |
 
 ## Borders

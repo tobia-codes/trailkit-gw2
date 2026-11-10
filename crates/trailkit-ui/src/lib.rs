@@ -48,6 +48,8 @@ pub mod selection_bar;
 #[cfg(windows)]
 pub mod separator;
 #[cfg(windows)]
+pub mod spinner;
+#[cfg(windows)]
 pub mod splitter;
 #[cfg(windows)]
 pub mod style_scope;

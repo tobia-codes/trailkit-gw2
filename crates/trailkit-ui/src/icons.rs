@@ -107,8 +107,12 @@ impl Icon {
     /// `rotate-ccw`: restores an entry from the trash (memo M145), and a note's
     /// reset type in a menu (M177).
     pub const ROTATE_CCW: Self = Self('\u{e148}');
+    /// `circle-alert` (font name `alert-circle`): an error toast (memo M180).
+    pub const CIRCLE_ALERT: Self = Self('\u{e077}');
+    /// `circle-check` (font name `check-circle-2`): a success toast (memo M180).
+    pub const CIRCLE_CHECK: Self = Self('\u{e226}');
     /// Every icon above; keep in sync when adding one.
-    pub const ALL: [Self; 46] = [
+    pub const ALL: [Self; 48] = [
         Self::FOLDER_INPUT,
         Self::MENU,
         Self::FILE_TEXT,
@@ -155,6 +159,8 @@ impl Icon {
         Self::CHECK,
         Self::CHEVRON_RIGHT,
         Self::BAN,
+        Self::CIRCLE_ALERT,
+        Self::CIRCLE_CHECK,
     ];
 
     /// The glyph as a character of the icon font.

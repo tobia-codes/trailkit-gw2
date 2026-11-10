@@ -99,7 +99,15 @@ Build once, use everywhere. Planned:
   confirm button of a destructive dialog: `danger` fill)
 - Toast — **exists**: `toast::draw_toast`, one message with an optional
   action button at the bottom centre of the window, 5 s, the timer pauses
-  while hovered, a new one replaces the old (memo M142, M148, `ix-toasts`)
+  while hovered, a new one replaces the old (memo M142, M148, `ix-toasts`).
+  `ToastTone::Error` (only for real need, e.g. a failed save; memo M180):
+  `danger.subtle` fill, `danger` frame, `circle-alert`, no timer; with
+  `draw_toast_with_extras` a counter, a spinner and a close `x`. A busy
+  action (`ToastAction::busy`) shows a spinner. `ToastTone::Success`:
+  `circle-check` in `success`, 5 s
+- Busy button — **exists**: `button::draw_busy_button` (spinner + label,
+  cannot be clicked, e.g. "Saving…"); `spinner::draw_spinner`; on popups and
+  toasts `draw_popup_icon_button` (hover on `bg.active`)
 - `Popover` / `Tooltip`, `ConfirmDialog`, `UnsavedChangesDialog`
 - `DependencyHint` (greyed feature + explanation + "Open core settings"/
   "Get trailkit-core" button)

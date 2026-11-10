@@ -24,7 +24,7 @@ use trailkit_ui::{
     style_scope::StyleScope,
     theme::{Theme, ThemeKind},
     title_bar::{TitleBarState, TitleBarTexts, TitleBarToggle, draw_window as draw_title_bar},
-    toast::{Toast, ToastAction, draw_toast},
+    toast::{Toast, ToastAction, ToastExtras, ToastTone, draw_toast, draw_toast_with_extras},
 };
 use trailkit_ui_testing::{
     harness::{FrameInput, UiHarness},
@@ -289,6 +289,7 @@ fn every_toast_state() {
                     &[ToastAction {
                         label: "Undo",
                         tooltip: None,
+                        busy: false,
                     }],
                 );
             });
@@ -321,10 +322,12 @@ fn toast_with_two_actions_in_every_width() {
         ToastAction {
             label: "Undo",
             tooltip: None,
+            busy: false,
         },
         ToastAction {
             label: "Open trash",
             tooltip: None,
+            busy: false,
         },
     ];
     // Wide enough for one row, for the buttons in a row below the message
@@ -347,6 +350,129 @@ fn toast_with_two_actions_in_every_width() {
                 &mut harness,
                 ("toast", state, theme_name),
                 &mouse([4.0, 4.0], false),
+                &mut draw,
+            );
+        }
+    }
+}
+
+/// One state of an error or success toast (memo M180).
+struct ToneState {
+    /// The snapshot state name.
+    name: &'static str,
+    /// The image size; narrow sizes move the action below the message.
+    size: [f32; 2],
+    /// The toast's tone and message.
+    tone: ToastTone,
+    /// The message.
+    message: &'static str,
+    /// The action, if any, and whether it runs.
+    action: Option<(&'static str, bool)>,
+    /// Counter, spinner and close button.
+    extras: ToastExtras<'static>,
+    /// Where the mouse is.
+    mouse: [f32; 2],
+}
+
+#[test]
+fn every_error_and_success_toast_state() {
+    let close = Some("Close");
+    let wide = [420.0, 120.0];
+    let states = [
+        ToneState {
+            name: "error-retrying",
+            size: wide,
+            tone: ToastTone::Error,
+            message: "Saving failed",
+            action: None,
+            extras: ToastExtras {
+                counter: Some("2/3"),
+                spinner: true,
+                close_tooltip: close,
+            },
+            mouse: [4.0, 4.0],
+        },
+        ToneState {
+            name: "error-gave-up",
+            size: wide,
+            tone: ToastTone::Error,
+            message: "Saving failed",
+            action: Some(("Try again", false)),
+            extras: ToastExtras {
+                close_tooltip: close,
+                ..ToastExtras::default()
+            },
+            mouse: [4.0, 4.0],
+        },
+        ToneState {
+            name: "error-close-hover",
+            size: wide,
+            tone: ToastTone::Error,
+            message: "Saving failed",
+            action: Some(("Try again", false)),
+            extras: ToastExtras {
+                close_tooltip: close,
+                ..ToastExtras::default()
+            },
+            mouse: [301.0, 71.0],
+        },
+        ToneState {
+            name: "error-saving",
+            size: wide,
+            tone: ToastTone::Error,
+            message: "Saving failed",
+            action: Some(("Saving…", true)),
+            extras: ToastExtras {
+                close_tooltip: close,
+                ..ToastExtras::default()
+            },
+            mouse: [4.0, 4.0],
+        },
+        ToneState {
+            name: "error-narrow",
+            size: [320.0, 140.0],
+            tone: ToastTone::Error,
+            message: "Speichern fehlgeschlagen",
+            action: Some(("Erneut versuchen", false)),
+            extras: ToastExtras {
+                close_tooltip: Some("Schließen"),
+                ..ToastExtras::default()
+            },
+            mouse: [4.0, 4.0],
+        },
+        ToneState {
+            name: "success",
+            size: wide,
+            tone: ToastTone::Success,
+            message: "Changes saved",
+            action: None,
+            extras: ToastExtras::default(),
+            mouse: [4.0, 4.0],
+        },
+    ];
+    for state in states {
+        for (kind, theme_name) in THEMES {
+            let theme = kind.theme();
+            let mut toast = Toast::with_tone(state.message.to_owned(), state.tone);
+            let actions: Vec<ToastAction<'_>> = state
+                .action
+                .map(|(label, busy)| ToastAction {
+                    label,
+                    tooltip: None,
+                    busy,
+                })
+                .into_iter()
+                .collect();
+            let mut harness = UiHarness::new(state.size);
+            let mut draw = |ui: &Ui| {
+                in_window(ui, &theme, state.size, || {
+                    draw_toast_with_extras(ui, &theme, &mut toast, &actions, state.extras);
+                });
+            };
+            assert_state(
+                &mut harness,
+                ("toast", state.name, theme_name),
+                &mouse(state.mouse, false),
                 &mut draw,
             );
         }
