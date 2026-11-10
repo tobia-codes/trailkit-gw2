@@ -11,7 +11,7 @@ append-only log file of [`trailkit-log`](../trailkit-log/README.md), which uses
 | Module | Content |
 |--------|---------|
 | `document_store` | `DocumentStore`, `VersionedDocument`, `LoadOutcome`: load, migrate, save one document type per file |
-| `atomic_write` | crash-safe replacement: write a temporary file, flush, rename |
+| `atomic_write` | crash-safe replacement: write a temporary file, flush, rename; `WriteError` names the failed `WriteStage` |
 | `safety_copies` | migration and corrupt-file copies in `backups/` and their cleanup |
 | `trailkit_directory` | `TrailkitDirectory`, `AddonName`: the shared `trailkit/{<addon>,shared,logs}/` folders (R92) |
 | `file_name` | `FileName`: a path shown as its file name only, for log lines |
@@ -21,7 +21,7 @@ append-only log file of [`trailkit-log`](../trailkit-log/README.md), which uses
 | Concern | Behavior |
 |---------|----------|
 | Format | Pretty-printed JSON, `schema_version` as the first key |
-| Saving | Atomic: write `<file>.tmp`, flush, rename over the live file |
+| Saving | Atomic: write `<file>.tmp`, flush, rename over the live file; a `StorageError` reports the stage, the OS error and the size for the log |
 | Older version | Migrated step by step (`VersionedDocument::migrate_one_step`); the original is copied to `backups/<stem>.v<N>.bak.json` first |
 | Newer version | `LoadOutcome::ReadOnly` — the file is never overwritten |
 | Unreadable file | Moved to `backups/<stem>.corrupt-<time>.json`, caller starts fresh (`LoadOutcome::Recovered`) |
