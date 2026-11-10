@@ -140,6 +140,9 @@ fn save_again_in_the_dialog_leaves_the_editor_once_it_works() {
     );
 
     fs::remove_dir(&blocker).unwrap_or_else(|error| panic!("blocker: {error}"));
+    wait_until(&mut memo, "the minimum busy time", |memo| {
+        !memo.save_status.dialog_shows_busy()
+    });
     memo.apply(&WindowAction::SaveFailedRetry, Language::English);
     wait_until(&mut memo, "the save", |memo| memo.editor.is_none());
     assert!(memo.save_failed_prompt.is_none());
@@ -204,4 +207,23 @@ fn the_toast_waits_for_the_second_failure_and_returns_after_closing() {
         memo.toast.as_ref().map(|toast| toast.toast.tone()),
         Some(trailkit_ui::toast::ToastTone::Success)
     );
+}
+
+#[test]
+fn try_again_shows_saving_even_when_the_write_fails_at_once() {
+    let document = sample_document();
+    let (mut memo, _worker, directory) = memo_window(document.clone(), selected_first(&document));
+    block_notes(&directory);
+    memo.apply_save_health(SaveHealth::GaveUp, Language::English);
+    memo.apply(&WindowAction::RetrySave, Language::English);
+    wait_until(&mut memo, "the write", |memo| {
+        memo.save_status.waiting.is_empty()
+    });
+    assert!(
+        memo.save_status.toast_write_running(),
+        "\"Saving…\" stays for its minimum time"
+    );
+    wait_until(&mut memo, "the minimum busy time", |memo| {
+        !memo.save_status.toast_write_running()
+    });
 }

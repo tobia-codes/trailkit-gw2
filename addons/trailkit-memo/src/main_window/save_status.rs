@@ -9,7 +9,11 @@
 //! until the next change fails (Q164). The editor's text reaches the note
 //! tree only once it is on disk, so "Discard" never needs a rollback.
 
-use std::{collections::VecDeque, sync::Arc, sync::mpsc::TryRecvError};
+use std::{
+    collections::VecDeque,
+    sync::{Arc, mpsc::TryRecvError},
+    time::{Duration, Instant},
+};
 
 use jiff::Timestamp;
 use nexus::imgui::Ui;
@@ -34,7 +38,7 @@ use super::{
 /// Who asked the worker for a write that is still running; the worker
 /// answers in order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum WriteRequester {
+pub(super) enum WriteRequester {
     /// "Try again" in the toast.
     Toast,
     /// The editor's "Save" (or leaving with automatic saving).
@@ -57,9 +61,14 @@ pub(super) struct SaveStatus {
     /// Whether the user closed the error toast (Q164).
     pub(super) closed: bool,
     /// Writes asked for and not answered yet, oldest first.
-    waiting: VecDeque<WriteRequester>,
+    pub(super) waiting: VecDeque<WriteRequester>,
     /// Whether the user asked to restart the stopped worker.
     restart_requested: bool,
+    /// Until when "Try again" shows "Saving…" at least, so a write that
+    /// fails at once is still seen to run.
+    toast_busy_until: Option<Instant>,
+    /// The same for "Save again" in the dialog.
+    dialog_busy_until: Option<Instant>,
     /// The error toast (no timer), kept for its hover state.
     toast: Toast,
 }
@@ -75,6 +84,8 @@ impl SaveStatus {
             closed: false,
             waiting: VecDeque::new(),
             restart_requested: false,
+            toast_busy_until: None,
+            dialog_busy_until: None,
             toast: Toast::with_tone(String::new(), ToastTone::Error),
         }
     }
@@ -85,8 +96,16 @@ impl SaveStatus {
     }
 
     /// Whether the toast's "Try again" runs.
-    fn toast_write_running(&self) -> bool {
-        self.restart_requested || self.waiting.contains(&WriteRequester::Toast)
+    pub(super) fn toast_write_running(&self) -> bool {
+        self.restart_requested
+            || self.waiting.contains(&WriteRequester::Toast)
+            || shows_busy(self.toast_busy_until)
+    }
+
+    /// Whether "Save again" in the dialog still shows "Saving…" after its
+    /// write already ended.
+    pub(super) fn dialog_shows_busy(&self) -> bool {
+        shows_busy(self.dialog_busy_until)
     }
 
     /// Marks the error as shown and the toast as visible again, for a
@@ -358,9 +377,13 @@ impl MemoWindow {
     pub(super) fn apply_save_action(&mut self, action: &WindowAction, language: Language) {
         match action {
             WindowAction::RetrySave => {
+                if self.save_status.toast_write_running() {
+                    return;
+                }
+                self.save_status.toast_busy_until = Some(Instant::now() + MINIMUM_BUSY);
                 if self.save_status.worker_stopped {
                     self.save_status.restart_requested = true;
-                } else if !self.save_status.toast_write_running() {
+                } else {
                     self.save_status.waiting.push_back(WriteRequester::Toast);
                     self.saver.write_now();
                 }
@@ -395,10 +418,12 @@ impl MemoWindow {
         let Some(editor) = &self.editor else {
             return;
         };
-        if prompt.saving || self.save_status.worker_stopped {
+        if prompt.saving || self.save_status.worker_stopped || self.save_status.dialog_shows_busy()
+        {
             return;
         }
         prompt.saving = true;
+        self.save_status.dialog_busy_until = Some(Instant::now() + MINIMUM_BUSY);
         let mut candidate = self.document.clone();
         apply_session(&mut candidate, editor.session(), Timestamp::now());
         let candidate = Arc::new(candidate);
@@ -493,6 +518,15 @@ impl MemoWindow {
     pub fn storage_restart_failed(&mut self) {
         self.save_status.restart_requested = false;
     }
+}
+
+/// How long a button shows "Saving…" at least: a write that fails at once
+/// would otherwise flash for one frame, and the click would seem lost.
+const MINIMUM_BUSY: Duration = Duration::from_millis(600);
+
+/// Whether a minimum busy time ending at `until` still runs.
+fn shows_busy(until: Option<Instant>) -> bool {
+    until.is_some_and(|until| Instant::now() < until)
 }
 
 /// Writes the editor `session`'s title and body into its note in `document`
