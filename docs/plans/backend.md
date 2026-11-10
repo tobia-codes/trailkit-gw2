@@ -1,6 +1,7 @@
 # trailkit backend
 
-- **Status:** **deferred** (2026-10-31, see [`data-pipeline.md`](data-pipeline.md) D1). Kept as the
+- **Status:** **deferred** (2026-10-31, see [`data-pipeline.md`](data-pipeline.md) D1), except the
+  addon status endpoint, which must be live before the first addon release (B22, B23). Kept as the
   target design for when a dynamic feature (e.g. price history) needs a server.
   Data formats and paths of the static files are chosen so this server can
   take over without changing core.
@@ -104,6 +105,9 @@ API" is not enforceable; we can only raise the bar and limit damage:
 
 - ~~Event data format~~ → TOML (data-pipeline D23).
 - ~~Waypoints scope~~ → all waypoints (data-pipeline D20).
+- **Addon status (B23), still open:** Q236 (does a cached maintenance/problem lock expire when the
+  server is unreachable?), mockups of the maintenance and problem locks (R87), Nexus `Direct`
+  reload behavior (decides the update hint text).
 
 ## Decisions
 
@@ -130,3 +134,5 @@ API" is not enforceable; we can only raise the bar and limit damage:
 | B16 | **No Neon.** Postgres runs in Docker on our own server; code stays provider-agnostic (`DATABASE_URL`, `sqlx` migrations); nightly off-site backups | 2026-10-31 |
 | B17 | **GDPR (DSGVO) compliance is mandatory** for every component (hosting, backups, logs, CDN, websites) | 2026-10-31 |
 | B18 | GDPR measures: IPs in logs truncated (last octet removed), logs deleted after 7 days; rate-limit counters in memory only; no tracking/analytics; every website has Impressum + privacy policy; addons send only addon name + version (no account/character data) | 2026-10-31 |
+| B22 | **Backend before the first addon release; forced updates.** The backend must exist before any addon is published (supersedes the "deferred" status for this feature). Reason: the owner must be able to lock an addon version after a breaking change until the user has updated. Design: B23. | 2026-11-07 |
+| B23 | **Addon status endpoint** (user decisions Q222–Q237, 2026-11-10; amends B18, B19). **Scope (Q222):** at the first addon release only a minimal Rust server (B8) with `GET /v1/addons/status` and `/v1/meta`; the B11 data endpoints follow with core. **Hosting (Q223, Q231):** everything stays local (docker compose, B19) until the user really releases; then Hetzner Germany at `api.trailkit.de`. Debug builds ask `http://localhost:<port>`, release builds `https://api.trailkit.de`; until the release the check fails silently (open). **Model (Q224, Q232, Q233):** per addon in Postgres `minimum_version` and `state` = `Active` or `Locked { reason: Maintenance \| Problem }`, extensible with new reasons; a lock applies to all versions (single versions are excluded via `minimum_version`). **Message (Q234):** a lock carries an optional expected end (UTC, shown in local time) and an optional plain-text message in en and de (two fields, ≤ 200 characters); without a message in the user's language the addon shows the localized default "temporarily locked" / "temporarily under maintenance". **Admin (Q229):** `PUT /admin/addons/{addon}` with the admin token (B12) sets minimum version and lock, effective without a deploy. **Request (Q228, Q230):** one request returns all addons; no parameters, no addon name or version, neutral user agent; the server treats only the IP per B18. Result and timestamp go to the shared `trailkit/shared/update-status.json`; an addon reads it first and asks only when it is older than the freshness limit (≈ 9 min), so all addons share one request. **When (Q225, Q235):** at load in a background thread, then every 60 min while unlocked and every 10 min while locked, so a lock ends by itself. **Offline (Q226):** unreachable server → the cached result applies; without a cache the addon is unlocked (fail open). **Locked (Q227, Q237):** for update, maintenance and problem alike the addon shows only a notice window where its main window would appear (never opens by itself), no data access or writes. The update lock wins over the others because the user can fix it. Update notice approved (R87): https://claude.ai/artifact/EDHSjZGj6aLW3FXsPMHLDb | 2026-11-10 |
