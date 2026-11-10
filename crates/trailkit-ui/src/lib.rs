@@ -16,6 +16,7 @@
 //! Shared components move in here only once a second addon needs them
 //! (AGENTS.md rule 7, ROADMAP R47).
 
+pub mod busy;
 pub mod chat_link;
 pub mod color;
 pub mod editor;

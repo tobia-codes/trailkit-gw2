@@ -294,8 +294,8 @@ impl MemoWindow {
             return false;
         }
         // Escape keeps editing in the save-failed dialog, unless it saves (Q157).
-        if let Some(prompt) = &self.save_failed_prompt {
-            if !prompt.saving {
+        if self.save_failed_prompt.is_some() {
+            if self.save_failed_prompt_idle() {
                 self.save_failed_prompt = None;
             }
             return false;

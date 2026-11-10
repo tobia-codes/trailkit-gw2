@@ -141,7 +141,7 @@ fn save_again_in_the_dialog_leaves_the_editor_once_it_works() {
 
     fs::remove_dir(&blocker).unwrap_or_else(|error| panic!("blocker: {error}"));
     wait_until(&mut memo, "the minimum busy time", |memo| {
-        !memo.save_status.dialog_shows_busy()
+        memo.save_failed_prompt_idle()
     });
     memo.apply(&WindowAction::SaveFailedRetry, Language::English);
     wait_until(&mut memo, "the save", |memo| memo.editor.is_none());
@@ -226,4 +226,33 @@ fn try_again_shows_saving_even_when_the_write_fails_at_once() {
     wait_until(&mut memo, "the minimum busy time", |memo| {
         !memo.save_status.toast_write_running()
     });
+}
+
+#[test]
+fn the_dialog_waits_while_save_again_runs() {
+    let document = sample_document();
+    let (mut memo, _worker, directory) = memo_window(document.clone(), selected_first(&document));
+    block_notes(&directory);
+    edit_first_title(&mut memo);
+    memo.apply(&WindowAction::FinishEditing, Language::English);
+    wait_until(&mut memo, "the failure", MemoWindow::editor_commit_failed);
+    memo.apply(&WindowAction::CancelEditing, Language::English);
+    memo.apply(&WindowAction::SaveFailedRetry, Language::English);
+
+    memo.apply(&WindowAction::SaveFailedDiscard, Language::English);
+    memo.apply(&WindowAction::SaveFailedKeepEditing, Language::English);
+    assert!(!memo.request_close(), "Escape waits too");
+    assert!(
+        memo.save_failed_prompt.is_some(),
+        "the other answers are locked"
+    );
+    assert!(memo.editor.is_some());
+
+    wait_until(
+        &mut memo,
+        "the end of Save again",
+        MemoWindow::save_failed_prompt_idle,
+    );
+    memo.apply(&WindowAction::SaveFailedDiscard, Language::English);
+    assert!(memo.editor.is_none(), "afterwards Discard works");
 }

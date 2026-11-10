@@ -37,6 +37,7 @@ Latin up to Extended-B plus punctuation, the icon font only the icons in
 | `title_bar` | `draw_window` — a window with the trailkit title bar (collapse chevron, bold title, close `x`) instead of ImGui's (R71) | Windows |
 | `tooltip` | `draw_tooltip`, `draw_tooltip_with`: every tooltip, text centered by its capitals (M171) | Windows |
 | `toolbar` | `begin_toolbar_group` (thin separator line, wraps when the group does not fit), `move_to_toolbar_end` (right-aligned items, wrap in narrow windows; `lay-responsive`) | Windows |
+| `busy` | `BusyState` — a busy button's state: busy while its action runs and at least `MINIMUM_BUSY` (0.6 s) after the click (`ix-busy-buttons`, M180) | any |
 | `toast` | one short message with optional actions at the bottom of the window; the timer pauses on hover (M142, `ix-toasts`); error tone without timer, with counter, spinner and close button, and a success tone (M180) | Windows |
 | `spinner` | `draw_spinner` — a rotating Lucide `loader-circle` for running actions (M180) | Windows |
 | `splitter` | `draw_vertical_splitter` — resizable gap between two panes (accent line on hover/drag) | Windows |

@@ -12,12 +12,12 @@
 use std::{
     collections::VecDeque,
     sync::{Arc, mpsc::TryRecvError},
-    time::{Duration, Instant},
 };
 
 use jiff::Timestamp;
 use nexus::imgui::Ui;
 use trailkit_ui::{
+    busy::BusyState,
     theme::Theme,
     toast::{Toast, ToastAction, ToastExtras, ToastTone, draw_toast_with_extras},
 };
@@ -64,11 +64,9 @@ pub(super) struct SaveStatus {
     pub(super) waiting: VecDeque<WriteRequester>,
     /// Whether the user asked to restart the stopped worker.
     restart_requested: bool,
-    /// Until when "Try again" shows "Saving…" at least, so a write that
-    /// fails at once is still seen to run.
-    toast_busy_until: Option<Instant>,
-    /// The same for "Save again" in the dialog.
-    dialog_busy_until: Option<Instant>,
+    /// "Try again" in the toast: busy while its write (or the worker
+    /// restart) runs, and at least `MINIMUM_BUSY`.
+    retry: BusyState,
     /// The error toast (no timer), kept for its hover state.
     toast: Toast,
 }
@@ -84,8 +82,7 @@ impl SaveStatus {
             closed: false,
             waiting: VecDeque::new(),
             restart_requested: false,
-            toast_busy_until: None,
-            dialog_busy_until: None,
+            retry: BusyState::default(),
             toast: Toast::with_tone(String::new(), ToastTone::Error),
         }
     }
@@ -97,15 +94,7 @@ impl SaveStatus {
 
     /// Whether the toast's "Try again" runs.
     pub(super) fn toast_write_running(&self) -> bool {
-        self.restart_requested
-            || self.waiting.contains(&WriteRequester::Toast)
-            || shows_busy(self.toast_busy_until)
-    }
-
-    /// Whether "Save again" in the dialog still shows "Saving…" after its
-    /// write already ended.
-    pub(super) fn dialog_shows_busy(&self) -> bool {
-        shows_busy(self.dialog_busy_until)
+        self.retry.is_busy()
     }
 
     /// Marks the error as shown and the toast as visible again, for a
@@ -139,8 +128,9 @@ impl EditorCommit {
 pub(super) struct SaveFailedPrompt {
     /// Where the user wanted to go.
     pub(super) reason: LeaveReason,
-    /// Whether "Save again" runs.
-    pub(super) saving: bool,
+    /// "Save again": busy while its write runs, and at least
+    /// `MINIMUM_BUSY`. While busy the dialog's other answers are locked.
+    pub(super) save: BusyState,
     /// Whether "Save again" failed.
     pub(super) failed_again: bool,
 }
@@ -160,6 +150,7 @@ impl MemoWindow {
                     if !self.save_status.worker_stopped {
                         self.save_status.worker_stopped = true;
                         self.save_status.waiting.clear();
+                        self.save_status.retry.finish();
                         self.save_status.show_error();
                         self.editor_write_failed();
                     }
@@ -226,14 +217,15 @@ impl MemoWindow {
             }
             Some(WriteRequester::Dialog) => {
                 if let Some(prompt) = &mut self.save_failed_prompt {
-                    prompt.saving = false;
+                    prompt.save.finish();
                     prompt.failed_again = true;
                 }
                 // No automatic writes of the editor's text after this (Q157).
                 self.editor_commit = None;
                 self.save_notes();
             }
-            Some(WriteRequester::Toast) | None => {}
+            Some(WriteRequester::Toast) => self.save_status.retry.finish(),
+            None => {}
         }
     }
 
@@ -347,7 +339,7 @@ impl MemoWindow {
         self.save_notes();
         self.save_failed_prompt = Some(SaveFailedPrompt {
             reason,
-            saving: false,
+            save: BusyState::default(),
             failed_again: false,
         });
     }
@@ -380,7 +372,7 @@ impl MemoWindow {
                 if self.save_status.toast_write_running() {
                     return;
                 }
-                self.save_status.toast_busy_until = Some(Instant::now() + MINIMUM_BUSY);
+                self.save_status.retry.start();
                 if self.save_status.worker_stopped {
                     self.save_status.restart_requested = true;
                 } else {
@@ -389,18 +381,17 @@ impl MemoWindow {
                 }
             }
             WindowAction::CloseSaveToast => self.save_status.closed = true,
+            // While "Save again" runs, the other answers wait for it.
             WindowAction::SaveFailedDiscard => {
-                if let Some(prompt) = self.save_failed_prompt.take() {
+                if self.save_failed_prompt_idle()
+                    && let Some(prompt) = self.save_failed_prompt.take()
+                {
                     self.editor = None;
                     self.continue_after_leaving(Some(prompt.reason), language);
                 }
             }
             WindowAction::SaveFailedKeepEditing => {
-                if self
-                    .save_failed_prompt
-                    .as_ref()
-                    .is_some_and(|prompt| !prompt.saving)
-                {
+                if self.save_failed_prompt_idle() {
                     self.save_failed_prompt = None;
                 }
             }
@@ -408,6 +399,13 @@ impl MemoWindow {
             // The other actions are dispatched by `apply`.
             _ => {}
         }
+    }
+
+    /// Whether the save-failed dialog is open and "Save again" is not busy.
+    pub(super) fn save_failed_prompt_idle(&self) -> bool {
+        self.save_failed_prompt
+            .as_ref()
+            .is_some_and(|prompt| !prompt.save.is_busy())
     }
 
     /// "Save again" in the dialog: one write of the editor's text (Q157).
@@ -418,12 +416,10 @@ impl MemoWindow {
         let Some(editor) = &self.editor else {
             return;
         };
-        if prompt.saving || self.save_status.worker_stopped || self.save_status.dialog_shows_busy()
-        {
+        if prompt.save.is_busy() || self.save_status.worker_stopped {
             return;
         }
-        prompt.saving = true;
-        self.save_status.dialog_busy_until = Some(Instant::now() + MINIMUM_BUSY);
+        prompt.save.start();
         let mut candidate = self.document.clone();
         apply_session(&mut candidate, editor.session(), Timestamp::now());
         let candidate = Arc::new(candidate);
@@ -517,16 +513,8 @@ impl MemoWindow {
     /// The restart of the stopped worker failed; "Try again" may ask again.
     pub fn storage_restart_failed(&mut self) {
         self.save_status.restart_requested = false;
+        self.save_status.retry.finish();
     }
-}
-
-/// How long a button shows "Saving…" at least: a write that fails at once
-/// would otherwise flash for one frame, and the click would seem lost.
-const MINIMUM_BUSY: Duration = Duration::from_millis(600);
-
-/// Whether a minimum busy time ending at `until` still runs.
-fn shows_busy(until: Option<Instant>) -> bool {
-    until.is_some_and(|until| Instant::now() < until)
 }
 
 /// Writes the editor `session`'s title and body into its note in `document`

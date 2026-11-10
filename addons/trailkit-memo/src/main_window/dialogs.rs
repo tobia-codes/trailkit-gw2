@@ -337,16 +337,15 @@ pub(super) fn unsaved_changes_dialog(language: Language) -> DialogContent<'stati
 /// The dialog when the user leaves the editor after a failed save (M180,
 /// Q157, mockup V4): "Discard" set apart on the left, "Keep editing" and
 /// the primary "Save again" (busy while it writes) on the right; after a
-/// failed "Save again" a red "Failed again" line. `still_busy` keeps
-/// "Saving…" for its minimum time. Enter saves again, Escape
+/// failed "Save again" a red "Failed again" line. While "Save again" is
+/// busy, the other answers are locked (`ix-busy-buttons`). Enter saves again, Escape
 /// keeps editing.
 pub(super) fn save_failed_dialog(
     prompt: &SaveFailedPrompt,
-    still_busy: bool,
     language: Language,
 ) -> DialogContent<'static> {
     // A write that failed at once keeps "Saving…" for its minimum time.
-    let saving = prompt.saving || still_busy;
+    let saving = prompt.save.is_busy();
     let (save_label, save_style) = if saving {
         (SaveText::Saving.get(language), DialogButtonStyle::Busy)
     } else {
@@ -424,7 +423,7 @@ impl MemoWindow {
         let content = if self.leave_prompt.is_some() {
             unsaved_changes_dialog(language)
         } else if let Some(prompt) = &self.save_failed_prompt {
-            save_failed_dialog(prompt, self.save_status.dialog_shows_busy(), language)
+            save_failed_dialog(prompt, language)
         } else if let Some(confirmation) = &self.confirmation {
             confirmation_dialog(confirmation, language)
         } else {

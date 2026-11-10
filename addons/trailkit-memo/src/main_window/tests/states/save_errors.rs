@@ -3,6 +3,7 @@
 //! leaving after a failed save, also in German at the narrowest window.
 
 use trailkit_memo_shared::storage_worker::SaveHealth;
+use trailkit_ui::busy::BusyState;
 
 use super::*;
 use crate::main_window::save_status::SaveFailedPrompt;
@@ -39,7 +40,11 @@ fn dialog(saving: bool, failed_again: bool) -> Fixture {
     }
     fixture.0.save_failed_prompt = Some(SaveFailedPrompt {
         reason: LeaveReason::CloseWindow,
-        saving,
+        save: if saving {
+            BusyState::running_since(std::time::Instant::now())
+        } else {
+            BusyState::default()
+        },
         failed_again,
     });
     fixture
