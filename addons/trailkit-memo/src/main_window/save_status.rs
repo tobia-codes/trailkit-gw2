@@ -254,19 +254,15 @@ impl MemoWindow {
             }
             _ => None,
         };
-        let running = status.toast_write_running();
+        let state = status.retry.button_state();
         let action = ToastAction {
-            label: if running {
+            label: if state == ButtonState::Busy {
                 SaveText::Saving.get(language)
             } else {
                 SaveText::TryAgain.get(language)
             },
             tooltip: None,
-            state: if running {
-                ButtonState::Busy
-            } else {
-                ButtonState::Ready
-            },
+            state,
         };
         let actions: &[ToastAction<'_>] = if retrying.is_some() {
             &[]

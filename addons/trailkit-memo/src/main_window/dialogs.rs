@@ -329,11 +329,12 @@ pub(super) fn save_failed_dialog(
 ) -> DialogContent<'static> {
     // A write that failed at once keeps "Saving…" for its minimum time;
     // meanwhile the other answers wait and say why (R93).
-    let saving = prompt.save.is_busy();
-    let (save_label, save_state) = if saving {
-        (SaveText::Saving.get(language), ButtonState::Busy)
+    let save_state = prompt.save.button_state();
+    let saving = save_state == ButtonState::Busy;
+    let save_label = if saving {
+        SaveText::Saving.get(language)
     } else {
-        (SaveText::SaveAgain.get(language), ButtonState::Ready)
+        SaveText::SaveAgain.get(language)
     };
     let others = if saving {
         ButtonState::Disabled {

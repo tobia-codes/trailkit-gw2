@@ -2,8 +2,9 @@
 //! busy while the action runs, and at least [`MINIMUM_BUSY`] after the
 //! click, so an action that ends at once (e.g. a write that fails in a few
 //! milliseconds) is still seen to run. While busy the button shows a
-//! spinner (`button::draw_busy_button`) and its action, and the actions
-//! that depend on it, are locked.
+//! spinner (`ButtonState::Busy`) and its action, and the actions
+//! that depend on it, are locked. On Windows `BusyState::button_state`
+//! (in `button`) turns it into the `ButtonState` a frame draws.
 
 use std::time::{Duration, Instant};
 

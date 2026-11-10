@@ -16,6 +16,7 @@ use super::{
     button_width, draw_label, icon_label_button_width, icon_label_content_width, icon_label_gap,
 };
 use crate::{
+    busy::BusyState,
     color::Color,
     dropdown::{draw_border, draw_icon_into, icon_width},
     icons::Icon,
@@ -59,6 +60,21 @@ impl ButtonState<'_> {
     #[must_use]
     pub const fn is_ready(self) -> bool {
         matches!(self, Self::Ready)
+    }
+}
+
+impl BusyState {
+    /// The button state this busy state stands for: [`ButtonState::Busy`]
+    /// while the action runs and for at least `MINIMUM_BUSY`, else
+    /// [`ButtonState::Ready`] (R93). The one place that turns the stored
+    /// state into what a frame draws.
+    #[must_use]
+    pub fn button_state(&self) -> ButtonState<'static> {
+        if self.is_busy() {
+            ButtonState::Busy
+        } else {
+            ButtonState::Ready
+        }
     }
 }
 
