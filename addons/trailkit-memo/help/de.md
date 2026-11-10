@@ -81,7 +81,7 @@ Klicke oben rechts in einer Notiz auf **Bearbeiten** oder doppelklicke die Notiz
 
 - **Chat-Links:** Füge einen Code (`[&…]`) in den Text ein, und er wird zum Chip. Der Cursor springt über einen Chip, und die Rücktaste löscht ihn ganz; um ihn zu ändern, lösche ihn und füge den neuen Code ein.
 - Der **Augen**-Button zeigt eine Vorschau der formatierten Notiz neben dem Text; ziehe den Spalt dazwischen, um die Breiten zu ändern. memo merkt sich beides.
-- **Speichern** (oder **Strg+Enter** / **Strg+S**) übernimmt deine Änderungen, **Abbrechen** verwirft sie — memo fragt vorher nach, wenn du etwas geändert hast.
+- **Speichern** (oder **Strg+Enter** / **Strg+S**) übernimmt deine Änderungen und schließt den Editor, sobald sie gespeichert sind, **Abbrechen** verwirft sie — memo fragt vorher nach, wenn du etwas geändert hast.
 - Wählst du eine andere Notiz, legst eine neue an oder schließt das Fenster, während Änderungen offen sind, fragt memo, ob sie übernommen oder verworfen werden sollen. (Mit `"unsaved_changes": "save_automatically"` in `settings.json` wird ohne Nachfrage übernommen; ein Schalter folgt im Einstellungsfenster.)
 - **Escape** schließt das Fenster; bei ungespeicherten Änderungen fragt memo vorher nach.
 - Wird das Spiel oder das Addon beim Bearbeiten beendet, bleiben deine Änderungen als Entwurf erhalten. Beim nächsten Öffnen der Notiz wählst du **Wiederherstellen** zum Weitermachen oder **Verwerfen**. Entwürfe werden nach 30 Tagen automatisch gelöscht.
@@ -92,6 +92,8 @@ Deine Notizen werden kurz nach jeder Änderung automatisch gespeichert, in `addo
 
 - Ist die Notizdatei beschädigt, startet memo mit einer leeren Liste und weist dich darauf hin. Die beschädigte Datei bleibt im Ordner `backups` daneben erhalten, es geht also nichts verloren.
 - Wurden deine Notizen von einer neueren memo-Version gespeichert, lässt memo die Datei unverändert und bittet dich, das Addon zu aktualisieren.
+- **Wenn das Speichern fehlschlägt** (etwa weil ein anderes Programm die Datei sperrt oder die Festplatte voll ist), versucht memo es dreimal im Abstand von fünf Sekunden erneut. Klappt es dann immer noch nicht, bleibt unten im Fenster die rote Meldung *Speichern fehlgeschlagen* stehen, bis das Speichern wieder funktioniert; *Erneut versuchen* speichert noch einmal, und das **x** blendet die Meldung aus, bis die nächste Änderung scheitert. Deine Notizen bleiben so lange im Fenster, und beim Beenden des Spiels speichert memo noch einmal. *Änderungen gespeichert* zeigt dir, wenn es geklappt hat.
+- **Speichern** im Editor wartet, bis dein Text auf der Festplatte ist (*Speichert…*). Scheitert das, bleibt der Editor mit deinem Text offen. Verlässt du ihn dann, fragt memo nach: *Verwerfen* löscht deine Änderungen, *Weiter bearbeiten* bleibt im Editor, *Erneut speichern* versucht es noch einmal.
 
 ## Probleme?
 

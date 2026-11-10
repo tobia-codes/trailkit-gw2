@@ -1,39 +1,42 @@
-//! The addon's worker thread for disk access (memo plan M18, M30).
+//! The addon's worker thread for disk access (memo plan M18, M30, M180).
 //!
 //! The render thread owns the note tree. On every change it sends a copy to
 //! this worker, which waits until no change arrived for the debounce delay,
-//! then writes the file through `trailkit-storage`. At start the worker loads
+//! then writes the file through `trailkit-storage`. A failed write is
+//! repeated at most three times, 5 s apart, then the worker gives up until a
+//! new change or a manual write ([`pending_save`]); it reports how the shown
+//! documents fare as [`SaveReport`]s. At start the worker loads
 //! `notes.json`, `ui_state.json` and `drafts.json` and hands them back over a
-//! channel. An empty draft list deletes `drafts.json` instead of writing it. While nothing is
-//! pending the worker blocks in `recv()` and uses no CPU (nexus-addon-dev
-//! skill §2). On shutdown every pending save is written before the thread ends.
+//! channel. An empty draft list deletes `drafts.json` instead of writing it.
+//! While nothing is pending the worker blocks in `recv()` and uses no CPU
+//! (nexus-addon-dev skill §2). On shutdown every pending save is written
+//! once more before the thread ends. A worker that died can be restarted
+//! without loading (Q151).
 //!
 //! Uses only `std`, so it is unit-tested on any host (ROADMAP R23).
 
+mod loading;
+mod pending_save;
+
 use std::{
-    borrow::Borrow,
     io,
     sync::{
-        Arc,
+        Arc, OnceLock,
         mpsc::{self, Receiver, RecvTimeoutError, Sender},
     },
     thread::{self, JoinHandle},
-    time::{Duration, Instant},
+    time::Instant,
 };
 
-use jiff::Timestamp;
-use trailkit_log::ErrorChain;
-use trailkit_storage::{DocumentStore, FileName, LoadOutcome, ReadOnlyReason, VersionedDocument};
+use trailkit_storage::{DocumentStore, LoadOutcome};
 
+pub use self::loading::{SettingsSummary, log_load_outcome};
+use self::loading::{document_file_name, load_documents};
+pub use self::pending_save::{MAX_ATTEMPTS, RETRY_DELAY, SAVE_DEBOUNCE, SaveHealth, WorkerTiming};
+use self::pending_save::{Slot, WriteMode, WriteResult};
 use crate::{
-    drafts::DraftsDocument,
-    note_tree::{NotesDocument, TreeNode},
-    settings::{Settings, TextScale},
-    ui_state::UiState,
+    drafts::DraftsDocument, note_tree::NotesDocument, settings::Settings, ui_state::UiState,
 };
-
-/// Delay after the last change before a document is written (M18).
-pub const SAVE_DEBOUNCE: Duration = Duration::from_secs(2);
 
 /// Name of the worker thread (visible in debuggers and crash dumps).
 const THREAD_NAME: &str = "trailkit-memo storage";
@@ -48,8 +51,24 @@ enum WorkerCommand {
     SaveUiState(UiState),
     /// Save (or, if empty, delete) the drafts once no newer ones arrive in time.
     SaveDrafts(DraftsDocument),
+    /// Write everything pending now, once, and report
+    /// [`SaveReport::WriteFinished`].
+    WriteNow,
     /// Write everything pending and end the thread.
     Shutdown,
+}
+
+/// What the worker tells the UI about saving (M180).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SaveReport {
+    /// The state of the shown documents changed.
+    Health(SaveHealth),
+    /// A [`StorageSaver::write_now`] request is done; sent after the
+    /// [`SaveReport::Health`] it caused.
+    WriteFinished {
+        /// Whether every shown document that was pending is on disk now.
+        succeeded: bool,
+    },
 }
 
 /// Handle to the running worker thread. Dropping it shuts the worker down and
@@ -60,6 +79,12 @@ pub struct StorageWorker {
     commands: Sender<WorkerCommand>,
     /// The worker thread; `None` once it has been joined.
     thread: Option<JoinHandle<()>>,
+    /// The files the worker writes, kept for a restart.
+    store: DocumentStore,
+    /// The worker's delays, kept for a restart.
+    timing: WorkerTiming,
+    /// Which documents may be written; set once loading has ended.
+    permissions: Arc<OnceLock<Permissions>>,
 }
 
 /// Cloneable handle for queueing saves, held by the render thread. Sending
@@ -68,6 +93,16 @@ pub struct StorageWorker {
 pub struct StorageSaver {
     /// Channel to the worker thread.
     commands: Sender<WorkerCommand>,
+}
+
+/// The render thread's link to a running worker: where to send saves and
+/// where the worker reports back.
+#[derive(Debug)]
+pub struct SaveConnection {
+    /// Queues saves on the worker.
+    pub saver: StorageSaver,
+    /// Reports from the worker; disconnected once the worker has ended.
+    pub reports: Receiver<SaveReport>,
 }
 
 /// What the worker loaded at start, delivered once.
@@ -79,6 +114,8 @@ pub struct LoadedDocuments {
     pub ui_state: UiState,
     /// Drafts kept from an earlier unload (empty if missing or unusable).
     pub drafts: DraftsDocument,
+    /// Reports from the worker about saving.
+    pub reports: Receiver<SaveReport>,
 }
 
 /// Which documents the worker may write (from their load outcomes).
@@ -88,48 +125,70 @@ pub struct SavingAllowed {
     pub settings: bool,
 }
 
-/// A document waiting for its debounce delay to pass.
-struct PendingSave<T> {
-    /// The newest version of the document.
-    document: T,
-    /// When it is written unless a newer version arrives first.
-    due_at: Instant,
+/// Why [`StorageWorker::restart`] did not start a new worker.
+#[derive(Debug, thiserror::Error)]
+pub enum RestartError {
+    /// The worker thread is still running.
+    #[error("the storage worker is still running")]
+    StillRunning,
+    /// The worker ended before it finished loading, so it is unknown which
+    /// documents may be written.
+    #[error("the storage worker ended before loading finished")]
+    NotLoaded,
+    /// The operating system cannot start the thread.
+    #[error("cannot start the storage worker: {0}")]
+    Spawn(#[from] io::Error),
 }
 
 impl StorageWorker {
     /// Starts the worker thread for the files in `store`.
     ///
-    /// The worker first loads `notes.json` and `ui_state.json`; the returned
-    /// receiver yields them exactly once as [`LoadedDocuments`]. Settings are loaded by the caller (they are
-    /// needed synchronously at addon load), so only whether they may be saved
-    /// and what the `load_finished` line reports about them is passed in. `debounce` is [`SAVE_DEBOUNCE`] outside of tests.
+    /// The worker first loads `notes.json`, `ui_state.json` and `drafts.json`;
+    /// the returned receiver yields them exactly once as [`LoadedDocuments`].
+    /// Settings are loaded by the caller (they are needed synchronously at
+    /// addon load), so only whether they may be saved and what the
+    /// `load_finished` line reports about them is passed in. `timing` is
+    /// [`WorkerTiming::DEFAULT`] outside of tests.
     ///
     /// # Errors
     ///
     /// Returns the I/O error if the operating system cannot start the thread.
     pub fn spawn(
         store: DocumentStore,
-        debounce: Duration,
+        timing: WorkerTiming,
         saving_allowed: SavingAllowed,
         settings_summary: SettingsSummary,
     ) -> io::Result<(Self, Receiver<LoadedDocuments>)> {
         let (commands, command_receiver) = mpsc::channel();
         let (loaded_sender, loaded) = mpsc::channel();
-        let thread = thread::Builder::new()
-            .name(THREAD_NAME.to_owned())
-            .spawn(move || {
-                run_worker(
-                    &store,
-                    debounce,
-                    saving_allowed,
-                    settings_summary,
-                    &command_receiver,
-                    &loaded_sender,
-                );
-            })?;
+        let permissions = Arc::new(OnceLock::new());
+        let thread = {
+            let store = store.clone();
+            let permissions = Arc::clone(&permissions);
+            thread::Builder::new()
+                .name(THREAD_NAME.to_owned())
+                .spawn(move || {
+                    let (report_sender, reports) = mpsc::channel();
+                    let (documents, loaded_permissions) =
+                        load_documents(&store, saving_allowed, settings_summary, reports);
+                    let _ = permissions.set(loaded_permissions);
+                    // The render side may already be gone during a quick unload; that is fine.
+                    let _ = loaded_sender.send(documents);
+                    serve(
+                        &store,
+                        timing,
+                        loaded_permissions,
+                        &command_receiver,
+                        &report_sender,
+                    );
+                })?
+        };
         let worker = Self {
             commands,
             thread: Some(thread),
+            store,
+            timing,
+            permissions,
         };
         Ok((worker, loaded))
     }
@@ -139,6 +198,59 @@ impl StorageWorker {
     pub fn saver(&self) -> StorageSaver {
         StorageSaver {
             commands: self.commands.clone(),
+        }
+    }
+
+    /// Starts a new worker after the old one died (Q151): it loads nothing
+    /// and keeps the old worker's write permissions. The caller then sends
+    /// its current documents and [`StorageSaver::write_now`]. Logs
+    /// `worker_died` for the old thread and `worker_restarted`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`RestartError::StillRunning`] if the old thread has not
+    /// ended (nothing changes then), [`RestartError::NotLoaded`] if it died
+    /// while loading, or [`RestartError::Spawn`] if no thread can be started.
+    pub fn restart(&mut self) -> Result<SaveConnection, RestartError> {
+        if self
+            .thread
+            .as_ref()
+            .is_some_and(|thread| !thread.is_finished())
+        {
+            return Err(RestartError::StillRunning);
+        }
+        self.join();
+        let permissions = *self.permissions.get().ok_or(RestartError::NotLoaded)?;
+        let (commands, command_receiver) = mpsc::channel();
+        let (report_sender, reports) = mpsc::channel();
+        let store = self.store.clone();
+        let timing = self.timing;
+        let thread = thread::Builder::new()
+            .name(THREAD_NAME.to_owned())
+            .spawn(move || {
+                serve(
+                    &store,
+                    timing,
+                    permissions,
+                    &command_receiver,
+                    &report_sender,
+                )
+            })?;
+        self.commands = commands;
+        self.thread = Some(thread);
+        log::info!("worker_restarted");
+        Ok(SaveConnection {
+            saver: self.saver(),
+            reports,
+        })
+    }
+
+    /// Waits for the worker thread, logging `worker_died` if it panicked.
+    fn join(&mut self) {
+        if let Some(thread) = self.thread.take()
+            && thread.join().is_err()
+        {
+            log::error!("worker_died");
         }
     }
 }
@@ -165,6 +277,13 @@ impl StorageSaver {
         self.send(WorkerCommand::SaveDrafts(drafts));
     }
 
+    /// Asks the worker to write everything queued so far now, once, even
+    /// after it gave up ("Übernehmen" and manual retries, Q151, Q158). The
+    /// result arrives as [`SaveReport::WriteFinished`].
+    pub fn write_now(&self) {
+        self.send(WorkerCommand::WriteNow);
+    }
+
     /// Sends `command` to the worker, logging if the worker is gone.
     fn send(&self, command: WorkerCommand) {
         if self.commands.send(command).is_err() {
@@ -178,133 +297,102 @@ impl Drop for StorageWorker {
     fn drop(&mut self) {
         // The worker may already be gone (it ends on a panic); nothing to report then.
         let _ = self.commands.send(WorkerCommand::Shutdown);
-        if let Some(thread) = self.thread.take()
-            && thread.join().is_err()
-        {
-            log::error!("worker_died");
-        }
+        self.join();
     }
 }
 
-/// What the caller learned when it read `settings.json`, for the
-/// `load_finished` line.
-#[derive(Debug, Clone, Copy, Default)]
-pub struct SettingsSummary {
-    /// Whether the file did not exist.
-    pub missing: bool,
-    /// The text size the addon starts with.
-    pub text_scale: TextScale,
-    /// How long reading it took.
-    pub elapsed: Duration,
-}
-
-/// Which of the documents the worker loaded may be saved.
-struct DocumentsSavingAllowed {
+/// Which documents the worker may write, from their load outcomes.
+#[derive(Debug, Clone, Copy)]
+struct Permissions {
     /// `notes.json`.
     notes: bool,
+    /// `settings.json` (loaded by the caller).
+    settings: bool,
     /// `ui_state.json`.
     ui_state: bool,
     /// `drafts.json`.
     drafts: bool,
 }
 
-/// Loads the worker's documents and logs the `load_finished` summary.
-fn load_documents(
-    store: &DocumentStore,
-    settings_summary: SettingsSummary,
-) -> (LoadedDocuments, DocumentsSavingAllowed) {
-    let started = Instant::now();
-    let now = Timestamp::now();
-    let notes = load_logged::<NotesDocument>(store, now);
-    let ui_state_outcome = load_logged::<UiState>(store, now);
-    let drafts_outcome = load_logged::<DraftsDocument>(store, now);
-    let allowed = DocumentsSavingAllowed {
-        notes: notes.allows_saving(),
-        ui_state: ui_state_outcome.allows_saving(),
-        drafts: drafts_outcome.allows_saving(),
-    };
-    let mut missing = Vec::new();
-    if settings_summary.missing {
-        missing.push(document_file_name::<Settings>());
-    }
-    missing.extend(missing_file(&notes));
-    missing.extend(missing_file(&ui_state_outcome));
-    let ui_state = ui_state_outcome.into_document().unwrap_or_default();
-    let drafts = drafts_outcome.into_document().unwrap_or_default();
-    log_load_finished(
-        &LoadCounts {
-            notes: note_count(&notes),
-            drafts: drafts.drafts.len(),
-        },
-        &missing,
-        settings_summary,
-        started.elapsed() + settings_summary.elapsed,
-    );
-    let documents = LoadedDocuments {
-        notes,
-        ui_state,
-        drafts,
-    };
-    (documents, allowed)
+/// The pending save of every document.
+#[derive(Default)]
+struct Slots {
+    /// `notes.json`.
+    notes: Slot<Arc<NotesDocument>>,
+    /// `settings.json`.
+    settings: Slot<Settings>,
+    /// `ui_state.json`.
+    ui_state: Slot<UiState>,
+    /// `drafts.json`.
+    drafts: Slot<DraftsDocument>,
 }
 
-/// Body of the worker thread: loads the notes, then serves save requests until
-/// shutdown, writing each document once it was unchanged for `debounce`.
-fn run_worker(
-    store: &DocumentStore,
-    debounce: Duration,
-    saving_allowed: SavingAllowed,
-    settings_summary: SettingsSummary,
-    commands: &Receiver<WorkerCommand>,
-    loaded: &Sender<LoadedDocuments>,
-) {
-    let (documents, allowed) = load_documents(store, settings_summary);
-    // The render side may already be gone during a quick unload; that is fine.
-    let _ = loaded.send(documents);
-
-    let mut pending_notes: Option<PendingSave<Arc<NotesDocument>>> = None;
-    let mut pending_settings: Option<PendingSave<Settings>> = None;
-    let mut pending_ui_state: Option<PendingSave<UiState>> = None;
-    let mut pending_drafts: Option<PendingSave<DraftsDocument>> = None;
-    loop {
-        let next_due = [
-            pending_notes.as_ref().map(|pending| pending.due_at),
-            pending_settings.as_ref().map(|pending| pending.due_at),
-            pending_ui_state.as_ref().map(|pending| pending.due_at),
-            pending_drafts.as_ref().map(|pending| pending.due_at),
+impl Slots {
+    /// When the next automatic write is due, if any is planned.
+    fn next_due(&self) -> Option<Instant> {
+        [
+            self.notes.due_at(),
+            self.settings.due_at(),
+            self.ui_state.due_at(),
+            self.drafts.due_at(),
         ]
         .into_iter()
         .flatten()
-        .min();
-        let received = match next_due {
+        .min()
+    }
+
+    /// Writes every slot as `mode` asks. Returns whether every shown
+    /// document that was written is on disk now.
+    fn write(&mut self, store: &DocumentStore, mode: WriteMode, timing: WorkerTiming) -> bool {
+        [
+            self.notes.write(store, mode, timing),
+            self.settings.write(store, mode, timing),
+            self.ui_state.write(store, mode, timing),
+            self.drafts.write(store, mode, timing),
+        ]
+        .into_iter()
+        .flatten()
+        .all(|WriteResult { succeeded, shown }| succeeded || !shown)
+    }
+
+    /// How the user should see the shown documents.
+    fn health(&self) -> SaveHealth {
+        self.notes.health().worse(self.drafts.health())
+    }
+}
+
+/// Serves save requests until shutdown: writes each document once it was
+/// unchanged for the debounce delay, retries failed writes and reports
+/// changes of [`SaveHealth`] and finished [`WorkerCommand::WriteNow`]s.
+fn serve(
+    store: &DocumentStore,
+    timing: WorkerTiming,
+    permissions: Permissions,
+    commands: &Receiver<WorkerCommand>,
+    reports: &Sender<SaveReport>,
+) {
+    let mut slots = Slots::default();
+    let mut reported_health = SaveHealth::Healthy;
+    loop {
+        let received = match slots.next_due() {
             Some(due_at) => commands.recv_timeout(due_at.saturating_duration_since(Instant::now())),
             None => commands.recv().map_err(|_| RecvTimeoutError::Disconnected),
         };
 
+        let now = Instant::now();
+        let mut finished = None;
         match received {
-            Ok(WorkerCommand::SaveNotes(document)) if allowed.notes => {
-                pending_notes = Some(PendingSave {
-                    document,
-                    due_at: Instant::now() + debounce,
-                });
+            Ok(WorkerCommand::SaveNotes(document)) if permissions.notes => {
+                slots.notes.replace(document, now, timing);
             }
-            Ok(WorkerCommand::SaveSettings(settings)) if saving_allowed.settings => {
-                pending_settings = Some(PendingSave {
-                    document: settings,
-                    due_at: Instant::now() + debounce,
-                });
+            Ok(WorkerCommand::SaveSettings(settings)) if permissions.settings => {
+                slots.settings.replace(settings, now, timing);
             }
-            Ok(WorkerCommand::SaveUiState(ui_state)) if allowed.ui_state => {
-                pending_ui_state = Some(PendingSave {
-                    document: ui_state,
-                    due_at: Instant::now() + debounce,
-                });
+            Ok(WorkerCommand::SaveUiState(ui_state)) if permissions.ui_state => {
+                slots.ui_state.replace(ui_state, now, timing);
             }
-            Ok(WorkerCommand::SaveDrafts(drafts)) if allowed.drafts => {
-                pending_drafts = Some(PendingSave {
-                    document: drafts,
-                    due_at: Instant::now() + debounce,
-                });
+            Ok(WorkerCommand::SaveDrafts(drafts)) if permissions.drafts => {
+                slots.drafts.replace(drafts, now, timing);
             }
             Ok(
                 WorkerCommand::SaveNotes(_)
@@ -314,184 +402,34 @@ fn run_worker(
             ) => {
                 log::warn!(reason = "read_only"; "save_dropped");
             }
+            Ok(WorkerCommand::WriteNow) => {
+                finished = Some(slots.write(store, WriteMode::Now, timing));
+            }
             Ok(WorkerCommand::Shutdown) | Err(RecvTimeoutError::Disconnected) => {
-                save_pending::<_, NotesDocument>(store, pending_notes.take(), None);
-                save_pending::<_, Settings>(store, pending_settings.take(), None);
-                save_pending::<_, UiState>(store, pending_ui_state.take(), None);
-                save_pending_drafts(store, pending_drafts.take(), None);
+                slots.write(store, WriteMode::Final, timing);
                 return;
             }
             Err(RecvTimeoutError::Timeout) => {}
         }
 
-        let now = Instant::now();
-        pending_notes = save_pending::<_, NotesDocument>(store, pending_notes, Some(now));
-        pending_settings = save_pending::<_, Settings>(store, pending_settings, Some(now));
-        pending_ui_state = save_pending::<_, UiState>(store, pending_ui_state, Some(now));
-        pending_drafts = save_pending_drafts(store, pending_drafts, Some(now));
-    }
-}
-
-/// Like [`save_pending`] for the drafts, but deletes `drafts.json` when the
-/// list is empty, so no empty file lingers on disk (M55).
-fn save_pending_drafts(
-    store: &DocumentStore,
-    pending: Option<PendingSave<DraftsDocument>>,
-    now: Option<Instant>,
-) -> Option<PendingSave<DraftsDocument>> {
-    let pending = pending?;
-    if now.is_some_and(|now| pending.due_at > now) {
-        return Some(pending);
-    }
-    let started = Instant::now();
-    let result = if pending.document.drafts.is_empty() {
-        store.delete::<DraftsDocument>()
-    } else {
-        store.save(&pending.document)
-    };
-    log_save_result::<DraftsDocument>(store, &result, started.elapsed());
-    None
-}
-
-/// Writes `pending` if it is due at `now` (or unconditionally if `now` is
-/// `None`) and returns what is still pending. `T` is the document itself or a
-/// shared copy of it.
-fn save_pending<T, D>(
-    store: &DocumentStore,
-    pending: Option<PendingSave<T>>,
-    now: Option<Instant>,
-) -> Option<PendingSave<T>>
-where
-    T: Borrow<D>,
-    D: VersionedDocument,
-{
-    let pending = pending?;
-    if now.is_some_and(|now| pending.due_at > now) {
-        return Some(pending);
-    }
-    let started = Instant::now();
-    let result = store.save::<D>(pending.document.borrow());
-    log_save_result::<D>(store, &result, started.elapsed());
-    None
-}
-
-/// Logs a failed save as `save_failed` (ERROR, with the whole error and the
-/// duration). A successful save is routine and not logged (ROADMAP R92).
-fn log_save_result<D: VersionedDocument>(
-    store: &DocumentStore,
-    result: &Result<(), trailkit_storage::StorageError>,
-    elapsed: Duration,
-) {
-    if let Err(error) = result {
-        let path = store.path_of::<D>();
-        let ms = elapsed.as_millis();
-        log::error!(file:% = FileName::of(&path), ms, error:% = ErrorChain(error); "save_failed");
-    }
-}
-
-/// Loads `D` from `store` and logs the outcome with its duration.
-fn load_logged<D: VersionedDocument>(store: &DocumentStore, now: Timestamp) -> LoadOutcome<D> {
-    let started = Instant::now();
-    let outcome = store.load::<D>(now);
-    log_load_outcome(&outcome, started.elapsed());
-    outcome
-}
-
-/// The file name of document `D`, e.g. `notes.json`.
-fn document_file_name<D: VersionedDocument>() -> String {
-    format!("{}.json", D::FILE_STEM)
-}
-
-/// The file name of `D` if `outcome` found no file.
-fn missing_file<D: VersionedDocument>(outcome: &LoadOutcome<D>) -> Option<String> {
-    matches!(outcome, LoadOutcome::Missing).then(document_file_name::<D>)
-}
-
-/// How many notes `outcome` holds (0 without a document).
-fn note_count(outcome: &LoadOutcome<NotesDocument>) -> usize {
-    match outcome {
-        LoadOutcome::Loaded { document, .. } => document
-            .root
-            .iter()
-            .map(|node| match node {
-                TreeNode::Note(_) => 1,
-                TreeNode::Group(group) => group.note_count(),
-            })
-            .sum(),
-        _ => 0,
-    }
-}
-
-/// What the documents held when they were loaded.
-struct LoadCounts {
-    /// Notes in the tree, without the trash.
-    notes: usize,
-    /// Saved drafts.
-    drafts: usize,
-}
-
-/// Logs the one `load_finished` line of a session (ROADMAP R92): that loading
-/// ended, and how much there was. `missing` names the files that do not exist
-/// (drafts are normally absent and not listed); outside a first start a
-/// missing `notes.json` explains "my notes are gone".
-fn log_load_finished(
-    counts: &LoadCounts,
-    missing: &[String],
-    settings: SettingsSummary,
-    elapsed: Duration,
-) {
-    let LoadCounts { notes, drafts } = *counts;
-    let text_scale = f64::from(settings.text_scale.factor());
-    let ms = elapsed.as_millis();
-    if missing.is_empty() {
-        log::info!(notes, drafts, text_scale, ms; "load_finished");
-    } else {
-        let missing = missing.join(",");
-        log::info!(notes, drafts, missing = missing.as_str(), text_scale, ms; "load_finished");
-    }
-}
-
-/// Logs a load that was not routine (ROADMAP R92): `load_migrated` (INFO),
-/// `load_recovered` (ERROR, the unreadable file was moved to `backups/`) or
-/// `load_read_only` (newer version: WARN, I/O error: ERROR), each with the
-/// file name and the duration. A found or missing file logs nothing here;
-/// [`log_load_finished`] sums those up.
-pub fn log_load_outcome<D: VersionedDocument>(outcome: &LoadOutcome<D>, elapsed: Duration) {
-    let file = document_file_name::<D>();
-    let file = file.as_str();
-    let ms = elapsed.as_millis();
-    match outcome {
-        LoadOutcome::Missing
-        | LoadOutcome::Loaded {
-            migrated_from: None,
-            ..
-        } => {}
-        LoadOutcome::Loaded {
-            migrated_from: Some(version),
-            ..
-        } => log::info!(file, from_version = version.0, ms; "load_migrated"),
-        LoadOutcome::Recovered {
-            reason,
-            preserved_as,
-        } => log::error!(
-            file,
-            error = reason.as_str(),
-            preserved_as:% = FileName::of(preserved_as),
-            ms;
-            "load_recovered"
-        ),
-        LoadOutcome::ReadOnly(ReadOnlyReason::NewerVersion { found }) => {
-            log::warn!(file, reason = "newer_version", found = found.0, ms; "load_read_only");
+        slots.write(store, WriteMode::Due(Instant::now()), timing);
+        // The render side may be gone during unload; reports are then moot.
+        let health = slots.health();
+        if health != reported_health {
+            reported_health = health;
+            let _ = reports.send(SaveReport::Health(health));
         }
-        LoadOutcome::ReadOnly(ReadOnlyReason::Io(error)) => {
-            log::error!(file, reason = "io", error:% = ErrorChain(error), ms; "load_read_only");
+        if let Some(succeeded) = finished {
+            let _ = reports.send(SaveReport::WriteFinished { succeeded });
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, path::Path};
+    use std::{fs, path::Path, time::Duration};
+
+    use jiff::Timestamp;
 
     use super::*;
     use crate::{
@@ -502,6 +440,18 @@ mod tests {
 
     /// Short debounce so tests stay fast.
     const TEST_DEBOUNCE: Duration = Duration::from_millis(50);
+
+    /// Short delays so tests stay fast.
+    const TEST_TIMING: WorkerTiming = WorkerTiming {
+        debounce: TEST_DEBOUNCE,
+        retry_delay: TEST_DEBOUNCE,
+    };
+
+    /// Delays no test waits for: only shutdown or `write_now` write.
+    const SLOW_TIMING: WorkerTiming = WorkerTiming {
+        debounce: Duration::from_secs(3600),
+        retry_delay: Duration::from_secs(3600),
+    };
 
     /// Upper bound for waiting on the worker in tests.
     const TEST_TIMEOUT: Duration = Duration::from_secs(5);
@@ -535,12 +485,8 @@ mod tests {
         let document = document_with_note("Existing");
         store.save(document.as_ref())?;
 
-        let (_worker, loaded) = StorageWorker::spawn(
-            store,
-            TEST_DEBOUNCE,
-            ALL_ALLOWED,
-            SettingsSummary::default(),
-        )?;
+        let (_worker, loaded) =
+            StorageWorker::spawn(store, TEST_TIMING, ALL_ALLOWED, SettingsSummary::default())?;
         let loaded = loaded.recv_timeout(TEST_TIMEOUT)?;
         assert_eq!(
             loaded.notes.into_document().as_ref(),
@@ -556,7 +502,7 @@ mod tests {
         let directory = tempfile::tempdir()?;
         let (worker, loaded) = StorageWorker::spawn(
             DocumentStore::new(directory.path()),
-            TEST_DEBOUNCE,
+            TEST_TIMING,
             ALL_ALLOWED,
             SettingsSummary::default(),
         )?;
@@ -587,7 +533,7 @@ mod tests {
         let directory = tempfile::tempdir()?;
         let (worker, loaded) = StorageWorker::spawn(
             DocumentStore::new(directory.path()),
-            Duration::from_secs(3600),
+            SLOW_TIMING,
             ALL_ALLOWED,
             SettingsSummary::default(),
         )?;
@@ -632,7 +578,7 @@ mod tests {
         let spawn = || {
             StorageWorker::spawn(
                 DocumentStore::new(directory.path()),
-                Duration::from_secs(3600),
+                SLOW_TIMING,
                 ALL_ALLOWED,
                 SettingsSummary::default(),
             )
@@ -671,7 +617,7 @@ mod tests {
         fs::write(store.path_of::<NotesDocument>(), newer)?;
         let (worker, loaded) = StorageWorker::spawn(
             store.clone(),
-            TEST_DEBOUNCE,
+            TEST_TIMING,
             SavingAllowed { settings: false },
             SettingsSummary::default(),
         )?;
@@ -684,6 +630,159 @@ mod tests {
 
         assert_eq!(fs::read_to_string(store.path_of::<NotesDocument>())?, newer);
         assert!(!store.path_of::<Settings>().exists());
+        Ok(())
+    }
+
+    /// Waits for the next report from the worker.
+    fn next_report(reports: &Receiver<SaveReport>) -> Result<SaveReport, RecvTimeoutError> {
+        reports.recv_timeout(TEST_TIMEOUT)
+    }
+
+    #[test]
+    fn failed_notes_are_retried_three_times_then_given_up() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let directory = tempfile::tempdir()?;
+        let store = DocumentStore::new(directory.path());
+        // A folder where the temporary file must go makes every notes save fail.
+        let blocker = directory.path().join("notes.json.tmp");
+        fs::create_dir(&blocker)?;
+        let (worker, loaded) =
+            StorageWorker::spawn(store, TEST_TIMING, ALL_ALLOWED, SettingsSummary::default())?;
+        let reports = loaded.recv_timeout(TEST_TIMEOUT)?.reports;
+        let document = document_with_note("blocked");
+        worker.saver().save_notes(Arc::clone(&document));
+
+        for failed_attempts in 1..MAX_ATTEMPTS {
+            assert_eq!(
+                next_report(&reports)?,
+                SaveReport::Health(SaveHealth::Retrying { failed_attempts })
+            );
+        }
+        assert_eq!(
+            next_report(&reports)?,
+            SaveReport::Health(SaveHealth::GaveUp)
+        );
+        // No more automatic writes: nothing changes without input.
+        assert!(reports.recv_timeout(TEST_DEBOUNCE * 6).is_err());
+
+        // A manual write once the disk works again succeeds and reports it.
+        fs::remove_dir(&blocker)?;
+        worker.saver().write_now();
+        assert_eq!(
+            next_report(&reports)?,
+            SaveReport::Health(SaveHealth::Healthy)
+        );
+        assert_eq!(
+            next_report(&reports)?,
+            SaveReport::WriteFinished { succeeded: true }
+        );
+        assert_eq!(
+            saved_notes(directory.path()).as_ref(),
+            Some(document.as_ref())
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn a_failed_manual_write_reports_it_and_keeps_waiting() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let directory = tempfile::tempdir()?;
+        fs::create_dir(directory.path().join("notes.json.tmp"))?;
+        let (worker, loaded) = StorageWorker::spawn(
+            DocumentStore::new(directory.path()),
+            SLOW_TIMING,
+            ALL_ALLOWED,
+            SettingsSummary::default(),
+        )?;
+        let reports = loaded.recv_timeout(TEST_TIMEOUT)?.reports;
+        let saver = worker.saver();
+        saver.save_notes(document_with_note("blocked"));
+        saver.write_now();
+        assert_eq!(
+            next_report(&reports)?,
+            SaveReport::Health(SaveHealth::Retrying { failed_attempts: 1 })
+        );
+        assert_eq!(
+            next_report(&reports)?,
+            SaveReport::WriteFinished { succeeded: false }
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn hidden_documents_never_report_failures() -> Result<(), Box<dyn std::error::Error>> {
+        let directory = tempfile::tempdir()?;
+        fs::create_dir(directory.path().join("settings.json.tmp"))?;
+        let (worker, loaded) = StorageWorker::spawn(
+            DocumentStore::new(directory.path()),
+            SLOW_TIMING,
+            ALL_ALLOWED,
+            SettingsSummary::default(),
+        )?;
+        let reports = loaded.recv_timeout(TEST_TIMEOUT)?.reports;
+        let saver = worker.saver();
+        saver.save_settings(Settings::DEFAULT);
+        saver.write_now();
+        assert_eq!(
+            next_report(&reports)?,
+            SaveReport::WriteFinished { succeeded: true }
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn a_running_worker_is_not_restarted() -> Result<(), Box<dyn std::error::Error>> {
+        let directory = tempfile::tempdir()?;
+        let (mut worker, loaded) = StorageWorker::spawn(
+            DocumentStore::new(directory.path()),
+            SLOW_TIMING,
+            ALL_ALLOWED,
+            SettingsSummary::default(),
+        )?;
+        loaded.recv_timeout(TEST_TIMEOUT)?;
+        assert!(matches!(worker.restart(), Err(RestartError::StillRunning)));
+        Ok(())
+    }
+
+    #[test]
+    fn an_ended_worker_restarts_without_loading_and_writes()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let directory = tempfile::tempdir()?;
+        let (mut worker, loaded) = StorageWorker::spawn(
+            DocumentStore::new(directory.path()),
+            SLOW_TIMING,
+            ALL_ALLOWED,
+            SettingsSummary::default(),
+        )?;
+        let old_reports = loaded.recv_timeout(TEST_TIMEOUT)?.reports;
+        // Stands in for a panic: the old thread ends and its reports disconnect.
+        worker.saver().send(WorkerCommand::Shutdown);
+        assert!(matches!(
+            old_reports.recv_timeout(TEST_TIMEOUT),
+            Err(RecvTimeoutError::Disconnected)
+        ));
+
+        // The thread ends just after its channels close; a restart before that is refused.
+        let deadline = Instant::now() + TEST_TIMEOUT;
+        let SaveConnection { saver, reports } = loop {
+            match worker.restart() {
+                Err(RestartError::StillRunning) if Instant::now() < deadline => {
+                    thread::sleep(Duration::from_millis(1));
+                }
+                result => break result?,
+            }
+        };
+        let document = document_with_note("after restart");
+        saver.save_notes(Arc::clone(&document));
+        saver.write_now();
+        assert_eq!(
+            next_report(&reports)?,
+            SaveReport::WriteFinished { succeeded: true }
+        );
+        assert_eq!(
+            saved_notes(directory.path()).as_ref(),
+            Some(document.as_ref())
+        );
         Ok(())
     }
 }

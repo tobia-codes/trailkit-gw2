@@ -35,6 +35,18 @@ impl Color {
         }
     }
 
+    /// Creates a color from `[red, green, blue, alpha]`, the layout ImGui
+    /// uses (e.g. a style color read back from ImGui).
+    #[must_use]
+    pub const fn from_array([red, green, blue, alpha]: [f32; 4]) -> Self {
+        Self {
+            red,
+            green,
+            blue,
+            alpha,
+        }
+    }
+
     /// Returns the same color with a different opacity.
     #[must_use]
     pub const fn with_alpha(self, alpha: f32) -> Self {

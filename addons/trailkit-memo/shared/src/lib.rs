@@ -10,6 +10,7 @@ pub mod i18n;
 pub mod list_filter;
 pub mod note_tree;
 pub mod row_badge;
+pub mod save_text;
 pub mod settings;
 pub mod storage_worker;
 pub mod ui_state;

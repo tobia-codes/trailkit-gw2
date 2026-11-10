@@ -108,6 +108,16 @@ pub(super) enum WindowAction {
     ConfirmAccepted,
     /// The open delete question was cancelled.
     ConfirmCancelled,
+    /// "Try again" in the error toast: one write, or a worker restart (M180).
+    RetrySave,
+    /// The error toast's close button (Q164).
+    CloseSaveToast,
+    /// Save-failed dialog: discard the editor's text, then continue (Q157).
+    SaveFailedDiscard,
+    /// Save-failed dialog: stay in the editor.
+    SaveFailedKeepEditing,
+    /// Save-failed dialog: write the editor's text once more.
+    SaveFailedRetry,
 }
 
 impl WindowAction {
@@ -142,23 +152,8 @@ impl MemoWindow {
     /// Applies one collected action.
     pub(super) fn apply(&mut self, action: &WindowAction, language: Language) {
         let now = Timestamp::now();
-        if let Some(editor) = &self.editor
-            && action.leaves_editor_of(editor.session().note)
-        {
-            if self.leave_prompt.is_some() {
-                return;
-            }
-            match (
-                editor.session().has_changes(),
-                self.settings.unsaved_changes,
-            ) {
-                (true, UnsavedChanges::Ask) => {
-                    self.leave_prompt = Some(LeaveReason::Action(action.clone()));
-                    return;
-                }
-                (true, UnsavedChanges::SaveAutomatically) => self.commit_editor(now),
-                (false, _) => self.editor = None,
-            }
+        if !self.leave_editor_for(action, now, language) {
+            return;
         }
         match action {
             WindowAction::Select(_)
@@ -197,6 +192,11 @@ impl MemoWindow {
             | WindowAction::Trash(_)
             | WindowAction::ConfirmAccepted
             | WindowAction::ConfirmCancelled => self.apply_trash_action(action, language),
+            WindowAction::RetrySave
+            | WindowAction::CloseSaveToast
+            | WindowAction::SaveFailedDiscard
+            | WindowAction::SaveFailedKeepEditing
+            | WindowAction::SaveFailedRetry => self.apply_save_action(action, language),
         }
         // Whatever opens the editor, and creating an entry, leaves the
         // compact note view (M139).
@@ -206,6 +206,49 @@ impl MemoWindow {
             self.ui_state.compact_note_view = false;
             self.saver.save_ui_state(self.ui_state);
         }
+    }
+
+    /// Protects unsaved edits before `action` leaves the editor (M54, M180):
+    /// asks, saves first or opens the save-failed dialog. Returns whether
+    /// `action` may run now; otherwise it follows once the question is
+    /// answered or the text is on disk.
+    fn leave_editor_for(
+        &mut self,
+        action: &WindowAction,
+        now: Timestamp,
+        language: Language,
+    ) -> bool {
+        if let Some(editor) = &self.editor
+            && action.leaves_editor_of(editor.session().note)
+        {
+            if self.leave_prompt.is_some()
+                || self.save_failed_prompt.is_some()
+                || self.editor_commit_running()
+            {
+                return false;
+            }
+            let reason = LeaveReason::Action(action.clone());
+            if self.editor_commit_failed() {
+                self.open_save_failed_prompt(reason);
+                return false;
+            }
+            match (
+                editor.session().has_changes(),
+                self.settings.unsaved_changes,
+            ) {
+                (true, UnsavedChanges::Ask) => {
+                    self.leave_prompt = Some(reason);
+                    return false;
+                }
+                (true, UnsavedChanges::SaveAutomatically) => {
+                    // The action follows once the text is on disk (M180).
+                    self.begin_editor_commit(now, Some(reason), language);
+                    return false;
+                }
+                (false, _) => self.editor = None,
+            }
+        }
+        true
     }
 
     /// Applies an action on the note tree: selecting, renaming, creating,
@@ -302,9 +345,17 @@ impl MemoWindow {
                     self.editor = Some(editor);
                 }
             }
-            WindowAction::FinishEditing => self.commit_editor(now),
+            WindowAction::FinishEditing => {
+                if !self.editor_commit_running() {
+                    self.begin_editor_commit(now, None, language);
+                }
+            }
             WindowAction::CancelEditing => {
-                if self.has_unsaved_changes()
+                if self.editor_commit_running() || self.save_failed_prompt.is_some() {
+                    // Wait for the running save; the dialog answers itself.
+                } else if self.editor_commit_failed() {
+                    self.open_save_failed_prompt(LeaveReason::Cancel);
+                } else if self.has_unsaved_changes()
                     && self.settings.unsaved_changes == UnsavedChanges::Ask
                 {
                     self.leave_prompt = Some(LeaveReason::Cancel);
@@ -340,14 +391,11 @@ impl MemoWindow {
                     return;
                 };
                 if *action == WindowAction::LeaveSaving {
-                    self.commit_editor(now);
+                    // Continues once the text is on disk (M180).
+                    self.begin_editor_commit(now, Some(reason), language);
                 } else {
                     self.editor = None;
-                }
-                match reason {
-                    LeaveReason::Action(next) => self.apply(&next, language),
-                    LeaveReason::CloseWindow => self.close_approved = true,
-                    LeaveReason::Cancel => {}
+                    self.continue_after_leaving(Some(reason), language);
                 }
             }
             WindowAction::LeaveCancelled => self.leave_prompt = None,
@@ -407,31 +455,6 @@ impl MemoWindow {
             }
             // The other actions are dispatched by `apply`.
             _ => {}
-        }
-    }
-
-    /// Writes the editor's title and body back into the note, saves, and
-    /// deletes the note's draft (M52, M55). An empty title keeps the old one.
-    pub(super) fn commit_editor(&mut self, now: Timestamp) {
-        let Some(editor) = self.editor.take() else {
-            return;
-        };
-        let session = editor.into_session();
-        let mut changed = self
-            .document
-            .rename(NodeId::Note(session.note), &session.title, now);
-        if let Some(note) = self.document.note_mut(session.note)
-            && note.body != session.body
-        {
-            note.body = session.body;
-            note.updated_at = now;
-            changed = true;
-        }
-        if changed {
-            self.save_notes();
-        }
-        if self.drafts.take(session.note).is_some() {
-            self.saver.save_drafts(self.drafts.clone());
         }
     }
 

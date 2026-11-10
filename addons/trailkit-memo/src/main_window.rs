@@ -10,6 +10,7 @@ mod dialogs;
 mod layout;
 mod note_list;
 mod note_pane;
+mod save_status;
 mod search;
 mod text_scale;
 mod trash;
@@ -44,7 +45,7 @@ use trailkit_memo_shared::{
     i18n::{Language, Text},
     note_tree::{GroupId, NodeId, Note, NoteId, NotesDocument},
     settings::{Settings, TextScale, UnsavedChanges},
-    storage_worker::StorageSaver,
+    storage_worker::{SaveConnection, StorageSaver},
     ui_state::UiState,
     undo::UndoHistory,
 };
@@ -52,6 +53,7 @@ use trailkit_memo_shared::{
 use self::{
     actions::{LeaveReason, WindowAction},
     layout::draw_empty_state,
+    save_status::{EditorCommit, SaveFailedPrompt, SaveStatus},
     search::SearchCache,
     trash::{Confirmation, TrashState},
 };
@@ -176,20 +178,28 @@ pub struct MemoWindow {
     trash: TrashState,
     /// An open delete question (M134, M146).
     confirmation: Option<Confirmation>,
+    /// The worker's reports and the error toast (M180).
+    save_status: SaveStatus,
+    /// The editor's "Save" while it waits for the disk (Q158).
+    editor_commit: Option<EditorCommit>,
+    /// The dialog when leaving the editor after a failed save (Q157).
+    save_failed_prompt: Option<SaveFailedPrompt>,
 }
 
 impl MemoWindow {
-    /// Creates the window state from what the storage worker loaded.
+    /// Creates the window state from what the storage worker loaded;
+    /// `storage` queues saves and reads the worker's reports.
     #[must_use]
     pub fn new(
         document: NotesDocument,
         problem: Option<NotesProblem>,
         ui_state: UiState,
-        saver: StorageSaver,
+        storage: SaveConnection,
         addon_directory: PathBuf,
         drafts: DraftsDocument,
         settings: Settings,
     ) -> Self {
+        let SaveConnection { saver, reports } = storage;
         let mut drafts = drafts;
         // A trashed note keeps its draft until it is deleted for good (M151).
         let note_exists =
@@ -247,6 +257,9 @@ impl MemoWindow {
             toast: None,
             trash: TrashState::default(),
             confirmation: None,
+            save_status: SaveStatus::new(reports),
+            editor_commit: None,
+            save_failed_prompt: None,
         }
     }
 
@@ -280,15 +293,36 @@ impl MemoWindow {
             self.leave_prompt = None;
             return false;
         }
+        // Escape keeps editing in the save-failed dialog, unless it saves (Q157).
+        if self.save_failed_prompt.is_some() {
+            if self.save_failed_prompt_idle() {
+                self.save_failed_prompt = None;
+            }
+            return false;
+        }
         // Escape closes the open window menu first (M166).
         if self.window_menu_open {
             self.window_menu_open = false;
             return false;
         }
+        // The window closes once the running save is done (M180).
+        if self.editor_commit_running() {
+            return false;
+        }
+        if self.editor_commit_failed() {
+            self.open_save_failed_prompt(LeaveReason::CloseWindow);
+            return false;
+        }
         if self.has_unsaved_changes()
             && self.settings.unsaved_changes == UnsavedChanges::SaveAutomatically
         {
-            self.commit_editor(Timestamp::now());
+            // Closing needs no language; it only continues an action.
+            self.begin_editor_commit(
+                Timestamp::now(),
+                Some(LeaveReason::CloseWindow),
+                Language::default(),
+            );
+            return false;
         }
         if self.has_unsaved_changes() {
             if self.leave_prompt.is_none() {
@@ -335,6 +369,7 @@ impl MemoWindow {
         // `FontUI` size (M35, M62); the window's default font differs.
         let _body_font = FontScope::push(ui, FontRole::Body);
         self.actions.clear();
+        self.poll_save_reports(language);
         self.window_rect = Some([ui.window_pos(), ui.window_size()]);
         self.window_focused =
             ui.is_window_focused_with_flags(WindowFocusedFlags::ROOT_AND_CHILD_WINDOWS);
@@ -355,6 +390,8 @@ impl MemoWindow {
         self.draw_window_menu(ui, language, theme, content_start, content_size);
         // Last, so it lies above the content and the menu (M148).
         self.draw_toast_message(ui, language, theme);
+        self.draw_save_toast(ui, language, theme);
+        self.drop_failed_commit_on_edit();
 
         if let Some(action) = self.note_list.finish_drag(ui, theme, &self.document) {
             self.actions.push(action.into());

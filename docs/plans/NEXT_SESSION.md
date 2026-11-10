@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-09 (session 21). Current state and
+Last updated: 2026-11-10 (session 22). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -11,34 +11,26 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## ▶ Resume here
 
-**Session 21 (2026-11-09) — logs as day files (R92, Q213–Q221), PR `feature/log-daily-files`** (auto-merge armed after the
-user's merge OK; check it merged, fix CI if not). `trailkit/logs/<addon>/<addon>-<yyyymmdd>.log` plus `_1`–`_4`, 1 MiB each; newest
-14 days, none older than 30; a normal session is three lines (`session_start`, one `load_finished`, `session_end`).
-In game only start and file creation were seen; day change, parts and cleanup are unit-tested. User deletes old `trailkit/logs/memo.log`
-and `TrailpackMemo/` by hand. Format: `crates/trailkit-log/README.md`.
+**Session 22 (2026-11-10) — M180 save errors and R93 done; PR `feature/memo-save-errors` → `develop`** (auto-merge armed after
+the user's merge OK; check it merged, fix CI if not). Tested in game: retries, give-up, manual retry, recovery
+(`save_recovered`), dialog, disabled buttons. Release DLL 2,420,224 bytes vs. 2,344,960 before (+3.2 %, measured before R93).
+New in `trailkit-ui`: error/success toast, `Button` with `ButtonKind` + `ButtonState` (`Ready`/`Busy`/`Disabled { reason }`,
+busy/disabled are no ImGui buttons), `BusyState` (≥ 0.6 s), reason tooltip with neutral `ban`. R93: every failure case and
+disabled control is designed. Splits done; `actions.rs` 413 waits for its rebuild (Q134). Remote branches of #99–#102 deleted.
+**Next:** PR #96 (below), then R89 (help `?`, export, problem page; `PRIVACY.md`, Q170). Start a fresh session.
 
-**Next: implement M180 save errors.** Answered yes 2026-11-09: Q151, Q164, Q165, Q166 (amended by Q219), Q168–Q171, Q209–Q211.
-Mockup V4 (`x` always top right, 8 px; https://claude.ai/artifact/DyA5k7uYVKGhuTARYTzyJ7) counts as visually approved (R87); use the
-short title "Speichern fehlgeschlagen" (Q165), the mockup still shows the long one. M180 adds `save_gave_up` to `CRITICAL_EVENTS`.
-Then R89 (help `?`, export, problem page; `PRIVACY.md` does not exist yet, Q170 needs it).
+Next ids: **M181+, R94+, questions from 222.** R93 (failure cases, busy buttons) added and implemented 2026-11-10. Still deferred: GW2 build and Nexus version in `session_start` (need MumbleLink → core,
+C12). If ever needed: limit repeated log events once core adds network paths.
 
-Next ids: **M181+, R93+, questions from 222.** Still deferred: GW2 build and Nexus version in `session_start` (need MumbleLink → core,
-C12). Hints: `addon.rs` 416 code lines (limit 400), split only on request. If ever needed: limit repeated log events once core adds network paths.
-
-Implementation outline: typed worker → UI result channel; retry state (3 writes, 5 s, parked); immediate write for
-"Übernehmen"; toast error kind, counter, spinner, close; dialog busy button + status line; `danger.subtle` via
-`cargo xtask tokens` + contrast tests; en/de texts, help, READMEs; tests (no endless retry, no content in logs).
-
-- **PR #96 (B22, backend before the first release):** Q210 yes: after M180 close it and redo B22 on a new branch from `origin/develop`
+- **PR #96 (B22, backend before the first release):** Q210 yes: after M180 is merged close it and redo B22 on a new branch from `origin/develop`
   (no force push); turn off its armed auto-merge first. B22's design needs its own grilling round (endpoint, GDPR, offline, lock UX, R49).
-- **Housekeeping (Q211 yes, not done yet):** delete remote branches of merged PRs (`agent-guidance-followups`, `backend-service-
-  skeleton`, `xtask-token-split-and-docs`, `contributor-docs`), obsolete `bugfix/ui-theme-in-game-fixes` (Q138), local
-  merged ones; pull stale local `develop` first. Keep `feature/memo-save-error-design` until M180 ships (Q141: keep `token_groups.rs`).
+- **Housekeeping (Q211) done 2026-11-10:** remote branches of PRs before #99 deleted. Still there: remote branches of merged
+  #99–#102 and local `chore/contributor-docs`, `chore/xtask-token-split-and-docs`, `chore/handoff-session-20` (old handoffs,
+  unmerged commits) need the user's OK to delete; `feature/memo-save-error-design` may go once M180 is merged (Q141).
 
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
-1. **Storage failures (highest priority):** designed in memo M180 (`storage_worker.rs` drops failed
-   writes today; the UI gets no result). Not implemented.
+1. **Storage failures:** done (memo M180, 2026-11-10).
 2. **Pre-push protection:** `.githooks/pre-push` checks protected destination refs only
    for deletions; normal pushes check the current branch via `xtask/src/check_branch.rs`.
    Validate every destination ref. Server-side protection was not inspected in the review.

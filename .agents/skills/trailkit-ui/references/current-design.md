@@ -68,7 +68,7 @@ Names follow `memo-state-<state>-<dark|light>.png` and
 | Editor (the list is hidden while editing) | `editor-dark`, `editor-preview-dark` |
 | Menu while editing | `window-menu-editing-dark` |
 | Compact note view | `compact-dark` |
-| Dialogs, toast | `dialog-unsaved-dark`, `toast-dark` |
+| Dialogs, toast | `dialog-unsaved-dark`, `toast-dark`; error and success toasts: `ui-toast-error-*`, `ui-toast-success-*` (trailkit-ui) |
 | Popup menus, submenus, dropdown | `menu-note-dark`, `menu-note-reset-submenu-dark`, `kind-open-dark` |
 | A group collapsed by a click, the note staying | `group-clicked-dark` |
 | Any view at the narrowest window | `min-<state>-dark`, in German `min-de-<state>-dark` |

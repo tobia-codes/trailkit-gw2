@@ -99,7 +99,12 @@ Each rule has an id (`area-name`) so reviews can cite it.
   frame; long operations (file import, downloads) show progress and keep the
   UI responsive (work on the worker thread).
 - `ix-busy-buttons` — A button that starts an async action is disabled with a
-  spinner until it completes.
+  spinner until it completes, and at least 0.6 s, so an action that ends at
+  once is still seen to run (`busy::BusyState`, `ButtonState::Busy`).
+  Answers that depend on it (e.g. "Discard" beside "Save again") are locked
+  meanwhile: `ButtonState::Disabled { reason }`, label in `text.disabled`, no
+  hover, the reason in a tooltip with a neutral `ban` icon, never `danger`
+  (it is no error; R93).
 - `ix-drag-threshold` — Drag starts only after a few pixels of movement;
   show a drop indicator line between items and highlight target groups;
   Escape cancels the drag.
@@ -111,6 +116,9 @@ Each rule has an id (`area-name`) so reviews can cite it.
   short toast ("Waypoint copied").
 - `ix-toasts` — Toasts auto-dismiss after 3–5 s, never steal focus, stack
   without covering the window they refer to, and can be dismissed by click.
+  Toasts only when necessary, one at a time. Exception: an error toast
+  (`ToastTone::Error`) stays without timer until the error is resolved or the
+  user closes it with its `x` (memo M180, Q145).
 
 ## 4. Forms & settings (MEDIUM)
 
@@ -240,6 +248,15 @@ Each rule has an id (`area-name`) so reviews can cite it.
   action to create it ("No notes yet — Create note").
 - `state-error-recovery` — Errors state what happened and offer a recovery
   (retry, open settings, help link).
+- `state-failure-designed` — Every action that can fail (file, network, API,
+  worker thread) shows its failure case in the design proposal (R87), not
+  only the happy path. The default pattern is memo M180 (R93): retry
+  automatically (at most 3 times, 5 s apart, never endless), stay silent on
+  the first failure, then an error toast without timer with a counter and
+  spinner while retrying, "Try again" (busy, `ix-busy-buttons`) and a close
+  `x`; "Changes saved" only after a shown error; a user's own action that
+  fails (e.g. "Save") reports at once and keeps the user's input. Deviations
+  are justified in the proposal.
 - `state-stale-data` — Data older than its validity shows its age
   ("Data from 2026-10-29") — see trailkit-core C8.
 - `data-tables` — Tables have sortable columns with a visible sort

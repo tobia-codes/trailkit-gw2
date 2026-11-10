@@ -5,6 +5,7 @@
 use jiff::Timestamp;
 use nexus::imgui::{ChildWindow, StyleColor, Ui};
 use trailkit_ui::{
+    button::ButtonState,
     markdown_view::{MarkdownAction, open_web_link},
     separator::draw_separator,
     theme::Theme,
@@ -103,10 +104,12 @@ impl MemoWindow {
             ToastAction {
                 label: TrashText::Undo.get(language),
                 tooltip: Some(TrashText::UndoTooltip.get(language)),
+                state: ButtonState::Ready,
             },
             ToastAction {
                 label: TrashText::OpenTrash.get(language),
                 tooltip: None,
+                state: ButtonState::Ready,
             },
         ];
         let actions: &[ToastAction<'_>] = match toast.kind {

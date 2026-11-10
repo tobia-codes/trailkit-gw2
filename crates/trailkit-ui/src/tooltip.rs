@@ -6,11 +6,32 @@
 
 use nexus::imgui::Ui;
 
-use crate::glyph_metrics::capital_middle;
+use crate::{
+    font_registry::FontScope, fonts::FontRole, glyph_metrics::capital_middle, icons::Icon,
+    theme::Theme,
+};
 
 /// Shows `text` as a tooltip at the mouse.
 pub fn draw_tooltip(ui: &Ui, text: impl AsRef<str>) {
     draw_tooltip_with(ui, || ui.text(text.as_ref()));
+}
+
+/// Shows why a control is disabled (R93): a neutral Lucide `ban` icon in
+/// `text.secondary` (not `danger`: it is no error) and `reason` in
+/// `text.primary`, readable even inside a disabled control's colors.
+pub fn draw_reason_tooltip(ui: &Ui, theme: &Theme, reason: &str) {
+    draw_tooltip_with(ui, || {
+        {
+            let _icons = FontScope::push(ui, FontRole::Icons);
+            let mut buffer = [0; 4];
+            ui.text_colored(
+                theme.text.secondary.to_array(),
+                Icon::BAN.as_str(&mut buffer),
+            );
+        }
+        ui.same_line_with_spacing(0.0, theme.spacing.small);
+        ui.text_colored(theme.text.primary.to_array(), reason);
+    });
 }
 
 /// Shows a tooltip at the mouse with the items `content` draws.

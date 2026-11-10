@@ -19,6 +19,8 @@ use trailkit_memo_reset_schedule::i18n::ResetText;
 use trailkit_memo_search::i18n::SearchText;
 use trailkit_memo_shared::i18n::LocalizedText;
 use trailkit_memo_shared::i18n::Text;
+use trailkit_memo_shared::save_text::SaveText;
+use trailkit_memo_trash::i18n::TrashText;
 
 /// Every user-facing string of the app and all its slices in all languages,
 /// for registering their characters with Nexus' font atlas
@@ -32,6 +34,8 @@ pub fn all_texts() -> String {
         + &NoteViewText::all_texts()
         + &ResetText::all_texts()
         + &SearchText::all_texts()
+        + &TrashText::all_texts()
+        + &SaveText::all_texts()
 }
 
 #[cfg(test)]

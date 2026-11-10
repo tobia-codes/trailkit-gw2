@@ -37,7 +37,8 @@ Read only reference sections relevant to the task, rather than every linked file
    tooltip; destructive actions ask for confirmation; unsaved changes warn
    before being discarded.
 4. **Feedback** — loading, empty, error and disabled states are always
-   designed (never a blank area). Disabled features say *why* and *how to
+   designed (never a blank area); every action that can fail has a designed
+   failure case with a recovery (`state-failure-designed`). Disabled features say *why* and *how to
    enable* them.
 5. **Accessibility** — text contrast ≥ 4.5:1 against its background in both
    themes; never encode meaning by color alone (add icon/text); minimum
@@ -99,7 +100,21 @@ Build once, use everywhere. Planned:
   confirm button of a destructive dialog: `danger` fill)
 - Toast — **exists**: `toast::draw_toast`, one message with an optional
   action button at the bottom centre of the window, 5 s, the timer pauses
-  while hovered, a new one replaces the old (memo M142, M148, `ix-toasts`)
+  while hovered, a new one replaces the old (memo M142, M148, `ix-toasts`).
+  `ToastTone::Error` (only for real need, e.g. a failed save; memo M180):
+  `danger.subtle` fill, `danger` frame, `circle-alert`, no timer; with
+  `draw_toast_with_extras` a counter, a spinner and a close `x`. A busy
+  action (`ToastAction::busy`) shows a spinner. `ToastTone::Success`:
+  `circle-check` in `success`, 5 s
+- Button with kind and state — **exists** (R93): `button::Button` with
+  `ButtonKind` (`Regular`, `Primary`, `DangerFill`) and `ButtonState`
+  (`Ready`, `Busy` = spinner, `Disabled { reason }` = `text.disabled`
+  label, no hover, reason tooltip with a neutral `ban` icon via
+  `tooltip::draw_reason_tooltip`); `draw_button`, `draw_primary_button` …
+  are short forms. Icon buttons: `draw_icon_button_with_state`. Disabled
+  menu entries use the same reason tooltip. Drive `Busy` with
+  `busy::BusyState` (at least 0.6 s); on popups and toasts
+  `draw_popup_icon_button` (hover on `bg.active`)
 - `Popover` / `Tooltip`, `ConfirmDialog`, `UnsavedChangesDialog`
 - `DependencyHint` (greyed feature + explanation + "Open core settings"/
   "Get trailkit-core" button)
@@ -194,6 +209,8 @@ move it into `crates/trailkit-ui` (see AGENTS.md "Code sharing").
       `references/tokens.md` §9 passed
 - [ ] Works and is readable in Dark *and* Light
 - [ ] Empty / loading / error / disabled states present
+- [ ] Every action that can fail shows its failure case and recovery
+      (`state-failure-designed`, default pattern memo M180)
 - [ ] Every string localized (en + de)
 - [ ] Help page updated
 - [ ] Style push/pop balanced

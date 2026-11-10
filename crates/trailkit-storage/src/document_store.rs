@@ -10,8 +10,8 @@ use serde::Serialize;
 use serde_json::Value;
 
 use crate::{
-    BACKUPS_DIRECTORY_NAME, DocumentFields, SchemaVersion, VersionedDocument, safety_copies,
-    write_atomically,
+    BACKUPS_DIRECTORY_NAME, DocumentFields, SchemaVersion, VersionedDocument, WriteError,
+    WriteStage, safety_copies, write_atomically,
 };
 
 /// JSON key of the format version in every document (ROADMAP R22).
@@ -71,8 +71,48 @@ pub enum StorageError {
     #[error("document does not serialize to a JSON object")]
     NotAnObject,
     /// Writing the file failed.
-    #[error("cannot write document: {0}")]
-    Io(#[from] io::Error),
+    #[error("cannot write document ({bytes} bytes): {source}")]
+    Write {
+        /// Size of the serialized document.
+        bytes: usize,
+        /// The step that failed and the operating system's error.
+        #[source]
+        source: WriteError,
+    },
+    /// Deleting the file failed.
+    #[error("cannot delete document: {0}")]
+    Delete(#[source] io::Error),
+}
+
+impl StorageError {
+    /// The step of writing or deleting that failed, if the disk refused.
+    #[must_use]
+    pub const fn stage(&self) -> Option<WriteStage> {
+        match self {
+            Self::Write { source, .. } => Some(source.stage),
+            Self::Delete(_) => Some(WriteStage::Delete),
+            Self::Serialize(_) | Self::NotAnObject => None,
+        }
+    }
+
+    /// The operating system's error, if the disk refused.
+    #[must_use]
+    pub const fn io_error(&self) -> Option<&io::Error> {
+        match self {
+            Self::Write { source, .. } => Some(&source.source),
+            Self::Delete(error) => Some(error),
+            Self::Serialize(_) | Self::NotAnObject => None,
+        }
+    }
+
+    /// Size of the document that could not be written.
+    #[must_use]
+    pub const fn bytes(&self) -> Option<usize> {
+        match self {
+            Self::Write { bytes, .. } => Some(*bytes),
+            Self::Delete(_) | Self::Serialize(_) | Self::NotAnObject => None,
+        }
+    }
 }
 
 impl<T> LoadOutcome<T> {
@@ -207,9 +247,14 @@ impl DocumentStore {
         };
         let mut content = serde_json::to_vec_pretty(&envelope)?;
         content.push(b'\n');
-        fs::create_dir_all(&self.directory)?;
-        write_atomically(&self.path_of::<T>(), &content)?;
-        Ok(())
+        let bytes = content.len();
+        fs::create_dir_all(&self.directory)
+            .map_err(|source| WriteError {
+                stage: WriteStage::CreateFolder,
+                source,
+            })
+            .and_then(|()| write_atomically(&self.path_of::<T>(), &content))
+            .map_err(|source| StorageError::Write { bytes, source })
     }
 }
 
@@ -222,7 +267,9 @@ impl DocumentStore {
     /// Returns [`StorageError`] if the file exists but cannot be deleted.
     pub fn delete<T: VersionedDocument>(&self) -> Result<(), StorageError> {
         match fs::remove_file(self.path_of::<T>()) {
-            Err(error) if error.kind() != io::ErrorKind::NotFound => Err(error.into()),
+            Err(error) if error.kind() != io::ErrorKind::NotFound => {
+                Err(StorageError::Delete(error))
+            }
             _ => Ok(()),
         }
     }
@@ -355,6 +402,25 @@ mod tests {
         assert!(store.path_of::<TestDocument>().exists());
         store.delete::<TestDocument>()?;
         assert!(!store.path_of::<TestDocument>().exists());
+        Ok(())
+    }
+
+    #[test]
+    fn a_failed_save_names_the_stage_and_the_size() -> io::Result<()> {
+        let (_directory, store) = store()?;
+        // A directory in place of the temporary file makes the write fail.
+        fs::create_dir(store.directory().join("test.json.tmp"))?;
+        let error = store.save(&TestDocument::default()).err();
+        assert_eq!(
+            error.as_ref().and_then(StorageError::stage),
+            Some(WriteStage::WriteTemp)
+        );
+        assert!(error.as_ref().and_then(StorageError::io_error).is_some());
+        assert!(
+            error
+                .and_then(|error| error.bytes())
+                .is_some_and(|bytes| bytes > 0)
+        );
         Ok(())
     }
 

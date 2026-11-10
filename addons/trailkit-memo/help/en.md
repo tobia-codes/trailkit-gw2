@@ -81,7 +81,7 @@ Click **Edit** at the top right of a note, or double-click the note. You edit th
 
 - **Chat links:** paste a code (`[&…]`) into the text and it becomes a chip. The cursor jumps over a chip and Backspace deletes it whole; to change it, delete it and paste the new code.
 - The **eye** button shows a preview of the formatted note next to the text; drag the gap between them to change the widths. memo remembers both.
-- **Save** (or **Ctrl+Enter** / **Ctrl+S**) saves your changes, **Cancel** throws them away — memo asks first if you changed something.
+- **Save** (or **Ctrl+Enter** / **Ctrl+S**) saves your changes and closes the editor once they are on disk, **Cancel** throws them away — memo asks first if you changed something.
 - If you choose another note, create one or close the window while you have unsaved changes, memo asks whether to save or discard them. (Set `"unsaved_changes": "save_automatically"` in `settings.json` to save without asking; a switch follows in the settings window.)
 - **Escape** closes the window; with unsaved changes memo asks first.
 - If the game or the addon closes while you are editing, your changes are kept as a draft. Next time you open the note, choose **Restore** to continue or **Discard** to drop them. Drafts are deleted automatically after 30 days.
@@ -92,6 +92,8 @@ Your notes are saved automatically a moment after every change, in `addons/trail
 
 - If the notes file is damaged, memo starts with an empty list and tells you. The damaged file is kept in the `backups` folder next to it, so nothing is lost.
 - If your notes were saved by a newer version of memo, memo leaves the file untouched and asks you to update the addon.
+- **If saving fails** (for example because another program holds the file or the disk is full), memo tries again three times, five seconds apart. If it still fails, a red *Saving failed* message stays at the bottom of the window until saving works again; *Try again* saves once more, and the **x** hides the message until the next change fails. Your notes stay in the window meanwhile, and memo saves once more when the game closes. *Changes saved* tells you when it worked.
+- **Save** in the editor waits until your text is on disk (*Saving…*). If that fails, the editor stays open with your text. If you then leave the editor, memo asks: *Discard* deletes your changes, *Keep editing* stays, *Save again* tries once more.
 
 ## Problems?
 

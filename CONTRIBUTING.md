@@ -172,6 +172,13 @@ before changing anything visible.
   in Dark and Light, in the same change. `cargo xtask ui-test --update` writes
   them; open and review every new image before you open the PR. How:
   [`tokens.md` §10](.agents/skills/trailkit-ui/references/tokens.md#10-every-state-has-a-snapshot-every-snapshot-gets-reviewed-r82).
+- **Design the failure case (R93).** If an action can fail (a file, the
+  network, an API), the proposal also shows what the user sees then and how
+  they recover. Default: retry automatically a few times, then an error toast
+  with "Try again", as memo does for saving (M180). Buttons whose action runs
+  show a spinner for at least 0.6 s and cannot be clicked twice
+  (`trailkit_ui::busy::BusyState`). A control that cannot be used now is
+  disabled and says why in its tooltip (`ButtonState::Disabled { reason }`).
 - **Accessibility**: text contrast ≥ 4.5:1 in both themes, meaning never by
   color alone, icons always with a tooltip, destructive actions ask first.
 - **New icons**: add them to `Icon::ALL` and run `cargo xtask subset-fonts`.

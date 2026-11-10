@@ -9,7 +9,7 @@ use trailkit_log::{LogConfig, log_files, start};
 use trailkit_memo_shared::{
     note_tree::{Note, NoteKind, NotesDocument, TreeNode},
     settings::TextScale,
-    storage_worker::{SavingAllowed, SettingsSummary, StorageWorker},
+    storage_worker::{SavingAllowed, SettingsSummary, StorageWorker, WorkerTiming},
 };
 use trailkit_storage::{AddonName, DocumentStore, TrailkitDirectory};
 
@@ -48,7 +48,10 @@ fn a_normal_session_is_three_lines() -> Result<(), Box<dyn std::error::Error>> {
 
     let (worker, loaded) = StorageWorker::spawn(
         DocumentStore::new(&data),
-        Duration::from_millis(1),
+        WorkerTiming {
+            debounce: Duration::from_millis(1),
+            retry_delay: Duration::from_millis(1),
+        },
         SavingAllowed { settings: true },
         SettingsSummary {
             missing: true,

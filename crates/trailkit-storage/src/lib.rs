@@ -30,7 +30,7 @@ mod trailkit_directory;
 
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
-pub use atomic_write::write_atomically;
+pub use atomic_write::{WriteError, WriteStage, write_atomically};
 pub use document_store::{DocumentStore, LoadOutcome, ReadOnlyReason, StorageError};
 pub use file_name::FileName;
 pub use trailkit_directory::{AddonName, TRAILKIT_DIRECTORY_NAME, TrailkitDirectory};

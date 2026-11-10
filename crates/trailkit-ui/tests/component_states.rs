@@ -12,8 +12,9 @@ use std::cell::Cell;
 use nexus::imgui::{Condition, Ui, Window, WindowFlags};
 use trailkit_ui::{
     button::{
-        draw_button, draw_danger_button, draw_danger_icon_button, draw_icon_button,
-        draw_icon_toggle, draw_primary_button, draw_primary_button_with_icon,
+        Button, ButtonKind, ButtonState, draw_button, draw_danger_button, draw_danger_icon_button,
+        draw_icon_button, draw_icon_button_with_state, draw_icon_toggle, draw_primary_button,
+        draw_primary_button_with_icon,
     },
     dropdown::draw_dropdown,
     icons::Icon,
@@ -24,7 +25,7 @@ use trailkit_ui::{
     style_scope::StyleScope,
     theme::{Theme, ThemeKind},
     title_bar::{TitleBarState, TitleBarTexts, TitleBarToggle, draw_window as draw_title_bar},
-    toast::{Toast, ToastAction, draw_toast},
+    toast::{Toast, ToastAction, ToastExtras, ToastTone, draw_toast, draw_toast_with_extras},
 };
 use trailkit_ui_testing::{
     harness::{FrameInput, UiHarness},
@@ -138,6 +139,75 @@ fn every_button_at_rest_hovered_and_pressed() {
     }
 }
 
+/// The states of the one button with a kind and a state (R93).
+const BUTTON_STATES: [(&str, DrawButton); 4] = [
+    ("button-disabled", |ui, theme| {
+        Button::new("Discard")
+            .state(ButtonState::Disabled {
+                reason: "Available once saving has finished",
+            })
+            .draw(ui, theme);
+    }),
+    ("button-primary-busy", |ui, theme| {
+        Button::new("Saving…")
+            .kind(ButtonKind::Primary)
+            .state(ButtonState::Busy)
+            .draw(ui, theme);
+    }),
+    ("button-regular-busy", |ui, theme| {
+        Button::new("Saving…")
+            .state(ButtonState::Busy)
+            .draw(ui, theme);
+    }),
+    ("button-icon-disabled", |ui, theme| {
+        draw_icon_button_with_state(
+            ui,
+            theme,
+            Icon::CALENDAR_CLOCK,
+            "",
+            ButtonState::Disabled {
+                reason: "Insert event — requires trailkit-core",
+            },
+        );
+    }),
+];
+
+#[test]
+fn every_button_state_at_rest_hovered_and_pressed() {
+    // Wide enough for the reason tooltip of a disabled button.
+    let size = [360.0, 90.0];
+    let over_button = [20.0, 22.0];
+    let mut harness = UiHarness::new(size);
+    for (kind, theme_name) in THEMES {
+        let theme = kind.theme();
+        for (name, draw_one) in BUTTON_STATES {
+            let mut draw = |ui: &Ui| in_window(ui, &theme, size, || draw_one(ui, &theme));
+            let names = |state| (name, state, theme_name);
+            assert_state(
+                &mut harness,
+                names("rest"),
+                &mouse([340.0, 80.0], false),
+                &mut draw,
+            );
+            assert_state(
+                &mut harness,
+                names("hover"),
+                &mouse(over_button, false),
+                &mut draw,
+            );
+            // Busy and disabled buttons are no ImGui buttons: pressing them
+            // changes nothing (R93).
+            assert_state(
+                &mut harness,
+                names("pressed"),
+                &mouse(over_button, true),
+                &mut draw,
+            );
+            harness.settle(2, &mouse([340.0, 80.0], false), &mut draw);
+        }
+    }
+}
+
 /// Draws a menu with every kind of entry; the popup opens in the first frame.
 fn draw_sample_menu(ui: &Ui, theme: &Theme, opened: &Cell<bool>) {
     if !opened.replace(true) {
@@ -188,7 +258,7 @@ fn every_menu_entry_at_rest_and_hovered() {
         ("hover-checked", row(44.0)),
         ("hover-icon", row(100.0)),
         ("hover-danger", row(124.0)),
-        ("hover-disabled", row(148.0)),
+        ("hover-disabled", row(182.0)),
         ("submenu-open", row(68.0)),
     ];
     for (kind, theme_name) in THEMES {
@@ -289,6 +359,7 @@ fn every_toast_state() {
                     &[ToastAction {
                         label: "Undo",
                         tooltip: None,
+                        state: ButtonState::Ready,
                     }],
                 );
             });
@@ -321,10 +392,12 @@ fn toast_with_two_actions_in_every_width() {
         ToastAction {
             label: "Undo",
             tooltip: None,
+            state: ButtonState::Ready,
         },
         ToastAction {
             label: "Open trash",
             tooltip: None,
+            state: ButtonState::Ready,
         },
     ];
     // Wide enough for one row, for the buttons in a row below the message
@@ -347,6 +420,133 @@ fn toast_with_two_actions_in_every_width() {
                 &mut harness,
                 ("toast", state, theme_name),
                 &mouse([4.0, 4.0], false),
+                &mut draw,
+            );
+        }
+    }
+}
+
+/// One state of an error or success toast (memo M180).
+struct ToneState {
+    /// The snapshot state name.
+    name: &'static str,
+    /// The image size; narrow sizes move the action below the message.
+    size: [f32; 2],
+    /// The toast's tone and message.
+    tone: ToastTone,
+    /// The message.
+    message: &'static str,
+    /// The action, if any, and whether it runs.
+    action: Option<(&'static str, bool)>,
+    /// Counter, spinner and close button.
+    extras: ToastExtras<'static>,
+    /// Where the mouse is.
+    mouse: [f32; 2],
+}
+
+#[test]
+fn every_error_and_success_toast_state() {
+    let close = Some("Close");
+    let wide = [420.0, 120.0];
+    let states = [
+        ToneState {
+            name: "error-retrying",
+            size: wide,
+            tone: ToastTone::Error,
+            message: "Saving failed",
+            action: None,
+            extras: ToastExtras {
+                counter: Some("2/3"),
+                spinner: true,
+                close_tooltip: close,
+            },
+            mouse: [4.0, 4.0],
+        },
+        ToneState {
+            name: "error-gave-up",
+            size: wide,
+            tone: ToastTone::Error,
+            message: "Saving failed",
+            action: Some(("Try again", false)),
+            extras: ToastExtras {
+                close_tooltip: close,
+                ..ToastExtras::default()
+            },
+            mouse: [4.0, 4.0],
+        },
+        ToneState {
+            name: "error-close-hover",
+            size: wide,
+            tone: ToastTone::Error,
+            message: "Saving failed",
+            action: Some(("Try again", false)),
+            extras: ToastExtras {
+                close_tooltip: close,
+                ..ToastExtras::default()
+            },
+            mouse: [301.0, 71.0],
+        },
+        ToneState {
+            name: "error-saving",
+            size: wide,
+            tone: ToastTone::Error,
+            message: "Saving failed",
+            action: Some(("Saving…", true)),
+            extras: ToastExtras {
+                close_tooltip: close,
+                ..ToastExtras::default()
+            },
+            mouse: [4.0, 4.0],
+        },
+        ToneState {
+            name: "error-narrow",
+            size: [320.0, 140.0],
+            tone: ToastTone::Error,
+            message: "Speichern fehlgeschlagen",
+            action: Some(("Erneut versuchen", false)),
+            extras: ToastExtras {
+                close_tooltip: Some("Schließen"),
+                ..ToastExtras::default()
+            },
+            mouse: [4.0, 4.0],
+        },
+        ToneState {
+            name: "success",
+            size: wide,
+            tone: ToastTone::Success,
+            message: "Changes saved",
+            action: None,
+            extras: ToastExtras::default(),
+            mouse: [4.0, 4.0],
+        },
+    ];
+    for state in states {
+        for (kind, theme_name) in THEMES {
+            let theme = kind.theme();
+            let mut toast = Toast::with_tone(state.message.to_owned(), state.tone);
+            let actions: Vec<ToastAction<'_>> = state
+                .action
+                .map(|(label, busy)| ToastAction {
+                    label,
+                    tooltip: None,
+                    state: if busy {
+                        ButtonState::Busy
+                    } else {
+                        ButtonState::Ready
+                    },
+                })
+                .into_iter()
+                .collect();
+            let mut harness = UiHarness::new(state.size);
+            let mut draw = |ui: &Ui| {
+                in_window(ui, &theme, state.size, || {
+                    draw_toast_with_extras(ui, &theme, &mut toast, &actions, state.extras);
+                });
+            };
+            assert_state(
+                &mut harness,
+                ("toast", state.name, theme_name),
+                &mouse(state.mouse, false),
                 &mut draw,
             );
         }
