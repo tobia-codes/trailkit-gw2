@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-10 (session 22). Current state and
+Last updated: 2026-11-10 (session 23). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -11,22 +11,28 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## ▶ Resume here
 
-**Session 22 (2026-11-10) — M180 save errors and R93 done; PR `feature/memo-save-errors` → `develop`** (auto-merge armed after
-the user's merge OK; check it merged, fix CI if not). Tested in game: retries, give-up, manual retry, recovery
-(`save_recovered`), dialog, disabled buttons. Release DLL 2,420,224 bytes vs. 2,344,960 before (+3.2 %, measured before R93).
-New in `trailkit-ui`: error/success toast, `Button` with `ButtonKind` + `ButtonState` (`Ready`/`Busy`/`Disabled { reason }`,
-busy/disabled are no ImGui buttons), `BusyState` (≥ 0.6 s), reason tooltip with neutral `ban`. R93: every failure case and
-disabled control is designed. Splits done; `actions.rs` 413 waits for its rebuild (Q134). Remote branches of #99–#102 deleted.
-**Next:** PR #96 (below), then R89 (help `?`, export, problem page; `PRIVACY.md`, Q170). Start a fresh session.
+**Session 23 (2026-11-10) — B22 addon status grilled, recorded as B23 in `backend.md`** on branch
+`chore/addon-status-design` (not pushed; needs the user's merge OK). Done before: PR #103 (M180, R93) merged;
+PR #96 closed (Q210); C-703/25 issues #11/#20 closed; local `feature/memo-save-error-design` deleted (only the
+superseded panel draft). Update notice mockup approved (Q227): https://claude.ai/artifact/EDHSjZGj6aLW3FXsPMHLDb
 
-Next ids: **M181+, R94+, questions from 222.** R93 (failure cases, busy buttons) added and implemented 2026-11-10. Still deferred: GW2 build and Nexus version in `session_start` (need MumbleLink → core,
-C12). If ever needed: limit repeated log events once core adds network paths.
+**Next — continue the B23 grilling:**
+- **Q236 open.** The user asked how an addon can be offline when GW2 is online. Answer given: the request goes to
+  our server, not to ArenaNet; it fails when `api.trailkit.de` is down/deploying, the player's DNS/firewall/
+  ad blocker (e.g. Pi-hole) blocks it, or it times out. Question still to answer: does a cached
+  maintenance/problem lock expire at its expected end or at the latest after 24 h without confirmation, so an
+  unreachable server never locks an addon forever? (Recommendation: yes; a cached update lock stays.)
+- **Mockups (R87)** for the maintenance and problem locks: default texts "vorübergehend gesperrt" /
+  "vorübergehend in Wartungsarbeiten" (Q234), optional message and expected end; Dark/Light, min width, de.
+- **Check myself:** in Nexus source, does a `Direct` update reload without a game restart? Adjust the hint text.
+- Then: whether the B23 server work comes before R89, and record it in `ROADMAP.md`; R89 (help `?`, export,
+  problem page; `PRIVACY.md` incl. `api.trailkit.de`, Q170) follows.
 
-- **PR #96 (B22, backend before the first release):** Q210 yes: after M180 is merged close it and redo B22 on a new branch from `origin/develop`
-  (no force push); turn off its armed auto-merge first. B22's design needs its own grilling round (endpoint, GDPR, offline, lock UX, R49).
-- **Housekeeping (Q211) done 2026-11-10:** remote branches of PRs before #99 deleted. Still there: remote branches of merged
-  #99–#102 and local `chore/contributor-docs`, `chore/xtask-token-split-and-docs`, `chore/handoff-session-20` (old handoffs,
-  unmerged commits) need the user's OK to delete; `feature/memo-save-error-design` may go once M180 is merged (Q141).
+Next ids: **M181+, R94+, B24+, questions from 238.** Still deferred: GW2 build and Nexus version in
+`session_start` (need MumbleLink → core, C12). If ever needed: limit repeated log events once core adds network paths.
+
+- **Housekeeping (Q211):** local `chore/contributor-docs`, `chore/xtask-token-split-and-docs`,
+  `chore/handoff-session-20` (old handoffs, unmerged commits) need the user's OK to delete.
 
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
@@ -66,7 +72,7 @@ C12). If ever needed: limit repeated log events once core adds network paths.
 
 Triggers/consequences: [agent reference](../agent-reference.md#recurring-checks).
 - **Wiki:** Nov 6 review got HTTP 403; public recovery/login status not confirmed; keep Wayback.
-- **C-703/25 P:** Nov 6 CURIA check: pending, order dated June 4, 2026 (ECLI:EU:C:2026:465).
+- **C-703/25 P:** Nov 10 CURIA check: still pending (case in progress); issues #11/#20 closed. Order of June 4, 2026 (ECLI:EU:C:2026:465).
   Previous “sources only from 2025” note was stale. Recheck when triggered; source:
   https://juris.curia.europa.eu/juris/liste.jsf?language=en&num=C-703%2F25
 - **WvW reset snapshots (checked 2026-11-07):** both Nov 6 EU (ran 22:12 UTC, +4.8 h) and Nov 7 NA (07:16 UTC,
