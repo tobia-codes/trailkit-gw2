@@ -11,15 +11,13 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## ▶ Resume here
 
-**Session 22 (2026-11-10) — M180 save errors implemented on `feature/memo-save-errors`** (5 commits, not pushed). PR #102
-(day logs) merged. Deployed as debug DLL; **next: user tests in game, then merge OK (R74)**. Release DLL 2,420,224 bytes
-vs. 2,344,960 on `develop` (+73.5 KiB, +3.2 %). Storage errors carry `stage`/size; the worker retries 3× 5 s apart,
-reports `SaveHealth`/`WriteFinished`, restarts write-only (Q151); memo shows the error/success toast, waits for the disk
-on Save (Q158) and asks with the save-failed dialog (Q157). Also fixed: trash texts were not registered with the font atlas.
-Deviations to confirm in game: Dark `danger.subtle` 20 % (not 22 %, contrast); a failed Save/"Try again" shows the toast at once;
-"Saving…" stays ≥ 0.6 s; disabled controls (variant A + reason tooltip with neutral `ban`, R93) are implemented.
-Splits done (loading, addon storage glue, editor commit, leave guard); `actions.rs` 413 waits for its rebuild (Q134).
-Remote branches of merged PRs #99–#102 deleted. Then R89 (help `?`, export, problem page; `PRIVACY.md`, Q170).
+**Session 22 (2026-11-10) — M180 save errors and R93 done; PR `feature/memo-save-errors` → `develop`** (auto-merge armed after
+the user's merge OK; check it merged, fix CI if not). Tested in game: retries, give-up, manual retry, recovery
+(`save_recovered`), dialog, disabled buttons. Release DLL 2,420,224 bytes vs. 2,344,960 before (+3.2 %, measured before R93).
+New in `trailkit-ui`: error/success toast, `Button` with `ButtonKind` + `ButtonState` (`Ready`/`Busy`/`Disabled { reason }`,
+busy/disabled are no ImGui buttons), `BusyState` (≥ 0.6 s), reason tooltip with neutral `ban`. R93: every failure case and
+disabled control is designed. Splits done; `actions.rs` 413 waits for its rebuild (Q134). Remote branches of #99–#102 deleted.
+**Next:** PR #96 (below), then R89 (help `?`, export, problem page; `PRIVACY.md`, Q170). Start a fresh session.
 
 Next ids: **M181+, R94+, questions from 222.** R93 (failure cases, busy buttons) added and implemented 2026-11-10. Still deferred: GW2 build and Nexus version in `session_start` (need MumbleLink → core,
 C12). If ever needed: limit repeated log events once core adds network paths.
@@ -28,11 +26,11 @@ C12). If ever needed: limit repeated log events once core adds network paths.
   (no force push); turn off its armed auto-merge first. B22's design needs its own grilling round (endpoint, GDPR, offline, lock UX, R49).
 - **Housekeeping (Q211) done 2026-11-10:** remote branches of PRs before #99 deleted. Still there: remote branches of merged
   #99–#102 and local `chore/contributor-docs`, `chore/xtask-token-split-and-docs`, `chore/handoff-session-20` (old handoffs,
-  unmerged commits); keep `feature/memo-save-error-design` until M180 ships (Q141: keep `token_groups.rs`).
+  unmerged commits) need the user's OK to delete; `feature/memo-save-error-design` may go once M180 is merged (Q141).
 
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
-1. **Storage failures (highest priority):** memo M180 implemented 2026-11-10, waiting for the in-game test.
+1. **Storage failures:** done (memo M180, 2026-11-10).
 2. **Pre-push protection:** `.githooks/pre-push` checks protected destination refs only
    for deletions; normal pushes check the current branch via `xtask/src/check_branch.rs`.
    Validate every destination ref. Server-side protection was not inspected in the review.
