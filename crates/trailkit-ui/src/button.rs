@@ -226,8 +226,9 @@ pub fn draw_popup_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str)
 
 /// Draws a button whose action is running (memo M180, "Saving…"): a
 /// rotating spinner before `label`, in the regular or (`primary`) accent
-/// colors. It cannot be clicked while busy.
-pub fn draw_busy_button(ui: &Ui, theme: &Theme, label: &str, primary: bool) {
+/// colors, `width` wide (`0.0` fits the content, e.g. full width in a
+/// stacked dialog column). It cannot be clicked while busy.
+pub fn draw_busy_button(ui: &Ui, theme: &Theme, label: &str, primary: bool, width: f32) {
     let resting = if primary {
         theme.accent.base
     } else {
@@ -245,7 +246,8 @@ pub fn draw_busy_button(ui: &Ui, theme: &Theme, label: &str, primary: bool) {
     ];
     let gap = icon_label_gap(theme);
     let content_width = icon_label_content_width(ui, theme, label);
-    let size = [icon_label_button_width(ui, theme, label), ui.frame_height()];
+    let fitted = icon_label_button_width(ui, theme, label);
+    let size = [if width > 0.0 { width } else { fitted }, ui.frame_height()];
     let _id = ui.push_id(label);
     // Clicks are ignored: the action already runs.
     let _ = ui.button_with_size("##busy", size);

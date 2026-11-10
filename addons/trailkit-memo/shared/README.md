@@ -12,6 +12,7 @@ depend on this crate, never on each other.
 | `drafts` | unsaved edits kept for restoring (`drafts.json`) |
 | `settings` | typed user settings + visibility rules, persisted as `settings.json` |
 | `ui_state` | restorable window state, persisted as `ui_state.json` (M39) |
+| `save_text` | `SaveText`: the en/de strings of save errors and the attempt counter (M180) |
 | `storage_worker` | worker thread that loads and saves all documents debounced (M18, M30), retries failed writes (3 times, 5 s apart) and reports to the UI (M180); the only code that touches the files |
 | `i18n` | languages, the texts no slice owns yet (en/de), local time and percentage formatting |
 

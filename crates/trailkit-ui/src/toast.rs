@@ -408,7 +408,7 @@ fn draw_toast_actions(
         }
         ui.set_cursor_screen_pos(position);
         if action.busy {
-            draw_busy_button(ui, theme, action.label, false);
+            draw_busy_button(ui, theme, action.label, false, 0.0);
         } else if draw_button(ui, theme, action.label) {
             clicked = Some(index);
         }

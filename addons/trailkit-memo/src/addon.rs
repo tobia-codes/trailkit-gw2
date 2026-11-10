@@ -64,8 +64,8 @@ use trailkit_memo_shared::{
     note_tree::NotesDocument,
     settings::{QuickAccessIcon, Settings, TextScale},
     storage_worker::{
-        LoadedDocuments, SavingAllowed, SettingsSummary, StorageSaver, StorageWorker, WorkerTiming,
-        log_load_outcome,
+        LoadedDocuments, SaveConnection, SavingAllowed, SettingsSummary, StorageSaver,
+        StorageWorker, WorkerTiming, log_load_outcome,
     },
 };
 
@@ -444,12 +444,37 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
             window.apply_title_bar_toggle(index);
         }
         window.draw_dialog(ui, language, &theme);
+        restart_storage_worker_if_asked(window);
     }
     apply_close_request(&mut notes, open);
     if let NotesState::Ready(window) = &*notes {
         let visible = VISIBLE.load(Ordering::Relaxed);
         SEARCH_KEY_ARMED.store(window.takes_search_key() && visible, Ordering::Relaxed);
         DELETE_KEY_ARMED.store(window.takes_delete_key() && visible, Ordering::Relaxed);
+    }
+}
+
+/// Restarts the stopped storage worker when the window asks for it ("Try
+/// again", memo Q151). Never waits: if `unload` holds the worker, nothing
+/// happens and the user may ask again.
+fn restart_storage_worker_if_asked(window: &mut MemoWindow) {
+    if !window.take_worker_restart_request() {
+        return;
+    }
+    let Ok(mut slot) = STORAGE_WORKER.try_lock() else {
+        window.storage_restart_failed();
+        return;
+    };
+    let Some(worker) = slot.as_mut() else {
+        window.storage_restart_failed();
+        return;
+    };
+    match worker.restart() {
+        Ok(connection) => window.reconnect_storage(connection),
+        Err(error) => {
+            log::warn!(error:% = ErrorChain(&error); "worker_restart_failed");
+            window.storage_restart_failed();
+        }
     }
 }
 
@@ -535,15 +560,17 @@ fn receive_loaded_notes(notes: &mut NotesState) {
             notes: outcome,
             ui_state,
             drafts,
-            // Save reports reach the window with M180's UI step.
-            reports: _,
+            reports,
         }) => {
             let (document, problem) = document_and_problem(outcome);
             NotesState::Ready(Box::new(MemoWindow::new(
                 document,
                 problem,
                 ui_state,
-                saver.clone(),
+                SaveConnection {
+                    saver: saver.clone(),
+                    reports,
+                },
                 directory.clone(),
                 drafts,
                 settings(),

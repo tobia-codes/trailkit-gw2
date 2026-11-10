@@ -10,6 +10,7 @@ use trailkit_ui::markdown_view::MarkdownAction;
 use super::{trash::document_with_trash, *};
 
 mod minimum_width;
+mod save_errors;
 
 /// A window with the storage worker and directory that must outlive it.
 type Fixture = (MemoWindow, StorageWorker, tempfile::TempDir);

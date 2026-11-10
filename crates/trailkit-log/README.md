@@ -113,6 +113,7 @@ searches, moved windows, key presses) are not logged. Nothing is sent anywhere: 
 | `worker_start_failed` | ERROR | `error` | The storage worker thread could not start; notes are unavailable |
 | `worker_died` | ERROR | – | The storage worker thread panicked (see the `panic` line before it) |
 | `worker_restarted` | INFO | – | The user restarted the dead storage worker ("Erneut versuchen"); it loads nothing and writes the shown documents |
+| `worker_restart_failed` | WARN | `error` | "Try again" could not restart the storage worker (still running, died while loading, or no thread); the user may try again |
 | `load_finished` | INFO | `notes`, `drafts`, `missing` (only when `settings.json`, `notes.json` or `ui_state.json` does not exist), `text_scale`, `ms` | All documents were read; one line per session. `missing=notes.json` outside a first start explains lost notes |
 | `load_migrated` | INFO | `file`, `from_version`, `ms` | A document was converted to the current version |
 | `load_recovered` | ERROR | `file`, `error`, `preserved_as`, `ms` | A document was unreadable; it was moved to `backups/` and the addon starts without it |

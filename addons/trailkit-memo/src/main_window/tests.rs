@@ -1,6 +1,7 @@
 //! Snapshot tests of the memo main window (memo plan M65), run with
 //! `cargo xtask ui-test` (`--update` rewrites `tests/snapshots/`).
 
+mod save_errors;
 mod states;
 mod trash;
 
@@ -21,7 +22,7 @@ use trailkit_ui_testing::{
 use super::*;
 use trailkit_memo_shared::{
     note_tree::{Group, NoteKind, ResetPeriod, TreeNode as Node},
-    storage_worker::{SavingAllowed, SettingsSummary, StorageWorker, WorkerTiming},
+    storage_worker::{SaveConnection, SavingAllowed, SettingsSummary, StorageWorker, WorkerTiming},
 };
 
 /// The narrowest window (M168) at the test fonts.
@@ -76,7 +77,7 @@ fn memo_window(
     ui_state: UiState,
 ) -> (MemoWindow, StorageWorker, tempfile::TempDir) {
     let directory = tempfile::tempdir().unwrap_or_else(|error| panic!("temp dir: {error}"));
-    let (worker, _loaded) = StorageWorker::spawn(
+    let (worker, loaded) = StorageWorker::spawn(
         DocumentStore::new(directory.path()),
         WorkerTiming {
             debounce: Duration::from_secs(3600),
@@ -86,11 +87,18 @@ fn memo_window(
         SettingsSummary::default(),
     )
     .unwrap_or_else(|error| panic!("storage worker: {error}"));
+    let reports = loaded
+        .recv_timeout(Duration::from_secs(5))
+        .unwrap_or_else(|error| panic!("storage worker load: {error}"))
+        .reports;
     let window = MemoWindow::new(
         document,
         None,
         ui_state,
-        worker.saver(),
+        SaveConnection {
+            saver: worker.saver(),
+            reports,
+        },
         directory.path().to_path_buf(),
         DraftsDocument::default(),
         Settings::DEFAULT,

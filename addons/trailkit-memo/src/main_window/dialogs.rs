@@ -5,8 +5,8 @@
 use nexus::imgui::{Condition, Key, MouseButton, StyleColor, StyleVar, Ui, Window, WindowFlags};
 use trailkit_ui::{
     button::{
-        button_width, draw_button, draw_button_with_size, draw_danger_fill_button_with_size,
-        draw_primary_button_with_size,
+        button_width, draw_busy_button, draw_button, draw_button_with_size,
+        draw_danger_fill_button_with_size, draw_primary_button_with_size, icon_label_button_width,
     },
     font_registry::FontScope,
     fonts::FontRole,
@@ -17,8 +17,11 @@ use trailkit_ui::{
 
 use trailkit_memo_shared::i18n::LocalizedText;
 use trailkit_memo_shared::i18n::{Language, Text};
+use trailkit_memo_shared::save_text::SaveText;
 
-use super::{MemoWindow, NotesProblem, WindowAction, trash::Confirmation};
+use super::{
+    MemoWindow, NotesProblem, WindowAction, save_status::SaveFailedPrompt, trash::Confirmation,
+};
 
 impl MemoWindow {
     /// Draws the storage problem hint, if any (M31).
@@ -84,6 +87,9 @@ pub(super) enum DialogButtonStyle {
     Primary,
     /// The `danger` button that confirms a destructive action (M146).
     Danger,
+    /// The primary button while its action runs: spinner, cannot be
+    /// clicked (M180, "Saving…").
+    Busy,
 }
 
 /// A button of a dialog card and the answer it gives.
@@ -104,6 +110,9 @@ pub(super) struct DialogContent<'a> {
     pub(super) title: &'a str,
     /// The wrapped question below it.
     pub(super) question: &'a str,
+    /// A `danger` line with `circle-alert` below the question, e.g. "Failed
+    /// again" (M180, Q157).
+    pub(super) status: Option<&'a str>,
     /// A button set apart on the left (e.g. "Discard").
     pub(super) apart: Option<DialogButton<'a>>,
     /// The buttons at the right end, the main one last.
@@ -114,9 +123,23 @@ pub(super) struct DialogContent<'a> {
     pub(super) enter: Option<WindowAction>,
 }
 
+/// The width a dialog button takes in a row.
+fn dialog_button_width(ui: &Ui, theme: &Theme, button: &DialogButton<'_>) -> f32 {
+    match button.style {
+        DialogButtonStyle::Busy => icon_label_button_width(ui, theme, button.label),
+        DialogButtonStyle::Regular | DialogButtonStyle::Primary | DialogButtonStyle::Danger => {
+            button_width(ui, theme, button.label)
+        }
+    }
+}
+
 /// Draws one dialog button at `size` (ImGui sizing).
 fn draw_dialog_button(ui: &Ui, theme: &Theme, button: &DialogButton<'_>, size: [f32; 2]) -> bool {
     match button.style {
+        DialogButtonStyle::Busy => {
+            draw_busy_button(ui, theme, button.label, true, size[0]);
+            false
+        }
         DialogButtonStyle::Regular => draw_button_with_size(ui, theme, button.label, size),
         DialogButtonStyle::Primary => draw_primary_button_with_size(ui, theme, button.label, size),
         DialogButtonStyle::Danger => {
@@ -143,7 +166,7 @@ pub(super) fn draw_dialog_card(
     let window_size = ui.window_size();
     let right_group = right_group_width(ui, theme, content);
     let apart_width = content.apart.as_ref().map_or(0.0, |button| {
-        button_width(ui, theme, button.label) + theme.spacing.extra_large
+        dialog_button_width(ui, theme, button) + theme.spacing.extra_large
     });
     let row_width = apart_width + right_group;
     let maximum_content = (window_size[0] * DIALOG_MAXIMUM_FRACTION - 2.0 * padding).max(1.0);
@@ -183,6 +206,9 @@ pub(super) fn draw_dialog_card(
         let _wrap = ui.push_text_wrap_pos_with_pos(left - window_position[0] + content_width);
         ui.text_wrapped(content.question);
     }
+    if let Some(status) = content.status {
+        draw_dialog_status(ui, theme, status, left);
+    }
     ui.dummy([0.0, theme.spacing.small]);
     let mut answer = draw_dialog_buttons(ui, theme, content, [left, content_width], stacked);
     if ui.is_key_pressed(Key::Escape) {
@@ -202,13 +228,27 @@ pub(super) fn draw_dialog_card(
     }
 }
 
+/// Draws the `danger` status line of a dialog card at `left` (screen x):
+/// `circle-alert` and `status` (M180, Q157).
+fn draw_dialog_status(ui: &Ui, theme: &Theme, status: &str, left: f32) {
+    let color = theme.status.danger.to_array();
+    ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
+    {
+        let _icons = FontScope::push(ui, FontRole::Icons);
+        let mut buffer = [0; 4];
+        ui.text_colored(color, Icon::CIRCLE_ALERT.as_str(&mut buffer));
+    }
+    ui.same_line_with_spacing(0.0, theme.spacing.extra_small * 1.5);
+    ui.text_colored(color, status);
+}
+
 /// The width of the buttons at the right end of a dialog card.
 fn right_group_width(ui: &Ui, theme: &Theme, content: &DialogContent<'_>) -> f32 {
     let spacing = ui.clone_style().item_spacing[0];
     content
         .buttons
         .iter()
-        .map(|button| button_width(ui, theme, button.label))
+        .map(|button| dialog_button_width(ui, theme, button))
         .sum::<f32>()
         + spacing * content.buttons.len().saturating_sub(1) as f32
 }
@@ -271,6 +311,7 @@ pub(super) fn unsaved_changes_dialog(language: Language) -> DialogContent<'stati
     DialogContent {
         title: Text::UnsavedChangesTitle.get(language),
         question: Text::UnsavedChangesQuestion.get(language),
+        status: None,
         apart: Some(DialogButton {
             label: Text::DiscardChanges.get(language),
             style: DialogButtonStyle::Regular,
@@ -293,6 +334,51 @@ pub(super) fn unsaved_changes_dialog(language: Language) -> DialogContent<'stati
     }
 }
 
+/// The dialog when the user leaves the editor after a failed save (M180,
+/// Q157, mockup V4): "Discard" set apart on the left, "Keep editing" and
+/// the primary "Save again" (busy while it writes) on the right; after a
+/// failed "Save again" a red "Failed again" line. Enter saves again, Escape
+/// keeps editing.
+pub(super) fn save_failed_dialog(
+    prompt: &SaveFailedPrompt,
+    language: Language,
+) -> DialogContent<'static> {
+    let (save_label, save_style) = if prompt.saving {
+        (SaveText::Saving.get(language), DialogButtonStyle::Busy)
+    } else {
+        (
+            SaveText::SaveAgain.get(language),
+            DialogButtonStyle::Primary,
+        )
+    };
+    DialogContent {
+        title: SaveText::SaveFailed.get(language),
+        question: SaveText::DiscardDeletesChanges.get(language),
+        status: prompt
+            .failed_again
+            .then(|| SaveText::FailedAgain.get(language)),
+        apart: Some(DialogButton {
+            label: Text::DiscardChanges.get(language),
+            style: DialogButtonStyle::Regular,
+            answer: WindowAction::SaveFailedDiscard,
+        }),
+        buttons: vec![
+            DialogButton {
+                label: Text::KeepEditing.get(language),
+                style: DialogButtonStyle::Regular,
+                answer: WindowAction::SaveFailedKeepEditing,
+            },
+            DialogButton {
+                label: save_label,
+                style: save_style,
+                answer: WindowAction::SaveFailedRetry,
+            },
+        ],
+        escape: WindowAction::SaveFailedKeepEditing,
+        enter: (!prompt.saving).then_some(WindowAction::SaveFailedRetry),
+    }
+}
+
 /// The delete question `confirmation` (M134, M146): "Cancel" and the
 /// `danger` confirm button. Enter confirms only what can be undone.
 fn confirmation_dialog<'a>(
@@ -302,6 +388,7 @@ fn confirmation_dialog<'a>(
     DialogContent {
         title: &confirmation.title,
         question: &confirmation.text,
+        status: None,
         apart: None,
         buttons: vec![
             DialogButton {
@@ -334,6 +421,8 @@ impl MemoWindow {
     pub fn draw_dialog(&mut self, ui: &Ui, language: Language, theme: &Theme) {
         let content = if self.leave_prompt.is_some() {
             unsaved_changes_dialog(language)
+        } else if let Some(prompt) = &self.save_failed_prompt {
+            save_failed_dialog(prompt, language)
         } else if let Some(confirmation) = &self.confirmation {
             confirmation_dialog(confirmation, language)
         } else {
