@@ -37,7 +37,8 @@ Read only reference sections relevant to the task, rather than every linked file
    tooltip; destructive actions ask for confirmation; unsaved changes warn
    before being discarded.
 4. **Feedback** — loading, empty, error and disabled states are always
-   designed (never a blank area). Disabled features say *why* and *how to
+   designed (never a blank area); every action that can fail has a designed
+   failure case with a recovery (`state-failure-designed`). Disabled features say *why* and *how to
    enable* them.
 5. **Accessibility** — text contrast ≥ 4.5:1 against its background in both
    themes; never encode meaning by color alone (add icon/text); minimum
@@ -106,7 +107,8 @@ Build once, use everywhere. Planned:
   action (`ToastAction::busy`) shows a spinner. `ToastTone::Success`:
   `circle-check` in `success`, 5 s
 - Busy button — **exists**: `button::draw_busy_button` (spinner + label,
-  cannot be clicked, e.g. "Saving…"); `spinner::draw_spinner`; on popups and
+  cannot be clicked, e.g. "Saving…"), driven by `busy::BusyState` (busy
+  while running, at least 0.6 s; lock dependent answers too); `spinner::draw_spinner`; on popups and
   toasts `draw_popup_icon_button` (hover on `bg.active`)
 - `Popover` / `Tooltip`, `ConfirmDialog`, `UnsavedChangesDialog`
 - `DependencyHint` (greyed feature + explanation + "Open core settings"/
@@ -202,6 +204,8 @@ move it into `crates/trailkit-ui` (see AGENTS.md "Code sharing").
       `references/tokens.md` §9 passed
 - [ ] Works and is readable in Dark *and* Light
 - [ ] Empty / loading / error / disabled states present
+- [ ] Every action that can fail shows its failure case and recovery
+      (`state-failure-designed`, default pattern memo M180)
 - [ ] Every string localized (en + de)
 - [ ] Help page updated
 - [ ] Style push/pop balanced
