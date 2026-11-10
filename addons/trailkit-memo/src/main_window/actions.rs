@@ -152,35 +152,8 @@ impl MemoWindow {
     /// Applies one collected action.
     pub(super) fn apply(&mut self, action: &WindowAction, language: Language) {
         let now = Timestamp::now();
-        if let Some(editor) = &self.editor
-            && action.leaves_editor_of(editor.session().note)
-        {
-            if self.leave_prompt.is_some()
-                || self.save_failed_prompt.is_some()
-                || self.editor_commit_running()
-            {
-                return;
-            }
-            let reason = LeaveReason::Action(action.clone());
-            if self.editor_commit_failed() {
-                self.open_save_failed_prompt(reason);
-                return;
-            }
-            match (
-                editor.session().has_changes(),
-                self.settings.unsaved_changes,
-            ) {
-                (true, UnsavedChanges::Ask) => {
-                    self.leave_prompt = Some(reason);
-                    return;
-                }
-                (true, UnsavedChanges::SaveAutomatically) => {
-                    // The action follows once the text is on disk (M180).
-                    self.begin_editor_commit(now, Some(reason), language);
-                    return;
-                }
-                (false, _) => self.editor = None,
-            }
+        if !self.leave_editor_for(action, now, language) {
+            return;
         }
         match action {
             WindowAction::Select(_)
@@ -233,6 +206,49 @@ impl MemoWindow {
             self.ui_state.compact_note_view = false;
             self.saver.save_ui_state(self.ui_state);
         }
+    }
+
+    /// Protects unsaved edits before `action` leaves the editor (M54, M180):
+    /// asks, saves first or opens the save-failed dialog. Returns whether
+    /// `action` may run now; otherwise it follows once the question is
+    /// answered or the text is on disk.
+    fn leave_editor_for(
+        &mut self,
+        action: &WindowAction,
+        now: Timestamp,
+        language: Language,
+    ) -> bool {
+        if let Some(editor) = &self.editor
+            && action.leaves_editor_of(editor.session().note)
+        {
+            if self.leave_prompt.is_some()
+                || self.save_failed_prompt.is_some()
+                || self.editor_commit_running()
+            {
+                return false;
+            }
+            let reason = LeaveReason::Action(action.clone());
+            if self.editor_commit_failed() {
+                self.open_save_failed_prompt(reason);
+                return false;
+            }
+            match (
+                editor.session().has_changes(),
+                self.settings.unsaved_changes,
+            ) {
+                (true, UnsavedChanges::Ask) => {
+                    self.leave_prompt = Some(reason);
+                    return false;
+                }
+                (true, UnsavedChanges::SaveAutomatically) => {
+                    // The action follows once the text is on disk (M180).
+                    self.begin_editor_commit(now, Some(reason), language);
+                    return false;
+                }
+                (false, _) => self.editor = None,
+            }
+        }
+        true
     }
 
     /// Applies an action on the note tree: selecting, renaming, creating,
