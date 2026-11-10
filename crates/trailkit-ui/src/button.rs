@@ -162,7 +162,8 @@ pub fn draw_popup_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str)
 }
 
 /// Like [`draw_icon_button`] in `state` (R93): disabled it shows the icon in
-/// `text.disabled` without hover and names the reason in its tooltip (the
+/// `text.disabled` without hover or pressed state and names the reason in
+/// its tooltip (the
 /// reason replaces `tooltip`); busy it shows a spinner instead of the icon.
 /// Reports clicks only when ready.
 pub fn draw_icon_button_with_state(
@@ -174,19 +175,18 @@ pub fn draw_icon_button_with_state(
 ) -> bool {
     match state {
         ButtonState::Ready => draw_icon_button(ui, theme, icon, tooltip),
+        // Neither is an ImGui button: no hover, no pressed state, no click.
         ButtonState::Disabled { reason } => {
-            {
-                let _text = ui.push_style_color(StyleColor::Text, theme.text.disabled.to_array());
-                draw_icon_button_with_hover(ui, theme, icon, "", false, Color::TRANSPARENT);
-            }
+            ui.dummy([icon_button_width(ui, icon), ui.frame_height()]);
+            let color = ImColor32::from(theme.text.disabled.to_array()).to_bits();
+            draw_icon_centered(ui, icon, [ui.item_rect_min(), ui.item_rect_max()], color);
             if ui.is_item_hovered() {
                 draw_reason_tooltip(ui, theme, reason);
             }
             false
         }
         ButtonState::Busy => {
-            let size = [icon_button_width(ui, icon), ui.frame_height()];
-            let _ = ui.invisible_button(icon.as_str(&mut [0; 4]), size);
+            ui.dummy([icon_button_width(ui, icon), ui.frame_height()]);
             let [min, max] = [ui.item_rect_min(), ui.item_rect_max()];
             let color = Color::from_array(ui.style_color(StyleColor::Text));
             draw_spinner(

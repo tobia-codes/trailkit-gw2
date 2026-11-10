@@ -173,7 +173,7 @@ const BUTTON_STATES: [(&str, DrawButton); 4] = [
 ];
 
 #[test]
-fn every_button_state_at_rest_and_hovered() {
+fn every_button_state_at_rest_hovered_and_pressed() {
     // Wide enough for the reason tooltip of a disabled button.
     let size = [360.0, 90.0];
     let over_button = [20.0, 22.0];
@@ -195,6 +195,15 @@ fn every_button_state_at_rest_and_hovered() {
                 &mouse(over_button, false),
                 &mut draw,
             );
+            // Busy and disabled buttons are no ImGui buttons: pressing them
+            // changes nothing (R93).
+            assert_state(
+                &mut harness,
+                names("pressed"),
+                &mouse(over_button, true),
+                &mut draw,
+            );
+            harness.settle(2, &mouse([340.0, 80.0], false), &mut draw);
         }
     }
 }

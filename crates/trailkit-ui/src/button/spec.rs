@@ -6,9 +6,9 @@
 //! - [`ButtonState`] is what it can do now: [`ButtonState::Busy`] shows a
 //!   spinner while its action runs (`ix-busy-buttons`, use
 //!   [`crate::busy::BusyState`] for the minimum time);
-//!   [`ButtonState::Disabled`] draws the label in `text.disabled`, without
-//!   hover, and names the reason in a tooltip with a neutral `ban` icon.
-//!   Neither reports clicks.
+//!   [`ButtonState::Disabled`] draws the label in `text.disabled` and names
+//!   the reason in a tooltip with a neutral `ban` icon. Neither is an ImGui
+//!   button: no hover, no pressed state, no click.
 
 use nexus::imgui::{ImColor32, StyleColor, Ui};
 
@@ -158,7 +158,7 @@ impl<'text> Button<'text> {
     pub fn draw(&self, ui: &Ui, theme: &Theme) -> bool {
         let colors = ButtonColors::of(ui, theme, self.kind, self.state);
         let size = [self.measure(ui, theme), ui.frame_height()];
-        let clicked = {
+        let clicked = if self.state.is_ready() {
             let _colors = [
                 ui.push_style_color(StyleColor::Button, colors.fill.to_array()),
                 ui.push_style_color(StyleColor::ButtonHovered, colors.hovered.to_array()),
@@ -167,6 +167,13 @@ impl<'text> Button<'text> {
             // The label is the ID only; ImGui draws the frame, the label follows.
             let _id = ui.push_id(self.label);
             ui.button_with_size("##button", size)
+        } else {
+            // Busy or disabled: no ImGui button at all, so nothing hovers,
+            // presses or takes the click; the item only holds the place
+            // (and its hover for the tooltip), the frame is drawn here.
+            ui.dummy(size);
+            fill_frame(ui, [ui.item_rect_min(), ui.item_rect_max()], colors.fill);
+            false
         };
         let [min, max] = [ui.item_rect_min(), ui.item_rect_max()];
         if colors.bordered {
@@ -185,7 +192,7 @@ impl<'text> Button<'text> {
         {
             draw_reason_tooltip(ui, theme, reason);
         }
-        clicked && self.state.is_ready()
+        clicked
     }
 
     /// Draws the spinner or icon and the label inside `[min, max]`.
@@ -225,14 +232,39 @@ impl<'text> Button<'text> {
     }
 }
 
+/// Fills `[min, max]` with `fill` in the rounding of a button frame, for a
+/// button that is not an ImGui button (busy or disabled). Works while a
+/// caller holds the window's `DrawListMut`.
+pub(crate) fn fill_frame(ui: &Ui, [min, max]: [[f32; 2]; 2], fill: Color) {
+    let rounding = ui.clone_style().frame_rounding;
+    // SAFETY: called on the render thread inside a frame, so the current
+    // window's draw list is valid; the call only adds a rectangle.
+    unsafe {
+        nexus::imgui::sys::ImDrawList_AddRectFilled(
+            nexus::imgui::sys::igGetWindowDrawList(),
+            nexus::imgui::sys::ImVec2 {
+                x: min[0],
+                y: min[1],
+            },
+            nexus::imgui::sys::ImVec2 {
+                x: max[0],
+                y: max[1],
+            },
+            ImColor32::from(fill.to_array()).to_bits(),
+            rounding,
+            nexus::imgui::sys::ImDrawCornerFlags_All as i32,
+        );
+    }
+}
+
 /// The colors of one button in one frame.
 #[derive(Clone, Copy)]
 struct ButtonColors {
     /// The fill at rest.
     fill: Color,
-    /// The fill while hovered.
+    /// The fill while hovered (ready buttons only).
     hovered: Color,
-    /// The fill while held.
+    /// The fill while held (ready buttons only).
     pressed: Color,
     /// The label (and icon or spinner) color.
     label: Color,
@@ -271,17 +303,12 @@ impl ButtonColors {
         };
         match state {
             ButtonState::Ready => ready,
-            // Busy keeps its look but does not react to the mouse.
-            ButtonState::Busy => Self {
-                hovered: ready.fill,
-                pressed: ready.fill,
-                ..ready
-            },
+            // Busy keeps its look; it is no ImGui button, so it has no hover
+            // or pressed fill.
+            ButtonState::Busy => ready,
             // A disabled button never shines brass or red: the regular fill
-            // with a `text.disabled` label, no hover.
+            // with a `text.disabled` label.
             ButtonState::Disabled { .. } => Self {
-                hovered: regular.fill,
-                pressed: regular.fill,
                 label: theme.text.disabled,
                 ..regular
             },
