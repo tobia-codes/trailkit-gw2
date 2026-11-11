@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-11 (session 26). Current state and
+Last updated: 2026-11-11 (session 28). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -22,13 +22,14 @@ trash preview titles in primary (Q280) and one empty-state layout (Q283 b: memo 
 title primary, tight wrapped lines). Text roles for every addon: `tokens.md` §7.1 (Q284). Still needed: R87 mockup of
 the trash header tooltip approved (Q282). Open later (Q286): tooltip looks like a regular button; show 2–3 variants for all addons after this branch. Snapshots for the two changes must be regenerated and reviewed.
 
-**Then continue the branch:** new `trailkit-ui` module with `TextStyle` (7 styles, `font()`, `color()`), `draw_text`,
-`draw_text_wrapped`, `draw_truncated_text`; `draw_icon(ui, icon, color)` (replace every icon push + buffer +
-`text_colored`); `draw_empty_state` (memo `main_window/layout.rs`, trash `trash_view.rs`; height rule: icon 1 line,
-title 1, hint 2, buttons 2 frames); `StyleScope::transparent_frame` (search field, rename input in `rows.rs`). Convert the
-addon sites found by `rg "FontScope::push|text_colored|StyleColor::Text" addons` and the markdown view per Q276.
-Status texts (draft warning, dialog failure) stay (Q277). Check: fmt, host + Windows clippy,
-`cargo test`, `cargo xtask ui-test` (must stay identical), check-file-length; deploy, in-game test, merge OK.
+**Session 28 (2026-11-11, cloud):** implemented on the branch (3 commits): `trailkit-ui` `text` module (`TextStyle`,
+`draw_text`, `draw_text_wrapped`, `draw_truncated_text`, `draw_icon`), `empty_state::draw_empty_state`,
+`StyleScope::transparent_frame`; memo sites and markdown view converted. Kept on purpose: base `FontRole::Body` pushes,
+draw-list icons placed by ink (window menu, search field), rows (Q282), status texts (Q277). Open: `addon.rs` "Loading"/
+"notes inaccessible" texts are drawn in the window's default font, not the shared Body; converting them changes pixels
+(needs R87). Host fmt/clippy/tests and Windows type-check pass; the Windows SDK was unreachable in the cloud, so real
+`cargo xwin clippy`, `cargo xtask ui-test` (regenerate + review the Q280/Q283/Q282 snapshots, everything else identical),
+deploy and in-game test are still due on the user's PC.
 
 **Afterwards, in this order (R95, R96, Q274):**
 1. **`chore/privacy-and-issue-form`:** `PRIVACY.md` + `PRIVACY.de.md`, issue form, `CONTRIBUTING.md` (attachments),
