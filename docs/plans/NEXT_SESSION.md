@@ -29,7 +29,7 @@ report only as planned (B25).
    `icons.rs`: circle-help, download, external-link, circle-check, circle-alert, info (`cargo xtask subset-fonts`).
 3. Then B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
 
-Next ids: **M182+, R99+, B26+, questions from 294.** Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M182+, R100+, B26+, questions from 294.** Deferred: GW2 build/Nexus version in `session_start` (C12).
 
 - **Housekeeping (Q211/Q240):** the user deletes the approved old local branches by hand (`contributor-docs`,
   `xtask-token-split-and-docs`, `handoff-session-20`, `addon-status-design`, `addon-status-lock-design`, all `chore/`).

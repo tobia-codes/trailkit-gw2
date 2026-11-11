@@ -203,6 +203,11 @@ The GDPR applies to every part of the project (rule 10).
   sent anywhere except where the user asked.
 - Any new service, provider or website needs a privacy review: minimal data
   (IP addresses count), EU providers preferred, and the maintainer decides.
+- **The privacy texts stay current** (`PRIVACY.md`, `PRIVACY.de.md`, R99).
+  A change to what data leaves the player's PC, where it goes or who receives
+  it (a new endpoint, server, provider, log field, report form, the backend)
+  updates both texts in the same pull request. Before every release they are
+  checked against the real data flows.
 
 ## 8. Tests and checks
 

@@ -90,6 +90,10 @@ repeat a completed check during the same session without new evidence.
   is annulled or suspended, tell the user immediately and plan the switch
   to an EU host (data-pipeline D11). Core's planned GitHub Pages downloads
   rely on the framework; do not treat an old handoff entry as a current check.
+- **Privacy texts (R99):** before every release, and whenever a change touches
+  network requests, hosting, providers, logs, reports or the backend, compare
+  `PRIVACY.md`/`PRIVACY.de.md` with the real data flows and update both in the
+  same change. Before a release also confirm each US provider's DPF listing.
 - **Scheduled jobs:** follow due reminders and archive checks in
   `NEXT_SESSION.md`. Report an unverified or blocked check explicitly.
 
