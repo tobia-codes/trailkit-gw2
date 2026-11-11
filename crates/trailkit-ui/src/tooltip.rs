@@ -6,10 +6,7 @@
 
 use nexus::imgui::Ui;
 
-use crate::{
-    font_registry::FontScope, fonts::FontRole, glyph_metrics::capital_middle, icons::Icon,
-    theme::Theme,
-};
+use crate::{glyph_metrics::capital_middle, icons::Icon, text::draw_icon, theme::Theme};
 
 /// Shows `text` as a tooltip at the mouse.
 pub fn draw_tooltip(ui: &Ui, text: impl AsRef<str>) {
@@ -21,14 +18,7 @@ pub fn draw_tooltip(ui: &Ui, text: impl AsRef<str>) {
 /// `text.primary`, readable even inside a disabled control's colors.
 pub fn draw_reason_tooltip(ui: &Ui, theme: &Theme, reason: &str) {
     draw_tooltip_with(ui, || {
-        {
-            let _icons = FontScope::push(ui, FontRole::Icons);
-            let mut buffer = [0; 4];
-            ui.text_colored(
-                theme.text.secondary.to_array(),
-                Icon::BAN.as_str(&mut buffer),
-            );
-        }
+        draw_icon(ui, Icon::BAN, theme.text.secondary);
         ui.same_line_with_spacing(0.0, theme.spacing.small);
         ui.text_colored(theme.text.primary.to_array(), reason);
     });

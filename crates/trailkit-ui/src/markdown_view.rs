@@ -14,7 +14,7 @@
 use crate::tooltip::draw_tooltip;
 use std::ops::Range;
 
-use nexus::imgui::{MouseCursor, Ui};
+use nexus::imgui::{MouseCursor, StyleColor, Ui};
 
 use crate::{
     chat_link_chip::{ChipContext, chip_tooltip, chip_width, draw_chip},
@@ -23,6 +23,7 @@ use crate::{
     icons::Icon,
     markdown::{Block, ListMarker, MarkdownDocument, Span, TaskMarker},
     separator::draw_compact_separator,
+    text::{TextStyle, draw_icon},
     text_search::SearchQuery,
     theme::Theme,
 };
@@ -152,7 +153,7 @@ pub fn draw_markdown(
                 draw_spans(
                     ui,
                     spans,
-                    Some(FontRole::heading(*level)),
+                    Some(TextStyle::heading(*level)),
                     bounds,
                     theme,
                     chips,
@@ -286,7 +287,7 @@ fn draw_list_marker(
                 theme.text.secondary
             };
             ui.set_cursor_screen_pos([left, text_top]);
-            ui.text_colored(color.to_array(), glyph);
+            draw_icon(ui, icon, color);
             clicked.then_some(MarkdownAction::ToggleTask(marker))
         }
     };
@@ -296,13 +297,15 @@ fn draw_list_marker(
 }
 
 /// Lays out `spans` word by word between `bounds`, starting at the current
-/// line, and leaves the cursor below the last line. `heading` overrides the
-/// font of every span; chat codes are drawn as chips; `highlight` marks
+/// line, and leaves the cursor below the last line. The block's text style
+/// is `heading` or [`TextStyle::Body`] (Q276): it sets the color, and a
+/// heading also the font of every span; other spans pick their body face
+/// (bold, italic) themselves; chat codes are drawn as chips; `highlight` marks
 /// search hits. Returns a link or chip click.
 fn draw_spans(
     ui: &Ui,
     spans: &[Span],
-    heading: Option<FontRole>,
+    heading: Option<TextStyle>,
     bounds: LineBounds,
     theme: &Theme,
     chips: ChipContext<'_>,
@@ -311,7 +314,7 @@ fn draw_spans(
     // Lines are `typography.line_height` apart; `y` is the text top, below
     // the leading of the line.
     let (line_height, leading) = {
-        let _font = FontScope::push(ui, heading.unwrap_or(FontRole::Body));
+        let _font = FontScope::push(ui, heading.map_or(FontRole::Body, TextStyle::font));
         let font_size = ui.current_font_size();
         (
             theme.typography.line_height_for(font_size),
@@ -322,6 +325,11 @@ fn draw_spans(
     let mut y = ui.cursor_screen_pos()[1] + leading;
     let mut action = None;
     let mut hits: Vec<Range<usize>> = Vec::new();
+    // The block's role sets the text color (Q276); links keep their own.
+    let _color = ui.push_style_color(
+        StyleColor::Text,
+        heading.unwrap_or(TextStyle::Body).color(theme).to_array(),
+    );
 
     for (index, span) in spans.iter().enumerate() {
         if span.is_line_break() {
@@ -329,7 +337,10 @@ fn draw_spans(
             y += line_height;
             continue;
         }
-        let role = heading.unwrap_or_else(|| FontRole::body(span.style.bold, span.style.italic));
+        let role = heading.map_or_else(
+            || FontRole::body(span.style.bold, span.style.italic),
+            TextStyle::font,
+        );
         let _font = FontScope::push(ui, role);
         if let Some(chip) = &span.chip {
             let width = chip_width(ui, chip, theme, chips);
