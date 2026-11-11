@@ -11,10 +11,11 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## ▶ Resume here
 
-**Session 26 (2026-11-11) — PR #106 (R95/R96/M181 docs) merged. Working on `chore/shared-ui-components`
-(pushed, not merged: needs the in-game test).** Done there: commit `60e775b`, `font.size.*` are body-size factors in `Typography`,
-`FontRole::Small` registered, `size_for(body, &Typography)`, tokens regenerated; host tests and all 76 snapshots
-pass pixel-identical. Q275–Q279 settled and recorded in R96 (scope: addon code + markdown view only).
+**Session 26 (2026-11-11). Branch: continue on the existing, pushed `chore/shared-ui-components`** (`git fetch &&
+git switch chore/shared-ui-components`, then merge `origin/develop`); never start a new branch from develop for this.
+Not merged: needs the in-game test. Done there: `font.size.*` are body-size factors in `Typography`, `FontRole::Small`
+registered, `size_for(body, &Typography)`, tokens regenerated; host tests and all 76 snapshots pixel-identical.
+Q275–Q279 settled and recorded in R96 (scope: addon code + markdown view only).
 
 **▶ First: answer the open grilling round Q280–Q283** (recommendations in brackets):
 - **Q280** muted headings (read-only note title, trashed group title are Heading1 in `text.secondary`):
@@ -44,9 +45,8 @@ Status texts (draft warning, dialog failure) stay (Q277). Check: fmt, host + Win
 
 Next ids: **M182+, R97+, B25+, questions from 284.** Deferred: GW2 build/Nexus version in `session_start` (C12).
 
-- **Housekeeping (Q211/Q240):** the user approved deleting local `chore/contributor-docs`,
-  `chore/xtask-token-split-and-docs`, `chore/handoff-session-20`, `chore/addon-status-design`, `chore/addon-status-lock-design`; the agent's
-  `git branch -D` was blocked by the auto-mode classifier, so the user deletes them by hand.
+- **Housekeeping (Q211/Q240):** the user deletes the approved old local branches by hand (`contributor-docs`,
+  `xtask-token-split-and-docs`, `handoff-session-20`, `addon-status-design`, `addon-status-lock-design`, all `chore/`).
 
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
