@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-11 (session 24). Current state and
+Last updated: 2026-11-11 (session 25). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -11,27 +11,27 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## ▶ Resume here
 
-**Session 24 (2026-11-11) — B23 grilling finished, recorded as B24 (`backend.md`) and R94 (`ROADMAP.md`).**
-PR #104 (B23) is merged. PR #105 (B24/R94, docs only, branch `chore/addon-status-lock-design`) was opened with the
-user's merge OK and auto-merge armed; check `gh pr view 105` first and, if it is merged, start new work from
-freshly fetched `origin/develop`. Lock mockups approved (R87): https://claude.ai/artifact/GrHi26PB5b7ggo5fKKtsAx.
-Nexus update timing (checks only on load, then hot reload) is in the nexus-addon-dev skill. Everything about the
-lock design is settled; no open question remains.
+**Session 25 (2026-11-11) — R89 grilling finished, recorded as ROADMAP R95 (help window, export, privacy) and R96
+(shared text styles and components), memo M181 (help topics); R92's export amended by R95.** PR #105 is merged.
+Mockup v3 approved (R87): https://claude.ai/artifact/9t5fNwC1c4A3wDVZhcdtTD. Docs branch `chore/help-window-design`; check its PR
+first. No open question remains.
 
-**Next (R94):**
-1. **R89 first:** help `?`, export, problem page; `PRIVACY.md` incl. `api.trailkit.de` and the Nexus update
-   check (R52, Q170). Visible design needs a visual proposal and approval first (R87).
-2. **Before any B23/B24 server work:** a grilling round on the backend tech stack (the proposed `tokio` + `axum` +
-   `sqlx` stack in `backend.md` is not grilled: framework, DB access, migrations, deployment, monitoring, GDPR)
-   and on where shared lock texts live (`trailkit-i18n`, first real reuse; the memo-specific notes sentence stays
-   in the addon). The lock window needs the new icon `wrench` (`cargo xtask subset-fonts`).
-3. The addon status server stays local until the real release (Q223).
+**Next, in this order (R95, R96, Q274):**
+1. **`chore/shared-ui-components`** from fresh `origin/develop`: `TextStyle`, `font.size.*` as factors (+ `cargo xtask
+   tokens`), `draw_icon`, `draw_empty_state`, `draw_truncated_text`, `StyleScope::transparent_frame`; replace every
+   existing copy. All snapshots must stay pixel-identical. In-game test, then merge OK.
+2. **`chore/privacy-and-issue-form`:** `PRIVACY.md` + `PRIVACY.de.md`, issue form, `CONTRIBUTING.md` (attachments),
+   `trailkit-logs` skill (untrusted data, export format).
+3. **`feature/help-problem-page`** (an empty local branch exists; restart it from `origin/develop`): help window,
+   `draw_list_row`, `draw_status_line`, Small, export, `?`, help rewrite (M181). Icons possibly missing from
+   `icons.rs`: circle-help, download, external-link, circle-check, circle-alert, info (`cargo xtask subset-fonts`).
+4. Then B23/B24: tech-stack grilling, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
 
-Next ids: **M181+, R95+, B25+, questions from 242.** Still deferred: GW2 build and Nexus version in
+Next ids: **M182+, R97+, B25+, questions from 275.** Still deferred: GW2 build and Nexus version in
 `session_start` (need MumbleLink → core, C12). If ever needed: limit repeated log events once core adds network paths.
 
 - **Housekeeping (Q211/Q240):** the user approved deleting local `chore/contributor-docs`,
-  `chore/xtask-token-split-and-docs`, `chore/handoff-session-20`, `chore/addon-status-design`; the agent's
+  `chore/xtask-token-split-and-docs`, `chore/handoff-session-20`, `chore/addon-status-design`, `chore/addon-status-lock-design`; the agent's
   `git branch -D` was blocked by the auto-mode classifier, so the user deletes them by hand.
 
 ## Review improvements — one at a time, agreed order, solutions still proposals
