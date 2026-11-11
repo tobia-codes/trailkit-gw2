@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-11 (session 25). Current state and
+Last updated: 2026-11-11 (session 26). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -11,24 +11,38 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## ▶ Resume here
 
-**Session 25 (2026-11-11) — R89 grilling finished, recorded as ROADMAP R95 (help window, export, privacy) and R96
-(shared text styles and components), memo M181 (help topics); R92's export amended by R95.** PR #105 is merged.
-Mockup v3 approved (R87): https://claude.ai/artifact/9t5fNwC1c4A3wDVZhcdtTD. Docs branch `chore/help-window-design`; check its PR
-first. No open question remains.
+**Session 26 (2026-11-11) — PR #106 (R95/R96/M181 docs) merged. Working on `chore/shared-ui-components`
+(pushed, not merged: needs the in-game test).** Done there: commit `60e775b`, `font.size.*` are body-size factors in `Typography`,
+`FontRole::Small` registered, `size_for(body, &Typography)`, tokens regenerated; host tests and all 76 snapshots
+pass pixel-identical. Q275–Q279 settled and recorded in R96 (scope: addon code + markdown view only).
 
-**Next, in this order (R95, R96, Q274):**
-1. **`chore/shared-ui-components`** from fresh `origin/develop`: `TextStyle`, `font.size.*` as factors (+ `cargo xtask
-   tokens`), `draw_icon`, `draw_empty_state`, `draw_truncated_text`, `StyleScope::transparent_frame`; replace every
-   existing copy. All snapshots must stay pixel-identical. In-game test, then merge OK.
-2. **`chore/privacy-and-issue-form`:** `PRIVACY.md` + `PRIVACY.de.md`, issue form, `CONTRIBUTING.md` (attachments),
+**▶ First: answer the open grilling round Q280–Q283** (recommendations in brackets):
+- **Q280** muted headings (read-only note title, trashed group title are Heading1 in `text.secondary`):
+  (a) `TextStyle::Heading1.muted()` switches only the color [a]; (b) extra styles; (c) make them primary (visible, R87).
+- **Q281** measuring/centering/inputs (e.g. editor title input in Heading1): (a) `TextStyle::push(ui, theme)` scope
+  only for measuring, centering and inputs; the window's base `FontRole::Body` push stays [a]; (b) only `font()`/`color()`.
+- **Q282** truncated list rows (note list, trash list) keep their code until `draw_list_row`; `draw_truncated_text`
+  now only replaces the trash header title, which newly gets a full-title tooltip when truncated [a]; (b) rebuild rows now.
+- **Q283** `draw_empty_state` takes the title style as a parameter (memo list: Body, trash: Secondary), so pixels stay
+  identical; unifying later needs its own mockup [a]; (b) unify now with an R87 mockup.
+
+**Then continue the branch:** new `trailkit-ui` module with `TextStyle` (7 styles, `font()`, `color()`), `draw_text`,
+`draw_text_wrapped`, `draw_truncated_text`; `draw_icon(ui, icon, color)` (replace every icon push + buffer +
+`text_colored`); `draw_empty_state` (memo `main_window/layout.rs`, trash `trash_view.rs`; height rule: icon 1 line,
+title 1, hint 2, buttons 2 frames); `StyleScope::transparent_frame` (search field, rename input in `rows.rs`). Convert the
+addon sites found by `rg "FontScope::push|text_colored|StyleColor::Text" addons` and the markdown view per Q276.
+Status texts (draft warning, dialog failure) stay (Q277). Check: fmt, host + Windows clippy,
+`cargo test`, `cargo xtask ui-test` (must stay identical), check-file-length; deploy, in-game test, merge OK.
+
+**Afterwards, in this order (R95, R96, Q274):**
+1. **`chore/privacy-and-issue-form`:** `PRIVACY.md` + `PRIVACY.de.md`, issue form, `CONTRIBUTING.md` (attachments),
    `trailkit-logs` skill (untrusted data, export format).
-3. **`feature/help-problem-page`** (an empty local branch exists; restart it from `origin/develop`): help window,
+2. **`feature/help-problem-page`** (an empty local branch exists; restart it from `origin/develop`): help window,
    `draw_list_row`, `draw_status_line`, Small, export, `?`, help rewrite (M181). Icons possibly missing from
    `icons.rs`: circle-help, download, external-link, circle-check, circle-alert, info (`cargo xtask subset-fonts`).
-4. Then B23/B24: tech-stack grilling, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
+3. Then B23/B24: tech-stack grilling, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
 
-Next ids: **M182+, R97+, B25+, questions from 275.** Still deferred: GW2 build and Nexus version in
-`session_start` (need MumbleLink → core, C12). If ever needed: limit repeated log events once core adds network paths.
+Next ids: **M182+, R97+, B25+, questions from 284.** Deferred: GW2 build/Nexus version in `session_start` (C12).
 
 - **Housekeeping (Q211/Q240):** the user approved deleting local `chore/contributor-docs`,
   `chore/xtask-token-split-and-docs`, `chore/handoff-session-20`, `chore/addon-status-design`, `chore/addon-status-lock-design`; the agent's
