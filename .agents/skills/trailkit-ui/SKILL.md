@@ -119,7 +119,12 @@ Build once, use everywhere. Planned:
 - `DependencyHint` (greyed feature + explanation + "Open core settings"/
   "Get trailkit-core" button)
 - `Tree` with drag & drop (groups / subgroups / items)
-- `ColorTokenEditor`, `KeybindHint`, `EmptyState`, `ErrorState`, `Spinner`
+- Empty state — **exists** (Q283): `empty_state::draw_empty_state` with
+  `EmptyState` (optional icon, title, hint, buttons with one primary)
+- Text and icons — **exist** (R96): `text::draw_text`, `draw_text_wrapped`,
+  `draw_truncated_text`, `draw_icon`; borderless inputs use
+  `StyleScope::transparent_frame`
+- `ColorTokenEditor`, `KeybindHint`, `ErrorState`, `Spinner`
 - Markdown renderer (read-only view) — **exists**: `markdown` (parser,
   any platform) + `markdown_view` (ImGui)
 - Shared fonts (Open Sans regular/bold/italic/bold italic, headings; M62) and

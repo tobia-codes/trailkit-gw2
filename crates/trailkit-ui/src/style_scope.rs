@@ -163,4 +163,28 @@ impl<'ui> StyleScope<'ui> {
             _tooltip_offset: TooltipOffset::push(extent),
         }
     }
+
+    /// Makes the frames of inputs transparent at rest, hovered and active
+    /// until the returned scope is dropped: for borderless inputs that sit on
+    /// their row or toolbar, e.g. the search field or the rename input
+    /// (R96).
+    pub fn transparent_frame(ui: &'ui Ui) -> TransparentFrame<'ui> {
+        let transparent = Color::TRANSPARENT.to_array();
+        TransparentFrame {
+            _colors: [
+                StyleColor::FrameBg,
+                StyleColor::FrameBgHovered,
+                StyleColor::FrameBgActive,
+            ]
+            .map(|slot| ui.push_style_color(slot, transparent)),
+        }
+    }
+}
+
+/// Transparent input frames, pushed by [`StyleScope::transparent_frame`];
+/// the previous frame colors return on drop.
+#[must_use = "the frame colors are popped again as soon as the scope is dropped"]
+pub struct TransparentFrame<'ui> {
+    /// The pushed frame colors.
+    _colors: [ColorStackToken<'ui>; 3],
 }

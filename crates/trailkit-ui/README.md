@@ -25,6 +25,8 @@ Latin up to Extended-B plus punctuation, the icon font only the icons in
 | `theme` | `Theme` tokens, built-in `Theme::DARK` (default) / `Theme::LIGHT`, `ThemeKind` | any |
 | `fonts` | shared font roles (body, bold, italic, headings, icons), embedded Open Sans + Lucide | any |
 | `icons` | Lucide icon glyphs used by trailkit (add new ones here) | any |
+| `text` | `TextStyle` — the text roles of `tokens.md` §7.1 (font and color, any platform); `draw_text`, `draw_text_wrapped`, `draw_truncated_text` ("…" plus full-text tooltip), `draw_icon`, `TextStyle::push` only for measuring, centering and inputs (R96) | any / Windows |
+| `empty_state` | `draw_empty_state` — the one empty-state layout: optional icon in `text.disabled`, Body title, Secondary hint, optional buttons with one primary (Q283) | Windows |
 | `editor` | the word-wrapping text editor: platform-independent `buffer` (text, cursor, undo) and `layout`, plus `highlight` and the drawing `view` (Windows) (M58–M60) | any / Windows |
 | `text_search` | `SearchQuery`: whitespace-separated terms, case-insensitive, shared by list filtering and hit highlighting (M118–M120) | any |
 | `markdown` | markdown → blocks and styled spans; task toggling; `http(s)`-only links | any |
@@ -43,7 +45,7 @@ Latin up to Extended-B plus punctuation, the icon font only the icons in
 | `splitter` | `draw_vertical_splitter` — resizable gap between two panes (accent line on hover/drag) | Windows |
 | `text_layout` | `centered_text`, `indent_to_center`, `truncate_to_width` ("…", `lay-truncation`), `format_count` (allocation-free count labels) | Windows |
 | `separator` | `draw_separator` — horizontal line that ends at the window/pane padding | Windows |
-| `style_scope` | `StyleScope` — RAII guard that pushes a theme onto the shared ImGui context and pops it on drop (no per-frame allocation) | Windows |
+| `style_scope` | `StyleScope` — RAII guard that pushes a theme onto the shared ImGui context and pops it on drop; `StyleScope::transparent_frame` for borderless inputs (no per-frame allocation) | Windows |
 | `font_registry` | registers the shared fonts and glyphs with Nexus, follows the `FontUI` size, `FontScope` guard | Windows |
 | `markdown_view` | draws a parsed markdown document with word wrapping; returns task/link clicks and copies chat-link chips | Windows |
 | `chat_link` | finds and decodes GW2 chat codes (`[&…]`) | any |
