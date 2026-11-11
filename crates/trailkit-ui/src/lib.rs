@@ -10,6 +10,9 @@
 //!   themes;
 //! - `pane` and `separator` (Windows only): padded content regions and a
 //!   separator that respects that padding (`lay-pane-padding`);
+//! - [`text`]: the text roles (`TextStyle`) through which addons draw
+//!   text and icons (R96); `empty_state` (Windows only) is the one
+//!   empty-state layout;
 //! - `style_scope` (Windows only): an RAII guard that applies a theme to the
 //!   shared ImGui context and restores the previous style on drop.
 //!
@@ -23,6 +26,7 @@ pub mod editor;
 pub mod fonts;
 pub mod icons;
 pub mod markdown;
+pub mod text;
 pub mod text_search;
 pub mod theme;
 
@@ -34,6 +38,8 @@ pub mod chat_link_chip;
 pub mod cursor_extent;
 #[cfg(windows)]
 pub mod dropdown;
+#[cfg(windows)]
+pub mod empty_state;
 #[cfg(windows)]
 pub mod font_registry;
 #[cfg(windows)]

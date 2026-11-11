@@ -12,6 +12,7 @@ use nexus::imgui::{Context, FontConfig, FontGlyphRanges, FontSource, Key, Ui, sy
 use trailkit_ui::{
     font_registry::install_font,
     fonts::{FALLBACK_BODY_SIZE, FontRole},
+    theme::Theme,
 };
 
 use crate::raster::{Image, Texture, Vertex};
@@ -117,7 +118,8 @@ impl UiHarness {
                 } else {
                     &TEXT_GLYPHS
                 };
-                let size_pixels = role.size_for(FALLBACK_BODY_SIZE);
+                // Both built-in themes share their typography (R96).
+                let size_pixels = role.size_for(FALLBACK_BODY_SIZE, &Theme::default().typography);
                 fonts.add_font(&[FontSource::TtfData {
                     data: role.data(),
                     size_pixels,

@@ -65,7 +65,8 @@ has nothing to say is left out, slices stay short:
   | Command | Purpose |
   |---------|---------|
   | `cargo xtask deploy trailkit-memo` | Build and hot-reload into the running game; `addons/Nexus/Nexus.log` in the game folder logs "Loaded addon" 1-2 s later |
-  | `cargo xtask ui-test [--update]` | Snapshot tests, about 4 minutes. Adding one, coordinates, reviewing, measuring in game: [`tokens.md` §10](../.agents/skills/trailkit-ui/references/tokens.md) |
+  | `cargo xtask ui-test [--update]` | Snapshot tests, about 4 minutes. Adding one, coordinates, reviewing, measuring in game: [`tokens.md` §10](../.agents/skills/trailkit-ui/references/tokens.md). `--update` rewrites only differing references |
+  | CI artifact `snapshot-updates` | Without a local Windows build (cloud sessions): push, let the Windows job fail, download the artifact (changed references + `failures/` diffs, R97), review, copy the references into `tests/snapshots/`, commit |
   | `cargo xwin clippy --target x86_64-pc-windows-msvc --all-targets -- -D warnings` | Needed besides host clippy, which skips Windows-only code |
   | `cargo xtask subset-fonts` | After adding an icon to `Icon::ALL` |
   | `cargo xtask tokens` | After changing a token |

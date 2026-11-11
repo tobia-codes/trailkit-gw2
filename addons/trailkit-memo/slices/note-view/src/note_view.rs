@@ -2,19 +2,19 @@
 //! M102), separator and the rendered content in its own scroll region, so
 //! the title stays in place (M81). Search hits are marked (M122).
 
-use nexus::imgui::{ChildWindow, MouseButton, StyleColor, Ui};
+use nexus::imgui::{ChildWindow, MouseButton, Ui};
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText},
     note_tree::{Note, NoteId},
 };
 use trailkit_ui::{
     chat_link_chip::ChipContext,
-    font_registry::FontScope,
     fonts::FontRole,
     glyph_metrics::capital_middle,
     markdown::{self, MarkdownDocument},
     markdown_view::{MarkdownAction, SearchHighlight, draw_markdown, first_line_font},
     separator::draw_separator_above_text,
+    text::{TextStyle, draw_text, draw_text_wrapped},
     text_search::SearchQuery,
     theme::Theme,
 };
@@ -55,8 +55,9 @@ pub struct NoteViewInput<'a> {
     pub chips: ChipContext<'a>,
     /// The widget behind the title.
     pub title_trailing: Option<TitleTrailing<'a>>,
-    /// A read-only note (in the trash, memo M145): the title is muted, the
-    /// `subtitle` line follows it and a double-click does not edit.
+    /// A read-only note (in the trash, memo M145): the title keeps its role
+    /// (Q280), the `subtitle` line follows it and a double-click does not
+    /// edit.
     pub read_only: Option<ReadOnly<'a>>,
 }
 
@@ -133,8 +134,12 @@ impl NoteView {
     ) -> NoteViewOutput {
         let mut output = NoteViewOutput::default();
         let Some(note) = input.note else {
-            let _muted = ui.push_style_color(StyleColor::Text, theme.text.secondary.to_array());
-            ui.text_wrapped(NoteViewText::SelectNote.get(language));
+            draw_text_wrapped(
+                ui,
+                theme,
+                TextStyle::Secondary,
+                NoteViewText::SelectNote.get(language),
+            );
             return output;
         };
         let is_stale = self
@@ -149,15 +154,11 @@ impl NoteView {
             });
         }
 
-        {
-            let _muted = input
-                .read_only
-                .map(|_| ui.push_style_color(StyleColor::Text, theme.text.secondary.to_array()));
-            draw_title(ui, theme, &note.title, input.title_trailing);
-        }
+        // A read-only note keeps its title role; the info line says its
+        // state (Q280, `tokens.md` §7.1 rule 1).
+        draw_title(ui, theme, &note.title, input.title_trailing);
         if let Some(read_only) = input.read_only {
-            let _muted = ui.push_style_color(StyleColor::Text, theme.text.secondary.to_array());
-            ui.text_wrapped(read_only.subtitle);
+            draw_text_wrapped(ui, theme, TextStyle::Secondary, read_only.subtitle);
         }
         let first_line = self
             .parsed
@@ -221,8 +222,12 @@ impl NoteView {
                 }
             }
             _ => {
-                let _muted = ui.push_style_color(StyleColor::Text, theme.text.secondary.to_array());
-                ui.text_wrapped(NoteViewText::EmptyNote.get(language));
+                draw_text_wrapped(
+                    ui,
+                    theme,
+                    TextStyle::Secondary,
+                    NoteViewText::EmptyNote.get(language),
+                );
             }
         }
         let scroll = ui.scroll_y();
@@ -242,17 +247,17 @@ fn draw_title(ui: &Ui, theme: &Theme, title: &str, trailing: Option<TitleTrailin
     let available = ui.content_region_avail()[0];
     let [left, top] = ui.cursor_screen_pos();
     let (title_height, title_middle, is_beside) = {
-        let _heading = FontScope::push(ui, FontRole::Heading1);
+        let _heading = TextStyle::Heading1.push(ui, theme);
         let height = ui.text_line_height();
         let middle = capital_middle().unwrap_or(height / 2.0);
         let is_beside = ui.calc_text_size(title)[0] + gap + trailing_size[0] <= available;
-        if is_beside {
-            ui.text(title);
-        } else {
-            ui.text_wrapped(title);
-        }
         (height, middle, is_beside)
     };
+    if is_beside {
+        draw_text(ui, theme, TextStyle::Heading1, title);
+    } else {
+        draw_text_wrapped(ui, theme, TextStyle::Heading1, title);
+    }
     let Some(trailing) = trailing else {
         return;
     };

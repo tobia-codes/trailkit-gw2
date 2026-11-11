@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-11 (session 26). Current state and
+Last updated: 2026-11-11 (session 28). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -11,31 +11,18 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## ▶ Resume here
 
-**Session 26 (2026-11-11). Branch: continue on the existing, pushed `chore/shared-ui-components`** (`git fetch &&
-git switch chore/shared-ui-components`, then merge `origin/develop`); never start a new branch from develop for this.
-Not merged: needs the in-game test. Done there: `font.size.*` are body-size factors in `Typography`, `FontRole::Small`
-registered, `size_for(body, &Typography)`, tokens regenerated; host tests and all 76 snapshots pixel-identical.
-Q275–Q279 settled and recorded in R96 (scope: addon code + markdown view only).
+**Session 28 (2026-11-11):** R96 shared text styles and components are done on `chore/shared-ui-components`:
+`trailkit-ui` `text` (`TextStyle`, `draw_text`, `draw_text_wrapped`, `draw_truncated_text`, `draw_icon`), `empty_state`,
+`StyleScope::transparent_frame`, `font.size.*` factors, `FontRole::Small`; memo and markdown view converted (Q275–Q286).
+PR #109 into `develop` is pushed with auto-merge armed (user OK). **First step next session:** if #109 is not merged,
+it waits for the snapshots: take them from the CI artifact `snapshot-updates` (R97) or `cargo xtask ui-test --update`
+on the user's PC, review only the changed images (Q280 trash preview titles, Q283 b empty states, Q282 header tooltip;
+everything else must stay identical, R82), commit them on the branch, push; then deploy and a short in-game check. After the merge delete
+the branch. Q286 (tooltip looks like a button, 2–3 variants for all addons) stays a later design round.
 
-**▶ First: answer the open grilling round Q280–Q283** (recommendations in brackets):
-- **Q280** muted headings (read-only note title, trashed group title are Heading1 in `text.secondary`):
-  (a) `TextStyle::Heading1.muted()` switches only the color [a]; (b) extra styles; (c) make them primary (visible, R87).
-- **Q281** measuring/centering/inputs (e.g. editor title input in Heading1): (a) `TextStyle::push(ui, theme)` scope
-  only for measuring, centering and inputs; the window's base `FontRole::Body` push stays [a]; (b) only `font()`/`color()`.
-- **Q282** truncated list rows (note list, trash list) keep their code until `draw_list_row`; `draw_truncated_text`
-  now only replaces the trash header title, which newly gets a full-title tooltip when truncated [a]; (b) rebuild rows now.
-- **Q283** `draw_empty_state` takes the title style as a parameter (memo list: Body, trash: Secondary), so pixels stay
-  identical; unifying later needs its own mockup [a]; (b) unify now with an R87 mockup.
+**Next (once #109 is merged): start `chore/privacy-and-issue-form` from freshly fetched `origin/develop`.**
 
-**Then continue the branch:** new `trailkit-ui` module with `TextStyle` (7 styles, `font()`, `color()`), `draw_text`,
-`draw_text_wrapped`, `draw_truncated_text`; `draw_icon(ui, icon, color)` (replace every icon push + buffer +
-`text_colored`); `draw_empty_state` (memo `main_window/layout.rs`, trash `trash_view.rs`; height rule: icon 1 line,
-title 1, hint 2, buttons 2 frames); `StyleScope::transparent_frame` (search field, rename input in `rows.rs`). Convert the
-addon sites found by `rg "FontScope::push|text_colored|StyleColor::Text" addons` and the markdown view per Q276.
-Status texts (draft warning, dialog failure) stay (Q277). Check: fmt, host + Windows clippy,
-`cargo test`, `cargo xtask ui-test` (must stay identical), check-file-length; deploy, in-game test, merge OK.
-
-**Afterwards, in this order (R95, R96, Q274):**
+**Queue, in this order (R95, R96, Q274):**
 1. **`chore/privacy-and-issue-form`:** `PRIVACY.md` + `PRIVACY.de.md`, issue form, `CONTRIBUTING.md` (attachments),
    `trailkit-logs` skill (untrusted data, export format).
 2. **`feature/help-problem-page`** (an empty local branch exists; restart it from `origin/develop`): help window,
@@ -43,7 +30,7 @@ Status texts (draft warning, dialog failure) stay (Q277). Check: fmt, host + Win
    `icons.rs`: circle-help, download, external-link, circle-check, circle-alert, info (`cargo xtask subset-fonts`).
 3. Then B23/B24: tech-stack grilling, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
 
-Next ids: **M182+, R97+, B25+, questions from 284.** Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M182+, R98+, B25+, questions from 287.** Deferred: GW2 build/Nexus version in `session_start` (C12).
 
 - **Housekeeping (Q211/Q240):** the user deletes the approved old local branches by hand (`contributor-docs`,
   `xtask-token-split-and-docs`, `handoff-session-20`, `addon-status-design`, `addon-status-lock-design`, all `chore/`).

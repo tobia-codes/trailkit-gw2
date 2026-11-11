@@ -20,6 +20,9 @@ pub(super) enum TokenValue {
     Pixels(f32),
     /// A multiple of the current font size.
     FontSizeFactor(f32),
+    /// A multiple of the body size (Nexus' `FontUI` × text scale), shown
+    /// with two decimals (R96).
+    BodySizeFactor(f32),
 }
 
 /// One documented token.
@@ -56,6 +59,15 @@ const fn pixels(id: &'static str, value: f32, purpose: &'static str) -> Token {
     Token {
         id,
         value: TokenValue::Pixels(value),
+        purpose,
+    }
+}
+
+/// A token sized as a multiple of the body size.
+const fn body_factor(id: &'static str, value: f32, purpose: &'static str) -> Token {
+    Token {
+        id,
+        value: TokenValue::BodySizeFactor(value),
         purpose,
     }
 }
@@ -417,15 +429,19 @@ fn typography_group(typography: Typography) -> TokenGroup {
     let Typography {
         small,
         body,
-        heading,
+        heading3,
+        heading2,
+        heading1,
         line_height,
     } = typography;
     TokenGroup {
         title: "Typography",
         tokens: vec![
-            pixels("font.size.small", small, "Small text"),
-            pixels("font.size.body", body, "Body text"),
-            pixels("font.size.heading", heading, "Headings"),
+            body_factor("font.size.small", small, "Small text"),
+            body_factor("font.size.body", body, "Body text"),
+            body_factor("font.size.heading3", heading3, "Level 3 heading and below"),
+            body_factor("font.size.heading2", heading2, "Level 2 heading"),
+            body_factor("font.size.heading1", heading1, "Level 1 heading"),
             Token {
                 id: "font.line_height",
                 value: TokenValue::FontSizeFactor(line_height),

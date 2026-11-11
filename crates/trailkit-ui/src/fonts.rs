@@ -4,8 +4,11 @@
 //! Every addon registers the same font identifiers with Nexus; Nexus loads a
 //! font once and shares it between all addons that ask for the same id. The
 //! body size follows Nexus' `FontUI` (which follows the GW2 interface size);
-//! headings are derived from it. This module only describes the fonts and is
-//! platform-independent; registration lives in `font_registry` (Windows).
+//! the other sizes are the theme's `font.size.*` factors of it (R96). This
+//! module only describes the fonts and is platform-independent; registration
+//! lives in `font_registry` (Windows).
+
+use crate::theme::Typography;
 
 /// Open Sans Regular (OFL, see `assets/fonts/open-sans/LICENSE`).
 pub static OPEN_SANS_REGULAR: &[u8] =
@@ -29,6 +32,10 @@ pub static LUCIDE: &[u8] = include_bytes!("../assets/fonts/lucide/lucide.ttf");
 pub const FALLBACK_BODY_SIZE: f32 = 16.0;
 
 /// Every font trailkit draws with: a face at a size relative to the body text.
+///
+/// Addon code draws text through [`crate::text::TextStyle`] instead of
+/// pushing a role by hand (R96); roles stay for the shared components and
+/// inline formatting.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum FontRole {
     /// Body text.
@@ -47,11 +54,13 @@ pub enum FontRole {
     Heading3,
     /// Lucide icons at body size.
     Icons,
+    /// Small text (regular, 0.85×, R96).
+    Small,
 }
 
 impl FontRole {
     /// Every role, in registration order.
-    pub const ALL: [Self; 8] = [
+    pub const ALL: [Self; 9] = [
         Self::Body,
         Self::BodyBold,
         Self::BodyItalic,
@@ -60,6 +69,7 @@ impl FontRole {
         Self::Heading2,
         Self::Heading3,
         Self::Icons,
+        Self::Small,
     ];
 
     /// The Nexus font identifier, shared by all trailkit addons
@@ -75,6 +85,7 @@ impl FontRole {
             Self::Heading2 => "trailkit.shared.font.heading_2",
             Self::Heading3 => "trailkit.shared.font.heading_3",
             Self::Icons => "trailkit.shared.font.icons",
+            Self::Small => "trailkit.shared.font.small",
         }
     }
 
@@ -82,7 +93,7 @@ impl FontRole {
     #[must_use]
     pub fn data(self) -> &'static [u8] {
         match self {
-            Self::Body => OPEN_SANS_REGULAR,
+            Self::Body | Self::Small => OPEN_SANS_REGULAR,
             Self::BodyBold | Self::Heading1 | Self::Heading2 | Self::Heading3 => OPEN_SANS_BOLD,
             Self::BodyItalic => OPEN_SANS_ITALIC,
             Self::BodyBoldItalic => OPEN_SANS_BOLD_ITALIC,
@@ -90,23 +101,25 @@ impl FontRole {
         }
     }
 
-    /// Size relative to the body text (M35).
+    /// Size relative to the body text: the theme's `font.size.*` factor
+    /// (M35, R96).
     #[must_use]
-    pub const fn scale(self) -> f32 {
+    pub const fn scale(self, typography: &Typography) -> f32 {
         match self {
-            Self::Heading1 => 1.5,
-            Self::Heading2 => 1.3,
-            Self::Heading3 => 1.15,
+            Self::Heading1 => typography.heading1,
+            Self::Heading2 => typography.heading2,
+            Self::Heading3 => typography.heading3,
+            Self::Small => typography.small,
             Self::Body | Self::BodyBold | Self::BodyItalic | Self::BodyBoldItalic | Self::Icons => {
-                1.0
+                typography.body
             }
         }
     }
 
     /// The pixel size of this role for a body size of `body_size`.
     #[must_use]
-    pub fn size_for(self, body_size: f32) -> f32 {
-        (body_size * self.scale()).round()
+    pub fn size_for(self, body_size: f32, typography: &Typography) -> f32 {
+        (body_size * self.scale(typography)).round()
     }
 
     /// The body face for a combination of bold and italic.
@@ -211,7 +224,7 @@ fn subtable_covers(data: &[u8], offset: usize, code: u32) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::icons::Icon;
+    use crate::{icons::Icon, theme::Theme};
 
     #[test]
     fn subset_fonts_keep_icons_latin_and_typography() {
@@ -248,9 +261,14 @@ mod tests {
     }
 
     #[test]
-    fn heading_sizes_derive_from_body() {
-        assert!((FontRole::Heading1.size_for(16.0) - 24.0).abs() < f32::EPSILON);
-        assert!((FontRole::Body.size_for(16.0) - 16.0).abs() < f32::EPSILON);
+    fn sizes_derive_from_body() {
+        let typography = Theme::DARK.typography;
+        let size = |role: FontRole| role.size_for(16.0, &typography);
+        assert!((size(FontRole::Heading1) - 24.0).abs() < f32::EPSILON);
+        assert!((size(FontRole::Heading2) - 21.0).abs() < f32::EPSILON);
+        assert!((size(FontRole::Heading3) - 18.0).abs() < f32::EPSILON);
+        assert!((size(FontRole::Body) - 16.0).abs() < f32::EPSILON);
+        assert!((size(FontRole::Small) - 14.0).abs() < f32::EPSILON);
         assert_eq!(FontRole::heading(5), FontRole::Heading3);
     }
 

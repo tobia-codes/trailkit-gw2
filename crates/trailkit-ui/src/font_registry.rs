@@ -28,6 +28,7 @@ use nexus::{
 use crate::{
     fonts::{FALLBACK_BODY_SIZE, FontRole},
     icons::glyph_text,
+    theme::Typography,
 };
 
 /// Localization key whose text makes Nexus put the shared glyphs into the atlas.
@@ -52,9 +53,11 @@ static REGISTERED_BODY_SIZE: AtomicU32 = AtomicU32::new(0);
 ///
 /// `addon_glyph_key` and `addon_glyphs` register the addon's own UI strings
 /// (all languages concatenated) so their characters are in the atlas too,
-/// e.g. `("trailkit.memo.localization.glyphs", all_memo_texts)`. Call once
-/// from the addon's `load`; registrations are reverted on unload.
-pub fn register_fonts(addon_glyph_key: &str, addon_glyphs: &str) {
+/// e.g. `("trailkit.memo.localization.glyphs", all_memo_texts)`. The sizes
+/// are `typography`'s factors of the body size (R96), usually those of the
+/// addon's active theme. Call once from the addon's `load`; registrations are
+/// reverted on unload.
+pub fn register_fonts(addon_glyph_key: &str, addon_glyphs: &str, typography: &Typography) {
     let mut shared_glyphs = glyph_text();
     shared_glyphs.push_str(TYPOGRAPHIC_GLYPHS);
     set_translation(SHARED_GLYPHS_KEY, GLYPH_LANGUAGE, &shared_glyphs);
@@ -66,7 +69,7 @@ pub fn register_fonts(addon_glyph_key: &str, addon_glyphs: &str) {
         add_font_from_memory(
             role.identifier(),
             role.data(),
-            role.size_for(FALLBACK_BODY_SIZE),
+            role.size_for(FALLBACK_BODY_SIZE, typography),
             None,
             receive,
         )
@@ -75,9 +78,10 @@ pub fn register_fonts(addon_glyph_key: &str, addon_glyphs: &str) {
 }
 
 /// Resizes the shared fonts if `body_size` (Nexus' current `FontUI` size)
-/// differs from the size they were built for. Cheap when nothing changed;
-/// call it once per frame while a window is visible.
-pub fn follow_body_size(body_size: f32) {
+/// differs from the size they were built for, each role at its
+/// `typography` factor. Cheap when nothing changed; call it once per frame
+/// while a window is visible.
+pub fn follow_body_size(body_size: f32, typography: &Typography) {
     if !(body_size.is_finite() && body_size >= 1.0) {
         return;
     }
@@ -87,7 +91,7 @@ pub fn follow_body_size(body_size: f32) {
     }
     REGISTERED_BODY_SIZE.store(body_size.to_bits(), Ordering::Relaxed);
     for role in FontRole::ALL {
-        resize_font(role.identifier(), role.size_for(body_size));
+        resize_font(role.identifier(), role.size_for(body_size, typography));
     }
 }
 

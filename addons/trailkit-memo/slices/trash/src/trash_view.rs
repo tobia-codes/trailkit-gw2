@@ -6,7 +6,7 @@ use std::borrow::Cow;
 use trailkit_ui::tooltip::draw_tooltip;
 
 use jiff::Timestamp;
-use nexus::imgui::{MouseButton, Selectable, StyleColor, Ui};
+use nexus::imgui::{MouseButton, Selectable, Ui};
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText},
     note_tree::{NodeId, TrashEntry, TreeNode},
@@ -16,13 +16,14 @@ use trailkit_ui::{
         draw_danger_button, draw_danger_icon_button, draw_icon_button,
         draw_primary_button_with_icon, icon_button_width, icon_label_button_width,
     },
+    empty_state::{EmptyState, draw_empty_state},
     font_registry::FontScope,
     fonts::FontRole,
     icons::Icon,
     menu::{MenuItemTone, draw_menu_item_with_icon, draw_popup},
     selection_bar::{draw_row_highlight_in, draw_selection_bar_in, hide_square_row_highlight},
     separator::{draw_compact_separator, draw_separator, draw_separator_above_rows},
-    text_layout::centered_text,
+    text::{TextStyle, draw_text, draw_text_wrapped, draw_truncated_text},
     text_layout::truncate_to_width,
     theme::Theme,
     toolbar::move_to_toolbar_end,
@@ -49,7 +50,7 @@ pub enum TrashAction {
 /// entries, the `danger` "Empty" button at its right end; then a separator.
 /// A back arrow left of the title returns to the notes (M154). In a narrow
 /// column the button moves below the title, which is shortened if needed
-/// (`lay-responsive`).
+/// (`lay-responsive`) and then shows the full title as a tooltip (Q282).
 pub fn draw_trash_header(
     ui: &Ui,
     language: Language,
@@ -71,14 +72,16 @@ pub fn draw_trash_header(
     }
     let title_left = ui.item_rect_max()[0] + theme.spacing.small;
     let title_room = left + available - title_left;
-    let title_width = {
-        let _bold = FontScope::push(ui, FontRole::BodyBold);
-        let text_offset = (row_height - ui.text_line_height()) / 2.0;
-        ui.set_cursor_screen_pos([title_left, top + text_offset]);
-        let title = TrashText::Trash.get(language);
-        ui.text(truncate_to_width(ui, title, title_room));
-        ui.calc_text_size(title)[0]
+    let title = TrashText::Trash.get(language);
+    let (title_width, text_offset) = {
+        let _bold = TextStyle::BodyStrong.push(ui, theme);
+        (
+            ui.calc_text_size(title)[0],
+            (row_height - ui.text_line_height()) / 2.0,
+        )
     };
+    ui.set_cursor_screen_pos([title_left, top + text_offset]);
+    draw_truncated_text(ui, theme, TextStyle::BodyStrong, title, title_room);
     if has_entries {
         let label = TrashText::EmptyTrash.get(language);
         let button_width = trailkit_ui::button::button_width(ui, theme, label);
@@ -113,7 +116,14 @@ pub fn draw_trash_entries(
     now: Timestamp,
 ) -> Option<TrashAction> {
     if trash.is_empty() {
-        draw_empty_state(ui, language, theme);
+        // Icon, "The trash is empty." and how long entries stay (Q283 b).
+        let state = EmptyState {
+            icon: Some(Icon::TRASH_2),
+            title: TrashText::TrashIsEmpty.get(language),
+            hint: Some(TrashText::TrashKeepsEntries.get(language)),
+            buttons: None,
+        };
+        draw_empty_state(ui, theme, &state);
         return None;
     }
     let mut action = None;
@@ -251,34 +261,6 @@ fn draw_entry_menu(ui: &Ui, language: Language, theme: &Theme, id: NodeId) -> Op
     action
 }
 
-/// Draws the empty trash: icon, "The trash is empty." and how long entries
-/// stay, centered in the remaining space.
-fn draw_empty_state(ui: &Ui, language: Language, theme: &Theme) {
-    let lines = [
-        TrashText::TrashIsEmpty.get(language),
-        TrashText::TrashKeepsEntries.get(language),
-    ];
-    let available = ui.content_region_avail();
-    let line = ui.text_line_height_with_spacing();
-    // The icon and two text lines; the longer text may wrap in a narrow list.
-    let height = 4.0 * line;
-    let [left, top] = ui.cursor_screen_pos();
-    let y = top + ((available[1] - height) / 2.0).max(0.0);
-    {
-        let _icons = FontScope::push(ui, FontRole::Icons);
-        let mut buffer = [0; 4];
-        let icon = Icon::TRASH_2.as_str(&mut buffer);
-        let width = ui.calc_text_size(icon)[0];
-        ui.set_cursor_screen_pos([left + ((available[0] - width) / 2.0).max(0.0), y]);
-        ui.text_colored(theme.text.disabled.to_array(), icon);
-    }
-    ui.set_cursor_screen_pos([left, y + line]);
-    let _secondary = ui.push_style_color(StyleColor::Text, theme.text.secondary.to_array());
-    for text in lines {
-        centered_text(ui, text, available[0]);
-    }
-}
-
 /// Draws the note pane toolbar of a trashed entry (M145): the `danger`
 /// "Delete permanently" icon and the primary "Restore" at the right end.
 pub fn draw_preview_toolbar(
@@ -309,7 +291,7 @@ pub fn draw_preview_toolbar(
     action
 }
 
-/// Draws a trashed group in the note pane (M147): its muted title, the
+/// Draws a trashed group in the note pane (M147): its title (Q280), the
 /// info line, and the titles of the notes it holds.
 pub fn draw_group_preview(
     ui: &Ui,
@@ -321,19 +303,19 @@ pub fn draw_group_preview(
     let TreeNode::Group(group) = &entry.node else {
         return;
     };
-    {
-        let _heading = FontScope::push(ui, FontRole::Heading1);
-        let _muted = ui.push_style_color(StyleColor::Text, theme.text.secondary.to_array());
-        ui.text_wrapped(&group.title);
-    }
-    ui.text_colored(
-        theme.text.secondary.to_array(),
-        labels::info_line(entry, now, language),
+    draw_text_wrapped(ui, theme, TextStyle::Heading1, &group.title);
+    draw_text(
+        ui,
+        theme,
+        TextStyle::Secondary,
+        &labels::info_line(entry, now, language),
     );
     draw_separator(ui, theme);
-    ui.text_colored(
-        theme.text.secondary.to_array(),
-        labels::note_count(group.note_count(), language),
+    draw_text(
+        ui,
+        theme,
+        TextStyle::Secondary,
+        &labels::note_count(group.note_count(), language),
     );
     draw_child_titles(ui, theme, &group.children);
 }
@@ -342,12 +324,9 @@ pub fn draw_group_preview(
 fn draw_child_titles(ui: &Ui, theme: &Theme, nodes: &[TreeNode]) {
     for node in nodes {
         match node {
-            TreeNode::Note(note) => ui.text(&note.title),
+            TreeNode::Note(note) => draw_text(ui, theme, TextStyle::Body, &note.title),
             TreeNode::Group(group) => {
-                {
-                    let _bold = FontScope::push(ui, FontRole::BodyBold);
-                    ui.text(&group.title);
-                }
+                draw_text(ui, theme, TextStyle::BodyStrong, &group.title);
                 ui.indent_by(theme.list.indent);
                 draw_child_titles(ui, theme, &group.children);
                 ui.unindent_by(theme.list.indent);

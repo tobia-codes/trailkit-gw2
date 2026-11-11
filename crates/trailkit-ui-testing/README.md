@@ -29,7 +29,7 @@ From WSL (the harness needs nexus-rs' ImGui, which is Windows only):
 
 ```sh
 cargo xtask ui-test            # build with cargo-xwin, run the .exe files via interop
-cargo xtask ui-test --update   # accept the current rendering as new references
+cargo xtask ui-test --update   # rewrite missing and differing references (R97)
 ```
 
 On Windows (CI) the tests run with a plain `cargo test --workspace`.

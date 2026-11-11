@@ -134,7 +134,9 @@ use which token is binding in [`tokens.md`](tokens.md).
 
 | Token | Dark | Light | Purpose |
 | --- | --- | --- | --- |
-| `font.size.small` | 12 px | 12 px | Small text |
-| `font.size.body` | 14 px | 14 px | Body text |
-| `font.size.heading` | 18 px | 18 px | Headings |
+| `font.size.small` | 0.85 × body size | 0.85 × body size | Small text |
+| `font.size.body` | 1.00 × body size | 1.00 × body size | Body text |
+| `font.size.heading3` | 1.15 × body size | 1.15 × body size | Level 3 heading and below |
+| `font.size.heading2` | 1.30 × body size | 1.30 × body size | Level 2 heading |
+| `font.size.heading1` | 1.50 × body size | 1.50 × body size | Level 1 heading |
 | `font.line_height` | 1.5 × font size | 1.5 × font size | Line height of running text |

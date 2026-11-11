@@ -56,6 +56,7 @@ fn format_value(value: TokenValue) -> String {
         }
         TokenValue::Pixels(size) => format!("{size} px"),
         TokenValue::FontSizeFactor(factor) => format!("{factor} × font size"),
+        TokenValue::BodySizeFactor(factor) => format!("{factor:.2} × body size"),
     }
 }
 
@@ -149,6 +150,10 @@ mod tests {
         assert_eq!(
             format_value(TokenValue::FontSizeFactor(1.5)),
             "1.5 × font size"
+        );
+        assert_eq!(
+            format_value(TokenValue::BodySizeFactor(1.3)),
+            "1.30 × body size"
         );
     }
 

@@ -3,10 +3,10 @@
 
 use nexus::imgui::Ui;
 use trailkit_ui::{
-    button::{button_width, draw_button, draw_primary_button},
+    empty_state::{self, EmptyState, EmptyStateAction, EmptyStateButtons},
+    icons::Icon,
     pane::draw_pane,
     splitter::draw_vertical_splitter,
-    text_layout::{centered_text, indent_to_center},
     theme::Theme,
 };
 
@@ -64,47 +64,26 @@ impl MemoWindow {
     }
 }
 
-/// Draws the empty state (M42): headline, primary and secondary button.
+/// Draws the empty state (M42, Q283 b): the `file-text` icon, "No notes
+/// yet", the primary "Create your first note" and "New group".
 pub(super) fn draw_empty_state(
     ui: &Ui,
     language: Language,
     theme: &Theme,
     actions: &mut Vec<WindowAction>,
 ) {
-    let available = ui.content_region_avail();
-    let block_height = ui.text_line_height_with_spacing() + 2.0 * ui.frame_height_with_spacing();
-    let start = ui.cursor_pos();
-    ui.set_cursor_pos([
-        start[0],
-        start[1] + ((available[1] - block_height) / 2.0).max(0.0),
-    ]);
-
-    centered_text(ui, Text::NoNotesYet.get(language), available[0]);
-    ui.dummy([0.0, theme.spacing.small]);
-
-    let primary = Text::CreateFirstNote.get(language);
-    let secondary = Text::NewGroup.get(language);
-    let primary_width = button_width(ui, theme, primary);
-    let secondary_width = button_width(ui, theme, secondary);
-    let spacing = theme.spacing.small;
-    let fits_one_row = primary_width + spacing + secondary_width <= available[0];
-
-    // Primary action uses the accent (`lay-one-primary`).
-    let row_width = if fits_one_row {
-        primary_width + spacing + secondary_width
-    } else {
-        primary_width
+    let state = EmptyState {
+        icon: Some(Icon::FILE_TEXT),
+        title: Text::NoNotesYet.get(language),
+        hint: None,
+        buttons: Some(EmptyStateButtons {
+            primary: Text::CreateFirstNote.get(language),
+            secondary: Some(Text::NewGroup.get(language)),
+        }),
     };
-    indent_to_center(ui, row_width, available[0]);
-    if draw_primary_button(ui, theme, primary) {
-        actions.push(WindowAction::NewNote(None));
-    }
-    if fits_one_row {
-        ui.same_line_with_spacing(0.0, spacing);
-    } else {
-        indent_to_center(ui, secondary_width, available[0]);
-    }
-    if draw_button(ui, theme, secondary) {
-        actions.push(WindowAction::NewGroup(None));
+    match empty_state::draw_empty_state(ui, theme, &state) {
+        Some(EmptyStateAction::Primary) => actions.push(WindowAction::NewNote(None)),
+        Some(EmptyStateAction::Secondary) => actions.push(WindowAction::NewGroup(None)),
+        None => {}
     }
 }

@@ -9,6 +9,7 @@ use trailkit_ui::{
     fonts::FontRole,
     icons::Icon,
     separator::draw_separator,
+    text::{TextStyle, draw_icon, draw_text_wrapped},
     theme::Theme,
 };
 
@@ -26,27 +27,35 @@ impl MemoWindow {
         let Some(problem) = &self.problem else {
             return;
         };
-        {
-            let _icons = FontScope::push(ui, FontRole::Icons);
-            let mut buffer = [0; 4];
-            ui.text_colored(
-                theme.status.warning.to_array(),
-                Icon::TRIANGLE_ALERT.as_str(&mut buffer),
-            );
-        }
+        draw_icon(ui, Icon::TRIANGLE_ALERT, theme.status.warning);
         ui.same_line();
         let offers_folder = match problem {
             NotesProblem::Recovered(path) => {
-                ui.text_wrapped(Text::NotesRecovered.get(language));
-                ui.text_wrapped(path);
+                draw_text_wrapped(
+                    ui,
+                    theme,
+                    TextStyle::Body,
+                    Text::NotesRecovered.get(language),
+                );
+                draw_text_wrapped(ui, theme, TextStyle::Body, path);
                 true
             }
             NotesProblem::NewerVersion => {
-                ui.text_wrapped(Text::NotesNewerVersion.get(language));
+                draw_text_wrapped(
+                    ui,
+                    theme,
+                    TextStyle::Body,
+                    Text::NotesNewerVersion.get(language),
+                );
                 false
             }
             NotesProblem::Inaccessible => {
-                ui.text_wrapped(Text::NotesInaccessible.get(language));
+                draw_text_wrapped(
+                    ui,
+                    theme,
+                    TextStyle::Body,
+                    Text::NotesInaccessible.get(language),
+                );
                 true
             }
         };
@@ -176,15 +185,14 @@ pub(super) fn draw_dialog_card(
     let left = min[0] + padding;
     ui.set_cursor_screen_pos([left, min[1] + padding]);
     {
-        let _heading = FontScope::push(ui, FontRole::Heading3);
         let _wrap = ui.push_text_wrap_pos_with_pos(left - window_position[0] + content_width);
-        ui.text_wrapped(content.title);
+        draw_text_wrapped(ui, theme, TextStyle::Heading3, content.title);
     }
     {
         // Every new line starts at the window padding; move into the card.
         ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
         let _wrap = ui.push_text_wrap_pos_with_pos(left - window_position[0] + content_width);
-        ui.text_wrapped(content.question);
+        draw_text_wrapped(ui, theme, TextStyle::Body, content.question);
     }
     if let Some(status) = content.status {
         draw_dialog_status(ui, theme, status, left);
@@ -211,15 +219,11 @@ pub(super) fn draw_dialog_card(
 /// Draws the `danger` status line of a dialog card at `left` (screen x):
 /// `circle-alert` and `status` (M180, Q157).
 fn draw_dialog_status(ui: &Ui, theme: &Theme, status: &str, left: f32) {
-    let color = theme.status.danger.to_array();
     ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
-    {
-        let _icons = FontScope::push(ui, FontRole::Icons);
-        let mut buffer = [0; 4];
-        ui.text_colored(color, Icon::CIRCLE_ALERT.as_str(&mut buffer));
-    }
+    draw_icon(ui, Icon::CIRCLE_ALERT, theme.status.danger);
     ui.same_line_with_spacing(0.0, theme.spacing.extra_small * 1.5);
-    ui.text_colored(color, status);
+    // The status text keeps its code until `draw_status_line` (Q277).
+    ui.text_colored(theme.status.danger.to_array(), status);
 }
 
 /// The width of the buttons at the right end of a dialog card.
