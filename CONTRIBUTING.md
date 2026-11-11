@@ -34,6 +34,12 @@ links (naming table, design tokens, skills) and are not repeated here.
   sign-off is needed.
 - **Security problems** are never reported in a public issue: see
   [`SECURITY.md`](SECURITY.md).
+- **Problem reports** use the issue form "Report a problem" (blank issues are
+  off, R95). Players attach only the exported `trailkit-logs-<yyyymmdd>.txt`.
+  Attachments are never run: open them only in a text editor, and do not
+  open ZIP files or programs. A log is the player's data; quote only the
+  lines a finding needs. What the addons send and store is described in
+  [`PRIVACY.md`](PRIVACY.md).
 
 ## 2. Setup
 

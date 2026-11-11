@@ -38,7 +38,8 @@ Every project has its own README with purpose, build, usage and its rules.
 | | [`.changeset`](.changeset/README.md) | Versioning and changelogs with Changesets |
 
 Rules for contributors: [`CONTRIBUTING.md`](CONTRIBUTING.md). Security reports:
-[`SECURITY.md`](SECURITY.md). Coding agents: [`AGENTS.md`](AGENTS.md).
+[`SECURITY.md`](SECURITY.md). Privacy: [`PRIVACY.md`](PRIVACY.md)
+([Deutsch](PRIVACY.de.md)). Coding agents: [`AGENTS.md`](AGENTS.md).
 
 ## I want to …
 
