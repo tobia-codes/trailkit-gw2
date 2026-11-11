@@ -78,6 +78,10 @@ Shared rules for Codex and Claude Code. `CLAUDE.md` imports this file;
    comply: minimize personal data (IPs count), prefer EU providers with
    DPA/AVV, no tracking or
    analytics without consent, and flag privacy impact to the user.
+   `PRIVACY.md`/`PRIVACY.de.md` stay current (R99): any change to what data
+   leaves the PC, where or to whom (endpoint, server, provider, log field,
+   report form, backend) updates both in the same change; review before
+   every release.
 
 Never bypass a hook, refusal or sandbox through another command/flag; use
 supported tool approvals and report blocks. Conventional Commits, never

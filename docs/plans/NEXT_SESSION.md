@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-11 (session 28). Current state and
+Last updated: 2026-11-11 (session 29). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -11,16 +11,16 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## ▶ Resume here
 
-**Session 28 (2026-11-11):** R96 shared text styles and components are done on `chore/shared-ui-components`:
-`trailkit-ui` `text` (`TextStyle`, `draw_text`, `draw_text_wrapped`, `draw_truncated_text`, `draw_icon`), `empty_state`,
-`StyleScope::transparent_frame`, `font.size.*` factors, `FontRole::Small`; memo and markdown view converted (Q275–Q286).
-PR #109 into `develop` is pushed with auto-merge armed (user OK). **First step next session:** if #109 is not merged,
-it waits for the snapshots: take them from the CI artifact `snapshot-updates` (R97) or `cargo xtask ui-test --update`
-on the user's PC, review only the changed images (Q280 trash preview titles, Q283 b empty states, Q282 header tooltip;
-everything else must stay identical, R82), commit them on the branch, push; then deploy and a short in-game check. After the merge delete
-the branch. Q286 (tooltip looks like a button, 2–3 variants for all addons) stays a later design round.
+**Session 29 (2026-11-11):** PR #109 (R96 shared text styles and components) is merged into `develop`; its snapshots
+came from the CI artifact (R97) and changed only Q280/Q283 b. New decision R98/B25: in-game problem reports through
+the backend, switched by a backend feature flag, with the R95 GitHub form as fallback; open points Q288–Q293 in
+`backend.md`. This handoff and the decision sit as the first commit on `chore/privacy-and-issue-form`.
+Q286 (tooltip looks like a button, 2–3 variants for all addons) stays a later design round.
 
-**Next (once #109 is merged): start `chore/privacy-and-issue-form` from freshly fetched `origin/develop`.**
+**Next: `chore/privacy-and-issue-form` is done locally** (R98, R99, `PRIVACY.md`/`.de.md`, issue form, CONTRIBUTING,
+`trailkit-logs` skill). Not pushed: it waits for the user's merge OK (a bundle is in the project files under
+`handoff/privacy-session-29/` if the branch is missing). After the merge, start `feature/help-problem-page`.
+Before the first release: confirm GitHub's DPF listing on `dataprivacyframework.gov` (R99 check).
 
 **Queue, in this order (R95, R96, Q274):**
 1. **`chore/privacy-and-issue-form`:** `PRIVACY.md` + `PRIVACY.de.md`, issue form, `CONTRIBUTING.md` (attachments),
@@ -28,9 +28,9 @@ the branch. Q286 (tooltip looks like a button, 2–3 variants for all addons) st
 2. **`feature/help-problem-page`** (an empty local branch exists; restart it from `origin/develop`): help window,
    `draw_list_row`, `draw_status_line`, Small, export, `?`, help rewrite (M181). Icons possibly missing from
    `icons.rs`: circle-help, download, external-link, circle-check, circle-alert, info (`cargo xtask subset-fonts`).
-3. Then B23/B24: tech-stack grilling, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
+3. Then B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
 
-Next ids: **M182+, R98+, B25+, questions from 287.** Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M182+, R100+, B26+, questions from 294.** Deferred: GW2 build/Nexus version in `session_start` (C12).
 
 - **Housekeeping (Q211/Q240):** the user deletes the approved old local branches by hand (`contributor-docs`,
   `xtask-token-split-and-docs`, `handoff-session-20`, `addon-status-design`, `addon-status-lock-design`, all `chore/`).

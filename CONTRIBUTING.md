@@ -34,6 +34,12 @@ links (naming table, design tokens, skills) and are not repeated here.
   sign-off is needed.
 - **Security problems** are never reported in a public issue: see
   [`SECURITY.md`](SECURITY.md).
+- **Problem reports** use the issue form "Report a problem" (blank issues are
+  off, R95). Players attach only the exported `trailkit-logs-<yyyymmdd>.txt`.
+  Attachments are never run: open them only in a text editor, and do not
+  open ZIP files or programs. A log is the player's data; quote only the
+  lines a finding needs. What the addons send and store is described in
+  [`PRIVACY.md`](PRIVACY.md).
 
 ## 2. Setup
 
@@ -203,6 +209,11 @@ The GDPR applies to every part of the project (rule 10).
   sent anywhere except where the user asked.
 - Any new service, provider or website needs a privacy review: minimal data
   (IP addresses count), EU providers preferred, and the maintainer decides.
+- **The privacy texts stay current** (`PRIVACY.md`, `PRIVACY.de.md`, R99).
+  A change to what data leaves the player's PC, where it goes or who receives
+  it (a new endpoint, server, provider, log field, report form, the backend)
+  updates both texts in the same pull request. Before every release they are
+  checked against the real data flows.
 
 ## 8. Tests and checks
 

@@ -24,8 +24,8 @@ abbreviations are allowed (`id`, `url`, `api`, `http`, `json`, `ui`, `dll`,
 | Rust source files | `snake_case.rs`; module dirs as `foo.rs` + `foo/` (no `mod.rs`, lint `clippy::mod_module_files`) | `src/note_tree.rs` |
 | Crates, packages, addon directories | `kebab-case`, prefix `trailkit-` | `trailkit-memo`, `trailkit-ui` |
 | All other directories and files (Rust module directories below `src/` are `snake_case` like their module) | `kebab-case`, lowercase extensions | `data-pipeline.md`, `plan-template.md` |
-| Fixed upper-case meta files | only these: `README.md`, `AGENTS.md`, `CLAUDE.md`, `LICENSE`, `CHANGELOG.md`, `CONTRIBUTING.md`, `PRIVACY.md`, `SECURITY.md`, `ROADMAP.md`, `BACKLOG.md`, `NEXT_SESSION.md`, `SKILL.md` | |
-| Tool-mandated files | as the tool requires | `Cargo.toml`, `package.json` |
+| Fixed upper-case meta files | only these: `README.md`, `AGENTS.md`, `CLAUDE.md`, `LICENSE`, `CHANGELOG.md`, `CONTRIBUTING.md`, `PRIVACY.md`, `PRIVACY.de.md`, `SECURITY.md`, `ROADMAP.md`, `BACKLOG.md`, `NEXT_SESSION.md`, `SKILL.md` | |
+| Tool-mandated files and directories | as the tool requires | `Cargo.toml`, `package.json`, `.github/ISSUE_TEMPLATE/` |
 | Data identifiers (ids, slugs, JSON/TOML keys, settings) | `snake_case`; files named after a data id keep it | `world_bosses`, `schema_version`, `world_bosses.toml` |
 | Nexus runtime identifiers (global namespace shared with all addons) | `trailkit.<addon>.<kind>.<name>`, `snake_case` segments, `<kind>` ∈ `keybind`, `texture`, `shortcut`, `event`, `datalink`, `localization`, `font`; cross-addon: `trailkit.shared.…`; always typed constants, never inline | `trailkit.memo.keybind.toggle`, `trailkit.core.event.data_updated` |
 | TypeScript/React (later) | files `kebab-case` (also components); components/types `PascalCase`, hooks `useXyz`, else `camelCase` | `note-tree.tsx` → `NoteTree` |
@@ -90,6 +90,10 @@ repeat a completed check during the same session without new evidence.
   is annulled or suspended, tell the user immediately and plan the switch
   to an EU host (data-pipeline D11). Core's planned GitHub Pages downloads
   rely on the framework; do not treat an old handoff entry as a current check.
+- **Privacy texts (R99):** before every release, and whenever a change touches
+  network requests, hosting, providers, logs, reports or the backend, compare
+  `PRIVACY.md`/`PRIVACY.de.md` with the real data flows and update both in the
+  same change. Before a release also confirm each US provider's DPF listing.
 - **Scheduled jobs:** follow due reminders and archive checks in
   `NEXT_SESSION.md`. Report an unverified or blocked check explicitly.
 

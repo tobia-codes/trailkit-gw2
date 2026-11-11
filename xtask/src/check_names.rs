@@ -10,7 +10,8 @@
 //! - files below `data/`: `snake_case` or `kebab-case` (files named after a
 //!   data id keep the id's `snake_case`);
 //! - well-known meta files and tool-mandated files: exact names from
-//!   [`FIXED_FILE_NAMES`];
+//!   [`FIXED_FILE_NAMES`]; tool-mandated directories: exact paths from
+//!   [`FIXED_DIRECTORY_PATHS`];
 //! - everything else: `kebab-case` stem with lowercase extensions.
 //!
 //! Vendored third-party content keeps its upstream names ([`VENDORED_PREFIXES`]).
@@ -29,6 +30,7 @@ const FIXED_FILE_NAMES: &[&str] = &[
     "CONTRIBUTING.md",
     "LICENSE",
     "NEXT_SESSION.md",
+    "PRIVACY.de.md",
     "PRIVACY.md",
     "README.md",
     "ROADMAP.md",
@@ -37,6 +39,10 @@ const FIXED_FILE_NAMES: &[&str] = &[
     "Cargo.lock",
     "Cargo.toml",
 ];
+
+/// Directory paths whose names a tool mandates (GitHub reads issue forms only
+/// from `.github/ISSUE_TEMPLATE/`, R95).
+const FIXED_DIRECTORY_PATHS: &[&str] = &[".github/ISSUE_TEMPLATE"];
 
 /// Path prefixes of vendored third-party content that keeps upstream names.
 const VENDORED_PREFIXES: &[&str] = &[
@@ -80,6 +86,9 @@ fn check_path(path: &str) -> Option<String> {
     for (index, directory) in directories.iter().enumerate() {
         let in_rust_sources = directories[..index].contains(&"src");
         if in_rust_sources && is_snake_case(directory) {
+            continue;
+        }
+        if FIXED_DIRECTORY_PATHS.contains(&directories[..=index].join("/").as_str()) {
             continue;
         }
         if !is_kebab_case(directory.strip_prefix('.').unwrap_or(directory)) {
@@ -156,6 +165,8 @@ mod tests {
             "addons/trailkit-memo/src/main_window/note_list.rs",
             "docs/plans/data-pipeline.md",
             ".github/workflows/ci.yml",
+            ".github/ISSUE_TEMPLATE/report-a-problem.yml",
+            "PRIVACY.de.md",
             ".node-version",
             "pnpm-lock.yaml",
             "data/events/world_bosses.toml",
@@ -177,6 +188,8 @@ mod tests {
             "docs/my_plans/roadmap.md",
             "addons/trailkit-memo/src/MainWindow/note_list.rs",
             "assets/icon.PNG",
+            "docs/ISSUE_TEMPLATE/notes.md",
+            "docs/README.de.md",
         ] {
             assert!(check_path(path).is_some(), "{path}");
         }

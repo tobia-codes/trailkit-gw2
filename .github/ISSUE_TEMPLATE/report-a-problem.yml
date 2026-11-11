@@ -1,0 +1,67 @@
+# Public problem report form (R95, Q249, Q254, Q255). The addon's help opens it
+# with `?template=report-a-problem.yml&addon=<addon>&version=<version>`.
+name: Report a problem
+description: Something in a trailkit addon does not work as expected.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Issues are public.** Everyone can read what you write here. Do not include notes, API keys, account or character names, or other private data.
+
+        Issues sind öffentlich. Bitte keine Notizen, API-Keys, Account- oder Charakternamen oder andere private Daten eintragen. Deutsch ist willkommen.
+  - type: dropdown
+    id: addon
+    attributes:
+      label: Addon
+      description: Filled in when you open this form from the addon's help. / Wird ausgefüllt, wenn du das Formular aus der Hilfe des Addons öffnest.
+      options:
+        - trailkit-memo
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Addon version
+      description: Shown in the help window and in the Nexus addon list. / Steht im Hilfefenster und in der Nexus-Addonliste.
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe what you saw, including any message the addon showed. / Beschreibe, was passiert ist, auch Meldungen des Addons.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      description: Was hättest du erwartet?
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Schritte, um das Problem nachzustellen.
+      placeholder: |
+        1. Open …
+        2. Click …
+        3. …
+  - type: textarea
+    id: log
+    attributes:
+      label: Log file
+      description: |
+        In the addon, open Help → Report a problem → Export log. Attach only that `.txt` file. No ZIP files or programs.
+        Im Addon: Hilfe → Problem melden → Log exportieren. Bitte nur diese `.txt`-Datei anhängen, keine ZIP-Dateien oder Programme.
+      placeholder: Drag the exported trailkit-logs-<date>.txt here.
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Before you submit
+      options:
+        - label: I attached the exported log, or the addon did not create one. / Ich habe das exportierte Log angehängt, oder das Addon hat keins erstellt.
+          required: false
+        - label: My report contains no private data. / Mein Bericht enthält keine privaten Daten.
+          required: true
