@@ -51,6 +51,12 @@ for new addons: [`references/addon-structure.md`](references/addon-structure.md)
   the first `.dll` asset of the highest version — unusable in our monorepo.
   `Raidcore` is unimplemented. `Direct` compares the MD5 at `<update_link>.md5`
   (fallback `.md5sum`) with the local DLL. **We use `Direct`** (ROADMAP R49).
+- Update timing (verified in Nexus source v2026.11.8.830): Nexus checks for an
+  update only when it loads an addon (game start or manual load), never
+  periodically; when one is found it hot-reloads the addon without a game
+  restart, unless the addon lacks `unload`, sets `DisableHotloading` or
+  `OnlyLoadDuringGameLaunchSequence`. (Nexus `main` is an unreleased rewrite
+  that checks hourly but only swaps the file; recheck on its release.)
 - Hot reload: Nexus can unload/reload an addon at runtime. `unload` **must**
   stop and join every thread, deregister every callback/keybind/event and drop
   every DataLink pointer — otherwise the game crashes after unload.
