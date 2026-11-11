@@ -53,6 +53,7 @@ use trailkit_storage::{
 use trailkit_ui::{
     font_registry::{follow_body_size, font_size_of, register_fonts},
     style_scope::StyleScope,
+    text::{TextStyle, draw_text, draw_text_wrapped},
     theme::{ThemeKind, Typography},
     title_bar::{TitleBarState, draw_window},
 };
@@ -378,8 +379,15 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
         &mut title_bar,
         &mut open,
         || match &mut *notes {
-            NotesState::Loading { .. } => ui.text(Text::Loading.get(language)),
-            NotesState::Unavailable => ui.text_wrapped(Text::NotesInaccessible.get(language)),
+            NotesState::Loading { .. } => {
+                draw_text(ui, &theme, TextStyle::Body, Text::Loading.get(language));
+            }
+            NotesState::Unavailable => draw_text_wrapped(
+                ui,
+                &theme,
+                TextStyle::Body,
+                Text::NotesInaccessible.get(language),
+            ),
             NotesState::Ready(window) => {
                 if SEARCH_ESCAPED.swap(false, Ordering::Relaxed) {
                     window.clear_search_by_escape();

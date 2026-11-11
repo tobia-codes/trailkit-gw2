@@ -25,9 +25,8 @@ the trash header tooltip approved (Q282). Open later (Q286): tooltip looks like 
 **Session 28 (2026-11-11, cloud):** implemented on the branch (3 commits): `trailkit-ui` `text` module (`TextStyle`,
 `draw_text`, `draw_text_wrapped`, `draw_truncated_text`, `draw_icon`), `empty_state::draw_empty_state`,
 `StyleScope::transparent_frame`; memo sites and markdown view converted. Kept on purpose: base `FontRole::Body` pushes,
-draw-list icons placed by ink (window menu, search field), rows (Q282), status texts (Q277). Open: `addon.rs` "Loading"/
-"notes inaccessible" texts are drawn in the window's default font, not the shared Body; converting them changes pixels
-(needs R87). Host fmt/clippy/tests and Windows type-check pass; the Windows SDK was unreachable in the cloud, so real
+draw-list icons placed by ink (window menu, search field), rows (Q282), status texts (Q277). `addon.rs` "Loading"/
+"notes inaccessible" now use Body too (user OK 2026-11-11; was the window's default font, in-game check only). Host fmt/clippy/tests and Windows type-check pass; the Windows SDK was unreachable in the cloud, so real
 `cargo xwin clippy`, `cargo xtask ui-test` (regenerate + review the Q280/Q283/Q282 snapshots, everything else identical),
 deploy and in-game test are still due on the user's PC.
 
