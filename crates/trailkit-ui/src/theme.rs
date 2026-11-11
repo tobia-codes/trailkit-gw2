@@ -72,7 +72,7 @@ pub struct Theme {
     pub menu: MenuMetrics,
     /// Corner radii (`radius.*`, R71).
     pub radius: Radii,
-    /// Font sizes (`font.size.*`).
+    /// Font sizes and line height (`font.*`).
     pub typography: Typography,
 }
 
@@ -329,15 +329,19 @@ impl MenuMetrics {
     }
 }
 
-/// Font sizes in pixels.
+/// Font sizes as factors of the Nexus body size (R96), and the line height.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Typography {
-    /// `font.size.small`.
+    /// `font.size.small`: small text.
     pub small: f32,
-    /// `font.size.body`.
+    /// `font.size.body`: body text.
     pub body: f32,
-    /// `font.size.heading`.
-    pub heading: f32,
+    /// `font.size.heading3`: level 3 heading and below.
+    pub heading3: f32,
+    /// `font.size.heading2`: level 2 heading.
+    pub heading2: f32,
+    /// `font.size.heading1`: level 1 heading.
+    pub heading1: f32,
     /// `font.line_height`: line height of running text (notes, editor) as a
     /// multiple of the font size; roomy enough for chat-link chips (M77).
     pub line_height: f32,
@@ -402,9 +406,11 @@ const MENU_METRICS: MenuMetrics = MenuMetrics {
 
 /// Font sizes shared by both built-in themes.
 const TYPOGRAPHY: Typography = Typography {
-    small: 12.0,
-    body: 14.0,
-    heading: 18.0,
+    small: 0.85,
+    body: 1.0,
+    heading3: 1.15,
+    heading2: 1.3,
+    heading1: 1.5,
     line_height: 1.5,
 };
 

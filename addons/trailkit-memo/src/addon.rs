@@ -53,7 +53,7 @@ use trailkit_storage::{
 use trailkit_ui::{
     font_registry::{follow_body_size, font_size_of, register_fonts},
     style_scope::StyleScope,
-    theme::ThemeKind,
+    theme::{ThemeKind, Typography},
     title_bar::{TitleBarState, draw_window},
 };
 
@@ -246,7 +246,11 @@ fn load() {
     });
     register_keybind_with_string(KEYBIND_TOGGLE, on_toggle, UNBOUND).revert_on_unload();
     register_wnd_proc(catch_window_keys).revert_on_unload();
-    register_fonts(GLYPHS_KEY, &crate::all_texts());
+    register_fonts(
+        GLYPHS_KEY,
+        &crate::all_texts(),
+        &ThemeKind::default().theme().typography,
+    );
 
     NEXUS_LINK.store(get_nexus_link().cast_mut(), Ordering::Release);
 
@@ -345,14 +349,14 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
         NotesState::Ready(window) => window.text_scale(),
         NotesState::Loading { .. } | NotesState::Unavailable => settings().text_scale,
     };
-    follow_nexus_font_size(text_scale);
+    // Theme selection comes with the settings window (step 8); until then the default theme.
+    let theme = ThemeKind::default().theme();
+    follow_nexus_font_size(text_scale, &theme.typography);
     let language = Language::from_u8(LANGUAGE.load(Ordering::Relaxed));
     let title = WINDOW_TITLE
         .get()
         .map_or("###trailkit-memo", String::as_str);
 
-    // Theme selection comes with the settings window (step 8); until then the default theme.
-    let theme = ThemeKind::default().theme();
     let _theme = StyleScope::push(ui, &theme);
     let mut open = true;
     let mut title_bar = TITLE_BAR
@@ -473,8 +477,9 @@ fn apply_close_request(notes: &mut NotesState, open: bool) {
 }
 
 /// Resizes the shared fonts when Nexus' `FontUI` size or the memo text
-/// scale changes (M35, M79): body size = `FontUI` size × `text_scale`.
-fn follow_nexus_font_size(text_scale: TextScale) {
+/// scale changes (M35, M79): body size = `FontUI` size × `text_scale`, the
+/// other sizes are `typography`'s factors of it (R96).
+fn follow_nexus_font_size(text_scale: TextScale, typography: &Typography) {
     let link = NEXUS_LINK.load(Ordering::Acquire);
     if link.is_null() {
         return;
@@ -484,6 +489,6 @@ fn follow_nexus_font_size(text_scale: TextScale) {
     // of the current atlas; `font_size_of` only reads its size.
     let size = unsafe { font_size_of(std::ptr::addr_of!((*link).font_ui).read_volatile()) };
     if let Some(size) = size {
-        follow_body_size(size * text_scale.factor());
+        follow_body_size(size * text_scale.factor(), typography);
     }
 }
