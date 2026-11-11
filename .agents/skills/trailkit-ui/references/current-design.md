@@ -100,7 +100,9 @@ Names follow `memo-state-<state>-<dark|light>.png` and
 "Trailkit" (R71): ink-tinted dark and parchment-warm light surfaces, with Open Sans
 and Lucide icons. Brass `#E2A740` is rare and only marks the primary action, focus,
 selection and search hits. Toggles are neutral (R79), nothing is square (R81), and
-there are no shadows or highlight edges.
+there are no shadows or highlight edges. Text follows fixed roles: headings and
+content in primary, info and hints in secondary, never greyed out to show a state
+([`tokens.md` §7.1](tokens.md#71-text-roles-r96-q284)).
 
 ## What the snapshots cannot show
 

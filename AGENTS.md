@@ -67,7 +67,8 @@ Shared rules for Codex and Claude Code. `CLAUDE.md` imports this file;
    `addons/<name>/help/{en,de}.md` in the same change.
 7. **Share on real reuse.** Search the workspace before adding a helper/type.
    Extract at the second real use, replacing all copies in the same change,
-   never speculatively. Shared UI comes from `crates/trailkit-ui`.
+   never speculatively. Shared UI comes from `crates/trailkit-ui`; addon text
+   uses the `TextStyle` roles of `tokens.md` §7.1, never hand-pushed styles.
 8. **Type everything.** Prefer typed/newtype IDs, enums, serde structs and
    checked `sqlx::query!`; untyped JSON belongs only at boundaries.
    Make invalid states unrepresentable.

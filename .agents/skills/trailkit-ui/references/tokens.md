@@ -30,9 +30,8 @@ and `theme.rs` disagree, `theme.rs` wins and the difference is a bug to report.
 | Hovered row inside a popup | `bg.popup_hover` via `menu::draw_popup` | `bg.hover`, invisible on `bg.popup` |
 | Selected or pressed list row | `bg.active` + selection bar | a brass fill |
 | Pressed regular button, dropdown, menu row | `bg.pressed` | the same color as its hover |
-| Body text, headings | `text.primary` | |
-| Counts, ids, hints, placeholders | `text.secondary` | `text.disabled` for readable text |
-| Bullets, chevrons, disabled controls | `text.disabled` | |
+| Any text: headings, body, info, fine print | its text role (§7.1) via `TextStyle` | font or color pushed by hand |
+| Structure marks (bullets, tree chevrons, empty-state icon), disabled controls | `text.disabled` | `text.disabled` for readable text |
 | Primary button fill, selection bar | `accent` | `accent` as text or a thin line |
 | Brass text, icon or line (active toggle, check mark, drop line, focus) | `accent.text` | `accent` |
 | Text on a brass fill | `text.on_accent` | any other text color |
@@ -133,6 +132,45 @@ Open Sans in Regular, Bold, Italic and Bold Italic (`fonts`, subset by
 `cargo xtask subset-fonts`, memo M62). Inter was tried for R71 and dropped
 (larger DLL, wider, less soft). Use only characters the subset covers; a
 test fails otherwise.
+
+### 7.1 Text roles (R96, Q284)
+
+Every addon draws text in exactly one of these roles, through
+`trailkit_ui`'s `TextStyle`; never push a font or text color by hand. The
+role follows what the text *is*, so the same kind of text looks the same in
+every addon.
+
+| Role | Examples | Style |
+| --- | --- | --- |
+| Object or page title | note title, group title in the trash preview | `Heading1` (`text.primary`) |
+| Section | settings or help sections | `Heading2` (`text.primary`) |
+| Subsection, dialog title | "Delete permanently?" | `Heading3` (`text.primary`) |
+| Content, labels, empty-state title | note body, "No notes yet" | `Body` (`text.primary`) |
+| Emphasis | group name in a list | `BodyStrong` (`text.primary`) |
+| Info and metadata | info line ("deleted today · 30 days left"), counts, hints, placeholders ("Select an entry to view it.") | `Secondary` (`text.secondary`) |
+| Fine print | export lines, footnotes, keyboard shortcuts | `Small` (`text.secondary`) |
+| Structure marks (no meaning, not clickable) | list bullets, tree chevrons, empty-state icon | `text.disabled`; never readable text |
+| Status | draft warning, save failure, "5 days left" | status color + icon (`draw_status_line`) |
+
+Rules:
+
+1. **State is never shown by greying out.** Read-only, trashed or inactive
+   content keeps its role; an info line, badge or the available buttons say
+   the state (Q280). `text.disabled` is only for structure marks and
+   controls that really cannot be used (`ButtonState::Disabled`).
+2. **Icons take the color of their role.** An icon next to text uses that
+   text's color (menu item, labelled button); icon buttons follow §2/§3
+   (`text.secondary` at rest, `text.primary` hovered or on); meaningful icons
+   use their meaning's color (status, chip category, `accent.text` for check
+   marks and active states). Only structure marks are `text.disabled`.
+3. **One empty state (Q283).** `draw_empty_state`: optional icon in
+   `text.disabled`, title in `Body`, optional hint in `Secondary`, optional
+   buttons with one primary, centered as one block.
+4. **Spacing.** Wrapped lines of one text sit at the font's line height;
+   only separate blocks (title, hint, buttons) are apart by the item
+   spacing.
+5. **No local styles.** A text that fits no role gets a new role here first
+   (grilling plus a visual proposal, R87), never a one-off font or color.
 
 ## 8. Changing or adding a token
 

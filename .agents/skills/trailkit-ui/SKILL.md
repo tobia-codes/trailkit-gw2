@@ -123,7 +123,8 @@ Build once, use everywhere. Planned:
 - Markdown renderer (read-only view) — **exists**: `markdown` (parser,
   any platform) + `markdown_view` (ImGui)
 - Shared fonts (Open Sans regular/bold/italic/bold italic, headings; M62) and
-  Lucide icons — **exist**: `fonts`, `font_registry` (`FontScope`), `icons`
+  Lucide icons — **exist**: `fonts`, `font_registry` (`FontScope`), `icons`;
+  addon text uses the `TextStyle` roles of `references/tokens.md` §7.1 (R96)
 - Chat-link chip — **exists**: `chat_link` (find/decode `[&…]`, any
   platform) + `chat_link_chip` (pill in its category color: icon and kind in
   `chip.<category>.text`, id in `text.secondary`; coins as amounts with coin

@@ -167,6 +167,12 @@ before changing anything visible.
   the theme (`theme.spacing.small`, `theme.colors…`). A new token is a
   decision; how to add one: [`tokens.md`](.agents/skills/trailkit-ui/references/tokens.md),
   then `cargo xtask tokens`. Generated token values are never edited by hand.
+- **Text has roles (R96).** Every text is a title, section, body, info,
+  fine print or status text and is drawn through `TextStyle` in exactly that
+  role: headings and content in `text.primary`, info and hints in
+  `text.secondary`, never greyed out to show a state. The table and the icon
+  and empty-state rules are in
+  [`tokens.md` §7.1](.agents/skills/trailkit-ui/references/tokens.md#71-text-roles-r96-q284).
 - **Every state has a snapshot (R82).** Each element gets a snapshot of every
   state it can be in (hover, pressed, empty, error, minimum width, German …),
   in Dark and Light, in the same change. `cargo xtask ui-test --update` writes
