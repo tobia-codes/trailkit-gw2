@@ -17,9 +17,10 @@ the backend, switched by a backend feature flag, with the R95 GitHub form as fal
 `backend.md`. This handoff and the decision sit as the first commit on `chore/privacy-and-issue-form`.
 Q286 (tooltip looks like a button, 2–3 variants for all addons) stays a later design round.
 
-**Next: continue `chore/privacy-and-issue-form`** (started from `origin/develop` after #109; not pushed yet, a bundle
-is in the project files under `handoff/privacy-session-29/` if the branch is missing). `PRIVACY.md` names the in-game
-report only as planned (B25).
+**Next: `chore/privacy-and-issue-form` is done locally** (R98, R99, `PRIVACY.md`/`.de.md`, issue form, CONTRIBUTING,
+`trailkit-logs` skill). Not pushed: it waits for the user's merge OK (a bundle is in the project files under
+`handoff/privacy-session-29/` if the branch is missing). After the merge, start `feature/help-problem-page`.
+Before the first release: confirm GitHub's DPF listing on `dataprivacyframework.gov` (R99 check).
 
 **Queue, in this order (R95, R96, Q274):**
 1. **`chore/privacy-and-issue-form`:** `PRIVACY.md` + `PRIVACY.de.md`, issue form, `CONTRIBUTING.md` (attachments),
