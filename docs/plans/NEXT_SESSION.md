@@ -11,15 +11,21 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## ▶ Resume here
 
-**Session 24 (2026-11-11) — B23 grilling finished, recorded as B24 (`backend.md`) and R94 (`ROADMAP.md`)** on
-branch `chore/addon-status-lock-design` (not pushed; needs the user's merge OK). PR #104 (B23) is merged. Lock
-mockups approved (R87): https://claude.ai/artifact/GrHi26PB5b7ggo5fKKtsAx. Nexus update timing checked in source
-and added to the nexus-addon-dev skill.
+**Session 24 (2026-11-11) — B23 grilling finished, recorded as B24 (`backend.md`) and R94 (`ROADMAP.md`).**
+PR #104 (B23) is merged. PR #105 (B24/R94, docs only, branch `chore/addon-status-lock-design`) was opened with the
+user's merge OK and auto-merge armed; check `gh pr view 105` first and, if it is merged, start new work from
+freshly fetched `origin/develop`. Lock mockups approved (R87): https://claude.ai/artifact/GrHi26PB5b7ggo5fKKtsAx.
+Nexus update timing (checks only on load, then hot reload) is in the nexus-addon-dev skill. Everything about the
+lock design is settled; no open question remains.
 
-**Next (R94):** R89 first — help `?`, export, problem page; `PRIVACY.md` incl. `api.trailkit.de` and the Nexus
-update check (R52, Q170). Before the B23/B24 server work: a grilling round on the backend tech stack (the
-proposed `tokio` + `axum` + `sqlx` stack in `backend.md` is not grilled) and on where shared lock texts live
-(`trailkit-i18n`, first real reuse).
+**Next (R94):**
+1. **R89 first:** help `?`, export, problem page; `PRIVACY.md` incl. `api.trailkit.de` and the Nexus update
+   check (R52, Q170). Visible design needs a visual proposal and approval first (R87).
+2. **Before any B23/B24 server work:** a grilling round on the backend tech stack (the proposed `tokio` + `axum` +
+   `sqlx` stack in `backend.md` is not grilled: framework, DB access, migrations, deployment, monitoring, GDPR)
+   and on where shared lock texts live (`trailkit-i18n`, first real reuse; the memo-specific notes sentence stays
+   in the addon). The lock window needs the new icon `wrench` (`cargo xtask subset-fonts`).
+3. The addon status server stays local until the real release (Q223).
 
 Next ids: **M181+, R95+, B25+, questions from 242.** Still deferred: GW2 build and Nexus version in
 `session_start` (need MumbleLink → core, C12). If ever needed: limit repeated log events once core adds network paths.
