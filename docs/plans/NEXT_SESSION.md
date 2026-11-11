@@ -12,7 +12,7 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 ## ▶ Resume here
 
 **Session 26 (2026-11-11) — PR #106 (R95/R96/M181 docs) merged. Working on `chore/shared-ui-components`
-(unpushed, develop merged in).** Done there: commit `60e775b`, `font.size.*` are body-size factors in `Typography`,
+(pushed, not merged: needs the in-game test).** Done there: commit `60e775b`, `font.size.*` are body-size factors in `Typography`,
 `FontRole::Small` registered, `size_for(body, &Typography)`, tokens regenerated; host tests and all 76 snapshots
 pass pixel-identical. Q275–Q279 settled and recorded in R96 (scope: addon code + markdown view only).
 
