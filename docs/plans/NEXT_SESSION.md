@@ -11,26 +11,18 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## ▶ Resume here
 
-**Session 26 (2026-11-11). Branch: continue on the existing, pushed `chore/shared-ui-components`** (`git fetch &&
-git switch chore/shared-ui-components`, then merge `origin/develop`); never start a new branch from develop for this.
-Not merged: needs the in-game test. Done there: `font.size.*` are body-size factors in `Typography`, `FontRole::Small`
-registered, `size_for(body, &Typography)`, tokens regenerated; host tests and all 76 snapshots pixel-identical.
-Q275–Q279 settled and recorded in R96 (scope: addon code + markdown view only).
+**Session 28 (2026-11-11):** R96 shared text styles and components are done on `chore/shared-ui-components`:
+`trailkit-ui` `text` (`TextStyle`, `draw_text`, `draw_text_wrapped`, `draw_truncated_text`, `draw_icon`), `empty_state`,
+`StyleScope::transparent_frame`, `font.size.*` factors, `FontRole::Small`; memo and markdown view converted (Q275–Q286).
+PR #109 into `develop` is pushed with auto-merge armed (user OK). **First step next session:** if #109 is not merged,
+it waits for the snapshots: on the user's PC run `cargo xtask ui-test --update`, review only the changed images
+(Q280 trash preview titles, Q283 b empty states, Q282 header tooltip; everything else must stay identical, R82),
+commit them on the branch, push; then `cargo xwin clippy`, deploy and a short in-game check. After the merge delete
+the branch. Q286 (tooltip looks like a button, 2–3 variants for all addons) stays a later design round.
 
-**Session 27 (2026-11-11):** Q280–Q285 settled and recorded in R96. Two intended pixel changes on this branch:
-trash preview titles in primary (Q280) and one empty-state layout (Q283 b: memo list gains `file-text` icon, trash
-title primary, tight wrapped lines). Text roles for every addon: `tokens.md` §7.1 (Q284). Still needed: R87 mockup of
-the trash header tooltip approved (Q282). Open later (Q286): tooltip looks like a regular button; show 2–3 variants for all addons after this branch. Snapshots for the two changes must be regenerated and reviewed.
+**Next (once #109 is merged): start `chore/privacy-and-issue-form` from freshly fetched `origin/develop`.**
 
-**Session 28 (2026-11-11, cloud):** implemented on the branch (3 commits): `trailkit-ui` `text` module (`TextStyle`,
-`draw_text`, `draw_text_wrapped`, `draw_truncated_text`, `draw_icon`), `empty_state::draw_empty_state`,
-`StyleScope::transparent_frame`; memo sites and markdown view converted. Kept on purpose: base `FontRole::Body` pushes,
-draw-list icons placed by ink (window menu, search field), rows (Q282), status texts (Q277). `addon.rs` "Loading"/
-"notes inaccessible" now use Body too (user OK 2026-11-11; was the window's default font, in-game check only). Host fmt/clippy/tests and Windows type-check pass; the Windows SDK was unreachable in the cloud, so real
-`cargo xwin clippy`, `cargo xtask ui-test` (regenerate + review the Q280/Q283/Q282 snapshots, everything else identical),
-deploy and in-game test are still due on the user's PC.
-
-**Afterwards, in this order (R95, R96, Q274):**
+**Queue, in this order (R95, R96, Q274):**
 1. **`chore/privacy-and-issue-form`:** `PRIVACY.md` + `PRIVACY.de.md`, issue form, `CONTRIBUTING.md` (attachments),
    `trailkit-logs` skill (untrusted data, export format).
 2. **`feature/help-problem-page`** (an empty local branch exists; restart it from `origin/develop`): help window,
@@ -38,7 +30,7 @@ deploy and in-game test are still due on the user's PC.
    `icons.rs`: circle-help, download, external-link, circle-check, circle-alert, info (`cargo xtask subset-fonts`).
 3. Then B23/B24: tech-stack grilling, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
 
-Next ids: **M182+, R97+, B25+, questions from 284.** Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M182+, R97+, B25+, questions from 287.** Deferred: GW2 build/Nexus version in `session_start` (C12).
 
 - **Housekeeping (Q211/Q240):** the user deletes the approved old local branches by hand (`contributor-docs`,
   `xtask-token-split-and-docs`, `handoff-session-20`, `addon-status-design`, `addon-status-lock-design`, all `chore/`).
