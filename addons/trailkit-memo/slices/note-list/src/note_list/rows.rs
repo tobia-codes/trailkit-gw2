@@ -16,6 +16,7 @@ use trailkit_ui::{
     fonts::FontRole,
     glyph_metrics::{draw_glyph_at, glyph_ink_box, glyph_visible_ink},
     selection_bar::{draw_row_highlight, draw_selection_bar, hide_square_row_highlight},
+    style_scope::StyleScope,
     text_layout::{format_count, truncate_to_width},
     text_search::SearchQuery,
     theme::Theme,
@@ -348,12 +349,7 @@ fn draw_rename_input(
         padding_x,
         context.frame_padding[1],
     ]));
-    let transparent = [0.0; 4];
-    let _background = [
-        ui.push_style_color(StyleColor::FrameBg, transparent),
-        ui.push_style_color(StyleColor::FrameBgHovered, transparent),
-        ui.push_style_color(StyleColor::FrameBgActive, transparent),
-    ];
+    let _background = StyleScope::transparent_frame(ui);
     ui.set_cursor_screen_pos([title_x - padding_x, row_start[1]]);
     if !rename.focused {
         ui.set_keyboard_focus_here();

@@ -9,6 +9,7 @@ use trailkit_ui::tooltip::draw_tooltip_with;
 use trailkit_ui::{
     icons::Icon,
     menu::{begin_submenu, draw_menu_item},
+    text::{TextStyle, draw_text},
     theme::Theme,
 };
 
@@ -113,7 +114,7 @@ impl MemoWindow {
             let lines = reset_tooltip_lines(period, language, Timestamp::now());
             draw_tooltip_with(ui, || {
                 for line in &lines {
-                    ui.text(line);
+                    draw_text(ui, theme, TextStyle::Body, line);
                 }
             });
         };

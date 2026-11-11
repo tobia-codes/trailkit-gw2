@@ -1,10 +1,11 @@
 //! The empty search result (M126), drawn by the app instead of the note
 //! list when nothing matches (ROADMAP R76, question 49).
 
-use nexus::imgui::{StyleColor, Ui};
+use nexus::imgui::Ui;
 use trailkit_memo_shared::i18n::{Language, LocalizedText};
 use trailkit_ui::{
     button::{button_width, draw_button},
+    text::TextStyle,
     text_layout::{centered_text, indent_to_center},
     theme::Theme,
 };
@@ -20,7 +21,8 @@ pub fn draw_no_search_results(ui: &Ui, language: Language, theme: &Theme, text: 
         .get(language)
         .replace("{query}", text.trim());
     {
-        let _secondary = ui.push_style_color(StyleColor::Text, theme.text.secondary.to_array());
+        // Centering measures the text, so the style is pushed (Q281).
+        let _secondary = TextStyle::Secondary.push(ui, theme);
         centered_text(ui, &message, width);
     }
     ui.dummy([0.0, theme.spacing.small]);

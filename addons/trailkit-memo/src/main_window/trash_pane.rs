@@ -3,11 +3,12 @@
 //! read-only preview in the note pane and the toast at the bottom.
 
 use jiff::Timestamp;
-use nexus::imgui::{ChildWindow, StyleColor, Ui};
+use nexus::imgui::{ChildWindow, Ui};
 use trailkit_ui::{
     button::ButtonState,
     markdown_view::{MarkdownAction, open_web_link},
     separator::draw_separator,
+    text::{TextStyle, draw_text_wrapped},
     theme::Theme,
     toast::{ToastAction, draw_toast},
 };
@@ -54,7 +55,7 @@ impl MemoWindow {
     }
 
     /// Draws the selected trash entry read-only in the note pane (M145):
-    /// toolbar with "Delete permanently" and "Restore", muted title, info
+    /// toolbar with "Delete permanently" and "Restore", title, info
     /// line and the content.
     pub(super) fn draw_trash_preview(&mut self, ui: &Ui, language: Language, theme: &Theme) {
         let now = Timestamp::now();
@@ -63,8 +64,12 @@ impl MemoWindow {
             .selected
             .and_then(|node| self.document.trash_entry(node))
         else {
-            let _muted = ui.push_style_color(StyleColor::Text, theme.text.secondary.to_array());
-            ui.text_wrapped(TrashText::SelectTrashEntry.get(language));
+            draw_text_wrapped(
+                ui,
+                theme,
+                TextStyle::Secondary,
+                TrashText::SelectTrashEntry.get(language),
+            );
             return;
         };
         if let Some(action) = draw_preview_toolbar(ui, language, theme, entry.id()) {

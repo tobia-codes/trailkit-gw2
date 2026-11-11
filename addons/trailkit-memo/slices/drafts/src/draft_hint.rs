@@ -11,6 +11,7 @@ use trailkit_memo_shared::{
 use trailkit_ui::{
     button::{button_width, draw_button, draw_primary_button},
     separator::draw_separator,
+    text::{TextStyle, draw_text_wrapped},
     theme::Theme,
 };
 
@@ -63,8 +64,12 @@ impl DraftHint {
             ui.text_wrapped(label);
         }
         if draft.note_updated_at != note_updated_at {
-            let _muted = ui.push_style_color(StyleColor::Text, theme.text.secondary.to_array());
-            ui.text_wrapped(DraftText::DraftNoteChangedSince.get(language));
+            draw_text_wrapped(
+                ui,
+                theme,
+                TextStyle::Secondary,
+                DraftText::DraftNoteChangedSince.get(language),
+            );
         }
         let restore = DraftText::RestoreDraft.get(language);
         // "Discard" is shared with the unsaved-changes question.

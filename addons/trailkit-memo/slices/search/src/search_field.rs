@@ -9,7 +9,7 @@ use nexus::imgui::{StyleColor, StyleVar, Ui, WindowHoveredFlags};
 use trailkit_ui::tooltip::draw_tooltip;
 use trailkit_ui::{
     font_registry::FontScope, fonts::FontRole, glyph_metrics::glyph_ink_box, icons::Icon,
-    theme::Theme,
+    style_scope::StyleScope, theme::Theme,
 };
 
 /// State of the search field that outlives a frame.
@@ -155,12 +155,9 @@ impl SearchField {
         width: f32,
     ) -> bool {
         let _id = ui.push_id(self.generation);
-        let _colors = [
-            ui.push_style_color(StyleColor::FrameBg, [0.0; 4]),
-            ui.push_style_color(StyleColor::FrameBgHovered, [0.0; 4]),
-            ui.push_style_color(StyleColor::FrameBgActive, [0.0; 4]),
-            ui.push_style_color(StyleColor::TextDisabled, theme.text.secondary.to_array()),
-        ];
+        let _frame = StyleScope::transparent_frame(ui);
+        // The hint is a placeholder, `Secondary` (`tokens.md` §7.1).
+        let _hint = ui.push_style_color(StyleColor::TextDisabled, theme.text.secondary.to_array());
         let _border = ui.push_style_var(StyleVar::FrameBorderSize(0.0));
         ui.set_cursor_screen_pos(position);
         ui.set_next_item_width(width);

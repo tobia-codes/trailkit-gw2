@@ -22,8 +22,14 @@ use trailkit_memo_shared::{
     row_badge::RowBadge,
 };
 use trailkit_ui::{
-    button::icon_button_width, font_registry::FontScope, fonts::FontRole, icons::Icon,
-    separator::draw_separator_above_rows, text_search::SearchQuery, theme::Theme,
+    button::icon_button_width,
+    font_registry::FontScope,
+    fonts::FontRole,
+    icons::Icon,
+    separator::draw_separator_above_rows,
+    text::{TextStyle, draw_icon, draw_text},
+    text_search::SearchQuery,
+    theme::Theme,
 };
 
 use crate::tree_drag::{
@@ -504,15 +510,14 @@ impl NoteList {
         };
         let _border = ui.push_style_color(StyleColor::Border, border.to_array());
         draw_tooltip_with(ui, || {
-            let _danger = is_impossible
-                .then(|| ui.push_style_color(StyleColor::Text, theme.status.danger.to_array()));
             if is_impossible {
-                let _icons = FontScope::push(ui, FontRole::Icons);
-                let mut buffer = [0; 4];
-                ui.text(Icon::BAN.as_str(&mut buffer));
+                draw_icon(ui, Icon::BAN, theme.status.danger);
                 ui.same_line_with_spacing(0.0, theme.spacing.small);
+                // Status text keeps its code until `draw_status_line` (Q277).
+                ui.text_colored(theme.status.danger.to_array(), title);
+            } else {
+                draw_text(ui, theme, TextStyle::Body, title);
             }
-            ui.text(title);
         });
         None
     }

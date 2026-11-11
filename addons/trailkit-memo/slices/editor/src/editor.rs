@@ -14,13 +14,12 @@ use trailkit_ui::{
     button::{ButtonState, draw_icon_button_with_state, draw_icon_toggle, icon_button_width},
     chat_link_chip::ChipContext,
     editor::view::TextEditor,
-    font_registry::FontScope,
-    fonts::FontRole,
     icons::Icon,
     markdown::{self, MarkdownDocument},
     markdown_view::{MarkdownAction, SearchHighlight, draw_markdown},
     pane::draw_pane,
     splitter::draw_vertical_splitter,
+    text::TextStyle,
     text_search::SearchQuery,
     theme::Theme,
     toolbar::begin_toolbar_group,
@@ -335,7 +334,7 @@ impl Editor {
         let title_backup =
             (escape_pressed && self.title_was_active).then(|| self.session.title.clone());
         {
-            let _heading = FontScope::push(ui, FontRole::Heading1);
+            let _heading = TextStyle::Heading1.push(ui, theme);
             ui.set_next_item_width(-f32::MIN_POSITIVE);
             if self.title_focus_pending {
                 ui.set_keyboard_focus_here();
