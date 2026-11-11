@@ -6,10 +6,7 @@ Die trailkit-Addons senden keine Daten an uns. Es gibt kein Tracking, keine
 Analyse und keine automatischen Fehlerberichte. Hier steht, was auf deinem PC
 bleibt und was ihn verlässt.
 
-## Verantwortlich
-
-Tobias Anton, Kontakt: <tobiacodes@gmail.com>. trailkit ist ein Hobbyprojekt
-einer einzelnen Person.
+**Kontakt:** <tobiacodes@gmail.com>
 
 ## Daten auf deinem PC
 
@@ -77,3 +74,8 @@ für alles andere an den Kontakt oben.
 > auf unserem berechtigten Interesse beruht, aus Gründen, die sich aus deiner
 > besonderen Situation ergeben, jederzeit widersprechen. Am einfachsten
 > entfernst du dazu das Addon; du kannst auch an den Kontakt oben schreiben.
+
+## Verantwortlich
+
+Tobias Anton, <tobiacodes@gmail.com>. trailkit ist ein Hobbyprojekt einer
+einzelnen Person.
