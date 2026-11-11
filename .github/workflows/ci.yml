@@ -65,7 +65,39 @@ jobs:
       - name: Clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: Test
+        id: test
         run: cargo test --workspace
+      # R97: when snapshots differ, render the new references on this runner
+      # (the renderer the comparison uses) and upload only the changed ones,
+      # so they can be reviewed and committed without a local Windows build.
+      - name: Render changed snapshots (R97)
+        if: failure() && steps.test.outcome == 'failure'
+        env:
+          TRAILKIT_UPDATE_SNAPSHOTS: "1"
+        run: cargo test --workspace
+      - name: Collect changed snapshots (R97)
+        if: failure() && steps.test.outcome == 'failure'
+        shell: bash
+        run: |
+          mkdir -p snapshot-updates
+          git ls-files --modified --others --exclude-standard -- '*tests/snapshots/*.png' |
+            while read -r file; do
+              mkdir -p "snapshot-updates/$(dirname "$file")"
+              cp "$file" "snapshot-updates/$file"
+            done
+          git ls-files --modified --others --exclude-standard -- '*tests/snapshots/*.png'
+      - name: Upload changed snapshots (R97)
+        if: failure() && steps.test.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: snapshot-updates
+          # The new references plus the actual and diff images of the
+          # failed comparison, for the review (R82).
+          path: |
+            snapshot-updates/
+            **/tests/snapshots/failures/
+          if-no-files-found: warn
+          retention-days: 7
       - name: Naming conventions (R46)
         run: cargo xtask check-names
       - name: Version sync check (R16/R17)

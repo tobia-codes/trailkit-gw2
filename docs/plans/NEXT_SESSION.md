@@ -15,9 +15,9 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 `trailkit-ui` `text` (`TextStyle`, `draw_text`, `draw_text_wrapped`, `draw_truncated_text`, `draw_icon`), `empty_state`,
 `StyleScope::transparent_frame`, `font.size.*` factors, `FontRole::Small`; memo and markdown view converted (Q275–Q286).
 PR #109 into `develop` is pushed with auto-merge armed (user OK). **First step next session:** if #109 is not merged,
-it waits for the snapshots: on the user's PC run `cargo xtask ui-test --update`, review only the changed images
-(Q280 trash preview titles, Q283 b empty states, Q282 header tooltip; everything else must stay identical, R82),
-commit them on the branch, push; then `cargo xwin clippy`, deploy and a short in-game check. After the merge delete
+it waits for the snapshots: take them from the CI artifact `snapshot-updates` (R97) or `cargo xtask ui-test --update`
+on the user's PC, review only the changed images (Q280 trash preview titles, Q283 b empty states, Q282 header tooltip;
+everything else must stay identical, R82), commit them on the branch, push; then deploy and a short in-game check. After the merge delete
 the branch. Q286 (tooltip looks like a button, 2–3 variants for all addons) stays a later design round.
 
 **Next (once #109 is merged): start `chore/privacy-and-issue-form` from freshly fetched `origin/develop`.**
@@ -30,7 +30,7 @@ the branch. Q286 (tooltip looks like a button, 2–3 variants for all addons) st
    `icons.rs`: circle-help, download, external-link, circle-check, circle-alert, info (`cargo xtask subset-fonts`).
 3. Then B23/B24: tech-stack grilling, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
 
-Next ids: **M182+, R97+, B25+, questions from 287.** Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M182+, R98+, B25+, questions from 287.** Deferred: GW2 build/Nexus version in `session_start` (C12).
 
 - **Housekeeping (Q211/Q240):** the user deletes the approved old local branches by hand (`contributor-docs`,
   `xtask-token-split-and-docs`, `handoff-session-20`, `addon-status-design`, `addon-status-lock-design`, all `chore/`).

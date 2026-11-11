@@ -176,7 +176,9 @@ before changing anything visible.
 - **Every state has a snapshot (R82).** Each element gets a snapshot of every
   state it can be in (hover, pressed, empty, error, minimum width, German …),
   in Dark and Light, in the same change. `cargo xtask ui-test --update` writes
-  them; open and review every new image before you open the PR. How:
+  the missing and changed ones; open and review every new image before you
+  open the PR. Without a local Windows build, CI uploads the changed images
+  as the artifact `snapshot-updates` when the snapshot tests fail (R97). How:
   [`tokens.md` §10](.agents/skills/trailkit-ui/references/tokens.md#10-every-state-has-a-snapshot-every-snapshot-gets-reviewed-r82).
 - **Design the failure case (R93).** If an action can fail (a file, the
   network, an API), the proposal also shows what the user sees then and how

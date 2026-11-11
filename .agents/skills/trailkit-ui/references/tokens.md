@@ -231,7 +231,8 @@ state adds its snapshot in the same change.
 3. Run `cargo xtask ui-test --update` (about 4 minutes), which writes the new
    reference. Without `--update` every differing pixel fails, and the images land
    in `tests/snapshots/failures/`. A refactoring must pass without `--update`:
-   that proves it changed no pixel.
+   that proves it changed no pixel. Without a local Windows build, push and take
+   the changed references from the CI artifact `snapshot-updates` (R97).
 4. Open each new image and review it as below. Delete references of removed
    states by hand; nothing reports orphans.
 

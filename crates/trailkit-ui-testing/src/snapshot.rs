@@ -5,7 +5,8 @@
 //! more than [`MAXIMUM_DIFFERENT_SHARE`] of the pixels (none) differ by more than
 //! [`CHANNEL_TOLERANCE`] in any channel; it then writes the rendered image and
 //! a diff image (differences in red) to `tests/snapshots/failures/`.
-//! Running with `TRAILKIT_UPDATE_SNAPSHOTS=1` writes the references instead.
+//! Running with `TRAILKIT_UPDATE_SNAPSHOTS=1` rewrites missing and differing
+//! references instead and leaves matching ones untouched (R97).
 //! `TRAILKIT_SNAPSHOT_ROOT` overrides the crate directory (needed when a
 //! Windows test binary runs from WSL and only knows Linux paths at compile
 //! time; `cargo xtask ui-test` sets it).
@@ -37,7 +38,8 @@ const ROOT_VARIABLE: &str = "TRAILKIT_SNAPSHOT_ROOT";
 pub enum SnapshotOutcome {
     /// The image matches the reference.
     Matches,
-    /// The reference was (re)written because updating was requested.
+    /// The reference was missing or differed and was (re)written because
+    /// updating was requested.
     Updated,
     /// The image differs; the paths of the written actual and diff images.
     Differs {
@@ -85,8 +87,9 @@ pub fn assert_snapshot(crate_directory: &str, name: &str, image: &Image) {
     }
 }
 
-/// Compares `image` with `<root>/tests/snapshots/<name>.png`, or writes it
-/// there when `update` is set.
+/// Compares `image` with `<root>/tests/snapshots/<name>.png`. With `update`
+/// set, a missing or differing reference is rewritten instead; a reference
+/// that matches within the tolerance is left as it is.
 ///
 /// # Errors
 ///
@@ -99,12 +102,12 @@ pub fn compare_snapshot(
 ) -> Result<SnapshotOutcome, String> {
     let directory = root.join("tests").join("snapshots");
     let reference_path = directory.join(format!("{name}.png"));
-    if update {
-        write_png(&reference_path, image)?;
-        return Ok(SnapshotOutcome::Updated);
-    }
     let failures = directory.join("failures");
     if !reference_path.exists() {
+        if update {
+            write_png(&reference_path, image)?;
+            return Ok(SnapshotOutcome::Updated);
+        }
         let path = failures.join(format!("{name}.new.png"));
         write_png(&path, image)?;
         return Ok(SnapshotOutcome::MissingReference(path));
@@ -116,7 +119,13 @@ pub fn compare_snapshot(
     let share = different_pixels as f64 / total as f64;
     let same_size = reference.width == image.width && reference.height == image.height;
     if same_size && share <= MAXIMUM_DIFFERENT_SHARE {
+        // Matching references stay untouched, also when updating: only real
+        // changes show up in git and in CI's snapshot artifact (R97).
         return Ok(SnapshotOutcome::Matches);
+    }
+    if update {
+        write_png(&reference_path, image)?;
+        return Ok(SnapshotOutcome::Updated);
     }
     let actual = failures.join(format!("{name}.actual.png"));
     let diff_path = failures.join(format!("{name}.diff.png"));
@@ -225,6 +234,23 @@ mod tests {
                 ..
             }
         ));
+        // Updating rewrites only a differing reference.
+        assert_eq!(
+            compare_snapshot(&directory, "square", &image, true)?,
+            SnapshotOutcome::Matches
+        );
+        assert_eq!(
+            compare_snapshot(&directory, "square", &changed, true)?,
+            SnapshotOutcome::Updated
+        );
+        assert_eq!(
+            compare_snapshot(&directory, "square", &changed, false)?,
+            SnapshotOutcome::Matches
+        );
+        assert_eq!(
+            compare_snapshot(&directory, "square", &image, true)?,
+            SnapshotOutcome::Updated
+        );
         let mut slightly = image.clone();
         slightly.pixels[0] = [12, 20, 30, 255];
         assert_eq!(
