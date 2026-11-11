@@ -20,7 +20,7 @@ Q275–Q279 settled and recorded in R96 (scope: addon code + markdown view only)
 **Session 27 (2026-11-11):** Q280–Q285 settled and recorded in R96. Two intended pixel changes on this branch:
 trash preview titles in primary (Q280) and one empty-state layout (Q283 b: memo list gains `file-text` icon, trash
 title primary, tight wrapped lines). Text roles for every addon: `tokens.md` §7.1 (Q284). Still needed: R87 mockup of
-the trash header tooltip (Q282) before building it; snapshots for the two changes must be regenerated and reviewed.
+the trash header tooltip approved (Q282). Open later (Q286): tooltip looks like a regular button; show 2–3 variants for all addons after this branch. Snapshots for the two changes must be regenerated and reviewed.
 
 **Then continue the branch:** new `trailkit-ui` module with `TextStyle` (7 styles, `font()`, `color()`), `draw_text`,
 `draw_text_wrapped`, `draw_truncated_text`; `draw_icon(ui, icon, color)` (replace every icon push + buffer +
