@@ -54,8 +54,8 @@ use trailkit_ui::{
     font_registry::{follow_body_size, font_size_of, register_fonts},
     style_scope::StyleScope,
     text::{TextStyle, draw_text, draw_text_wrapped},
-    theme::{ThemeKind, Typography},
-    title_bar::{TitleBarState, draw_window},
+    theme::{Theme, ThemeKind, Typography},
+    title_bar::{TitleBarState, TitleBarToggle, draw_window},
 };
 
 use crate::main_window::{MemoWindow, NotesProblem, minimum_window_width, title_bar_texts};
@@ -70,8 +70,11 @@ use trailkit_memo_shared::{
     },
 };
 
+mod help;
 mod logging;
 mod storage;
+
+use self::help::MemoHelp;
 
 use self::storage::{receive_loaded_notes, restart_storage_worker_if_asked, start_storage};
 
@@ -194,6 +197,14 @@ const MESSAGE_PASSED: u32 = 1;
 /// Effective UI language, stored as the [`Language`] discriminant.
 static LANGUAGE: AtomicU8 = AtomicU8::new(Language::English as u8);
 
+/// Memo's help window (R100); created in `load`, dropped in `unload`. The
+/// render thread only uses `try_lock`.
+static HELP: Mutex<Option<MemoHelp>> = Mutex::new(None);
+
+/// Whether the help window is open, so the render callback also draws while
+/// only the help window is shown. Written by the render callback.
+static HELP_OPEN: AtomicBool = AtomicBool::new(false);
+
 /// Collapsed state of the main window's title bar (R71); render thread only.
 static TITLE_BAR: Mutex<TitleBarState> = Mutex::new(TitleBarState::NEW);
 
@@ -247,14 +258,20 @@ fn load() {
     });
     register_keybind_with_string(KEYBIND_TOGGLE, on_toggle, UNBOUND).revert_on_unload();
     register_wnd_proc(catch_window_keys).revert_on_unload();
+    // UI strings plus the help pages, which the help window draws.
     register_fonts(
         GLYPHS_KEY,
-        &crate::all_texts(),
+        &(crate::all_texts() + include_str!("../help/en.md") + include_str!("../help/de.md")),
         &ThemeKind::default().theme().typography,
     );
 
     NEXUS_LINK.store(get_nexus_link().cast_mut(), Ordering::Release);
 
+    if let Ok(mut help) = HELP.lock() {
+        *help = Some(MemoHelp::new(
+            trailkit_directory.as_ref().map(TrailkitDirectory::logs),
+        ));
+    }
     let settings = start_storage(trailkit_directory);
 
     if settings.quick_access_icon == QuickAccessIcon::Shown {
@@ -295,6 +312,10 @@ fn unload() {
     if let Ok(mut notes) = NOTES.lock() {
         *notes = NotesState::Unavailable;
     }
+    if let Ok(mut help) = HELP.lock() {
+        *help = None;
+    }
+    HELP_OPEN.store(false, Ordering::Relaxed);
     // Last, so every line above still reaches the file; writes `session_end`.
     logging::stop_logging();
 }
@@ -330,15 +351,19 @@ fn detect_nexus_language() -> Option<String> {
     translate(LANGUAGE_PROBE_KEY).filter(|code| code != LANGUAGE_PROBE_KEY)
 }
 
-/// Draws the main window. Returns immediately while the window is closed, and
-/// skips drawing (keeping it open) outside gameplay unless the settings allow it.
+/// Draws the main window and the help window. Returns immediately while
+/// both are closed, and skips drawing (keeping them open) outside gameplay
+/// unless the settings allow it.
 fn render_main_window(ui: &nexus::imgui::Ui) {
     // Stay false on every path that does not draw the window, so the game keeps
     // these keys while memo is hidden.
     SEARCH_KEY_ARMED.store(false, Ordering::Relaxed);
     DELETE_KEY_ARMED.store(false, Ordering::Relaxed);
     reopen_hidden_window_if_needed();
-    if !VISIBLE.load(Ordering::Relaxed) || !settings().allows_drawing(is_gameplay()) {
+    let main_visible = VISIBLE.load(Ordering::Relaxed);
+    if !(main_visible || HELP_OPEN.load(Ordering::Relaxed))
+        || !settings().allows_drawing(is_gameplay())
+    {
         return;
     }
     // Never wait on the render thread; if `load`/`unload` holds the lock, skip a frame.
@@ -354,37 +379,67 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
     let theme = ThemeKind::default().theme();
     follow_nexus_font_size(text_scale, &theme.typography);
     let language = Language::from_u8(LANGUAGE.load(Ordering::Relaxed));
+    let _theme = StyleScope::push(ui, &theme);
+    let mut help = HELP.try_lock().ok();
+    let mut help = help.as_mut().and_then(|help| help.as_mut());
+    if main_visible {
+        draw_main_window(ui, &theme, language, &mut notes, help.as_deref_mut());
+    }
+    if let Some(help) = help {
+        help.draw(ui, &theme, language);
+        HELP_OPEN.store(help.is_open(), Ordering::Relaxed);
+    }
+}
+
+/// Draws the main window with its title bar toggles: memo's window menu
+/// once the notes are loaded and the help `?` (Q171) while `help` exists.
+fn draw_main_window(
+    ui: &nexus::imgui::Ui,
+    theme: &Theme,
+    language: Language,
+    notes: &mut NotesState,
+    help: Option<&mut MemoHelp>,
+) {
     let title = WINDOW_TITLE
         .get()
         .map_or("###trailkit-memo", String::as_str);
-
-    let _theme = StyleScope::push(ui, &theme);
     let mut open = true;
     let mut title_bar = TITLE_BAR
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     // The memo toggle (window menu; R78) exists once notes are loaded.
-    let toggles = match &*notes {
-        NotesState::Ready(window) => Some(window.title_bar_toggles(language)),
+    let menu_toggle = match &*notes {
+        NotesState::Ready(window) => Some(window.title_bar_toggles(language)[0]),
         NotesState::Loading { .. } | NotesState::Unavailable => None,
     };
+    let help_toggle = help.as_ref().map(|help| help.title_bar_toggle(language));
+    let both;
+    let toggles: &[TitleBarToggle<'_>] = match (&menu_toggle, &help_toggle) {
+        (Some(menu), Some(help)) => {
+            both = [*menu, *help];
+            &both
+        }
+        (Some(only), None) | (None, Some(only)) => std::slice::from_ref(only),
+        (None, None) => &[],
+    };
+    let help_index = usize::from(menu_toggle.is_some());
     let clicked_toggle = draw_window(
         ui,
-        &theme,
+        theme,
         Window::new(title)
             .size([640.0, 420.0], Condition::FirstUseEver)
             .size_constraints([minimum_window_width(ui), 0.0], [f32::MAX, f32::MAX]),
         title_bar_texts(language),
-        toggles.as_ref().map_or(&[][..], |toggles| &toggles[..]),
+        toggles,
         &mut title_bar,
         &mut open,
         || match &mut *notes {
             NotesState::Loading { .. } => {
-                draw_text(ui, &theme, TextStyle::Body, Text::Loading.get(language));
+                draw_text(ui, theme, TextStyle::Body, Text::Loading.get(language));
             }
             NotesState::Unavailable => draw_text_wrapped(
                 ui,
-                &theme,
+                theme,
                 TextStyle::Body,
                 Text::NotesInaccessible.get(language),
             ),
@@ -398,23 +453,42 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
                 if DELETE_KEY_PRESSED.swap(false, Ordering::Relaxed) {
                     window.delete_selected_by_key(language);
                 }
-                window.draw(ui, language, &theme);
+                window.draw(ui, language, theme);
             }
         },
     );
     drop(title_bar);
+    if let Some(index) = clicked_toggle {
+        apply_title_bar_click(index, help_index, notes, help);
+    }
     if let NotesState::Ready(window) = &mut *notes {
-        if let Some(index) = clicked_toggle {
-            window.apply_title_bar_toggle(index);
-        }
-        window.draw_dialog(ui, language, &theme);
+        window.draw_dialog(ui, language, theme);
         restart_storage_worker_if_asked(window);
     }
-    apply_close_request(&mut notes, open);
+    apply_close_request(notes, open);
     if let NotesState::Ready(window) = &*notes {
         let visible = VISIBLE.load(Ordering::Relaxed);
         SEARCH_KEY_ARMED.store(window.takes_search_key() && visible, Ordering::Relaxed);
         DELETE_KEY_ARMED.store(window.takes_delete_key() && visible, Ordering::Relaxed);
+    }
+}
+
+/// Applies a click on the title bar toggle at `index`: the help `?` at
+/// `help_index` opens or closes the help window, the others belong to the
+/// loaded notes window.
+fn apply_title_bar_click(
+    index: usize,
+    help_index: usize,
+    notes: &mut NotesState,
+    help: Option<&mut MemoHelp>,
+) {
+    match help {
+        Some(help) if index == help_index => help.toggle(),
+        _ => {
+            if let NotesState::Ready(window) = notes {
+                window.apply_title_bar_toggle(index);
+            }
+        }
     }
 }
 

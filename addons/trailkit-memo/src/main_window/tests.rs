@@ -3,6 +3,7 @@
 
 mod save_errors;
 mod states;
+mod title_bar_help;
 mod trash;
 
 use std::time::Duration;

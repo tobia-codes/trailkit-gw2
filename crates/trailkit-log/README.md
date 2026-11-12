@@ -156,8 +156,10 @@ searches, moved windows, key presses) are not logged. Nothing is sent anywhere: 
 | `backup_delete_failed` | WARN | `file`, `error` | An expired safety copy cannot be deleted |
 | `folder_unlistable` | WARN | `folder`, `error` | A folder cannot be listed during the safety-copy cleanup |
 | `local_time_failed` | WARN | `error` | Windows could not convert to local time; times are shown in UTC |
-| `folder_open_failed` | WARN | `error` | Explorer could not be started for the addon folder |
+| `folder_open_failed` | WARN | `error` | Explorer could not be started for the addon folder or the saved log export |
 | `link_open_failed` | WARN | `error` | The browser could not be started for a link |
+| `log_check_failed` | WARN | `error` | The help window could not start the check whether a log exists; the export button stays usable |
+| `log_export_failed` | WARN | `stage` (`thread`/`read`/`downloads`/`write`), `error` | "Export log" failed: the export thread did not start, the logs could not be read, the Downloads folder is unknown, or the file could not be written |
 | `font_pixels_missing` | WARN | – | The font atlas pixels are not in memory; glyphs are centered by their quads |
 
 Windows error codes often seen in `error`: `os error 5` access denied, `32`

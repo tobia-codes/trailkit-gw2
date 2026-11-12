@@ -28,7 +28,7 @@ use trailkit_ui::{
     pane::draw_pane,
     text_layout::body_characters_width,
     theme::Theme,
-    title_bar::{TitleBarTexts, TitleBarToggle},
+    title_bar::{TitleBarTexts, TitleBarToggle, TogglePlacement},
     toast::Toast,
 };
 
@@ -50,6 +50,8 @@ use trailkit_memo_shared::{
     ui_state::UiState,
     undo::UndoHistory,
 };
+
+use crate::help_text::HelpText;
 
 use self::{
     actions::{LeaveReason, WindowAction},
@@ -445,6 +447,7 @@ impl MemoWindow {
             icon: Icon::MENU,
             tooltip: Text::WindowMenu.get(language),
             active: self.window_menu_open,
+            placement: TogglePlacement::Leading,
         }]
     }
 
@@ -488,6 +491,18 @@ pub fn minimum_window_width(ui: &Ui) -> f32 {
 /// The note `shown`, if it exists.
 fn shown_note_in(document: &NotesDocument, shown: Option<NoteId>) -> Option<&Note> {
     document.note(shown?)
+}
+
+/// The title bar `?` that opens and closes the help window (memo Q171,
+/// ROADMAP R100); active while the help window is open.
+#[must_use]
+pub fn help_title_bar_toggle(language: Language, help_open: bool) -> TitleBarToggle<'static> {
+    TitleBarToggle {
+        icon: Icon::CIRCLE_HELP,
+        tooltip: HelpText::Help.get(language),
+        active: help_open,
+        placement: TogglePlacement::Trailing,
+    }
 }
 
 /// The localized title and tooltips of the main window's title bar (R71).

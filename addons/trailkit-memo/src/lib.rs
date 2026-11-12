@@ -11,6 +11,12 @@ mod addon;
 #[cfg(windows)]
 mod main_window;
 
+// Only the Windows glue uses them; on other hosts only their tests do.
+#[cfg_attr(not(windows), allow(dead_code))]
+mod help_text;
+#[cfg_attr(not(windows), allow(dead_code))]
+mod log_export;
+
 use trailkit_memo_drafts::i18n::DraftText;
 use trailkit_memo_editor::i18n::EditorText;
 use trailkit_memo_note_list::i18n::NoteListText;
@@ -36,6 +42,7 @@ pub fn all_texts() -> String {
         + &SearchText::all_texts()
         + &TrashText::all_texts()
         + &SaveText::all_texts()
+        + &help_text::HelpText::all_texts()
 }
 
 #[cfg(test)]
