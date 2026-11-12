@@ -576,6 +576,22 @@ fn trash() {
     );
     assert_state("trash-nothing-selected", WIDE, entries, &[]);
     assert_state("trash-selected", WIDE, chosen, &[]);
+    // A trashed group shows its title, info line and the titles inside it.
+    assert_state(
+        "trash-group-selected",
+        WIDE,
+        || {
+            let document = document_with_trash([0, 25]);
+            let group = document.trash[1].id();
+            let mut fixture = trash_view(document, false);
+            fixture.0.apply(
+                &WindowAction::Trash(TrashAction::Select(group)),
+                Language::English,
+            );
+            fixture
+        },
+        &[],
+    );
     for (name, position) in [
         ("trash-hover-note", [108.0, 160.0]),
         ("trash-hover-group", [108.0, 112.0]),
