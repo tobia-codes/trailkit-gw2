@@ -11,61 +11,60 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## ▶ Resume here
 
-**Session 30 (2026-11-12).** On `develop`: PR #109 (R96 shared text styles/components), #110 (privacy texts, issue form, `trailkit-logs`
-skill), #112 (component snapshots). R98/B25: in-game problem reports through the backend behind a feature flag, R95 GitHub form
-as fallback; open points Q288–Q293 in `backend.md`. Q286 (tooltip looks like a button) stays a later design round. Before the first
-release: confirm GitHub's DPF listing on `dataprivacyframework.gov` (R99 check).
+**Session 30 (2026-11-12).** `develop` has PRs #109, #110, #112. R98/B25: problem reports via the backend behind a flag, GitHub form as
+fallback (Q288–Q293 in `backend.md`). Q286 (tooltip looks like a button) is a later design round. Before the first release: DPF listing check (R99).
 
-**▶ Work branch: `feature/help-problem-page`** (local only, **not pushed**, 10 commits ahead of `origin/develop`; keep working on it,
-do not start a new branch). Done and committed: `trailkit-log::export` (`build_log_export`, `export_file_name`, `has_logs`; newest
-3 days, 5 MiB, header with trims, tests, README), `trailkit-ui::help_topics` (`parse_help_topics`, `subsection_counts`), and the
-docs: **R100** (help window re-grilled, Q294–Q304, mockup https://claude.ai/artifact/82dwWQcEtFeTfxpQ2ex1cy approved) and the rule
-`lay-button-icon-position` (`ux-rules.md`). The old mockup v3 of R95 is unreadable in this account; build from R100 plus the unchanged
-parts of R95. Existing icon buttons all have the icon in front already; no code change was needed for the rule.
-The user may still send wording tweaks for the mockup texts. Remaining steps, in order:
-1. ~~`draw_status_line` and `draw_list_row`~~ done (5acafb9; Q305/Q306: `draw_row_state`, note list keeps its tree). Draft warning and
-   problem hint still draw status colors by hand (icon change needs R87 OK); `Status::Info` comes with the `info` icon (step 4).
-2. ~~Help window in `trailkit-ui`~~ done (a067b7f, snapshots in `tests/snapshots/help-window-*`; `Button::opens_link`, `Status::Info`, four icons
-   incl. `circle-help` already added). Open: the markdown view spaces `###` headings and paragraphs more widely than the mockup (shared
-   renderer, would change note snapshots: needs a decision). Window code is generic: `HelpWindow::draw` takes `HelpWindowContent`.
-3. memo: title bar `?` toggles (Q171, Q296), Nexus "Open help", export action on a worker thread (read logs, write to Downloads with
-   `export_file_name`, open Explorer with the file selected), GitHub issue link with addon and version, `has_logs` check; button
-   variant with a trailing icon for the GitHub button (`lay-button-icon-position`).
-4. Help rewrite M181 (nine topics in `help/{en,de}.md`, privacy topic embedded from `PRIVACY.md`/`.de.md`, parity test with
-   `subsection_counts`); icons are done.
-5. Deploy, in-game test, then the user's merge OK (R74); push the branch, PR into `develop`, arm auto-merge. Pushing before that
-   (e.g. to continue on another device) also needs the user's OK.
+**▶ Work branch: `feature/help-problem-page`** (local only, **not pushed**, 11 commits ahead of `origin/develop`; keep working on it,
+no new branch). Done: `trailkit-log::export`, `help_topics`, docs R100/Q305/Q306, `draw_status_line`, `draw_list_row`, `draw_row_state`
+(R96), the help window in `trailkit-ui` (`HelpWindow::draw(ui, theme, &HelpWindowContent)` returns `Option<HelpAction>`:
+`ExportLog` / `ReportProblem`; `Button::opens_link`, `Status::Info`, icons incl. `circle-help`; 18 snapshots `help-window-*`).
+**Open, in this order:**
+1. **memo wiring.** Own `HelpWindow` in memo (id `trailkit.memo.help`); title bar `?` calls `toggle` (Q171/Q296, new `TitleBarToggle` with
+   `circle-help`), Nexus "Open help" calls `open` (never closes). Build `HelpWindowContent` from en/de `Text` entries (no inline literals)
+   and `include_str!("help/{en,de}.md")`. Export button: `Disabled { reason }` without `has_logs`, `Busy` while the worker runs
+   (`BusyState`). On `ExportLog`: worker thread reads the logs, writes to Downloads with `export_file_name` (` (2)`, never overwrite),
+   opens Explorer with the file selected; status: success with the bare file name, "older days left out" on trims, failure (cause to the
+   log), no log (`Status::Info`). On `ReportProblem`: GitHub issue form with addon and version via `open_web_link`. Mockup texts:
+   https://claude.ai/artifact/82dwWQcEtFeTfxpQ2ex1cy (wording tweaks still possible).
+2. **Help rewrite M181:** nine topics in `help/{en,de}.md` (`##` topic, one Secondary lead sentence, `###` structure), privacy topic from
+   `PRIVACY.md`/`.de.md`, parity test with `subsection_counts`.
+3. **Ask the user:** the markdown view spaces `###` headings and paragraphs wider than the mockup (shared renderer, changes note
+   snapshots): keep or tighten? Draft warning and problem hint still hand-draw status colors (an icon needs R87).
+4. **Validate and ship (R74):** fmt, host and `cargo xwin` clippy, `cargo test`, `cargo xtask ui-test` (about 4 min, background, no filter;
+   one `UiHarness` at a time, every frame needs a window), `check-file-length`, `check-names`, `cargo xtask deploy memo`, in-game test, then
+   the user's merge OK: push, PR into `develop`, auto-merge. Pushing earlier needs the OK too. (5 chip snapshots shifted by a few pixels
+   in 5eb40eb: the icon font gained glyphs.)
 
-**Open design round (user, 2026-11-12):** a window background in the GW2 style that keeps contrast (also for the homepage). Mockup
-https://claude.ai/artifact/SFFrXawiqYD6HouhdihGdv (A–H; F frame and H dust nearest). Own procedural textures only; ArenaNet's Content
-Terms of Use not read yet (Blish HUD ships game-style art). Brass must not decorate. Needs grilling + R87 before any code.
+**Deferred by the user (2026-11-12): one theme character for addons and the coming React website.** No code yet. Mockups:
+https://claude.ai/artifact/SFFrXawiqYD6HouhdihGdv (latest: Papier A–D). Wanted: GW2-reminiscent, own character, dark, very subtle
+(background about `#060709`–`#0d0e17`), crisp edges. Rejected: mountains, waypoint markers, header band/spine, web-template look. Closest:
+Papercraft Q–T and Flecken U–X (posterized mottled paper); recommended Papier B Rissrand. ImGui draws flat fills, polygons, one-direction
+gradients, offset shapes as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass never decorates. Before code:
+grilling (name, variant, Light, tokens in `theme.rs`/`tokens.json`, one place in `draw_window`) plus R87. ArenaNet's Content Terms
+for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
 
 Next ids: **M182+, R101+, B26+, questions from 307.** Deferred: GW2 build/Nexus version in `session_start` (C12).
 
-- **Housekeeping (Q211/Q240):** the user deletes the approved old local branches by hand (`contributor-docs`,
-  `xtask-token-split-and-docs`, `handoff-session-20`, `addon-status-design`, `addon-status-lock-design`,
-  `handoff-session-26`, `handoff-branch-hint`, `help-window-design`, all `chore/`; merged PR branches).
+- **Housekeeping (Q211/Q240):** the user deletes the approved old local branches by hand (all `chore/`, `contributor-docs`, `handoff-*`,
+  `addon-status-*`, `help-window-design`, merged PR branches).
 
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
 1. **Storage failures:** done (memo M180, 2026-11-10).
-2. **Pre-push protection:** `.githooks/pre-push` checks protected destination refs only
-   for deletions; normal pushes check the current branch via `xtask/src/check_branch.rs`.
-   Validate every destination ref. Server-side protection was not inspected in the review.
+2. **Pre-push protection:** `.githooks/pre-push` checks protected destination refs only for deletions; normal pushes check the current
+   branch via `xtask/src/check_branch.rs`. Validate every destination ref; server-side protection was not inspected.
 3. **WvW snapshot validity:** `tools/trailkit-datagen/src/wvw.rs::write_reset_snapshot`
    saves current matches without checking the intended pre-reset time/match period.
    A delayed job can succeed with post-reset data. Check the actual Nov 6 EU run as well.
-4. **Search cache:** `addons/trailkit-memo/src/main_window/search.rs::update_search`
-   calls `SearchQuery::parse` before checking the cache, allocating for unchanged queries
-   every frame. Check unchanged inputs first. No performance benchmark was run.
+4. **Search cache:** `addons/trailkit-memo/src/main_window/search.rs::update_search` calls `SearchQuery::parse` before checking the
+   cache, allocating for unchanged queries every frame. Check unchanged inputs first; no benchmark was run.
 5. **Docs/skills accuracy:** READMEs done (R91). Still wrong: `nexus-addon-dev/references/addon-structure.md`
    says Cargo forbids sibling-slice dependencies (it only rejects cycles; the rule is enforced by review);
    `rust-best-practices/references/chapter_09.md` marks `&mut T` as not Send (it is Send when T is Send).
-6. **Performance contract:** reconcile the Nexus skill's blanket render-thread parsing
-   ban with existing change-triggered Markdown parsing. Clarify allowed work and caching
-   before proposing an architectural rewrite; keep actual performance/security guarantees.
+6. **Performance contract:** reconcile the Nexus skill's blanket render-thread parsing ban with the change-triggered Markdown parsing;
+   clarify allowed work and caching before any rewrite; keep the performance/security guarantees.
 7. **Decision/documentation workflow:** broad token-loading fixes are done (R88).
    Relaxing grilling for routine implementation choices or rustdoc for trivial getters
    was only suggested, not approved. Preserve current rules until explicitly settled.
