@@ -21,22 +21,22 @@ Before the first release: confirm GitHub's DPF listing on `dataprivacyframework.
 **In progress: `feature/help-problem-page`** (local, from `origin/develop`, not pushed). Done and committed: `trailkit-log::export`
 (`build_log_export`, `export_file_name`, `has_logs`; newest 3 days, 5 MiB, header with trims, tests, README) and
 `trailkit-ui::help_topics` (`parse_help_topics`, `subsection_counts`). Also PR #112 (component snapshots) was opened with auto-merge.
-**The approved mockup v3 (R95) could not be read** in this account (artifact 404); build from the R95 text and let the user review
-the snapshots, or ask them to re-share the mockup as an image. Remaining steps, in order:
+**Help window re-grilled and recorded as R100** (Q294–Q304; mockup https://claude.ai/artifact/82dwWQcEtFeTfxpQ2ex1cy, approved
+in the session). Build from R100 plus the unchanged parts of R95. Still open: the exact wording tweaks the user may send. Remaining steps, in order:
 1. `draw_status_line` and `draw_list_row` in `trailkit-ui` (R96; list row for note list, trash and help topic list, drag/indent/arrow
    stay in the slice; existing snapshots stay identical) + component snapshots.
-2. Help window in `trailkit-ui` (title `<window title> · Help`, tabs "Report a problem" start page and "Help", problem page with
+2. Help window in `trailkit-ui` (R100: title `<window title> · Help`, opens on the Help tab, remembers tab and topic in memory, problem page with
    numbered steps, Small texts, status line states none/success/failure/no logs, topic list 112 px at minimum width) + snapshots
    (Dark/Light, minimum width, German).
 3. memo: title bar `?` (Q171), Nexus "Open help", export action on a worker thread (read logs, write to Downloads with
-   `export_file_name`, open Explorer with the file selected), GitHub issue link with addon and version, `has_logs` check.
+   `export_file_name`, open Explorer with the file selected), GitHub issue link with addon and version, `has_logs` check; button variant with a trailing icon (`lay-button-icon-position`).
 4. Help rewrite M181 (nine topics in `help/{en,de}.md`, privacy topic embedded from `PRIVACY.md`/`.de.md`, parity test with
    `subsection_counts`), icons in `icons.rs` (circle-help, download, external-link, circle-check, circle-alert, info) + `cargo xtask subset-fonts`.
 5. In-game test, merge OK (R74), PR into `develop`.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
 
-Next ids: **M182+, R100+, B26+, questions from 294.** Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M182+, R101+, B26+, questions from 305.** Deferred: GW2 build/Nexus version in `session_start` (C12).
 
 - **Housekeeping (Q211/Q240):** the user deletes the approved old local branches by hand (`contributor-docs`,
   `xtask-token-split-and-docs`, `handoff-session-20`, `addon-status-design`, `addon-status-lock-design`,
