@@ -16,15 +16,15 @@ skill), #112 (component snapshots). R98/B25: in-game problem reports through the
 as fallback; open points Q288–Q293 in `backend.md`. Q286 (tooltip looks like a button) stays a later design round. Before the first
 release: confirm GitHub's DPF listing on `dataprivacyframework.gov` (R99 check).
 
-**▶ Work branch: `feature/help-problem-page`** (local only, **not pushed**, 4 commits ahead of `origin/develop`; keep working on it,
+**▶ Work branch: `feature/help-problem-page`** (local only, **not pushed**, 8 commits ahead of `origin/develop`; keep working on it,
 do not start a new branch). Done and committed: `trailkit-log::export` (`build_log_export`, `export_file_name`, `has_logs`; newest
 3 days, 5 MiB, header with trims, tests, README), `trailkit-ui::help_topics` (`parse_help_topics`, `subsection_counts`), and the
 docs: **R100** (help window re-grilled, Q294–Q304, mockup https://claude.ai/artifact/82dwWQcEtFeTfxpQ2ex1cy approved) and the rule
 `lay-button-icon-position` (`ux-rules.md`). The old mockup v3 of R95 is unreadable in this account; build from R100 plus the unchanged
 parts of R95. Existing icon buttons all have the icon in front already; no code change was needed for the rule.
 The user may still send wording tweaks for the mockup texts. Remaining steps, in order:
-1. `draw_status_line` and `draw_list_row` in `trailkit-ui` (R96; list row for note list, trash and help topic list, drag/indent/arrow
-   stay in the slice; all existing snapshots must stay identical, the riskiest step) + component snapshots.
+1. ~~`draw_status_line` and `draw_list_row`~~ done (5acafb9; Q305/Q306: `draw_row_state`, note list keeps its tree). Draft warning and
+   problem hint still draw status colors by hand (icon change needs R87 OK); `Status::Info` comes with the `info` icon (step 4).
 2. Help window in `trailkit-ui` (R100: title `<window title> · Help`, opens on the Help tab, remembers tab and topic in memory, problem
    page with numbered steps, Small texts, status line states none/success/success-trimmed/failure/no log, topic list 112 px,
    minimum width 60 characters) + snapshots (Dark/Light, minimum width, German).
@@ -38,7 +38,7 @@ The user may still send wording tweaks for the mockup texts. Remaining steps, in
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
 
-Next ids: **M182+, R101+, B26+, questions from 305.** Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M182+, R101+, B26+, questions from 307.** Deferred: GW2 build/Nexus version in `session_start` (C12).
 
 - **Housekeeping (Q211/Q240):** the user deletes the approved old local branches by hand (`contributor-docs`,
   `xtask-token-split-and-docs`, `handoff-session-20`, `addon-status-design`, `addon-status-lock-design`,
