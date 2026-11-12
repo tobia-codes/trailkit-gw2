@@ -202,7 +202,9 @@ static LANGUAGE: AtomicU8 = AtomicU8::new(Language::English as u8);
 static HELP: Mutex<Option<MemoHelp>> = Mutex::new(None);
 
 /// Whether the help window is open, so the render callback also draws while
-/// only the help window is shown. Written by the render callback.
+/// only the help window is shown. Written by the render callback, and set to
+/// `false` by Nexus on Escape (close on Escape), which the render callback
+/// then applies to the window.
 static HELP_OPEN: AtomicBool = AtomicBool::new(false);
 
 /// Collapsed state of the main window's title bar (R71); render thread only.
@@ -242,6 +244,8 @@ fn load() {
     // the DLL goes away. `AtomicBool` has the same in-memory representation
     // as `bool`, and Nexus only stores `false` into it (a single-byte write).
     register_close_on_escape(window_title, unsafe { &mut *VISIBLE.as_ptr() });
+    // SAFETY: as above, with the static `HELP_OPEN`.
+    register_close_on_escape(help::WINDOW_ID, unsafe { &mut *HELP_OPEN.as_ptr() });
 
     for language in Language::ALL {
         set_translation(
@@ -298,6 +302,7 @@ fn unload() {
     if let Some(window_title) = WINDOW_TITLE.get() {
         deregister_close_on_escape(window_title);
     }
+    deregister_close_on_escape(help::WINDOW_ID);
     NEXUS_LINK.store(std::ptr::null_mut(), Ordering::Release);
     // Unsaved edits become a draft; the worker writes it while shutting down (M54).
     if let Ok(mut notes) = NOTES.lock()
@@ -382,6 +387,11 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
     let _theme = StyleScope::push(ui, &theme);
     let mut help = HELP.try_lock().ok();
     let mut help = help.as_mut().and_then(|help| help.as_mut());
+    if let Some(help) = help.as_deref_mut()
+        && !HELP_OPEN.load(Ordering::Relaxed)
+    {
+        help.close();
+    }
     if main_visible {
         draw_main_window(ui, &theme, language, &mut notes, help.as_deref_mut());
     }

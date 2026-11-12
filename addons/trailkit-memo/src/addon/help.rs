@@ -40,8 +40,9 @@ use crate::{
     main_window::help_title_bar_toggle,
 };
 
-/// The ImGui id of the help window, stable across languages.
-const WINDOW_ID: &str = "trailkit.memo.help";
+/// The ImGui id of the help window, stable across languages; also its name
+/// for Nexus' close on Escape.
+pub(super) const WINDOW_ID: &str = "trailkit.memo.help";
 
 /// The addon name in the issue form (its `addon` dropdown).
 const ISSUE_FORM_ADDON: &str = "trailkit-memo";
@@ -103,6 +104,13 @@ impl MemoHelp {
         let was_open = self.window.is_open();
         self.window.toggle();
         self.after_open_change(was_open);
+    }
+
+    /// Closes the window if it is open: Nexus cleared its flag on Escape.
+    pub(super) fn close(&mut self) {
+        if self.window.is_open() {
+            self.toggle();
+        }
     }
 
     /// Takes the replies of the worker threads and draws the window if it
