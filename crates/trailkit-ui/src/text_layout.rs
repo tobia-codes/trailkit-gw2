@@ -1,10 +1,20 @@
 //! Small text placement helpers shared by addon windows and their slices:
-//! centering, truncation with "…" (`lay-truncation`) and allocation-free
-//! number formatting for per-frame labels.
+//! centering, truncation with "…" (`lay-truncation`), widths in characters
+//! and allocation-free number formatting for per-frame labels.
 
 use std::borrow::Cow;
 
 use nexus::imgui::Ui;
+
+use crate::{font_registry::FontScope, fonts::FontRole};
+
+/// The width of `characters` average characters (an "n") of the body font,
+/// e.g. a window's minimum width, so it follows the text size (M79, M168).
+#[must_use]
+pub fn body_characters_width(ui: &Ui, characters: f32) -> f32 {
+    let _body_font = FontScope::push(ui, FontRole::Body);
+    ui.calc_text_size("n")[0] * characters
+}
 
 /// Draws `text` horizontally centered in a region of `width`. Too long text
 /// wraps at spaces with each line centered; a single word wider than `width`

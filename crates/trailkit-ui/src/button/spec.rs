@@ -91,6 +91,10 @@ pub struct Button<'text> {
     /// A Lucide icon before the label (a busy button shows its spinner
     /// there instead).
     pub icon: Option<Icon>,
+    /// Whether the click leaves the game (opens the browser): `external-link`
+    /// follows the label (`lay-button-icon-position`, R100). No other icon
+    /// may follow a label.
+    pub opens_link: bool,
     /// The width; `0.0` fits the content (at least `button.min_width`).
     pub width: f32,
 }
@@ -104,6 +108,7 @@ impl<'text> Button<'text> {
             kind: ButtonKind::Regular,
             state: ButtonState::Ready,
             icon: None,
+            opens_link: false,
             width: 0.0,
         }
     }
@@ -129,6 +134,16 @@ impl<'text> Button<'text> {
         }
     }
 
+    /// The same button with `external-link` after its label: its click opens
+    /// the browser.
+    #[must_use]
+    pub const fn opens_link(self) -> Self {
+        Self {
+            opens_link: true,
+            ..self
+        }
+    }
+
     /// The same button `width` wide (`0.0` fits the content).
     #[must_use]
     pub const fn width(self, width: f32) -> Self {
@@ -145,6 +160,10 @@ impl<'text> Button<'text> {
     pub fn measure(&self, ui: &Ui, theme: &Theme) -> f32 {
         if self.width > 0.0 {
             self.width
+        } else if self.opens_link {
+            let padding = ui.clone_style().frame_padding[0];
+            (2.0 * padding + self.content_width(ui, theme))
+                .max(theme.button.min_width_for(ui.current_font_size()))
         } else if self.has_leading() {
             icon_label_button_width(ui, theme, self.label)
         } else {
@@ -199,7 +218,7 @@ impl<'text> Button<'text> {
     fn draw_content(&self, ui: &Ui, theme: &Theme, [min, max]: [[f32; 2]; 2], label: Color) {
         let packed = ImColor32::from(label.to_array()).to_bits();
         let span = [min[1], max[1]];
-        if !self.has_leading() {
+        if !self.has_leading() && !self.opens_link {
             let padding = ui.clone_style().frame_padding[0];
             let text_width = ui.calc_text_size(self.label)[0];
             let x = min[0] + ((max[0] - min[0] - text_width) / 2.0).max(padding);
@@ -208,27 +227,53 @@ impl<'text> Button<'text> {
         }
         // Leading part and label are centered as one group when the width
         // is larger than the content (M131).
-        let content_width = icon_label_content_width(ui, theme, self.label);
-        let x = (min[0] + (max[0] - min[0] - content_width) / 2.0).round();
-        let leading = icon_width(ui);
+        let content_width = self.content_width(ui, theme);
+        let mut x = (min[0] + (max[0] - min[0] - content_width) / 2.0).round();
+        let icon_advance = icon_width(ui) + icon_label_gap(theme);
+        // SAFETY: called on the render thread inside a frame, where ImGui has
+        // a current window and returns its draw list.
+        let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
         match (self.state, self.icon) {
             (ButtonState::Busy, _) => {
-                draw_spinner(ui, [x + leading / 2.0, (min[1] + max[1]) / 2.0], label);
+                draw_spinner(
+                    ui,
+                    [x + icon_width(ui) / 2.0, (min[1] + max[1]) / 2.0],
+                    label,
+                );
             }
-            (_, Some(icon)) => {
-                // SAFETY: called on the render thread inside a frame, where
-                // ImGui has a current window and returns its draw list.
-                let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
-                draw_icon_into(draw_list, ui, icon, x, span, packed);
-            }
+            (_, Some(icon)) => draw_icon_into(draw_list, ui, icon, x, span, packed),
             (_, None) => {}
         }
-        draw_label(
-            self.label,
-            x + leading + icon_label_gap(theme),
-            span,
-            packed,
-        );
+        if self.has_leading() {
+            x += icon_advance;
+        }
+        draw_label(self.label, x, span, packed);
+        if self.opens_link {
+            let after_label = x + ui.calc_text_size(self.label)[0] + icon_label_gap(theme);
+            draw_icon_into(
+                draw_list,
+                ui,
+                Icon::EXTERNAL_LINK,
+                after_label,
+                span,
+                packed,
+            );
+        }
+    }
+
+    /// The width of the leading icon or spinner, the label and the trailing
+    /// `external-link` with their gaps, without padding.
+    fn content_width(&self, ui: &Ui, theme: &Theme) -> f32 {
+        let trailing = if self.opens_link {
+            icon_label_gap(theme) + icon_width(ui)
+        } else {
+            0.0
+        };
+        if self.has_leading() {
+            icon_label_content_width(ui, theme, self.label) + trailing
+        } else {
+            ui.calc_text_size(self.label)[0] + trailing
+        }
     }
 }
 

@@ -26,6 +26,7 @@ use trailkit_ui::{
     fonts::FontRole,
     icons::Icon,
     pane::draw_pane,
+    text_layout::body_characters_width,
     theme::Theme,
     title_bar::{TitleBarTexts, TitleBarToggle},
     toast::Toast,
@@ -481,8 +482,7 @@ impl MemoWindow {
 /// The narrowest the window may get (M168), in the body font it is drawn with.
 #[must_use]
 pub fn minimum_window_width(ui: &Ui) -> f32 {
-    let _body_font = FontScope::push(ui, FontRole::Body);
-    ui.calc_text_size("n")[0] * MINIMUM_WINDOW_CHARACTERS
+    body_characters_width(ui, MINIMUM_WINDOW_CHARACTERS)
 }
 
 /// The note `shown`, if it exists.

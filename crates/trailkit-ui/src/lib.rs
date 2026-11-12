@@ -46,6 +46,8 @@ pub mod font_registry;
 #[cfg(windows)]
 pub mod glyph_metrics;
 #[cfg(windows)]
+pub mod help_window;
+#[cfg(windows)]
 pub mod list_row;
 #[cfg(windows)]
 pub mod markdown_view;

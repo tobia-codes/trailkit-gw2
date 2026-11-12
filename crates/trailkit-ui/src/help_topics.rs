@@ -63,6 +63,34 @@ pub fn subsection_counts(markdown: &str) -> Vec<usize> {
         .collect()
 }
 
+impl HelpTopic {
+    /// The topic's opening sentence and the rest of its markdown (R95:
+    /// every topic opens with one Secondary sentence). The lead is the first
+    /// paragraph if it is plain text, its lines joined by spaces; a topic
+    /// that starts with a heading, list, quote or code block has none.
+    #[must_use]
+    pub fn split_lead(&self) -> (Option<String>, &str) {
+        let (first, rest) = self
+            .body
+            .split_once("\n\n")
+            .unwrap_or((self.body.as_str(), ""));
+        let is_plain = first.lines().next().is_some_and(|line| {
+            let line = line.trim_start();
+            !line.is_empty()
+                && !["#", "-", "*", "+", ">", "```", "|"]
+                    .iter()
+                    .any(|marker| line.starts_with(marker))
+                && !line.starts_with(|character: char| character.is_ascii_digit())
+        });
+        if is_plain {
+            let lead = first.lines().map(str::trim).collect::<Vec<_>>().join(" ");
+            (Some(lead), rest.trim_start_matches('\n'))
+        } else {
+            (None, self.body.as_str())
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -92,6 +120,28 @@ mod tests {
     #[test]
     fn subsections_are_counted_per_topic() {
         assert_eq!(subsection_counts(HELP), [1, 0]);
+    }
+
+    #[test]
+    fn the_first_plain_paragraph_is_the_lead() {
+        let topic = HelpTopic {
+            title: "Search".to_owned(),
+            body: "Find notes\nby their text.\n\n### Keys\nCtrl+F.".to_owned(),
+        };
+        let (lead, rest) = topic.split_lead();
+        assert_eq!(lead.as_deref(), Some("Find notes by their text."));
+        assert_eq!(rest, "### Keys\nCtrl+F.");
+    }
+
+    #[test]
+    fn a_topic_starting_with_a_heading_or_list_has_no_lead() {
+        for body in ["### Keys\nCtrl+F.", "- one\n- two", "1. first"] {
+            let topic = HelpTopic {
+                title: "Keys".to_owned(),
+                body: body.to_owned(),
+            };
+            assert_eq!(topic.split_lead(), (None, body));
+        }
     }
 
     #[test]

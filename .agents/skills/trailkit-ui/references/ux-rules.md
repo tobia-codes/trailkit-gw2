@@ -174,8 +174,8 @@ Each rule has an id (`area-name`) so reviews can cite it.
 - `lay-button-icon-position` — An icon in a button stands **before** the label
   and says what the button does. An icon **after** the label (`external-link`)
   says that the click leaves the game, e.g. opens the browser (R100, Q303).
-  Only the button variant with a trailing icon may do that; it is built with
-  the first button that opens a link. No other trailing icons in buttons; a
+  Only the button variant with a trailing icon may do that:
+  `Button::opens_link` in `trailkit-ui`. No other trailing icons in buttons; a
   menu's submenu chevron and a dropdown's chevron are indicators of those
   components, not button icons.
 - `lay-button-min-width` — Every button with a text label is at least

@@ -21,6 +21,8 @@ pub enum Status {
     Warning,
     /// Something failed (`danger`, `circle-alert`).
     Danger,
+    /// Something to know, e.g. why a button is disabled (`info`, `info`).
+    Info,
 }
 
 impl Status {
@@ -31,6 +33,7 @@ impl Status {
             Self::Success => Icon::CIRCLE_CHECK,
             Self::Warning => Icon::TRIANGLE_ALERT,
             Self::Danger => Icon::CIRCLE_ALERT,
+            Self::Info => Icon::INFO,
         }
     }
 }
@@ -44,6 +47,7 @@ pub fn draw_status_line(ui: &Ui, theme: &Theme, status: Status, text: &str, styl
         Status::Success => theme.status.success,
         Status::Warning => theme.status.warning,
         Status::Danger => theme.status.danger,
+        Status::Info => theme.status.info,
     };
     let top = ui.cursor_screen_pos()[1];
     draw_icon(ui, status.icon(), color);
