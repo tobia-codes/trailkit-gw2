@@ -9,6 +9,7 @@ use trailkit_ui::{
     fonts::FontRole,
     icons::Icon,
     separator::draw_separator,
+    status_line::{Status, draw_status_line},
     text::{TextStyle, draw_icon, draw_text_wrapped},
     theme::Theme,
 };
@@ -220,10 +221,7 @@ pub(super) fn draw_dialog_card(
 /// `circle-alert` and `status` (M180, Q157).
 fn draw_dialog_status(ui: &Ui, theme: &Theme, status: &str, left: f32) {
     ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
-    draw_icon(ui, Icon::CIRCLE_ALERT, theme.status.danger);
-    ui.same_line_with_spacing(0.0, theme.spacing.extra_small * 1.5);
-    // The status text keeps its code until `draw_status_line` (Q277).
-    ui.text_colored(theme.status.danger.to_array(), status);
+    draw_status_line(ui, theme, Status::Danger, status, TextStyle::Body);
 }
 
 /// The width of the buttons at the right end of a dialog card.

@@ -9,7 +9,7 @@ use trailkit_ui::{
     glyph_metrics::{capital_middle, glyph_icon_ink, glyph_ink_box},
     icons::Icon,
     pane::draw_pane,
-    selection_bar::{draw_row_highlight, draw_selection_bar},
+    selection_bar::draw_row_state,
     separator::draw_compact_separator,
     theme::Theme,
 };
@@ -182,10 +182,7 @@ fn draw_window_menu_row(ui: &Ui, theme: &Theme, row: &WindowMenuRow) -> bool {
     let width = ui.content_region_avail()[0];
     let height = ui.frame_height() + theme.spacing.extra_small;
     let clicked = ui.invisible_button(row.label, [width, height]);
-    draw_row_highlight(ui, theme, row.selected);
-    if row.selected {
-        draw_selection_bar(ui, theme);
-    }
+    draw_row_state(ui, theme, row.selected);
     let [left, top] = ui.item_rect_min();
     let right = ui.item_rect_max()[0];
     let middle = top + height / 2.0;

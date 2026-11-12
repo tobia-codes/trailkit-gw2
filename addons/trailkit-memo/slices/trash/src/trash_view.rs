@@ -2,11 +2,8 @@
 //! header, two-line rows and context menu, the empty state, and the
 //! toolbar and group preview of the note pane.
 
-use std::borrow::Cow;
-use trailkit_ui::tooltip::draw_tooltip;
-
 use jiff::Timestamp;
-use nexus::imgui::{MouseButton, Selectable, Ui};
+use nexus::imgui::{MouseButton, Ui};
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText},
     note_tree::{NodeId, TrashEntry, TreeNode},
@@ -17,14 +14,11 @@ use trailkit_ui::{
         draw_primary_button_with_icon, icon_button_width, icon_label_button_width,
     },
     empty_state::{EmptyState, draw_empty_state},
-    font_registry::FontScope,
-    fonts::FontRole,
     icons::Icon,
+    list_row::{ListRow, ListRowDetail, draw_list_row},
     menu::{MenuItemTone, draw_menu_item_with_icon, draw_popup},
-    selection_bar::{draw_row_highlight_in, draw_selection_bar_in, hide_square_row_highlight},
     separator::{draw_compact_separator, draw_separator, draw_separator_above_rows},
     text::{TextStyle, draw_text, draw_text_wrapped, draw_truncated_text},
-    text_layout::truncate_to_width,
     theme::Theme,
     toolbar::move_to_toolbar_end,
 };
@@ -147,36 +141,35 @@ fn draw_entry_row(
 ) -> Option<TrashAction> {
     let id = entry.id();
     let _id = ui.push_id(id.imgui_id());
-    let is_selected = selected == Some(id);
-    let padding = ui.clone_style().frame_padding;
-    let line = ui.text_line_height();
-    let [left, top] = ui.cursor_screen_pos();
-    let row_size = [ui.content_region_avail()[0], 2.0 * line + 2.0 * padding[1]];
-    let clicked = {
-        let _square = hide_square_row_highlight(ui);
-        Selectable::new("##entry")
-            .selected(is_selected)
-            .size(row_size)
-            .build(ui)
+    let (title, title_style) = match &entry.node {
+        TreeNode::Note(note) => (note.title.as_str(), TextStyle::Body),
+        TreeNode::Group(group) => (group.title.as_str(), TextStyle::BodyStrong),
     };
-    // The selectable's item rect reaches half the item spacing beyond the
-    // row, where the list clips; draw on the row itself.
-    let row = [[left, top], [left + row_size[0], top + row_size[1]]];
-    draw_row_highlight_in(ui, theme, is_selected, row);
-    if is_selected {
-        draw_selection_bar_in(ui, theme, row);
-    }
-    let title_truncated = draw_entry_texts(ui, language, theme, entry, row, now);
-    if title_truncated && ui.is_item_hovered() {
-        draw_tooltip(
-            ui,
-            match &entry.node {
-                TreeNode::Note(note) => &note.title,
-                TreeNode::Group(group) => &group.title,
-            },
-        );
-    }
-    let mut action = clicked.then_some(TrashAction::Select(id));
+    let count = match &entry.node {
+        TreeNode::Note(_) => None,
+        TreeNode::Group(group) => Some(group.note_count().to_string()),
+    };
+    let days_left = labels::days_left(entry, now, language);
+    let response = draw_list_row(
+        ui,
+        theme,
+        &ListRow {
+            id: "##entry",
+            selected: selected == Some(id),
+            title,
+            title_style,
+            trailing: count.as_deref(),
+            detail: Some(ListRowDetail {
+                text: days_left.as_ref(),
+                color: if labels::is_urgent(entry, now) {
+                    theme.status.danger
+                } else {
+                    theme.text.secondary
+                },
+            }),
+        },
+    );
+    let mut action = response.clicked.then_some(TrashAction::Select(id));
     if ui.is_item_hovered() && ui.is_mouse_clicked(MouseButton::Right) {
         action = Some(TrashAction::Select(id));
         ui.open_popup("trash_context");
@@ -187,56 +180,6 @@ fn draw_entry_row(
         }
     });
     action
-}
-
-/// Draws the texts of an entry row `[min, max]`: the title (groups in bold
-/// with their note count at the right end) and the days left below it,
-/// `danger` in the last week (M150). Texts that do not fit are shortened
-/// (`lay-truncation`); returns whether the title was.
-fn draw_entry_texts(
-    ui: &Ui,
-    language: Language,
-    theme: &Theme,
-    entry: &TrashEntry,
-    [min, max]: [[f32; 2]; 2],
-    now: Timestamp,
-) -> bool {
-    let padding = ui.clone_style().frame_padding;
-    let [left, top] = [min[0] + padding[0], min[1] + padding[1]];
-    let right = max[0] - padding[0];
-    let draw_list = ui.get_window_draw_list();
-    let title_truncated = match &entry.node {
-        TreeNode::Note(note) => {
-            let title = truncate_to_width(ui, &note.title, right - left);
-            draw_list.add_text([left, top], theme.text.primary.to_array(), &title);
-            matches!(title, Cow::Owned(_))
-        }
-        TreeNode::Group(group) => {
-            let count = group.note_count().to_string();
-            let count_x = right - ui.calc_text_size(&count)[0];
-            draw_list.add_text([count_x, top], theme.text.secondary.to_array(), &count);
-            let _bold = FontScope::push(ui, FontRole::BodyBold);
-            let room = count_x - theme.spacing.small - left;
-            let title = truncate_to_width(ui, &group.title, room);
-            draw_list.add_text([left, top], theme.text.primary.to_array(), &title);
-            matches!(title, Cow::Owned(_))
-        }
-    };
-    let days_color = if labels::is_urgent(entry, now) {
-        theme.status.danger
-    } else {
-        theme.text.secondary
-    };
-    draw_list.add_text(
-        [left, top + ui.text_line_height()],
-        days_color.to_array(),
-        truncate_to_width(
-            ui,
-            labels::days_left(entry, now, language).as_ref(),
-            right - left,
-        ),
-    );
-    title_truncated
 }
 
 /// Draws the items of an entry's context menu: "Restore" and, set off,

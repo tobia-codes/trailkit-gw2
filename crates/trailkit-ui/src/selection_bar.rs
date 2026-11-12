@@ -1,8 +1,9 @@
 //! The selection bar: the brass mark of the selected row in trees and lists
 //! (trailkit-ui skill §4, ROADMAP R71).
 //!
-//! A selected row keeps the neutral `bg.active` fill that ImGui draws; this
-//! module adds a short `accent` bar with round ends on its left edge. The
+//! [`draw_row_state`] shows a row's state: the rounded hover or selection
+//! fill and, on a selected row, a short `accent` bar with round ends on its
+//! left edge. The
 //! bar takes the same share of every row's height: in a one-line row it is
 //! inset `list.selection_bar_inset` from top and bottom, taller rows (the
 //! two-line rows) get a proportionally longer bar.
@@ -19,16 +20,9 @@ use crate::theme::Theme;
 /// visible mark.
 const MINIMUM_BAR_HEIGHT: f32 = 4.0;
 
-/// Draws the selection bar on the left edge of the last drawn item (the
-/// row's tree node or selectable). Call it right after that item.
-pub fn draw_selection_bar(ui: &Ui, theme: &Theme) {
-    draw_selection_bar_in(ui, theme, [ui.item_rect_min(), ui.item_rect_max()]);
-}
-
-/// Like [`draw_selection_bar`] for the row `[min, max]` (screen), e.g. a
-/// selectable, whose item rect reaches half the item spacing beyond the
-/// row on both sides.
-pub fn draw_selection_bar_in(ui: &Ui, theme: &Theme, [min, max]: [[f32; 2]; 2]) {
+/// Draws the selection bar on the left edge of the row `[min, max]`
+/// (screen).
+fn draw_selection_bar_in(ui: &Ui, theme: &Theme, [min, max]: [[f32; 2]; 2]) {
     let [left, top] = min;
     let bottom = max[1];
     let width = theme.list.selection_bar_width;
@@ -61,7 +55,7 @@ pub fn draw_selection_bar_in(ui: &Ui, theme: &Theme, [min, max]: [[f32; 2]; 2]) 
 /// Makes ImGui's own row highlight (the `Header*` colors of tree nodes and
 /// selectables) transparent while the returned tokens live: ImGui 1.80
 /// draws it with square corners. Push it around the row's item, then call
-/// [`draw_row_highlight`].
+/// [`draw_row_state`].
 pub fn hide_square_row_highlight<'ui>(ui: &'ui Ui) -> [ColorStackToken<'ui>; 3] {
     [
         ui.push_style_color(StyleColor::Header, [0.0; 4]),
@@ -70,22 +64,10 @@ pub fn hide_square_row_highlight<'ui>(ui: &'ui Ui) -> [ColorStackToken<'ui>; 3] 
     ]
 }
 
-/// Draws the hover or selection fill of the last drawn row item with
-/// `radius.md` corners (rows, R71): `bg.active` while selected or pressed,
-/// `bg.hover` while hovered. Call it right after the item, before the
-/// selection bar and the row's text.
-pub fn draw_row_highlight(ui: &Ui, theme: &Theme, selected: bool) {
-    draw_row_highlight_in(
-        ui,
-        theme,
-        selected,
-        [ui.item_rect_min(), ui.item_rect_max()],
-    );
-}
-
-/// Like [`draw_row_highlight`] for the row `[min, max]` (screen) of the
-/// last drawn item (see [`draw_selection_bar_in`]).
-pub fn draw_row_highlight_in(ui: &Ui, theme: &Theme, selected: bool, [min, max]: [[f32; 2]; 2]) {
+/// Draws the hover or selection fill of the row `[min, max]` (screen) of
+/// the last drawn item with `radius.md` corners (R71): `bg.active` while
+/// selected or pressed, `bg.hover` while hovered.
+fn draw_row_highlight_in(ui: &Ui, theme: &Theme, selected: bool, [min, max]: [[f32; 2]; 2]) {
     let color = if selected || ui.is_item_active() {
         theme.surface.active
     } else if ui.is_item_hovered() {
@@ -98,6 +80,29 @@ pub fn draw_row_highlight_in(ui: &Ui, theme: &Theme, selected: bool, [min, max]:
         .filled(true)
         .rounding(theme.radius.medium)
         .build();
+}
+
+/// Draws the state of a row after its item (R71, Q306): the hover, pressed
+/// or selection fill and, while `selected`, the selection bar. Every list
+/// row shows its state only through this function. Push [`hide_square_row_highlight`] around the
+/// item itself.
+pub fn draw_row_state(ui: &Ui, theme: &Theme, selected: bool) {
+    draw_row_state_in(
+        ui,
+        theme,
+        selected,
+        [ui.item_rect_min(), ui.item_rect_max()],
+    );
+}
+
+/// Like [`draw_row_state`] for the row `[min, max]` (screen) of the last
+/// drawn item, e.g. a selectable, whose item rect reaches half the item
+/// spacing beyond the row on both sides.
+pub fn draw_row_state_in(ui: &Ui, theme: &Theme, selected: bool, row: [[f32; 2]; 2]) {
+    draw_row_highlight_in(ui, theme, selected, row);
+    if selected {
+        draw_selection_bar_in(ui, theme, row);
+    }
 }
 
 /// The top and bottom of the bar in a row from `top` to `bottom`: the bar

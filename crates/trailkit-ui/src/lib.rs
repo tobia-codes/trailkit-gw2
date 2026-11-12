@@ -46,6 +46,8 @@ pub mod font_registry;
 #[cfg(windows)]
 pub mod glyph_metrics;
 #[cfg(windows)]
+pub mod list_row;
+#[cfg(windows)]
 pub mod markdown_view;
 #[cfg(windows)]
 pub mod menu;
@@ -59,6 +61,8 @@ pub mod separator;
 pub mod spinner;
 #[cfg(windows)]
 pub mod splitter;
+#[cfg(windows)]
+pub mod status_line;
 #[cfg(windows)]
 pub mod style_scope;
 #[cfg(windows)]
