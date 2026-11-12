@@ -29,6 +29,7 @@ Latin up to Extended-B plus punctuation, the icon font only the icons in
 | `empty_state` | `draw_empty_state` — the one empty-state layout: optional icon in `text.disabled`, Body title, Secondary hint, optional buttons with one primary (Q283) | Windows |
 | `editor` | the word-wrapping text editor: platform-independent `buffer` (text, cursor, undo) and `layout`, plus `highlight` and the drawing `view` (Windows) (M58–M60) | any / Windows |
 | `text_search` | `SearchQuery`: whitespace-separated terms, case-insensitive, shared by list filtering and hit highlighting (M118–M120) | any |
+| `help_topics` | `parse_help_topics`: the `##` topics of an addon's `help/<language>.md`, `subsection_counts` for the language parity test (R95) | any |
 | `markdown` | markdown → blocks and styled spans; task toggling; `http(s)`-only links | any |
 | `button` | `draw_button` (label centered by its capitals, M85), `draw_primary_button` (accent, `lay-one-primary`), `draw_primary_button_with_icon` (icon + label), `draw_icon_button` / `draw_icon_toggle` (borderless, tooltip), `draw_popup_icon_button` (hover on `bg.active`), `draw_icon_button_with_state`; every text button is a `Button` with `ButtonKind` and `ButtonState` (`Ready` / `Busy` / `Disabled { reason }`, R93), the `draw_*` functions are short forms, `button_width`, `icon_button_width`, `icon_label_button_width`; text buttons are at least `button.min_width` wide (M131) | Windows |
 | `menu` | `draw_menu_item` (Lucide check mark), `begin_submenu` (Lucide chevron, opens flush beside the parent, M98/M99) | Windows |

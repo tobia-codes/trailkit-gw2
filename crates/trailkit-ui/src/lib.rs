@@ -24,6 +24,7 @@ pub mod chat_link;
 pub mod color;
 pub mod editor;
 pub mod fonts;
+pub mod help_topics;
 pub mod icons;
 pub mod markdown;
 pub mod text;
