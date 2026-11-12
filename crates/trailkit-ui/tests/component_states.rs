@@ -17,12 +17,14 @@ use trailkit_ui::{
         draw_primary_button_with_icon,
     },
     dropdown::draw_dropdown,
+    empty_state::{EmptyState, EmptyStateButtons, draw_empty_state},
     icons::Icon,
     menu::{MenuItemTone, begin_submenu, draw_menu_item, draw_menu_item_with_icon, draw_popup},
     pane::draw_pane,
     separator::draw_compact_separator,
     splitter::draw_vertical_splitter,
     style_scope::StyleScope,
+    text::{TextStyle, draw_icon, draw_text, draw_text_wrapped, draw_truncated_text},
     theme::{Theme, ThemeKind},
     title_bar::{TitleBarState, TitleBarTexts, TitleBarToggle, draw_window as draw_title_bar},
     toast::{Toast, ToastAction, ToastExtras, ToastTone, draw_toast, draw_toast_with_extras},
@@ -661,6 +663,198 @@ fn every_splitter_state() {
             &mut harness,
             names("pressed"),
             &mouse(over_splitter, true),
+            &mut draw,
+        );
+    }
+}
+
+/// A sentence in every text style: heading sizes, body, emphasis, secondary
+/// and small text (R96).
+#[test]
+fn every_text_style() {
+    let size = [280.0, 250.0];
+    for (kind, theme_name) in THEMES {
+        let theme = kind.theme();
+        let mut harness = UiHarness::new(size);
+        let mut draw = |ui: &Ui| {
+            in_window(ui, &theme, size, || {
+                for style in TextStyle::ALL {
+                    draw_text(ui, &theme, style, &format!("{style:?} text"));
+                }
+                draw_text_wrapped(
+                    ui,
+                    &theme,
+                    TextStyle::Small,
+                    "Small text wraps at the window edge when a sentence is too long.",
+                );
+            });
+        };
+        assert_state(
+            &mut harness,
+            ("text", "styles", theme_name),
+            &mouse([270.0, 240.0], false),
+            &mut draw,
+        );
+    }
+}
+
+/// Text shortened with "…": the tooltip with the full text only while a
+/// shortened text is hovered, none for text that fits (R96, Q282).
+#[test]
+fn truncated_text_with_and_without_tooltip() {
+    let size = [260.0, 130.0];
+    for (kind, theme_name) in THEMES {
+        let theme = kind.theme();
+        let mut harness = UiHarness::new(size);
+        let mut draw = |ui: &Ui| {
+            in_window(ui, &theme, size, || {
+                draw_truncated_text(
+                    ui,
+                    &theme,
+                    TextStyle::BodyStrong,
+                    "Papierkorb mit langem Namen",
+                    90.0,
+                );
+                ui.dummy([0.0, 30.0]);
+                draw_truncated_text(ui, &theme, TextStyle::BodyStrong, "Kurz", 90.0);
+            });
+        };
+        let names = |state| ("truncated-text", state, theme_name);
+        assert_state(
+            &mut harness,
+            names("rest"),
+            &mouse([250.0, 120.0], false),
+            &mut draw,
+        );
+        assert_state(
+            &mut harness,
+            names("hover-truncated"),
+            &mouse([30.0, 20.0], false),
+            &mut draw,
+        );
+        assert_state(
+            &mut harness,
+            names("hover-fits"),
+            &mouse([20.0, 70.0], false),
+            &mut draw,
+        );
+    }
+}
+
+/// An icon in every color a view draws it in.
+#[test]
+fn icons_in_text_colors() {
+    let size = [200.0, 60.0];
+    for (kind, theme_name) in THEMES {
+        let theme = kind.theme();
+        let mut harness = UiHarness::new(size);
+        let mut draw = |ui: &Ui| {
+            in_window(ui, &theme, size, || {
+                for color in [
+                    theme.text.primary,
+                    theme.text.secondary,
+                    theme.text.disabled,
+                    theme.status.warning,
+                    theme.status.danger,
+                ] {
+                    draw_icon(ui, Icon::TRIANGLE_ALERT, color);
+                    ui.same_line();
+                }
+            });
+        };
+        assert_state(
+            &mut harness,
+            ("icon", "colors", theme_name),
+            &mouse([190.0, 50.0], false),
+            &mut draw,
+        );
+    }
+}
+
+/// The empty state in every variant: title only with two buttons, icon with
+/// title and hint, one button, and the buttons stacked in a narrow pane (Q283: one layout).
+#[test]
+fn every_empty_state() {
+    type Variant = (&'static str, [f32; 2], fn() -> EmptyState<'static>);
+    let variants: [Variant; 4] = [
+        ("buttons", [320.0, 200.0], || EmptyState {
+            icon: None,
+            title: "No notes yet",
+            hint: None,
+            buttons: Some(EmptyStateButtons {
+                primary: "Create first note",
+                secondary: Some("New group"),
+            }),
+        }),
+        ("buttons-stacked", [200.0, 200.0], || EmptyState {
+            icon: None,
+            title: "No notes yet",
+            hint: None,
+            buttons: Some(EmptyStateButtons {
+                primary: "Create first note",
+                secondary: Some("New group"),
+            }),
+        }),
+        ("icon-and-hint", [260.0, 200.0], || EmptyState {
+            icon: Some(Icon::TRASH_2),
+            title: "The trash is empty.",
+            hint: Some("Entries stay for 30 days."),
+            buttons: None,
+        }),
+        ("one-button", [260.0, 200.0], || EmptyState {
+            icon: Some(Icon::FILE_PLUS),
+            title: "Nothing here yet",
+            hint: Some("Notes you create show up here."),
+            buttons: Some(EmptyStateButtons {
+                primary: "New note",
+                secondary: None,
+            }),
+        }),
+    ];
+    for (kind, theme_name) in THEMES {
+        let theme = kind.theme();
+        for (name, size, state) in variants {
+            let mut harness = UiHarness::new(size);
+            let mut draw = |ui: &Ui| {
+                in_window(ui, &theme, size, || {
+                    draw_empty_state(ui, &theme, &state());
+                });
+            };
+            assert_state(
+                &mut harness,
+                ("empty-state", name, theme_name),
+                &mouse([size[0] - 4.0, size[1] - 4.0], false),
+                &mut draw,
+            );
+        }
+    }
+}
+
+/// A borderless input: its frame stays invisible at rest and hovered.
+#[test]
+fn transparent_frame_at_rest_and_hovered() {
+    let size = [220.0, 70.0];
+    for (kind, theme_name) in THEMES {
+        let theme = kind.theme();
+        let mut harness = UiHarness::new(size);
+        let mut text = String::from("Typed text");
+        let mut draw = |ui: &Ui| {
+            in_window(ui, &theme, size, || {
+                let _frame = StyleScope::transparent_frame(ui);
+                ui.input_text("##input", &mut text).build();
+            });
+        };
+        let names = |state| ("transparent-frame", state, theme_name);
+        assert_state(
+            &mut harness,
+            names("rest"),
+            &mouse([210.0, 60.0], false),
+            &mut draw,
+        );
+        assert_state(
+            &mut harness,
+            names("hover"),
+            &mouse([40.0, 22.0], false),
             &mut draw,
         );
     }
