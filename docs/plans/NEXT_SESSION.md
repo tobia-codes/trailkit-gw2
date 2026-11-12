@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-12 (session 29, after PR #110). Current state and
+Last updated: 2026-11-12 (session 30). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -11,28 +11,30 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## ▶ Resume here
 
-**Session 29 (2026-11-11/12):** PR #109 (R96 shared text styles and components) and PR #110
-(`chore/privacy-and-issue-form`: R98, R99, `PRIVACY.md`/`.de.md`, issue form, CONTRIBUTING, `trailkit-logs` skill)
-are merged into `develop`. R98/B25: in-game problem reports through the backend, switched by a backend feature
-flag, with the R95 GitHub form as fallback; open points Q288–Q293 in `backend.md`.
-Q286 (tooltip looks like a button, 2–3 variants for all addons) stays a later design round.
-Before the first release: confirm GitHub's DPF listing on `dataprivacyframework.gov` (R99 check).
+**Session 30 (2026-11-12).** On `develop`: PR #109 (R96 shared text styles/components), #110 (privacy texts, issue form, `trailkit-logs`
+skill), #112 (component snapshots). R98/B25: in-game problem reports through the backend behind a feature flag, R95 GitHub form
+as fallback; open points Q288–Q293 in `backend.md`. Q286 (tooltip looks like a button) stays a later design round. Before the first
+release: confirm GitHub's DPF listing on `dataprivacyframework.gov` (R99 check).
 
-**In progress: `feature/help-problem-page`** (local, from `origin/develop`, not pushed). Done and committed: `trailkit-log::export`
-(`build_log_export`, `export_file_name`, `has_logs`; newest 3 days, 5 MiB, header with trims, tests, README) and
-`trailkit-ui::help_topics` (`parse_help_topics`, `subsection_counts`). Also PR #112 (component snapshots) was opened with auto-merge.
-**Help window re-grilled and recorded as R100** (Q294–Q304; mockup https://claude.ai/artifact/82dwWQcEtFeTfxpQ2ex1cy, approved
-in the session). Build from R100 plus the unchanged parts of R95. Still open: the exact wording tweaks the user may send. Remaining steps, in order:
+**▶ Work branch: `feature/help-problem-page`** (local only, **not pushed**, 4 commits ahead of `origin/develop`; keep working on it,
+do not start a new branch). Done and committed: `trailkit-log::export` (`build_log_export`, `export_file_name`, `has_logs`; newest
+3 days, 5 MiB, header with trims, tests, README), `trailkit-ui::help_topics` (`parse_help_topics`, `subsection_counts`), and the
+docs: **R100** (help window re-grilled, Q294–Q304, mockup https://claude.ai/artifact/82dwWQcEtFeTfxpQ2ex1cy approved) and the rule
+`lay-button-icon-position` (`ux-rules.md`). The old mockup v3 of R95 is unreadable in this account; build from R100 plus the unchanged
+parts of R95. Existing icon buttons all have the icon in front already; no code change was needed for the rule.
+The user may still send wording tweaks for the mockup texts. Remaining steps, in order:
 1. `draw_status_line` and `draw_list_row` in `trailkit-ui` (R96; list row for note list, trash and help topic list, drag/indent/arrow
-   stay in the slice; existing snapshots stay identical) + component snapshots.
-2. Help window in `trailkit-ui` (R100: title `<window title> · Help`, opens on the Help tab, remembers tab and topic in memory, problem page with
-   numbered steps, Small texts, status line states none/success/failure/no logs, topic list 112 px at minimum width) + snapshots
-   (Dark/Light, minimum width, German).
-3. memo: title bar `?` (Q171), Nexus "Open help", export action on a worker thread (read logs, write to Downloads with
-   `export_file_name`, open Explorer with the file selected), GitHub issue link with addon and version, `has_logs` check; button variant with a trailing icon (`lay-button-icon-position`).
+   stay in the slice; all existing snapshots must stay identical, the riskiest step) + component snapshots.
+2. Help window in `trailkit-ui` (R100: title `<window title> · Help`, opens on the Help tab, remembers tab and topic in memory, problem
+   page with numbered steps, Small texts, status line states none/success/success-trimmed/failure/no log, topic list 112 px,
+   minimum width 60 characters) + snapshots (Dark/Light, minimum width, German).
+3. memo: title bar `?` toggles (Q171, Q296), Nexus "Open help", export action on a worker thread (read logs, write to Downloads with
+   `export_file_name`, open Explorer with the file selected), GitHub issue link with addon and version, `has_logs` check; button
+   variant with a trailing icon for the GitHub button (`lay-button-icon-position`).
 4. Help rewrite M181 (nine topics in `help/{en,de}.md`, privacy topic embedded from `PRIVACY.md`/`.de.md`, parity test with
    `subsection_counts`), icons in `icons.rs` (circle-help, download, external-link, circle-check, circle-alert, info) + `cargo xtask subset-fonts`.
-5. In-game test, merge OK (R74), PR into `develop`.
+5. Deploy, in-game test, then the user's merge OK (R74); push the branch, PR into `develop`, arm auto-merge. Pushing before that
+   (e.g. to continue on another device) also needs the user's OK.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
 
