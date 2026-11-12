@@ -14,18 +14,16 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 **Session 30 (2026-11-12).** `develop` has PRs #109, #110, #112. R98/B25: problem reports via the backend behind a flag, GitHub form as
 fallback (Q288–Q293 in `backend.md`). Q286 (tooltip looks like a button) is a later design round. Before the first release: DPF listing check (R99).
 
-**▶ Work branch: `feature/help-problem-page`** (local only, **not pushed**, 11 commits ahead of `origin/develop`; keep working on it,
+**▶ Work branch: `feature/help-problem-page`** (local only, **not pushed**, 12 commits ahead of `origin/develop`; keep working on it,
 no new branch). Done: `trailkit-log::export`, `help_topics`, docs R100/Q305/Q306, `draw_status_line`, `draw_list_row`, `draw_row_state`
 (R96), the help window in `trailkit-ui` (`HelpWindow::draw(ui, theme, &HelpWindowContent)` returns `Option<HelpAction>`:
 `ExportLog` / `ReportProblem`; `Button::opens_link`, `Status::Info`, icons incl. `circle-help`; 18 snapshots `help-window-*`).
 **Open, in this order:**
-1. **memo wiring.** Own `HelpWindow` in memo (id `trailkit.memo.help`); title bar `?` calls `toggle` (Q171/Q296, new `TitleBarToggle` with
-   `circle-help`), Nexus "Open help" calls `open` (never closes). Build `HelpWindowContent` from en/de `Text` entries (no inline literals)
-   and `include_str!("help/{en,de}.md")`. Export button: `Disabled { reason }` without `has_logs`, `Busy` while the worker runs
-   (`BusyState`). On `ExportLog`: worker thread reads the logs, writes to Downloads with `export_file_name` (` (2)`, never overwrite),
-   opens Explorer with the file selected; status: success with the bare file name, "older days left out" on trims, failure (cause to the
-   log), no log (`Status::Info`). On `ReportProblem`: GitHub issue form with addon and version via `open_web_link`. Mockup texts:
-   https://claude.ai/artifact/82dwWQcEtFeTfxpQ2ex1cy (wording tweaks still possible).
+1. **memo wiring: done** (f5fe420): `TogglePlacement::Trailing` in the title bar, `?` before the chevron, `addon/help.rs`
+   (`MemoHelp`, log check and export on short-lived threads, Downloads via `SHGetKnownFolderPath`, Explorer `/select`),
+   `help_text.rs`, `log_export.rs`, new snapshots `memo-title-bar-help-*` and `ui-title-bar-help-*` (existing ones unchanged).
+   Open: the Nexus options button "Open help" (no options tab yet, R53; needs R87), Escape does not close the help window,
+   existing memo snapshots draw no `?` (ask the user whether to add it everywhere).
 2. **Help rewrite M181:** nine topics in `help/{en,de}.md` (`##` topic, one Secondary lead sentence, `###` structure), privacy topic from
    `PRIVACY.md`/`.de.md`, parity test with `subsection_counts`.
 3. **Ask the user:** the markdown view spaces `###` headings and paragraphs wider than the mockup (shared renderer, changes note
