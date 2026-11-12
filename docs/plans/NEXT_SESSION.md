@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-11 (session 29). Current state and
+Last updated: 2026-11-12 (session 29, after PR #110). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -11,24 +11,20 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## ▶ Resume here
 
-**Session 29 (2026-11-11):** PR #109 (R96 shared text styles and components) is merged into `develop`; its snapshots
-came from the CI artifact (R97) and changed only Q280/Q283 b. New decision R98/B25: in-game problem reports through
-the backend, switched by a backend feature flag, with the R95 GitHub form as fallback; open points Q288–Q293 in
-`backend.md`. This handoff and the decision sit as the first commit on `chore/privacy-and-issue-form`.
+**Session 29 (2026-11-11/12):** PR #109 (R96 shared text styles and components) and PR #110
+(`chore/privacy-and-issue-form`: R98, R99, `PRIVACY.md`/`.de.md`, issue form, CONTRIBUTING, `trailkit-logs` skill)
+are merged into `develop`. R98/B25: in-game problem reports through the backend, switched by a backend feature
+flag, with the R95 GitHub form as fallback; open points Q288–Q293 in `backend.md`.
 Q286 (tooltip looks like a button, 2–3 variants for all addons) stays a later design round.
-
-**Next: `chore/privacy-and-issue-form` is done locally** (R98, R99, `PRIVACY.md`/`.de.md`, issue form, CONTRIBUTING,
-`trailkit-logs` skill). Not pushed: it waits for the user's merge OK (a bundle is in the project files under
-`handoff/privacy-session-29/` if the branch is missing). After the merge, start `feature/help-problem-page`.
 Before the first release: confirm GitHub's DPF listing on `dataprivacyframework.gov` (R99 check).
 
+**Next: `feature/help-problem-page`** (restart it from `origin/develop`; an empty local branch may exist).
+
 **Queue, in this order (R95, R96, Q274):**
-1. **`chore/privacy-and-issue-form`:** `PRIVACY.md` + `PRIVACY.de.md`, issue form, `CONTRIBUTING.md` (attachments),
-   `trailkit-logs` skill (untrusted data, export format).
-2. **`feature/help-problem-page`** (an empty local branch exists; restart it from `origin/develop`): help window,
+1. **`feature/help-problem-page`:** help window,
    `draw_list_row`, `draw_status_line`, Small, export, `?`, help rewrite (M181). Icons possibly missing from
    `icons.rs`: circle-help, download, external-link, circle-check, circle-alert, info (`cargo xtask subset-fonts`).
-3. Then B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
+2. Then B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
 
 Next ids: **M182+, R100+, B26+, questions from 294.** Deferred: GW2 build/Nexus version in `session_start` (C12).
 
