@@ -41,6 +41,12 @@ references with autocompletion and status.
   closed).
 - Title bar `?` button, problem page and own log (ROADMAP R89, M179).
 
+### Wishes from 2026-11-13 (not grilled yet)
+- **Checked checkboxes strike through** the text after them.
+- **A second, very simple window** next to the main window that shows, for
+  example, the daily and weekly notes.
+- **Favorite notes**: mark notes as favorites and filter by them.
+
 ## Technical design (proposal)
 
 - IDs: UUID v7 (time-ordered) newtypes `NoteId`, `GroupId`.
