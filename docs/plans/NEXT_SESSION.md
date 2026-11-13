@@ -16,7 +16,7 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 **Session 35 (2026-11-13).** PR [#124](https://github.com/tobia-codes/trailkit-gw2/pull/124) `feature/button-cleanup` → `develop` is open
 (user OK to push and open it; auto-merge NOT armed). R105 (delete always red, menu entries too), R106 (irreversible discards red,
-UX rule `lay-danger-discard`), M187, R103 cleanup; mockup https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr (v6, section anchors).
+UX rule `lay-danger-discard`), R107 (button states: colored fills 8 %/12 % darker), M187, R103 cleanup; mockup https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr (v6, section anchors).
 The cloud clone fetches only `develop`; to work on the branch: `git fetch origin feature/button-cleanup:feature/button-cleanup && git switch feature/button-cleanup`.
 
 **Open, in this order:**
@@ -49,7 +49,7 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M188+, R107+, B26+, questions from 377**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M188+, R108+, B26+, questions from 379**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 
 - **Housekeeping (Q211/Q240):** the user deletes approved old local branches by hand (`chore/*`, merged PR branches).
 

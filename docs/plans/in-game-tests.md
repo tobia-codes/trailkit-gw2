@@ -23,7 +23,7 @@ before, how it must look now and links the approved design (R87 mockup).
 5. Reload memo (tests 7, 10): Nexus menu › Addons › trailkit-memo › unload,
    then load again.
 
-## Branch `feature/button-cleanup` (R105, R106, M187)
+## Branch `feature/button-cleanup` (R105, R106, R107, M187)
 
 "Red filled" means a red button with the label in the window color, like
 the brass "Save" button but red. Approved design for all tests below:
@@ -37,7 +37,7 @@ the brass "Save" button but red. Approved design for all tests below:
   bar) › **Trash**.
 - **Look at:** the **"Empty"** button at the top of the trash list; hover it.
 - **Before:** grey button with red text.
-- **Now:** **red filled** button; hover changes its shade slightly, like the red confirm button of a delete question. Click
+- **Now:** **red filled** button; hover makes it clearly darker (test 10). Click
   it: it still asks first; click **Cancel**.
 
 ### 2 · "Delete permanently" icon in the trash
@@ -47,7 +47,7 @@ the brass "Save" button but red. Approved design for all tests below:
 - **Look at:** the **trash icon** top right, left of brass "Restore"; hover it.
 - **Before:** red icon without background.
 - **Now:** **red filled** square with the icon in the window color; hover
-  changes its shade slightly; the tooltip "Delete permanently" is readable; clicking still asks first.
+  makes it clearly darker; the tooltip "Delete permanently" is readable; clicking still asks first.
 
 ### 3 · Confirm button of the delete questions (unchanged)
 
@@ -122,9 +122,22 @@ the brass "Save" button but red. Approved design for all tests below:
 - **Before:** brass "Create your first note" **left**, "New group" right.
 - **Now:** "New group" **left**, brass "Create your first note" **right**.
 
+### 10 · Hover and pressed colors of brass and red buttons (R107)
+
+- **Design:** [mockup, section `proposal`](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr#proposal)
+- **Get there:** brass: select a note, hover **Edit** (top right), then hold
+  the mouse button down on it and drag away before releasing. Red: Trash ›
+  hover **Empty**, hold it down, drag away. In Dark and in Light.
+- **Look at:** the fill of the button while hovered and while held.
+- **Before:** brass got **lighter** on hover in Dark; red got duller
+  (transparent) and in Light hard to read.
+- **Now:** both get **clearly darker** on hover and a bit darker again while
+  held, in Dark and Light; the label stays easy to read. The brass line of
+  the splitter between list and note also turns darker brass on hover.
+
 ## Branch `feature/crash-protection` (R104, merged)
 
-### 10 · Draft rescue after a panic
+### 11 · Draft rescue after a panic
 
 - **Get there:** `cargo xtask deploy trailkit-memo --features fault-injection`;
   in Nexus › Options › Keybinds bind `trailkit.memo.keybind.fault_injection`;

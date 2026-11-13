@@ -119,7 +119,8 @@ Build once, use everywhere. Planned:
   away for good ("Discard", R106), is the `danger` fill
   (`ButtonKind::DangerFill`) and takes the brass button's place in a row;
   icon buttons like the close `x` look like every other one. A delete entry
-  in a menu uses `MenuItemTone::Danger`
+  in a menu uses `MenuItemTone::Danger`. Hover and pressed fills follow one
+  rule (R107, `tokens.md` §2 Button states)
 - Button with kind and state — **exists** (R93): `button::Button` with
   `ButtonKind` (`Regular`, `Primary`, `DangerFill`) and `ButtonState`
   (`Ready`, `Busy` = spinner, `Disabled { reason }` = `text.disabled`

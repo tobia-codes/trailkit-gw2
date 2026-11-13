@@ -30,6 +30,8 @@ and `theme.rs` disagree, `theme.rs` wins and the difference is a bug to report.
 | Hovered row inside a popup | `bg.popup_hover` via `menu::draw_popup` | `bg.hover`, invisible on `bg.popup` |
 | Selected or pressed list row | `bg.active` + selection bar | a brass fill |
 | Pressed regular button, dropdown, menu row | `bg.pressed` | the same color as its hover |
+| Hovered / pressed brass button | `accent.hover` / `accent.active` (R107) | a lighter brass, transparency |
+| Delete button: rest / hovered / pressed, label `bg.window` | `danger` / `danger.hover` / `danger.active` (R105, R107) | transparency, a `danger` label on a regular button |
 | Any text: headings, body, info, fine print | its text role (§7.1) via `TextStyle` | font or color pushed by hand |
 | Structure marks (bullets, tree chevrons, empty-state icon), disabled controls | `text.disabled` | `text.disabled` for readable text |
 | Primary button fill, selection bar | `accent` | `accent` as text or a thin line |
@@ -173,6 +175,19 @@ Rules:
    spacing.
 5. **No local styles.** A text that fits no role gets a new role here first
    (grilling plus a visual proposal, R87), never a one-off font or color.
+
+### Button states (R107)
+
+- **Neutral surfaces** (regular and icon buttons, menu and list rows): rest,
+  hover and pressed are steps of the gray scale `bg.hover` → `bg.active` →
+  `bg.pressed`; each step stands out more from its ground.
+- **Colored filled buttons** (brass, red, any new color): hover is the rest
+  fill darkened by `HOVER_DARKENING` (8 % OKLab lightness), pressed by
+  `PRESSED_DARKENING` (12 %), in both themes, hue kept. Store the results as
+  hex tokens next to the rest color; `button_state_fills_follow_the_darkening_rule`
+  checks them against `Color::darkened`, and the label keeps ≥ 4.5:1 in every
+  state. A color that cannot meet both gets a documented exception, never a
+  hand-picked value.
 
 ## 8. Changing or adding a token
 
