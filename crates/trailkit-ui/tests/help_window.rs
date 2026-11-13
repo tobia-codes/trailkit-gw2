@@ -95,9 +95,20 @@ struct State {
 /// Somewhere outside every control.
 const AWAY: [f32; 2] = [2.0, HEIGHT - 2.0];
 
+/// The gap between topic list and topic at the minimum width (R101).
+const SPLITTER: [f32; 2] = [144.0, 300.0];
+
 /// Every state of both tabs (R100 Q302) in English, the long German texts,
-/// and a hovered tab.
-const STATES: [State; 9] = [
+/// a hovered tab and the hovered splitter of the topic list (R101).
+const STATES: [State; 10] = [
+    State {
+        name: "help-splitter-hover",
+        german: false,
+        tab: HelpTab::Help,
+        export_button: ButtonState::Ready,
+        status: None,
+        mouse: SPLITTER,
+    },
     State {
         name: "help",
         german: false,

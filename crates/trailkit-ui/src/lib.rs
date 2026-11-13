@@ -58,6 +58,8 @@ pub mod page;
 #[cfg(windows)]
 pub mod pane;
 #[cfg(windows)]
+pub mod pane_columns;
+#[cfg(windows)]
 pub mod selection_bar;
 #[cfg(windows)]
 pub mod separator;
@@ -81,5 +83,3 @@ pub mod toolbar;
 pub mod tooltip;
 #[cfg(windows)]
 pub mod tree_arrow;
-#[cfg(windows)]
-pub mod two_panes;

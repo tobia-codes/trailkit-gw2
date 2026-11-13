@@ -11,9 +11,9 @@ use crate::{
     list_row::{ListRow, draw_list_row},
     markdown_view::{MarkdownAction, draw_markdown, first_line_font, open_web_link},
     page::{PageHead, draw_page},
+    pane_columns::{FillColumn, FixedColumn, PaneColumns, draw_resizable_pane_columns},
     text::TextStyle,
     theme::Theme,
-    two_panes::{PaneSide, TwoPanes, draw_two_panes},
 };
 
 /// The narrowest the topic list may be dragged, in body characters (Q315).
@@ -39,20 +39,28 @@ pub(super) fn draw_help_tab(
     if state.topic >= help.topics.len() {
         state.topic = 0;
     }
-    let panes = TwoPanes {
-        left_id: "topics",
-        right_id: "topic",
-        left_characters: state.topic_list_characters,
-        left_minimum_characters: MINIMUM_TOPIC_LIST_CHARACTERS,
-        right_minimum_characters: MINIMUM_TOPIC_CHARACTERS,
+    let topic_list = [FixedColumn {
+        id: "topics",
+        characters: state.topic_list_characters,
+        minimum_characters: MINIMUM_TOPIC_LIST_CHARACTERS,
+    }];
+    let columns = PaneColumns {
+        fixed: &topic_list,
+        fill: FillColumn {
+            id: "topic",
+            minimum_characters: MINIMUM_TOPIC_CHARACTERS,
+        },
     };
     let mut chosen = None;
     let selected = state.topic;
-    let response = draw_two_panes(ui, theme, &panes, |side| match side {
-        PaneSide::Left => chosen = draw_topic_list(ui, theme, help, selected),
-        PaneSide::Right => draw_topic(ui, theme, &help.topics[selected], chips),
+    let response = draw_resizable_pane_columns(ui, theme, &columns, |column| {
+        if column == 0 {
+            chosen = draw_topic_list(ui, theme, help, selected);
+        } else {
+            draw_topic(ui, theme, &help.topics[selected], chips);
+        }
     });
-    if let Some(characters) = response.left_characters {
+    if let Some((_, characters)) = response.resized {
         state.topic_list_characters = characters;
     }
     let topic_changed = chosen.is_some_and(|index| index != state.topic);

@@ -1,12 +1,12 @@
-//! Layout of the memo main window: the two panes (M72, M74, shared layout of
-//! R101) and the empty state (M42).
+//! Layout of the memo main window: the two panes (M72, M74, the shared
+//! resizable pane columns of R101) and the empty state (M42).
 
 use nexus::imgui::Ui;
 use trailkit_ui::{
     empty_state::{self, EmptyState, EmptyStateAction, EmptyStateButtons},
     icons::Icon,
+    pane_columns::{FillColumn, FixedColumn, PaneColumns, draw_resizable_pane_columns},
     theme::Theme,
-    two_panes::{PaneSide, TwoPanes, draw_two_panes},
 };
 
 use trailkit_memo_shared::i18n::LocalizedText;
@@ -16,21 +16,29 @@ use super::{MINIMUM_PANE_CHARACTERS, MINIMUM_TREE_CHARACTERS, MemoWindow, Window
 
 impl MemoWindow {
     /// Draws tree and note as two panes with a draggable splitter in the gap
-    /// between them (M21, the shared `two_panes` layout of R101). The note
-    /// list keeps a fixed width (M74); the drag ends with a save.
+    /// between them (M21, the shared resizable pane columns of R101). The
+    /// note list keeps a fixed width (M74); the drag ends with a save.
     pub(super) fn draw_two_panes(&mut self, ui: &Ui, language: Language, theme: &Theme) {
-        let panes = TwoPanes {
-            left_id: "tree",
-            right_id: "note",
-            left_characters: self.ui_state.valid_note_list_characters(),
-            left_minimum_characters: MINIMUM_TREE_CHARACTERS,
-            right_minimum_characters: MINIMUM_PANE_CHARACTERS,
+        let note_list = [FixedColumn {
+            id: "tree",
+            characters: self.ui_state.valid_note_list_characters(),
+            minimum_characters: MINIMUM_TREE_CHARACTERS,
+        }];
+        let columns = PaneColumns {
+            fixed: &note_list,
+            fill: FillColumn {
+                id: "note",
+                minimum_characters: MINIMUM_PANE_CHARACTERS,
+            },
         };
-        let response = draw_two_panes(ui, theme, &panes, |side| match side {
-            PaneSide::Left => self.draw_tree_pane(ui, language, theme),
-            PaneSide::Right => self.draw_note_pane(ui, language, theme),
+        let response = draw_resizable_pane_columns(ui, theme, &columns, |column| {
+            if column == 0 {
+                self.draw_tree_pane(ui, language, theme);
+            } else {
+                self.draw_note_pane(ui, language, theme);
+            }
         });
-        if let Some(characters) = response.left_characters {
+        if let Some((_, characters)) = response.resized {
             self.ui_state.note_list_characters = characters;
         }
         if response.released {
