@@ -56,16 +56,50 @@ Rules for contributors: [`CONTRIBUTING.md`](CONTRIBUTING.md). Security reports:
 
 ## Setup (WSL)
 
-Development happens in WSL (Linux); addons are cross-compiled to Windows.
+Development happens in WSL (Linux); addons are cross-compiled to Windows. The
+Rust version and the Windows target come from `rust-toolchain.toml`, which
+rustup applies on the first `cargo` call. Copy the blocks in order:
 
-1. Rust via [rustup](https://rustup.rs); the toolchain is pinned by `rust-toolchain.toml`.
-2. `cargo install --locked cargo-xwin cargo-deny`
-3. LLVM for cross-compiling: `sudo apt install clang lld llvm`
-4. Node via [fnm](https://github.com/Schniz/fnm) (`.node-version`) and pnpm
-   (`packageManager` in `package.json`), then `pnpm install`.
-5. Point deploys at the game's addons folder
-   ([xtask README](xtask/README.md#configuring-the-gw2-addons-folder)).
-6. Enable the git hooks: `cargo xtask install-hooks`.
+```powershell
+# Windows (PowerShell as administrator), once:
+wsl --install -d Ubuntu
+```
+
+```sh
+# In WSL: system packages, Rust, cargo tools
+sudo apt update && sudo apt install -y build-essential git curl unzip clang lld llvm
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+source ~/.cargo/env
+cargo install --locked cargo-xwin cargo-deny
+
+# Node (version in .node-version) and pnpm (version in package.json)
+curl -fsSL https://fnm.vercel.app/install | bash
+source ~/.bashrc
+fnm install 24 && fnm use 24
+npm install -g pnpm@11.17.0
+
+# The repository in the WSL file system (under /mnt/c everything is slow)
+git clone git@github.com:tobia-codes/trailkit-gw2.git ~/projects/trailkit-gw2
+cd ~/projects/trailkit-gw2
+pnpm install
+
+# Where deploys go (or set TRAILKIT_GW2_ADDONS_DIR, see the xtask README), and the git hooks
+echo 'gw2_addons_dir = "/mnt/c/Guild Wars 2/addons"' > xtask.local.toml
+cargo xtask install-hooks
+```
+
+```sh
+# Check the setup. The first cargo-xwin build downloads the Windows SDK and
+# MSVC libraries (a large download with a licence notice).
+cargo test
+cargo xwin clippy --target x86_64-pc-windows-msvc --all-targets -- -D warnings
+cargo xtask deploy trailkit-memo
+```
+
+Run `source ~/.cargo/env` in a new shell if `cargo` is not found. npm may offer
+an npm update: not needed, npm only installs pnpm. `cargo xtask ui-test` runs
+Windows test binaries through WSL's Windows interop (on by default). More on
+the addons folder: [xtask README](xtask/README.md#configuring-the-gw2-addons-folder).
 
 ## Build, test and deploy
 
