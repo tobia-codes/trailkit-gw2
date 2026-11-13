@@ -21,13 +21,14 @@ use trailkit_ui::{
 use trailkit_memo_drafts::draft_hint::DraftHintAction;
 use trailkit_memo_editor::editor::{EditorAction, EditorInput, ToolbarAction};
 use trailkit_memo_note_list::note_list::{EntryMenu, draw_note_menu};
-use trailkit_memo_note_view::note_view::{NoteViewAction, NoteViewInput, TitleTrailing};
+use trailkit_memo_note_view::note_view::{NoteViewAction, NoteViewInput};
 use trailkit_memo_reset_schedule::note_kind::{draw_kind_dropdown, kind_dropdown_size};
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText, Text, chip_context},
     note_tree::Note,
     save_text::SaveText,
 };
+use trailkit_ui::page::TitleTrailing;
 
 use super::{MemoWindow, WindowAction, note_list::draw_reset_type_submenu, shown_note_in};
 

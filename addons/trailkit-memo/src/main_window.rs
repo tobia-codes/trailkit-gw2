@@ -24,6 +24,7 @@ use nexus::imgui::{Ui, WindowFocusedFlags};
 use trailkit_ui::{
     font_registry::FontScope,
     fonts::FontRole,
+    help_window::{HelpTab, HelpWindowState},
     icons::Icon,
     pane::draw_pane,
     text_layout::body_characters_width,
@@ -47,7 +48,7 @@ use trailkit_memo_shared::{
     note_tree::{GroupId, NodeId, Note, NoteId, NotesDocument},
     settings::{Settings, TextScale, UnsavedChanges},
     storage_worker::{SaveConnection, StorageSaver},
-    ui_state::UiState,
+    ui_state::{HelpWindowTab, UiState},
     undo::UndoHistory,
 };
 
@@ -87,15 +88,6 @@ enum WindowToastKind {
     Message,
     /// An entry went to the trash: offers undo and the trash (M158).
     MovedToTrash,
-}
-
-/// Minimum widths of the two-pane layout in pixels (M40, M73).
-#[derive(Debug, Clone, Copy)]
-struct PaneWidths {
-    /// Narrowest the note list may be dragged.
-    tree_minimum: f32,
-    /// Room the note pane keeps beside the note list.
-    note_minimum: f32,
 }
 
 /// A problem with `notes.json` shown above the notes (M31).
@@ -417,14 +409,8 @@ impl MemoWindow {
         if self.document.root.is_empty() && !self.trash.visible {
             draw_empty_state(ui, language, theme, &mut self.actions);
         } else {
-            let character_width = ui.calc_text_size("n")[0];
-            let pane_minimum = character_width * MINIMUM_PANE_CHARACTERS + 2.0 * theme.pane.padding;
-            let widths = PaneWidths {
-                tree_minimum: character_width * MINIMUM_TREE_CHARACTERS + 2.0 * theme.pane.padding,
-                note_minimum: pane_minimum,
-            };
             if self.note_list_shown() {
-                self.draw_two_panes(ui, language, theme, widths);
+                self.draw_two_panes(ui, language, theme);
             } else {
                 draw_pane(ui, theme, "note", [0.0, 0.0], || {
                     self.draw_note_pane(ui, language, theme);
@@ -437,6 +423,30 @@ impl MemoWindow {
     /// it, and not in the editor, which returns it when it ends (M167).
     fn note_list_shown(&self) -> bool {
         !self.ui_state.note_list_hidden && self.editor.is_none()
+    }
+
+    /// The help window's saved tab, topic and topic list width (R101).
+    #[must_use]
+    pub fn help_window_state(&self) -> HelpWindowState {
+        HelpWindowState {
+            tab: match self.ui_state.help_tab {
+                HelpWindowTab::Help => HelpTab::Help,
+                HelpWindowTab::ReportProblem => HelpTab::ReportProblem,
+            },
+            topic: self.ui_state.help_topic,
+            topic_list_characters: self.ui_state.help_topic_list_characters,
+        }
+    }
+
+    /// Saves the help window's `state` with the other window state (R101).
+    pub fn save_help_window_state(&mut self, state: HelpWindowState) {
+        self.ui_state.help_tab = match state.tab {
+            HelpTab::Help => HelpWindowTab::Help,
+            HelpTab::ReportProblem => HelpWindowTab::ReportProblem,
+        };
+        self.ui_state.help_topic = state.topic;
+        self.ui_state.help_topic_list_characters = state.topic_list_characters;
+        self.saver.save_ui_state(self.ui_state);
     }
 
     /// The memo toggle of the title bar (R78): the window menu (M166). The

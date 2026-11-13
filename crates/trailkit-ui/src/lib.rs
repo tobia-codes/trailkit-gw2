@@ -54,6 +54,8 @@ pub mod markdown_view;
 #[cfg(windows)]
 pub mod menu;
 #[cfg(windows)]
+pub mod page;
+#[cfg(windows)]
 pub mod pane;
 #[cfg(windows)]
 pub mod selection_bar;
@@ -79,3 +81,5 @@ pub mod toolbar;
 pub mod tooltip;
 #[cfg(windows)]
 pub mod tree_arrow;
+#[cfg(windows)]
+pub mod two_panes;

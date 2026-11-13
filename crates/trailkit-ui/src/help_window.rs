@@ -5,8 +5,14 @@
 //!
 //! The addon supplies the texts in its language (trailkit-ui has no
 //! strings), its help markdown and the state of the log export; the window
-//! returns what the user asked for ([`HelpAction`]). Which tab and topic were
-//! shown is kept in memory as long as the game runs (Q300).
+//! returns what the user asked for ([`HelpAction`]). The shown tab, the
+//! selected topic and the width of the topic list form a
+//! [`HelpWindowState`] that the addon saves and restores (R101 Q314, Q318).
+//!
+//! Layout (R101) as in the addons' main windows: the tabs on the window
+//! background, below them the topic list and the topic as two panes with a
+//! splitter, or the problem page as one pane; every page has the shared
+//! page head.
 
 mod help_tab;
 mod problem_tab;
@@ -20,7 +26,6 @@ use crate::{
     fonts::FontRole,
     help_topics::{HelpTopic, parse_help_topics},
     markdown::{MarkdownDocument, parse},
-    pane::draw_pane,
     status_line::Status,
     text_layout::body_characters_width,
     theme::Theme,
@@ -36,14 +41,42 @@ const START_WIDTH_CHARACTERS: f32 = 62.0;
 /// The height the window starts with, in frame heights.
 const START_HEIGHT_FRAMES: f32 = 20.0;
 
+/// The width the topic list starts with, in body characters: 112 px at the
+/// 16 px body font of the minimum window (R95, R101 Q315).
+pub const DEFAULT_TOPIC_LIST_CHARACTERS: f32 = 14.0;
+
 /// The tabs of the help window, left to right.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum HelpTab {
-    /// The help topics; the window opens on it (Q295).
+    /// The help topics; the window opens on it the first time (Q295).
     #[default]
     Help,
     /// Saving the log and reporting a problem.
     ReportProblem,
+}
+
+/// What the help window keeps across restarts (R101 Q314, Q318); the addon
+/// stores it, e.g. in its UI state file.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct HelpWindowState {
+    /// The shown tab.
+    pub tab: HelpTab,
+    /// The position of the selected topic; one past the end selects the
+    /// first topic.
+    pub topic: usize,
+    /// The content width of the topic list in body characters.
+    pub topic_list_characters: f32,
+}
+
+impl Default for HelpWindowState {
+    /// The Help tab with the first topic and the list at its start width.
+    fn default() -> Self {
+        Self {
+            tab: HelpTab::Help,
+            topic: 0,
+            topic_list_characters: DEFAULT_TOPIC_LIST_CHARACTERS,
+        }
+    }
 }
 
 /// What the user asked for in this frame; the addon carries it out.
@@ -113,7 +146,7 @@ pub struct HelpWindowContent<'text> {
 
 /// One help topic ready to draw.
 struct ParsedTopic {
-    /// The `##` heading: the list entry and the topic's Heading2.
+    /// The `##` heading: the list entry and the topic's Heading1 title.
     title: String,
     /// The opening sentence, drawn Secondary below the title.
     lead: Option<String>,
@@ -158,10 +191,10 @@ pub struct HelpWindow {
     focus: bool,
     /// The title bar's collapse state.
     title_bar: TitleBarState,
-    /// The shown tab.
-    tab: HelpTab,
-    /// The index of the selected topic.
-    topic: usize,
+    /// Tab, topic and topic list width.
+    state: HelpWindowState,
+    /// Whether `state` changed in a way the addon should save.
+    state_changed: bool,
     /// The parsed help text, once the window was drawn.
     help: Option<ParsedHelp>,
 }
@@ -173,6 +206,23 @@ impl HelpWindow {
         Self::default()
     }
 
+    /// Shows the saved `state`, e.g. once the addon has read its UI state.
+    pub fn restore(&mut self, state: HelpWindowState) {
+        self.state = state;
+    }
+
+    /// Tab, topic and topic list width.
+    #[must_use]
+    pub const fn state(&self) -> HelpWindowState {
+        self.state
+    }
+
+    /// The state to save if the user changed the tab or the topic or let go
+    /// of the splitter since the last call; `None` otherwise.
+    pub fn take_state_to_save(&mut self) -> Option<HelpWindowState> {
+        std::mem::take(&mut self.state_changed).then_some(self.state)
+    }
+
     /// Whether the window is shown.
     #[must_use]
     pub const fn is_open(&self) -> bool {
@@ -182,7 +232,7 @@ impl HelpWindow {
     /// The shown tab.
     #[must_use]
     pub const fn tab(&self) -> HelpTab {
-        self.tab
+        self.state.tab
     }
 
     /// Opens the window, or closes it if it is open: the title bar `?`
@@ -201,7 +251,7 @@ impl HelpWindow {
 
     /// Shows `tab`, e.g. for a snapshot.
     pub fn show_tab(&mut self, tab: HelpTab) {
-        self.tab = tab;
+        self.state.tab = tab;
     }
 
     /// Draws the window if it is open and returns what the user asked for.
@@ -264,8 +314,8 @@ impl HelpWindow {
         let mut action = None;
         let Self {
             title_bar,
-            tab,
-            topic,
+            state,
+            state_changed,
             help,
             ..
         } = self;
@@ -279,21 +329,21 @@ impl HelpWindow {
             &mut open,
             || {
                 let _body = FontScope::push(ui, FontRole::Body);
-                draw_pane(ui, theme, "help_pane", [0.0, 0.0], || {
-                    if let Some(chosen) = draw_tabs(ui, theme, &content.texts, *tab) {
-                        *tab = chosen;
-                    }
-                    match tab {
-                        HelpTab::Help => {
-                            if let Some(help) = help.as_ref() {
-                                help_tab::draw_help_tab(ui, theme, help, topic, content.chips);
-                            }
-                        }
-                        HelpTab::ReportProblem => {
-                            action = problem_tab::draw_problem_tab(ui, theme, content);
+                if let Some(chosen) = draw_tabs(ui, theme, &content.texts, state.tab) {
+                    state.tab = chosen;
+                    *state_changed = true;
+                }
+                match state.tab {
+                    HelpTab::Help => {
+                        if let Some(help) = help.as_ref() {
+                            *state_changed |=
+                                help_tab::draw_help_tab(ui, theme, help, state, content.chips);
                         }
                     }
-                });
+                    HelpTab::ReportProblem => {
+                        action = problem_tab::draw_problem_tab(ui, theme, content);
+                    }
+                }
             },
         );
         self.open = open;
@@ -324,7 +374,10 @@ fn draw_tabs(
             clicked = Some(tab);
         }
     }
-    ui.dummy([0.0, theme.spacing.extra_small]);
+    // The panes start `pane.gap` below the tabs, as panes keep it between
+    // each other.
+    let item_spacing = ui.clone_style().item_spacing[1];
+    ui.dummy([0.0, (theme.pane.gap - 2.0 * item_spacing).max(0.0)]);
     clicked
 }
 

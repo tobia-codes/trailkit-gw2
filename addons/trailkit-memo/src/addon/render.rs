@@ -72,8 +72,16 @@ pub(super) fn render_main_window(ui: &nexus::imgui::Ui) {
         draw_main_window(ui, &theme, language, &mut notes, help.as_deref_mut());
     }
     if let Some(help) = help {
+        if let NotesState::Ready(window) = &*notes {
+            help.restore_once(window.help_window_state());
+        }
         help.draw(ui, &theme, language);
         HELP_OPEN.store(help.is_open(), Ordering::Relaxed);
+        if let Some(state) = help.take_state_to_save()
+            && let NotesState::Ready(window) = &mut *notes
+        {
+            window.save_help_window_state(state);
+        }
     }
 }
 

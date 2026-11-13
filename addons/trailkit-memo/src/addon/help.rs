@@ -27,7 +27,9 @@ use trailkit_memo_shared::i18n::{
 use trailkit_ui::{
     busy::BusyState,
     button::ButtonState,
-    help_window::{HelpAction, HelpWindow, HelpWindowContent, HelpWindowTexts, ProblemPage},
+    help_window::{
+        HelpAction, HelpWindow, HelpWindowContent, HelpWindowState, HelpWindowTexts, ProblemPage,
+    },
     markdown_view::open_web_link,
     status_line::Status,
     theme::Theme,
@@ -74,6 +76,8 @@ pub(super) struct MemoHelp {
     /// The status line of the last export, until the window closes or a
     /// new export starts (Q302).
     status: Option<(Status, String)>,
+    /// Whether the saved tab, topic and list width were applied (R101).
+    restored: bool,
 }
 
 impl MemoHelp {
@@ -87,7 +91,22 @@ impl MemoHelp {
             export: None,
             busy: BusyState::default(),
             status: None,
+            restored: false,
         }
+    }
+
+    /// Applies the saved tab, topic and list width once, as soon as memo's
+    /// UI state is loaded (R101 Q314, Q318).
+    pub(super) fn restore_once(&mut self, state: HelpWindowState) {
+        if !std::mem::replace(&mut self.restored, true) {
+            self.window.restore(state);
+        }
+    }
+
+    /// The state to save after the user changed tab or topic or let go of
+    /// the splitter; `None` otherwise.
+    pub(super) fn take_state_to_save(&mut self) -> Option<HelpWindowState> {
+        self.window.take_state_to_save()
     }
 
     /// Whether the window is shown.

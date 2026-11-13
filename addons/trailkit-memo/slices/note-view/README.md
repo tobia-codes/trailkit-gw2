@@ -6,7 +6,7 @@ rendered markdown in a scroll region below, so the title stays in place.
 Search hits are marked; a new search or a newly opened note jumps to the
 first one. Depends only on [`trailkit-memo-shared`](../../shared/README.md),
 never on another slice: the app hands in the kind dropdown as a neutral
-`TitleTrailing` (size + draw closure) and draws the draft hint above.
+`TitleTrailing` of `trailkit-ui`'s page head (size + draw closure) and draws the draft hint above.
 
 | Module | Content |
 |--------|---------|

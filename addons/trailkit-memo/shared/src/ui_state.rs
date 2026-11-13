@@ -14,7 +14,22 @@ use crate::note_tree::{NodeId, NoteId};
 /// the regular pane minimum (M40, M74).
 pub const DEFAULT_NOTE_LIST_CHARACTERS: f32 = 22.0;
 
-/// The restorable state of the main window.
+/// Default content width of the help window's topic list in average body
+/// characters (ROADMAP R101 Q315).
+pub const DEFAULT_HELP_TOPIC_LIST_CHARACTERS: f32 = 14.0;
+
+/// The tab the help window shows (ROADMAP R101 Q318).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum HelpWindowTab {
+    /// The help topics.
+    #[default]
+    Help,
+    /// Saving the log and reporting a problem.
+    ReportProblem,
+}
+
+/// The restorable state of the main window and the help window.
 ///
 /// A field missing from the file falls back to its default.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -44,11 +59,19 @@ pub struct UiState {
     /// Share of the editor width taken by the text when the preview is shown
     /// side by side (M60).
     pub preview_split_fraction: f32,
+    /// The help window's shown tab (R101 Q318).
+    pub help_tab: HelpWindowTab,
+    /// The position of the help window's selected topic (R101 Q318).
+    pub help_topic: usize,
+    /// Content width of the help window's topic list in average body
+    /// characters (R101 Q314).
+    pub help_topic_list_characters: f32,
 }
 
 impl Default for UiState {
     /// Nothing selected, default splitter, top of the note, note list shown,
-    /// search field hidden, regular note view, no preview.
+    /// search field hidden, regular note view, no preview; the help window
+    /// on its Help tab with the first topic.
     fn default() -> Self {
         Self {
             selected: None,
@@ -60,6 +83,9 @@ impl Default for UiState {
             compact_note_view: false,
             preview_visible: false,
             preview_split_fraction: 0.5,
+            help_tab: HelpWindowTab::Help,
+            help_topic: 0,
+            help_topic_list_characters: DEFAULT_HELP_TOPIC_LIST_CHARACTERS,
         }
     }
 }
@@ -112,6 +138,22 @@ mod tests {
         assert!(!state.note_list_hidden);
         assert!(!state.search_visible);
         assert!(!state.compact_note_view);
+        assert_eq!(state.help_tab, HelpWindowTab::Help);
+        assert_eq!(state.help_topic, 0);
+        Ok(())
+    }
+
+    #[test]
+    fn the_help_window_state_round_trips() -> serde_json::Result<()> {
+        let state = UiState {
+            help_tab: HelpWindowTab::ReportProblem,
+            help_topic: 3,
+            help_topic_list_characters: 20.5,
+            ..UiState::default()
+        };
+        let json = serde_json::to_string(&state)?;
+        assert!(json.contains(r#""help_tab":"report_problem""#));
+        assert_eq!(serde_json::from_str::<UiState>(&json)?, state);
         Ok(())
     }
 

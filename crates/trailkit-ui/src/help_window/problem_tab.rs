@@ -1,16 +1,20 @@
-//! The Report a problem tab (R95, R100 Q299–Q302): the page title, the
-//! sentence that nothing is sent automatically, step 1 "Save the log" with
+//! The Report a problem tab (R95, R100 Q299–Q302, R101): one pane with the
+//! shared page head (the title in Heading1, the sentence that nothing is
+//! sent automatically in Secondary, the separator), then step 1 "Save the log" with
 //! the export button, its hint and status line, step 2 "Report on GitHub"
 //! with the primary button that opens the browser, and the footer naming
 //! the log folders. The steps are started one by one; the GitHub button is
 //! never disabled.
 
-use nexus::imgui::{ChildWindow, Ui};
+use nexus::imgui::Ui;
 
 use super::{HelpAction, HelpWindowContent};
 use crate::{
     button::{Button, ButtonKind},
+    fonts::FontRole,
     icons::Icon,
+    page::{PageHead, draw_page},
+    pane::draw_pane,
     separator::draw_separator,
     status_line::draw_status_line,
     text::{TextStyle, draw_text, draw_text_wrapped},
@@ -18,8 +22,8 @@ use crate::{
     theme::Theme,
 };
 
-/// Draws the page in its own scrolling region and returns the clicked
-/// action.
+/// Draws the page in one pane over the full width, its content scrolling
+/// below the page head, and returns the clicked action.
 pub(super) fn draw_problem_tab(
     ui: &Ui,
     theme: &Theme,
@@ -27,40 +31,50 @@ pub(super) fn draw_problem_tab(
 ) -> Option<HelpAction> {
     let texts = &content.texts;
     let mut action = None;
-    ChildWindow::new("problem").size([0.0, 0.0]).build(ui, || {
-        draw_text_wrapped(ui, theme, TextStyle::Heading2, texts.problem_tab);
-        draw_text_wrapped(ui, theme, TextStyle::Secondary, texts.problem_intro);
-        draw_step(ui, theme, 1, texts.save_log_step, || {
-            let export = Button::new(texts.export_log)
-                .icon(Icon::DOWNLOAD)
-                .state(content.problem.export_button);
-            if export.draw(ui, theme) {
-                action = Some(HelpAction::ExportLog);
-            }
-            draw_text_wrapped(ui, theme, TextStyle::Small, texts.export_hint);
-            if let Some((status, text)) = content.problem.status {
-                draw_status_line(ui, theme, status, text, TextStyle::Small);
-            }
+    let head = PageHead {
+        title: texts.problem_tab,
+        trailing: None,
+        subtitle: Some(texts.problem_intro),
+        first_line: FontRole::Heading3,
+    };
+    draw_pane(ui, theme, "problem", [0.0, 0.0], || {
+        draw_page(ui, theme, "problem_body", head, || {
+            draw_step(ui, theme, 1, texts.save_log_step, || {
+                let export = Button::new(texts.export_log)
+                    .icon(Icon::DOWNLOAD)
+                    .state(content.problem.export_button);
+                if export.draw(ui, theme) {
+                    action = Some(HelpAction::ExportLog);
+                }
+                draw_text_wrapped(ui, theme, TextStyle::Small, texts.export_hint);
+                if let Some((status, text)) = content.problem.status {
+                    draw_status_line(ui, theme, status, text, TextStyle::Small);
+                }
+            });
+            draw_step(ui, theme, 2, texts.report_step, || {
+                let report = Button::new(texts.report_button)
+                    .kind(ButtonKind::Primary)
+                    .opens_link();
+                if report.draw(ui, theme) {
+                    action = Some(HelpAction::ReportProblem);
+                }
+                draw_text_wrapped(ui, theme, TextStyle::Small, texts.report_hint);
+            });
+            draw_separator(ui, theme);
+            draw_text_wrapped(ui, theme, TextStyle::Small, texts.footer);
         });
-        draw_step(ui, theme, 2, texts.report_step, || {
-            let report = Button::new(texts.report_button)
-                .kind(ButtonKind::Primary)
-                .opens_link();
-            if report.draw(ui, theme) {
-                action = Some(HelpAction::ReportProblem);
-            }
-            draw_text_wrapped(ui, theme, TextStyle::Small, texts.report_hint);
-        });
-        draw_separator(ui, theme);
-        draw_text_wrapped(ui, theme, TextStyle::Small, texts.footer);
     });
     action
 }
 
 /// Draws one numbered step: the number in a `bg.active` circle on the left,
-/// the Heading3 `title` beside it and `body` indented below the title.
+/// the Heading3 `title` beside it and `body` indented below the title. The
+/// first step follows the separator directly, later ones keep
+/// `spacing.small` from the step above.
 fn draw_step(ui: &Ui, theme: &Theme, number: u8, title: &str, body: impl FnOnce()) {
-    ui.dummy([0.0, theme.spacing.small]);
+    if number > 1 {
+        ui.dummy([0.0, theme.spacing.small]);
+    }
     let [left, top] = ui.cursor_screen_pos();
     let diameter = ui.text_line_height() + theme.spacing.extra_small;
     let indent = diameter + theme.spacing.small;
