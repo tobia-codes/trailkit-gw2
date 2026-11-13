@@ -52,14 +52,16 @@ pub const BUILT_IN_EVENTS: [&str; 9] = [
 /// Events that may use the reserve at the end of a day's last file, so a
 /// crash and the limits of a session are logged even when the day is full
 /// (ROADMAP R92). `worker_died` and `save_gave_up` (a change that is not on
-/// disk, memo M180) are written by the addons' storage worker.
-const CRITICAL_EVENTS: [&str; 6] = [
+/// disk, memo M180) are written by the addons' storage worker,
+/// `addon_stopped` by an addon's crash protection (R104).
+const CRITICAL_EVENTS: [&str; 7] = [
     EVENT_PANIC,
     EVENT_SESSION_START,
     EVENT_SESSION_END,
     EVENT_LOG_FULL,
     "worker_died",
     "save_gave_up",
+    "addon_stopped",
 ];
 
 /// Whether `event` may use the reserve of a full day.

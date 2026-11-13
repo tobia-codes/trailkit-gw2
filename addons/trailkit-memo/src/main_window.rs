@@ -399,21 +399,23 @@ impl MemoWindow {
         }
     }
 
-    /// Keeps unsaved changes as a draft before the addon unloads (M54); the
-    /// storage worker writes it during its shutdown.
-    pub fn keep_draft_for_unload(&mut self) {
+    /// Keeps unsaved changes as a draft before the addon unloads (M54) or
+    /// after it stopped on an error (R104, Q360); the storage worker writes
+    /// it. Returns whether a draft was kept.
+    pub fn keep_draft_for_unload(&mut self) -> bool {
         let Some(editor) = &self.editor else {
-            return;
+            return false;
         };
         if !editor.session().has_changes() {
-            return;
+            return false;
         }
         let Some(note) = self.document.note(editor.session().note) else {
-            return;
+            return false;
         };
         let draft = editor.session().to_draft(Timestamp::now(), note.updated_at);
         self.drafts.upsert(draft);
         self.saver.save_drafts(self.drafts.clone());
+        true
     }
 
     /// Draws the window content and applies what the user did.

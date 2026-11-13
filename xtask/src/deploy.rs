@@ -43,16 +43,18 @@ impl Profile {
     }
 }
 
-/// Builds `addon_name` with cargo-xwin and copies the DLL into the addons folder.
+/// Builds `addon_name` with cargo-xwin (with the Cargo `features`, if any,
+/// e.g. `fault-injection` for the crash protection test, ROADMAP R104) and
+/// copies the DLL into the addons folder.
 ///
 /// # Errors
 /// Returns an error if the addon does not exist, the addons folder is not
 /// configured or missing, the build fails, or the copy fails (e.g. the DLL is
 /// locked by the game).
-pub fn run(addon_name: &str, profile: Profile) -> Result<()> {
+pub fn run(addon_name: &str, profile: Profile, features: Option<&str>) -> Result<()> {
     let addon = Addon::find(addon_name)?;
     let addons_dir_path = addons_dir()?;
-    build(&addon, profile)?;
+    build(&addon, profile, features)?;
 
     let built_dll = workspace::root()
         .join("target")
@@ -112,7 +114,7 @@ fn parse_addons_dir(text: &str) -> Result<PathBuf> {
 ///
 /// # Errors
 /// Returns an error if cargo cannot be started or the build fails.
-fn build(addon: &Addon, profile: Profile) -> Result<()> {
+fn build(addon: &Addon, profile: Profile, features: Option<&str>) -> Result<()> {
     let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
     let mut command = Command::new(cargo);
     command.current_dir(workspace::root()).args([
@@ -125,6 +127,9 @@ fn build(addon: &Addon, profile: Profile) -> Result<()> {
     ]);
     if profile == Profile::Release {
         command.arg("--release");
+    }
+    if let Some(features) = features {
+        command.args(["--features", features]);
     }
     let status = command
         .status()

@@ -46,3 +46,9 @@ trailkit-ui-testing.workspace = true
 
 [lints]
 workspace = true
+
+[features]
+# A keybind that makes the next drawn frame panic, to test the crash
+# protection in game (ROADMAP R104, Q365). Off in every normal build:
+# `cargo xtask deploy trailkit-memo --features fault-injection`.
+fault-injection = []

@@ -1,6 +1,7 @@
 //! The Report a problem tab (R95, R100 Q299–Q302, R101): one pane with the
 //! shared page head (the title in Heading1, the sentence that nothing is
-//! sent automatically in Secondary, the separator), then step 1 "Save the log" with
+//! sent automatically in Secondary, the separator), an optional warning card
+//! (R104), then step 1 "Save the log" with
 //! the export button, its hint and status line, step 2 "Report on GitHub"
 //! with the primary button that opens the browser, and the footer naming
 //! the log folders. The steps are started one by one; the GitHub button is
@@ -16,6 +17,7 @@ use crate::{
     page::{PageHead, draw_page},
     pane::draw_pane,
     separator::draw_separator,
+    status_card::{CardDetail, CardStatus, StatusCard, draw_status_card},
     status_line::draw_status_line,
     text::{TextStyle, draw_text, draw_text_wrapped},
     text_layout::format_count,
@@ -39,6 +41,22 @@ pub(super) fn draw_problem_tab(
     };
     draw_pane(ui, theme, "problem", [0.0, 0.0], || {
         draw_page(ui, theme, "problem_body", head, || {
+            if let Some(notice) = content.problem.notice {
+                draw_status_card(
+                    ui,
+                    theme,
+                    &StatusCard {
+                        status: CardStatus::Warning,
+                        text: notice.text,
+                        detail: Some(CardDetail {
+                            text: notice.detail,
+                            style: TextStyle::Secondary,
+                        }),
+                        buttons: &[],
+                        close_tooltip: None,
+                    },
+                );
+            }
             draw_step(ui, theme, 1, texts.save_log_step, || {
                 let export = Button::new(texts.export_log)
                     .icon(Icon::DOWNLOAD)

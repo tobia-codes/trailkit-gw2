@@ -125,6 +125,20 @@ pub struct ProblemPage<'text> {
     /// The status line below the export hint, if any (Q302): it stays until
     /// the window closes or a new export starts.
     pub status: Option<(Status, &'text str)>,
+    /// A warning card above the steps, e.g. that the addon stopped after an
+    /// error (ROADMAP R104, Q366); `None` shows no card.
+    pub notice: Option<ProblemNotice<'text>>,
+}
+
+/// The warning card at the top of the problem page (ROADMAP R104, Q367): no
+/// buttons and no close button, because the steps below are the actions and
+/// the card stays while its state lasts.
+#[derive(Debug, Clone, Copy)]
+pub struct ProblemNotice<'text> {
+    /// The status sentence in `warning`.
+    pub text: &'text str,
+    /// The line under it in Secondary.
+    pub detail: &'text str,
 }
 
 /// Everything one frame of the help window shows.

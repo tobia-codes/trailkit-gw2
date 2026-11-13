@@ -40,6 +40,18 @@ pub enum HelpText {
     NoLogYet,
     /// The button in memo's Nexus options tab (R53, Q307).
     OpenHelp,
+    /// The warning card on the problem page after memo stopped (R104, Q367).
+    StoppedNotice,
+    /// The line under [`Self::StoppedNotice`] when no draft was kept.
+    StoppedDetail,
+    /// The line under [`Self::StoppedNotice`] when unsaved text was kept as
+    /// a draft (Q360).
+    StoppedDetailWithDraft,
+    /// The Nexus alert after memo stopped (Q364, Q366).
+    StoppedAlert,
+    /// The Nexus alert after memo stopped while loading, when there is no
+    /// help window to point to (R104).
+    StoppedWhileLoadingAlert,
 }
 
 impl HelpText {
@@ -68,6 +80,11 @@ impl LocalizedText for HelpText {
         Self::NoLogReason,
         Self::NoLogYet,
         Self::OpenHelp,
+        Self::StoppedNotice,
+        Self::StoppedDetail,
+        Self::StoppedDetailWithDraft,
+        Self::StoppedAlert,
+        Self::StoppedWhileLoadingAlert,
     ];
 
     fn get(self, language: Language) -> &'static str {
@@ -140,6 +157,38 @@ impl LocalizedText for HelpText {
             }
             (Self::OpenHelp, Language::English) => "Open help",
             (Self::OpenHelp, Language::German) => "Hilfe öffnen",
+            (Self::StoppedNotice, Language::English) => "memo stopped after an error.",
+            (Self::StoppedNotice, Language::German) => "memo wurde nach einem Fehler angehalten.",
+            (Self::StoppedDetail, Language::English) => {
+                "Report the problem here, then reload memo in the Nexus addon list or restart \
+                 the game."
+            }
+            (Self::StoppedDetail, Language::German) => {
+                "Melde das Problem hier und lade memo danach in der Addon-Liste von Nexus neu \
+                 oder starte das Spiel neu."
+            }
+            (Self::StoppedDetailWithDraft, Language::English) => {
+                "Your unsaved text was kept as a draft. Report the problem here, then reload \
+                 memo in the Nexus addon list or restart the game."
+            }
+            (Self::StoppedDetailWithDraft, Language::German) => {
+                "Dein ungespeicherter Text ist als Entwurf gesichert. Melde das Problem hier \
+                 und lade memo danach in der Addon-Liste von Nexus neu oder starte das Spiel neu."
+            }
+            (Self::StoppedAlert, Language::English) => {
+                "trailkit memo stopped after an error – details in the help window."
+            }
+            (Self::StoppedAlert, Language::German) => {
+                "trailkit memo wurde nach einem Fehler angehalten – Details im Hilfefenster."
+            }
+            (Self::StoppedWhileLoadingAlert, Language::English) => {
+                "trailkit memo stopped after an error while loading. Reload memo in the Nexus \
+                 addon list or restart the game."
+            }
+            (Self::StoppedWhileLoadingAlert, Language::German) => {
+                "trailkit memo wurde beim Laden nach einem Fehler angehalten. Lade memo in der \
+                 Addon-Liste von Nexus neu oder starte das Spiel neu."
+            }
         }
     }
 }

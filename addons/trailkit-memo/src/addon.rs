@@ -10,6 +10,7 @@
 //! and the storage worker is shut down (writing pending saves) in `unload`.
 //! Logging (`trailkit-log`, ROADMAP R92) starts first in `load` and stops last
 //! in `unload`, so the storage worker's last lines still reach the file.
+//! Every callback runs inside `guard::guard` (crash protection, ROADMAP R104).
 
 use std::{
     path::{Path, PathBuf},
@@ -69,11 +70,15 @@ use trailkit_memo_shared::{
     },
 };
 
+#[cfg(feature = "fault-injection")]
+mod fault_injection;
+mod guard;
 mod help;
 mod logging;
 mod render;
 mod storage;
 
+use self::guard::{Callback, RunState, guard, run_state};
 use self::help::MemoHelp;
 
 use self::storage::start_storage;
@@ -213,10 +218,15 @@ static TITLE_BAR: Mutex<TitleBarState> = Mutex::new(TitleBarState::NEW);
 /// Main window title incl. a stable ImGui id (`###`), built once at load.
 static WINDOW_TITLE: OnceLock<String> = OnceLock::new();
 
-/// Called by Nexus when the addon is loaded: resolves the language, caches the
-/// Nexus link and registers the keybind (with its localized name), the quick
-/// access icon and the render callback.
+/// Called by Nexus when the addon is loaded; see [`load_addon`]. A panic
+/// stops memo instead of reaching Nexus (R104).
 fn load() {
+    guard(Callback::Load, (), load_addon);
+}
+
+/// Resolves the language, caches the Nexus link and registers the keybind
+/// (with its localized name), the quick access icon and the render callback.
+fn load_addon() {
     let language = Language::resolve(None, detect_nexus_language().as_deref());
     LANGUAGE.store(language as u8, Ordering::Relaxed);
     let trailkit_directory = match get_addon_dir(TRAILKIT_DIRECTORY_NAME) {
@@ -256,12 +266,12 @@ fn load() {
     }
 
     let on_toggle = keybind_handler!(|_id, is_release| {
-        if !is_release {
-            VISIBLE.fetch_xor(true, Ordering::Relaxed);
-        }
+        guard(Callback::Keybind, (), || toggle_key(is_release));
     });
     register_keybind_with_string(KEYBIND_TOGGLE, on_toggle, UNBOUND).revert_on_unload();
     register_wnd_proc(catch_window_keys).revert_on_unload();
+    #[cfg(feature = "fault-injection")]
+    fault_injection::register();
     // UI strings plus the help with the privacy policy, which the help
     // window draws; this also builds both help texts off the render thread.
     register_fonts(
@@ -294,45 +304,72 @@ fn load() {
 
     register_render(
         RenderType::Render,
-        render!(|ui| render::render_main_window(ui)),
+        render!(|ui| guard(Callback::Render, (), || render::render(ui))),
     )
     .revert_on_unload();
     register_render(
         RenderType::OptionsRender,
-        render!(|ui| render::render_options_tab(ui)),
+        render!(|ui| guard(Callback::OptionsRender, (), || {
+            render::render_options_tab(ui);
+        })),
     )
     .revert_on_unload();
 }
 
-/// Called by Nexus before the addon is unloaded. Every registration was made
-/// with `revert_on_unload`; the cached Nexus link pointer is dropped
-/// (nexus-addon-dev skill §1) and the storage worker is shut down, which
-/// writes all pending saves before returning.
+/// The open/close keybind (also fired by the quick access icon): toggles the
+/// main window, or opens the help window after an error (R104, Q366). Only
+/// touches atomics (nexus-addon-dev skill §2).
+fn toggle_key(is_release: bool) {
+    if is_release {
+        return;
+    }
+    match run_state() {
+        RunState::Running => {
+            VISIBLE.fetch_xor(true, Ordering::Relaxed);
+        }
+        RunState::HelpOnly => guard::request_help(),
+        RunState::Stopped => {}
+    }
+}
+
+/// Called by Nexus before the addon is unloaded; see [`unload_addon`]. Runs
+/// in every [`RunState`]; a panic is only logged (R104).
 fn unload() {
+    guard(Callback::Unload, (), unload_addon);
+}
+
+/// Every registration was made with `revert_on_unload`; the cached Nexus
+/// link pointer is dropped (nexus-addon-dev skill §1) and the storage worker
+/// is shut down, which writes all pending saves before returning. Locks a
+/// panic poisoned are used anyway, so the worker still shuts down.
+fn unload_addon() {
     if let Some(window_title) = WINDOW_TITLE.get() {
         deregister_close_on_escape(window_title);
     }
     deregister_close_on_escape(help::WINDOW_ID);
     NEXUS_LINK.store(std::ptr::null_mut(), Ordering::Release);
-    // Unsaved edits become a draft; the worker writes it while shutting down (M54).
-    if let Ok(mut notes) = NOTES.lock()
-        && let NotesState::Ready(window) = &mut *notes
+    // Unsaved edits become a draft; the worker writes it while shutting down
+    // (M54). After an error the guard already kept it (R104, Q360).
+    if run_state() == RunState::Running
+        && let NotesState::Ready(window) = &mut *lock_after_panic(&NOTES)
     {
         window.keep_draft_for_unload();
     }
-    let worker = STORAGE_WORKER
-        .lock()
-        .map_or(None, |mut worker| worker.take());
+    let worker = lock_after_panic(&STORAGE_WORKER).take();
     drop(worker);
-    if let Ok(mut notes) = NOTES.lock() {
-        *notes = NotesState::Unavailable;
-    }
-    if let Ok(mut help) = HELP.lock() {
-        *help = None;
-    }
+    *lock_after_panic(&NOTES) = NotesState::Unavailable;
+    *lock_after_panic(&HELP) = None;
     HELP_OPEN.store(false, Ordering::Relaxed);
     // Last, so every line above still reaches the file; writes `session_end`.
     logging::stop_logging();
+}
+
+/// Locks `mutex`, waiting for it, also when a panic poisoned it (R104).
+/// Only for `unload`, never on the render thread.
+fn lock_after_panic<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
+    mutex
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 
 /// The active settings (defaults until `load` has read them).
@@ -376,6 +413,18 @@ extern "C-unwind" fn catch_window_keys(
     key: WPARAM,
     _details: LPARAM,
 ) -> u32 {
+    guard(Callback::WindowMessages, MESSAGE_PASSED, || {
+        if run_state() == RunState::Running {
+            route_window_message(message, key)
+        } else {
+            // After an error the game gets every key and click (R104).
+            MESSAGE_PASSED
+        }
+    })
+}
+
+/// The body of [`catch_window_keys`] while memo runs.
+fn route_window_message(message: u32, key: WPARAM) -> u32 {
     if message == WM_RBUTTONDOWN || message == WM_MBUTTONDOWN {
         // Clicks into the game never reach ImGui; the window frame uses this
         // to drop the focus (M186). The game still gets the click.

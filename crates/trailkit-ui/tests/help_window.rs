@@ -10,7 +10,9 @@ use trailkit_ui::{
     button::ButtonState,
     chat_link::ChipText,
     chat_link_chip::ChipContext,
-    help_window::{HelpTab, HelpWindow, HelpWindowContent, HelpWindowTexts, ProblemPage},
+    help_window::{
+        HelpTab, HelpWindow, HelpWindowContent, HelpWindowTexts, ProblemNotice, ProblemPage,
+    },
     status_line::Status,
     style_scope::StyleScope,
     theme::ThemeKind,
@@ -88,6 +90,8 @@ struct State {
     export_button: ButtonState<'static>,
     /// The status line.
     status: Option<(Status, &'static str)>,
+    /// The warning card above the steps (R104).
+    notice: Option<ProblemNotice<'static>>,
     /// Where the mouse is.
     mouse: [f32; 2],
 }
@@ -99,14 +103,16 @@ const AWAY: [f32; 2] = [2.0, HEIGHT - 2.0];
 const SPLITTER: [f32; 2] = [144.0, 300.0];
 
 /// Every state of both tabs (R100 Q302) in English, the long German texts,
-/// a hovered tab and the hovered splitter of the topic list (R101).
-const STATES: [State; 10] = [
+/// a hovered tab, the hovered splitter of the topic list (R101) and the
+/// warning card after the addon stopped, with the long German draft text (R104).
+const STATES: [State; 12] = [
     State {
         name: "help-splitter-hover",
         german: false,
         tab: HelpTab::Help,
         export_button: ButtonState::Ready,
         status: None,
+        notice: None,
         mouse: SPLITTER,
     },
     State {
@@ -115,6 +121,7 @@ const STATES: [State; 10] = [
         tab: HelpTab::Help,
         export_button: ButtonState::Ready,
         status: None,
+        notice: None,
         mouse: AWAY,
     },
     State {
@@ -123,6 +130,7 @@ const STATES: [State; 10] = [
         tab: HelpTab::Help,
         export_button: ButtonState::Ready,
         status: None,
+        notice: None,
         mouse: AWAY,
     },
     State {
@@ -131,6 +139,7 @@ const STATES: [State; 10] = [
         tab: HelpTab::ReportProblem,
         export_button: ButtonState::Ready,
         status: None,
+        notice: None,
         mouse: AWAY,
     },
     State {
@@ -142,6 +151,7 @@ const STATES: [State; 10] = [
             Status::Success,
             "Saved trailkit-logs-20261112.txt in Downloads.",
         )),
+        notice: None,
         mouse: AWAY,
     },
     State {
@@ -153,6 +163,7 @@ const STATES: [State; 10] = [
             Status::Success,
             "Saved trailkit-logs-20261112.txt in Downloads. Older days were left out to stay under 5 MiB.",
         )),
+        notice: None,
         mouse: AWAY,
     },
     State {
@@ -164,6 +175,7 @@ const STATES: [State; 10] = [
             Status::Danger,
             "Could not save the log. Check that your Downloads folder can be written to, then try again.",
         )),
+        notice: None,
         mouse: AWAY,
     },
     State {
@@ -177,6 +189,7 @@ const STATES: [State; 10] = [
             Status::Info,
             "There is no log yet. Use the addon for a moment, then try again.",
         )),
+        notice: None,
         mouse: AWAY,
     },
     State {
@@ -188,6 +201,31 @@ const STATES: [State; 10] = [
             Status::Danger,
             "Das Log konnte nicht gespeichert werden. Prüfe, ob dein Download-Ordner beschreibbar ist, und versuche es erneut.",
         )),
+        notice: None,
+        mouse: AWAY,
+    },
+    State {
+        name: "problem-stopped",
+        german: false,
+        tab: HelpTab::ReportProblem,
+        export_button: ButtonState::Ready,
+        status: None,
+        notice: Some(ProblemNotice {
+            text: "memo stopped after an error.",
+            detail: "Report the problem here, then reload memo in the Nexus addon list or restart the game.",
+        }),
+        mouse: AWAY,
+    },
+    State {
+        name: "problem-de-stopped-draft",
+        german: true,
+        tab: HelpTab::ReportProblem,
+        export_button: ButtonState::Ready,
+        status: None,
+        notice: Some(ProblemNotice {
+            text: "memo wurde nach einem Fehler angehalten.",
+            detail: "Dein ungespeicherter Text ist als Entwurf gesichert. Melde das Problem hier und lade memo danach in der Addon-Liste von Nexus neu oder starte das Spiel neu.",
+        }),
         mouse: AWAY,
     },
     State {
@@ -196,6 +234,7 @@ const STATES: [State; 10] = [
         tab: HelpTab::Help,
         export_button: ButtonState::Ready,
         status: None,
+        notice: None,
         // Over "Report a problem" in the tab row.
         mouse: [110.0, 62.0],
     },
@@ -229,6 +268,7 @@ fn every_help_window_state_at_the_minimum_width() {
                 problem: ProblemPage {
                     export_button: state.export_button,
                     status: state.status,
+                    notice: state.notice,
                 },
                 chips: ChipContext { text: &chip_text },
             };
@@ -277,6 +317,7 @@ fn a_hovered_email_link_shows_its_address() {
             problem: ProblemPage {
                 export_button: ButtonState::Ready,
                 status: None,
+                notice: None,
             },
             chips: ChipContext { text: &chip_text },
         };
