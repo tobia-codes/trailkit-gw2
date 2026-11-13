@@ -14,16 +14,14 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 **First, ask the user: can you test in game now?** Pending checks with where/how/expected: [`in-game-tests.md`](in-game-tests.md)
 (user request 2026-11-13: keep it current until each item is confirmed; ask every session).
 
-**Session 35 (2026-11-13).** PR [#124](https://github.com/tobia-codes/trailkit-gw2/pull/124) `feature/button-cleanup` → `develop` is open
-(user OK to push and open it; auto-merge NOT armed). R105 (delete always red, menu entries too), R106 (irreversible discards red,
-UX rule `lay-danger-discard`), R107 (button states: colored fills 8 %/12 % darker), M187, R103 cleanup; mockup https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr (v6, section anchors).
-The cloud clone fetches only `develop`; to work on the branch: `git fetch origin feature/button-cleanup:feature/button-cleanup && git switch feature/button-cleanup`.
+**Session 35 (2026-11-13).** PR [#124](https://github.com/tobia-codes/trailkit-gw2/pull/124) merged into `develop` with auto-merge on the
+user's OK, before the in-game test (user's choice): R105 (delete always red, menu entries too), R106 (irreversible discards red, UX rule
+`lay-danger-discard`), R107 (colored button states 8 %/12 % darker), M187, R103 cleanup. Mockup https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr.
+A failed in-game test becomes a `bugfix/` branch from `develop`.
 
 **Open, in this order:**
-1. **PR #124:** all snapshots reviewed (§10) and committed (157: 125 + 32 for the tooltip fix and R107, `22378c7`). Check that
-   every required CI check is green on the head; if the Windows job still fails, take `snapshot-updates` again (R97). Then
-   in-game tests 1–10, merge OK, auto-merge. Length hints on touched `theme.rs` (429) and `token_groups.rs` (490) are in item 2.
-   Side finding: `min-de-dialog-*` fixtures build English confirmation text (test only); fix only if the user agrees.
+1. **In-game tests 1–10 of PR #124** (top of this file). Side finding: `min-de-dialog-*` fixtures build English confirmation text
+   (test only); fix only if the user agrees. Length hints on `theme.rs` (429) and `token_groups.rs` (490) are in item 2.
 2. **File-length splits (R77):** approved Q91 (`note_list.rs`/`draw_group`), Q95 `draw_dropdown`, Q96 `editor/view.rs`, Q105
    `markdown_view.rs`. Grill the rest by concern, never split unasked: `theme.rs` (421), `rows.rs` (422, `draw_note_row` 91),
    `main_window.rs` (428), `actions.rs` (451, Q134), `help_text.rs::get` (104, a table; Q92 said no for `Text::get`),

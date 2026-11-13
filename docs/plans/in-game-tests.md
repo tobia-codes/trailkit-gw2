@@ -10,7 +10,7 @@ before, how it must look now and links the approved design (R87 mockup).
 
 ## Setup (once per test session)
 
-1. In WSL, on the branch named below: `cargo xtask deploy trailkit-memo`
+1. In WSL, on an up-to-date `develop`: `cargo xtask deploy trailkit-memo`
    (a normal build; it also replaces the `fault-injection` debug DLL).
 2. In game, open memo: the **notes icon** (sheet with pencil) in the Nexus
    quick access bar.
@@ -23,7 +23,7 @@ before, how it must look now and links the approved design (R87 mockup).
 5. Reload memo (tests 7, 10): Nexus menu › Addons › trailkit-memo › unload,
    then load again.
 
-## Branch `feature/button-cleanup` (R105, R106, R107, M187)
+## Button cleanup, PR #124 (R105, R106, R107, M187, merged before the in-game test at the user's request)
 
 "Red filled" means a red button with the label in the window color, like
 the brass "Save" button but red. Approved design for all tests below:
