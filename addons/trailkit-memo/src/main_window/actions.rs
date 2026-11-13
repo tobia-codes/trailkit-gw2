@@ -5,6 +5,7 @@
 use std::sync::Arc;
 
 use jiff::Timestamp;
+use trailkit_storage::BACKUPS_DIRECTORY_NAME;
 use trailkit_ui::{
     markdown,
     markdown_view::{MarkdownAction, open_link},
@@ -57,8 +58,8 @@ pub(super) enum WindowAction {
     ToggleCompactNoteView,
     /// Toggle a task checkbox in the shown note.
     Markdown(MarkdownAction),
-    /// Open the addon folder in the file explorer.
-    OpenFolder,
+    /// Open a folder of the addon in the file explorer.
+    OpenFolder(AddonFolder),
     /// Start editing the selected note (M51).
     StartEditing,
     /// Start editing the selected note in its title, selected (M161).
@@ -118,6 +119,15 @@ pub(super) enum WindowAction {
     SaveFailedKeepEditing,
     /// Save-failed dialog: write the editor's text once more.
     SaveFailedRetry,
+}
+
+/// A folder of the addon that "Open folder" shows.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum AddonFolder {
+    /// The addon folder with `notes.json`.
+    Notes,
+    /// Its `backups` folder, where a damaged `notes.json` was moved (M184).
+    Backups,
 }
 
 impl WindowAction {
@@ -183,7 +193,7 @@ impl MemoWindow {
             | WindowAction::ShowNotes
             | WindowAction::ToggleCompactNoteView
             | WindowAction::Markdown(_)
-            | WindowAction::OpenFolder => self.apply_view_action(action, now, language),
+            | WindowAction::OpenFolder(_) => self.apply_view_action(action, now, language),
             WindowAction::Delete(_)
             | WindowAction::Undo
             | WindowAction::Redo
@@ -445,11 +455,12 @@ impl MemoWindow {
                     kind: WindowToastKind::Message,
                 });
             }
-            WindowAction::OpenFolder => {
-                if let Err(error) = std::process::Command::new("explorer")
-                    .arg(&self.addon_directory)
-                    .spawn()
-                {
+            WindowAction::OpenFolder(folder) => {
+                let path = match folder {
+                    AddonFolder::Notes => self.addon_directory.clone(),
+                    AddonFolder::Backups => self.addon_directory.join(BACKUPS_DIRECTORY_NAME),
+                };
+                if let Err(error) = std::process::Command::new("explorer").arg(path).spawn() {
                     log::warn!(error:% = error; "folder_open_failed");
                 }
             }

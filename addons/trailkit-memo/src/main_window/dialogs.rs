@@ -18,7 +18,8 @@ use trailkit_memo_shared::i18n::{Language, Text};
 use trailkit_memo_shared::save_text::SaveText;
 
 use super::{
-    MemoWindow, NotesProblem, WindowAction, save_status::SaveFailedPrompt, trash::Confirmation,
+    MemoWindow, NotesProblem, WindowAction, actions::AddonFolder, save_status::SaveFailedPrompt,
+    trash::Confirmation,
 };
 
 impl MemoWindow {
@@ -56,9 +57,15 @@ impl MemoWindow {
                 close_tooltip: None,
             },
         };
+        // The damaged file lies in `backups`; the other problems concern
+        // `notes.json` itself.
+        let folder = match problem {
+            NotesProblem::Recovered(_) => AddonFolder::Backups,
+            NotesProblem::NewerVersion | NotesProblem::Inaccessible => AddonFolder::Notes,
+        };
         let outcome = draw_status_card(ui, theme, &card);
         if outcome.clicked_button.is_some() {
-            self.actions.push(WindowAction::OpenFolder);
+            self.actions.push(WindowAction::OpenFolder(folder));
         }
         if outcome.closed {
             self.problem = None;
