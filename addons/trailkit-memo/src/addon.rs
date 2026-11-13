@@ -27,7 +27,7 @@ use windows::Win32::{
     Foundation::{HWND, LPARAM, WPARAM},
     UI::{
         Input::KeyboardAndMouse::{GetKeyState, VK_CONTROL},
-        WindowsAndMessaging::WM_KEYDOWN,
+        WindowsAndMessaging::{WM_KEYDOWN, WM_MBUTTONDOWN, WM_RBUTTONDOWN},
     },
 };
 
@@ -50,7 +50,11 @@ use trailkit_storage::{
     AddonName, BACKUPS_DIRECTORY_NAME, DocumentStore, LoadOutcome, ReadOnlyReason,
     TRAILKIT_DIRECTORY_NAME, TrailkitDirectory,
 };
-use trailkit_ui::{font_registry::register_fonts, theme::ThemeKind, title_bar::TitleBarState};
+use trailkit_ui::{
+    font_registry::register_fonts,
+    theme::ThemeKind,
+    title_bar::{TitleBarState, record_mouse_button_press},
+};
 
 use crate::help_document::help_document;
 use crate::main_window::{MemoWindow, NotesProblem};
@@ -363,14 +367,21 @@ fn detect_nexus_language() -> Option<String> {
 }
 
 /// Catches memo's keys that would not reach ImGui on the input thread (M174,
-/// M175), while they belong to the window; otherwise the game gets them. Only
-/// flips atomics (nexus-addon-dev skill §2).
+/// M175), while they belong to the window, and counts right and middle mouse
+/// button presses for the focus (M186); otherwise the game gets them. Only
+/// touches atomics (nexus-addon-dev skill §2).
 extern "C-unwind" fn catch_window_keys(
     _window: HWND,
     message: u32,
     key: WPARAM,
     _details: LPARAM,
 ) -> u32 {
+    if message == WM_RBUTTONDOWN || message == WM_MBUTTONDOWN {
+        // Clicks into the game never reach ImGui; the window frame uses this
+        // to drop the focus (M186). The game still gets the click.
+        record_mouse_button_press();
+        return MESSAGE_PASSED;
+    }
     if message != WM_KEYDOWN {
         return MESSAGE_PASSED;
     }

@@ -1,17 +1,19 @@
-//! The draft hint above a note (M54): when the draft was saved, whether the
-//! note changed since, and "Restore" (primary) / "Discard".
+//! The draft hint above a note (M54, M184): a `warning` status card that
+//! says when the draft was saved and whether the note changed since, with
+//! "Discard" / "Restore" (primary, last). It cannot be closed: the two buttons
+//! answer it (Q336).
 
 use jiff::Timestamp;
-use nexus::imgui::{StyleColor, Ui};
+use nexus::imgui::Ui;
 use trailkit_memo_shared::{
     drafts::Draft,
     i18n::{Language, LocalizedText, Text, format_local_time},
     note_tree::NoteId,
 };
 use trailkit_ui::{
-    button::{button_width, draw_button, draw_primary_button},
-    separator::draw_separator,
-    text::{TextStyle, draw_text_wrapped},
+    button::{Button, ButtonKind},
+    status_card::{CardDetail, CardStatus, StatusCard, draw_status_card, fits_status_card_line},
+    text::TextStyle,
     theme::Theme,
 };
 
@@ -26,17 +28,29 @@ pub enum DraftHintAction {
     Discard,
 }
 
+/// The hint's sentence in its two forms.
+#[derive(Debug)]
+struct DraftLabel {
+    /// The note and language the label was formatted for.
+    key: (NoteId, Language),
+    /// The sentence on one line.
+    one_line: String,
+    /// The sentence with the date on a line of its own, for a card too
+    /// narrow for one line, so the date never breaks at its dots (Q339).
+    date_apart: String,
+}
+
 /// State of the hint that outlives a frame: the formatted label, so the
 /// local time is not formatted every frame.
 #[derive(Debug, Default)]
 pub struct DraftHint {
-    /// Cached label for (note, language).
-    label: Option<(NoteId, Language, String)>,
+    /// Cached label.
+    label: Option<DraftLabel>,
 }
 
 impl DraftHint {
     /// Draws the hint for `draft` of a note last changed at
-    /// `note_updated_at`, followed by a separator. Returns the user's choice.
+    /// `note_updated_at` as a status card. Returns the user's choice.
     pub fn draw(
         &mut self,
         ui: &Ui,
@@ -45,50 +59,50 @@ impl DraftHint {
         draft: &Draft,
         note_updated_at: Timestamp,
     ) -> Option<DraftHintAction> {
-        let is_cached = self
-            .label
-            .as_ref()
-            .is_some_and(|(note, cached_language, _)| {
-                *note == draft.note && *cached_language == language
-            });
-        if !is_cached {
-            let time = format_local_time(draft.saved_at, language);
-            self.label = Some((
-                draft.note,
-                language,
-                format!("{} {time}", DraftText::DraftFound.get(language)),
-            ));
-        }
-        if let Some((_, _, label)) = self.label.as_ref() {
-            let _warning = ui.push_style_color(StyleColor::Text, theme.status.warning.to_array());
-            ui.text_wrapped(label);
-        }
-        if draft.note_updated_at != note_updated_at {
-            draw_text_wrapped(
-                ui,
-                theme,
-                TextStyle::Secondary,
-                DraftText::DraftNoteChangedSince.get(language),
-            );
-        }
-        let restore = DraftText::RestoreDraft.get(language);
+        let key = (draft.note, language);
+        let label = match &mut self.label {
+            Some(label) if label.key == key => label,
+            label => {
+                let found = DraftText::DraftFound.get(language);
+                let time = format_local_time(draft.saved_at, language);
+                label.insert(DraftLabel {
+                    key,
+                    one_line: format!("{found} {time}"),
+                    date_apart: format!("{found}\n{time}"),
+                })
+            }
+        };
+        let text = if fits_status_card_line(ui, theme, CardStatus::Warning, false, &label.one_line)
+        {
+            label.one_line.as_str()
+        } else {
+            label.date_apart.as_str()
+        };
+        let detail = (draft.note_updated_at != note_updated_at).then(|| CardDetail {
+            text: DraftText::DraftNoteChangedSince.get(language),
+            style: TextStyle::Secondary,
+        });
         // "Discard" is shared with the unsaved-changes question.
-        let discard = Text::DiscardChanges.get(language);
-        let buttons_width = button_width(ui, theme, restore)
-            + ui.clone_style().item_spacing[0]
-            + button_width(ui, theme, discard);
-        let fits_one_row = buttons_width <= ui.content_region_avail()[0];
-        let mut action = None;
-        if draw_primary_button(ui, theme, restore) {
-            action = Some(DraftHintAction::Restore);
+        // The brass button last (R103, Q349).
+        let buttons = [
+            Button::new(Text::DiscardChanges.get(language)),
+            Button::new(DraftText::RestoreDraft.get(language)).kind(ButtonKind::Primary),
+        ];
+        let outcome = draw_status_card(
+            ui,
+            theme,
+            &StatusCard {
+                status: CardStatus::Warning,
+                text,
+                detail,
+                buttons: &buttons,
+                close_tooltip: None,
+            },
+        );
+        match outcome.clicked_button {
+            Some(0) => Some(DraftHintAction::Discard),
+            Some(1) => Some(DraftHintAction::Restore),
+            _ => None,
         }
-        if fits_one_row {
-            ui.same_line();
-        }
-        if draw_button(ui, theme, discard) {
-            action = Some(DraftHintAction::Discard);
-        }
-        draw_separator(ui, theme);
-        action
     }
 }

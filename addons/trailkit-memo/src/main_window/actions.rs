@@ -5,6 +5,8 @@
 use std::sync::Arc;
 
 use jiff::Timestamp;
+use trailkit_memo_shared::list_filter::ListFilter;
+use trailkit_storage::BACKUPS_DIRECTORY_NAME;
 use trailkit_ui::{
     markdown,
     markdown_view::{MarkdownAction, open_link},
@@ -35,6 +37,9 @@ use super::{MemoWindow, WindowToast, WindowToastKind};
 pub(super) enum WindowAction {
     /// Select a note or group.
     Select(NodeId),
+    /// Select and show a note and make its row visible: expand the groups
+    /// around it, end a search hiding it, scroll the list (M185).
+    RevealNote(NoteId),
     /// A click on a group's row: selects it and toggles it (M172).
     ClickGroup(GroupId),
     /// A group was expanded or collapsed.
@@ -57,8 +62,8 @@ pub(super) enum WindowAction {
     ToggleCompactNoteView,
     /// Toggle a task checkbox in the shown note.
     Markdown(MarkdownAction),
-    /// Open the addon folder in the file explorer.
-    OpenFolder,
+    /// Open a folder of the addon in the file explorer.
+    OpenFolder(AddonFolder),
     /// Start editing the selected note (M51).
     StartEditing,
     /// Start editing the selected note in its title, selected (M161).
@@ -120,12 +125,22 @@ pub(super) enum WindowAction {
     SaveFailedRetry,
 }
 
+/// A folder of the addon that "Open folder" shows.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum AddonFolder {
+    /// The addon folder with `notes.json`.
+    Notes,
+    /// Its `backups` folder, where a damaged `notes.json` was moved (M184).
+    Backups,
+}
+
 impl WindowAction {
     /// Whether this action leaves the editor of `note` (M54): choosing
     /// another entry or creating one. These ask first if something changed.
     pub(super) fn leaves_editor_of(&self, note: NoteId) -> bool {
         match self {
             Self::Select(node) => *node != NodeId::Note(note),
+            Self::RevealNote(revealed) => *revealed != note,
             Self::ClickGroup(_)
             | Self::NewNote(_)
             | Self::NewGroup(_)
@@ -157,6 +172,7 @@ impl MemoWindow {
         }
         match action {
             WindowAction::Select(_)
+            | WindowAction::RevealNote(_)
             | WindowAction::ClickGroup(_)
             | WindowAction::SetExpanded(..)
             | WindowAction::Move(..)
@@ -183,7 +199,7 @@ impl MemoWindow {
             | WindowAction::ShowNotes
             | WindowAction::ToggleCompactNoteView
             | WindowAction::Markdown(_)
-            | WindowAction::OpenFolder => self.apply_view_action(action, now, language),
+            | WindowAction::OpenFolder(_) => self.apply_view_action(action, now, language),
             WindowAction::Delete(_)
             | WindowAction::Undo
             | WindowAction::Redo
@@ -256,6 +272,7 @@ impl MemoWindow {
     fn apply_tree_action(&mut self, action: &WindowAction, language: Language, now: Timestamp) {
         match action {
             WindowAction::Select(node) => self.change_selected(*node),
+            WindowAction::RevealNote(note) => self.reveal_note(*note),
             WindowAction::ClickGroup(group) => {
                 self.change_selected(NodeId::Group(*group));
                 self.toggle_group(*group);
@@ -445,11 +462,12 @@ impl MemoWindow {
                     kind: WindowToastKind::Message,
                 });
             }
-            WindowAction::OpenFolder => {
-                if let Err(error) = std::process::Command::new("explorer")
-                    .arg(&self.addon_directory)
-                    .spawn()
-                {
+            WindowAction::OpenFolder(folder) => {
+                let path = match folder {
+                    AddonFolder::Notes => self.addon_directory.clone(),
+                    AddonFolder::Backups => self.addon_directory.join(BACKUPS_DIRECTORY_NAME),
+                };
+                if let Err(error) = std::process::Command::new("explorer").arg(path).spawn() {
                     log::warn!(error:% = error; "folder_open_failed");
                 }
             }
@@ -486,6 +504,36 @@ impl MemoWindow {
                 .show_other_note(self.search.current.is_some());
         }
         self.saver.save_ui_state(self.ui_state);
+    }
+
+    /// Selects and shows `note` and makes its row visible (M185): a search
+    /// hiding it ends, the groups around it expand (saved), and the list
+    /// scrolls to it when drawn.
+    fn reveal_note(&mut self, note: NoteId) {
+        let node = NodeId::Note(note);
+        if self
+            .search
+            .current
+            .as_ref()
+            .is_some_and(|current| !current.results.is_visible(node))
+        {
+            self.search_field.clear(false);
+        }
+        let mut expanded_any = false;
+        for group in self.document.ancestors(node) {
+            self.collapsed_in_search.remove(&group);
+            if let Some(group) = self.document.group_mut(group)
+                && !group.expanded
+            {
+                group.expanded = true;
+                expanded_any = true;
+            }
+        }
+        if expanded_any {
+            self.save_notes();
+        }
+        self.change_selected(node);
+        self.note_list.reveal(node);
     }
 
     /// Resolves where a new entry goes: `point` from a context menu (M96),

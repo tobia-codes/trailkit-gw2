@@ -161,6 +161,25 @@ Rules:
 8. **Panics**: a panic must never cross the FFI boundary. nexus-rs installs a
    panic hook; `trailkit-log` chains its own in front (writes a `panic` line).
    Worker threads catch and log errors, never `unwrap()`.
+9. **ImGui crash traps (two game crashes, 2026-11-13, Q357):**
+   - imgui-rs allows one `DrawListMut` per draw list at a time and panics on a
+     second. While holding `ui.get_window_draw_list()`, call nothing that
+     draws on its own (tooltips, buttons with tooltips); helpers that may run
+     inside such a scope use the raw `sys::igGetWindowDrawList()` (tooltip
+     shadow, button labels, status card).
+   - Never change focus or navigation mid-frame (`igSetWindowFocus*`):
+     ImGui may already have planned keyboard navigation for the frame and
+     reads a null navigation window in the next item (access violation in
+     `ItemAdd`). Use ImGui's own end-of-frame path instead (memo M186 marks a
+     left click into the void).
+   - Clicks into the game world never reach ImGui, left, right or middle; a
+     `WndProc` callback sees them (memo M186).
+   - A crash without a `panic` line is a C++ access violation: arcdps writes
+     `addons/arcdps/arcdps_lastcrash.log` with the stack as DLL offsets;
+     `llvm-symbolizer --obj=target/x86_64-pc-windows-msvc/debug/<addon>.dll
+     0x<image base + offset>` names the functions (image base from
+     `llvm-objdump -p`, usually `0x180000000`) while the deployed DLL equals
+     the local build.
 
 ## 3. Inter-addon communication
 

@@ -20,8 +20,8 @@ pub use node::{Group, Note, NoteKind, ResetPeriod, TrashEntry, TreeNode};
 pub use trash::TRASH_RETENTION;
 pub use traversal::Place;
 use traversal::{
-    find_group, find_group_mut, find_note, find_note_mut, for_each_note_mut, insert_next_to,
-    parent_of, place_in,
+    find_group, find_group_mut, find_note, find_note_mut, for_each_note, for_each_note_mut,
+    insert_next_to, parent_of, place_in,
 };
 
 /// Where a new or moved note or group goes in the tree (M43, M96,
@@ -308,6 +308,25 @@ impl NotesDocument {
     /// trash is not part of the tree).
     pub fn for_each_note_mut(&mut self, mut visit: impl FnMut(&mut Note)) {
         for_each_note_mut(&mut self.root, &mut visit);
+    }
+
+    /// Calls `visit` for every note in the tree in list order, nested ones
+    /// included (the trash is not part of the tree).
+    pub fn for_each_note(&self, mut visit: impl FnMut(&Note)) {
+        for_each_note(&self.root, &mut visit);
+    }
+
+    /// The groups containing `node`, innermost first; empty at the root
+    /// level or when `node` is not in the tree.
+    #[must_use]
+    pub fn ancestors(&self, node: NodeId) -> Vec<GroupId> {
+        let mut ancestors = Vec::new();
+        let mut current = node;
+        while let Some(Some(parent)) = self.parent(current) {
+            ancestors.push(parent);
+            current = NodeId::Group(parent);
+        }
+        ancestors
     }
 }
 

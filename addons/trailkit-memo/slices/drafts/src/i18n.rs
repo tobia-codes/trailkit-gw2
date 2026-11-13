@@ -12,6 +12,14 @@ pub enum DraftText {
     DraftNoteChangedSince,
     /// Restore a draft into the editor (M54).
     RestoreDraft,
+    /// Card above the panes with one note with unsaved changes (M185).
+    OverviewOne,
+    /// The same card for several notes; `{count}` is their number.
+    OverviewMany,
+    /// The card's button: show the next note with unsaved changes.
+    GoToNote,
+    /// Tooltip of the mark in the note list.
+    UnsavedChangesMark,
 }
 
 impl LocalizedText for DraftText {
@@ -19,6 +27,10 @@ impl LocalizedText for DraftText {
         Self::DraftFound,
         Self::DraftNoteChangedSince,
         Self::RestoreDraft,
+        Self::OverviewOne,
+        Self::OverviewMany,
+        Self::GoToNote,
+        Self::UnsavedChangesMark,
     ];
 
     fn get(self, language: Language) -> &'static str {
@@ -29,6 +41,22 @@ impl LocalizedText for DraftText {
             (Self::DraftNoteChangedSince, Language::German) => "Die Notiz wurde seitdem geändert.",
             (Self::RestoreDraft, Language::English) => "Restore",
             (Self::RestoreDraft, Language::German) => "Wiederherstellen",
+            (Self::OverviewOne, Language::English) => {
+                "1 note has unsaved changes. It is marked with the same sign in the list."
+            }
+            (Self::OverviewOne, Language::German) => {
+                "1 Notiz hat ungespeicherte Änderungen. Sie ist in der Liste mit demselben Zeichen markiert."
+            }
+            (Self::OverviewMany, Language::English) => {
+                "{count} notes have unsaved changes. They are marked with the same sign in the list."
+            }
+            (Self::OverviewMany, Language::German) => {
+                "{count} Notizen haben ungespeicherte Änderungen. Sie sind in der Liste mit demselben Zeichen markiert."
+            }
+            (Self::GoToNote, Language::English) => "Go to note",
+            (Self::GoToNote, Language::German) => "Zur Notiz springen",
+            (Self::UnsavedChangesMark, Language::English) => "Unsaved changes",
+            (Self::UnsavedChangesMark, Language::German) => "Ungespeicherte Änderungen",
         }
     }
 }

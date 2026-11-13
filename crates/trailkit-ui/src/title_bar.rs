@@ -11,7 +11,12 @@
 //! are dragged; windows without a title bar are exempt from
 //! `ConfigWindowsMoveFromTitleBarOnly`.
 
-use nexus::imgui::{Condition, StyleColor, Ui, Window, WindowFlags};
+use std::sync::atomic::{AtomicU64, Ordering};
+
+use nexus::imgui::{
+    Condition, MouseButton, StyleColor, Ui, Window, WindowFlags, WindowFocusedFlags,
+    WindowHoveredFlags, sys,
+};
 
 use crate::{
     button::{draw_icon_button, draw_icon_toggle, draw_label, icon_button_width},
@@ -72,6 +77,8 @@ pub struct TitleBarState {
     restore_size: Option<[f32; 2]>,
     /// The latest window size while expanded.
     expanded_size: [f32; 2],
+    /// The count of [`record_mouse_button_press`] this window has handled.
+    seen_mouse_button_presses: u64,
 }
 
 impl TitleBarState {
@@ -80,6 +87,7 @@ impl TitleBarState {
         collapsed: false,
         restore_size: None,
         expanded_size: [0.0, 0.0],
+        seen_mouse_button_presses: 0,
     };
 
     /// Whether the window is collapsed to its title bar.
@@ -117,6 +125,7 @@ pub fn draw_window<Label: AsRef<str>>(
     }
     let mut clicked_toggle = None;
     window.flags(flags).build(ui, || {
+        release_focus_on_outside_click(ui, state);
         if !state.collapsed {
             state.expanded_size = ui.window_size();
         }
@@ -133,6 +142,47 @@ pub fn draw_window<Label: AsRef<str>>(
         }
     });
     clicked_toggle
+}
+
+/// Right and middle mouse button presses seen by the addon's `WndProc`.
+static MOUSE_BUTTON_PRESSES: AtomicU64 = AtomicU64::new(0);
+
+/// Counts a right or middle mouse button press. An addon calls it from its
+/// `WndProc` callback (input thread; it only touches an atomic): Nexus does
+/// not report clicks into the game world to ImGui (nexus-addon-dev skill
+/// §2), so ImGui alone never sees them (memo M186).
+pub fn record_mouse_button_press() {
+    MOUSE_BUTTON_PRESSES.fetch_add(1, Ordering::Relaxed);
+}
+
+/// Takes the focus from the current window when the right or middle mouse
+/// button clicks outside every ImGui window, e.g. into the game. ImGui does
+/// that only for the left button; keys must not keep going to a window the
+/// player clicked away from (memo M186). Must run before the window's
+/// content, so its widgets see the click. The press comes from ImGui or from
+/// [`record_mouse_button_press`]; each window keeps its own count, so every
+/// trailkit window sees every press.
+fn release_focus_on_outside_click(ui: &Ui, state: &mut TitleBarState) {
+    let presses = MOUSE_BUTTON_PRESSES.load(Ordering::Relaxed);
+    let recorded = presses != state.seen_mouse_button_presses;
+    state.seen_mouse_button_presses = presses;
+    let clicked = recorded
+        || ui.is_mouse_clicked(MouseButton::Right)
+        || ui.is_mouse_clicked(MouseButton::Middle);
+    if clicked
+        && ui.is_window_focused_with_flags(WindowFocusedFlags::ROOT_AND_CHILD_WINDOWS)
+        && !ui.is_window_hovered_with_flags(WindowHoveredFlags::ANY_WINDOW)
+    {
+        // Treated as a left click into the void, which ImGui answers itself:
+        // a text input that is not hovered lets go when it is drawn, and at
+        // the end of the frame ImGui focuses no window. Focusing no window
+        // right here instead crashed the game: ImGui had already planned
+        // keyboard navigation for this frame and read the then missing
+        // navigation window in the next button (`ItemAdd`).
+        // SAFETY: called on the render thread inside a frame, so `igGetIO`
+        // returns the current context's IO, which lives as long as it.
+        unsafe { (*sys::igGetIO()).MouseClicked[0] = true };
+    }
 }
 
 /// The height of the title row: that of its icon buttons. The window's own font

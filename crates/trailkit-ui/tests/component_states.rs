@@ -24,6 +24,7 @@ use trailkit_ui::{
     pane::draw_pane,
     separator::draw_compact_separator,
     splitter::draw_vertical_splitter,
+    status_card::{CardDetail, CardStatus, StatusCard, draw_status_card},
     status_line::{Status, draw_status_line},
     style_scope::StyleScope,
     text::{TextStyle, draw_icon, draw_text, draw_text_wrapped, draw_truncated_text},
@@ -33,6 +34,7 @@ use trailkit_ui::{
         draw_window as draw_title_bar,
     },
     toast::{Toast, ToastAction, ToastExtras, ToastTone, draw_toast, draw_toast_with_extras},
+    tooltip::draw_tooltip,
 };
 use trailkit_ui_testing::{
     harness::{FrameInput, UiHarness},
@@ -940,6 +942,196 @@ fn icons_in_text_colors() {
             &mut draw,
         );
     }
+}
+
+/// The status card in both statuses (M184): `danger` with a detail line,
+/// a button and the close button, at rest and with the close button
+/// hovered; `warning` with a secondary detail and two buttons that wrap into
+/// two rows in a narrow window.
+#[test]
+fn every_status_card_state() {
+    // Tall enough for no scrollbar; the hover sits on the close button.
+    let size = [260.0, 300.0];
+    let close_hover = [232.0, 28.0];
+    for (kind, theme_name) in THEMES {
+        let theme = kind.theme();
+        let mut harness = UiHarness::new(size);
+        let buttons = [Button::new("Open folder")];
+        let wide_buttons = [
+            Button::new("Restore unsaved changes").kind(ButtonKind::Primary),
+            Button::new("Discard"),
+        ];
+        let mut draw = |ui: &Ui| {
+            in_window(ui, &theme, size, || {
+                draw_status_card(
+                    ui,
+                    &theme,
+                    &StatusCard {
+                        status: CardStatus::Danger,
+                        text: "Your notes could not be loaded. The damaged file was kept as:",
+                        detail: Some(CardDetail {
+                            text: "backups/notes.corrupt.json",
+                            style: TextStyle::Body,
+                        }),
+                        buttons: &buttons,
+                        close_tooltip: Some("Close"),
+                    },
+                );
+                draw_status_card(
+                    ui,
+                    &theme,
+                    &StatusCard {
+                        status: CardStatus::Warning,
+                        text: "Unsaved changes from 11/01/2026, 08:00",
+                        detail: Some(CardDetail {
+                            text: "The note was changed since.",
+                            style: TextStyle::Secondary,
+                        }),
+                        buttons: &wide_buttons,
+                        close_tooltip: None,
+                    },
+                );
+            });
+        };
+        for (state, input) in [
+            ("rest", mouse([250.0, 295.0], false)),
+            ("close-hovered", mouse(close_hover, false)),
+        ] {
+            assert_state(
+                &mut harness,
+                ("status-card", state, theme_name),
+                &input,
+                &mut draw,
+            );
+        }
+    }
+}
+
+/// A tooltip shown while the caller holds the window's draw list, as the
+/// editor does over a chat-link chip: imgui-rs allows one `DrawListMut` at a
+/// time, so a tooltip must not take a second one (it crashed the game).
+#[test]
+fn tooltip_while_the_window_draw_list_is_held() {
+    let theme = ThemeKind::Dark.theme();
+    let size = [200.0, 80.0];
+    let mut harness = UiHarness::new(size);
+    let _image = harness.frame(&mouse([40.0, 30.0], false), |ui: &Ui| {
+        in_window(ui, &theme, size, || {
+            let draw_list = ui.get_window_draw_list();
+            draw_tooltip(ui, &theme, "Tooltip");
+            draw_list.add_line([0.0, 0.0], [1.0, 1.0], [1.0; 4]).build();
+        });
+    });
+}
+
+/// A right click outside every window takes the focus from a trailkit
+/// window, as a left click does in ImGui (memo M186); a right click inside
+/// keeps it.
+#[test]
+fn a_right_click_outside_takes_the_focus() {
+    let theme = ThemeKind::Dark.theme();
+    let size = [320.0, 240.0];
+    let texts = TitleBarTexts {
+        title: "Notes",
+        collapse: "Collapse",
+        expand: "Expand",
+        close: "Close",
+    };
+    let mut state = TitleBarState::default();
+    let mut open = true;
+    let focused = Cell::new(false);
+    let mut harness = UiHarness::new(size);
+    let mut frame = |harness: &mut UiHarness, input: FrameInput| {
+        let _image = harness.frame(&input, |ui: &Ui| {
+            let _style = StyleScope::push_with_cursor_extent(ui, &theme, None);
+            let _clicked = draw_title_bar(
+                ui,
+                &theme,
+                Window::new("Notes###focus")
+                    .position([0.0, 0.0], Condition::Always)
+                    .size([200.0, 140.0], Condition::Always),
+                texts,
+                &[],
+                &mut state,
+                &mut open,
+                || focused.set(ui.is_window_focused()),
+            );
+        });
+    };
+    let right = |position: [f32; 2], down: bool| FrameInput {
+        mouse_position: position,
+        right_button_down: down,
+        ..FrameInput::default()
+    };
+    let inside = [100.0, 100.0];
+    let outside = [280.0, 200.0];
+    for input in [
+        mouse(inside, true),
+        mouse(inside, false),
+        mouse(inside, false),
+    ] {
+        frame(&mut harness, input);
+    }
+    assert!(focused.get(), "a left click inside focuses the window");
+    for input in [
+        right(inside, true),
+        right(inside, false),
+        right(inside, false),
+    ] {
+        frame(&mut harness, input);
+    }
+    assert!(focused.get(), "a right click inside keeps the focus");
+    for input in [
+        right(outside, true),
+        right(outside, false),
+        right(outside, false),
+    ] {
+        frame(&mut harness, input);
+    }
+    assert!(!focused.get(), "a right click outside takes the focus");
+}
+
+/// The card's close button works while another `x` icon button of the same
+/// window was drawn first, as the title bar's is: both take the icon as
+/// ImGui id, so the card needs its own id scope (M185, the `x` did nothing in
+/// game).
+#[test]
+fn the_status_card_closes_next_to_another_close_button() {
+    let theme = ThemeKind::Dark.theme();
+    let size = [260.0, 300.0];
+    let close_center = [232.0, 28.0];
+    let closed = Cell::new(false);
+    let buttons = [Button::new("Open folder")];
+    let mut harness = UiHarness::new(size);
+    for down in [false, true, false, false] {
+        let _image = harness.frame(&mouse(close_center, down), |ui: &Ui| {
+            in_window(ui, &theme, size, || {
+                let start = ui.cursor_screen_pos();
+                // Another `x` first, out of the way at the bottom.
+                ui.set_cursor_screen_pos([start[0], size[1] - 40.0]);
+                let _title_close = draw_icon_button(ui, &theme, Icon::X, "Close");
+                ui.set_cursor_screen_pos(start);
+                let outcome = draw_status_card(
+                    ui,
+                    &theme,
+                    &StatusCard {
+                        status: CardStatus::Danger,
+                        text: "Your notes could not be loaded. The damaged file was kept as:",
+                        detail: Some(CardDetail {
+                            text: "backups/notes.corrupt.json",
+                            style: TextStyle::Body,
+                        }),
+                        buttons: &buttons,
+                        close_tooltip: Some("Close"),
+                    },
+                );
+                if outcome.closed {
+                    closed.set(true);
+                }
+            });
+        });
+    }
+    assert!(closed.get(), "a click on the card's x closes it");
 }
 
 /// The empty state in every variant: title only with two buttons, icon with

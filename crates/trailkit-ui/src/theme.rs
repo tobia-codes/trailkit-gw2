@@ -146,8 +146,12 @@ pub struct StatusColors {
     /// `danger`.
     pub danger: Color,
     /// `danger.subtle`: `danger` tinted into `bg.popup` (20 % Dark, 10 %
-    /// Light), the fill of an error toast (memo M180, Q144 B).
+    /// Light), the fill of an error toast (memo M180, Q144 B) and of a
+    /// `danger` status card (memo M184).
     pub danger_subtle: Color,
+    /// `warning.subtle`: `warning` tinted into `bg.popup` (16 % Dark, 10 %
+    /// Light), the fill of a `warning` status card (memo M184).
+    pub warning_subtle: Color,
     /// `info`.
     pub info: Color,
 }
@@ -463,6 +467,9 @@ impl Theme {
             // 20 % `danger` over `bg.popup` (#1A2029); 22 % would leave
             // `text.secondary` below 4.5:1.
             danger_subtle: Color::from_rgb_hex(0x45353B),
+            // 16 % `warning` over `bg.popup` (#1A2029); 18 % would leave
+            // `text.secondary` below 4.5:1.
+            warning_subtle: Color::from_rgb_hex(0x3B382F),
             info: Color::from_rgb_hex(0x7AB0F0),
         },
         border: BorderTokens {
@@ -552,6 +559,8 @@ impl Theme {
             danger: Color::from_rgb_hex(0xB3261E),
             // 10 % `danger` over `bg.popup` (#FFFFFF).
             danger_subtle: Color::from_rgb_hex(0xF7E9E8),
+            // 10 % `warning` over `bg.popup` (#FFFFFF).
+            warning_subtle: Color::from_rgb_hex(0xF3EEE5),
             info: Color::from_rgb_hex(0x1F5DB0),
         },
         border: BorderTokens {
@@ -683,22 +692,31 @@ mod tests {
     }
 
     /// The error toast's message, counter and icon sit on `danger.subtle`;
-    /// its buttons use `bg.active` (memo M180).
+    /// its buttons use `bg.active` (memo M180). A status card puts the
+    /// status color, primary and secondary text on its tinted fill (M184).
     #[test]
-    fn error_toast_content_meets_contrast_minimum() {
+    fn tinted_status_fills_meet_contrast_minimum() {
         for kind in ThemeKind::ALL {
             let theme = kind.theme();
-            for (name, text) in [
-                ("text.primary", theme.text.primary),
-                ("text.secondary", theme.text.secondary),
-                ("danger", theme.status.danger),
-            ] {
-                assert_readable(
-                    kind,
-                    &format!("{name} on danger.subtle"),
-                    text,
+            for (fill_name, fill, status) in [
+                (
+                    "danger.subtle",
                     theme.status.danger_subtle,
-                );
+                    theme.status.danger,
+                ),
+                (
+                    "warning.subtle",
+                    theme.status.warning_subtle,
+                    theme.status.warning,
+                ),
+            ] {
+                for (name, text) in [
+                    ("text.primary", theme.text.primary),
+                    ("text.secondary", theme.text.secondary),
+                    ("status", status),
+                ] {
+                    assert_readable(kind, &format!("{name} on {fill_name}"), text, fill);
+                }
             }
         }
     }

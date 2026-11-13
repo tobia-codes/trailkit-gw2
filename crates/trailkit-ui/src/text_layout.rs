@@ -77,14 +77,18 @@ pub fn format_count(count: usize, buffer: &mut [u8; 20]) -> &str {
     std::str::from_utf8(&buffer[..written]).unwrap_or_default()
 }
 
-/// Shortens `text` with "…" so it fits into `width` (`lay-truncation`).
-/// Allocates only when shortening is needed.
+/// Shortens `text` with "…" so it fits into `width` (`lay-truncation`);
+/// empty when not even "…" fits. Allocates only when shortening is needed.
 pub fn truncate_to_width<'text>(ui: &Ui, text: &'text str, width: f32) -> Cow<'text, str> {
     if ui.calc_text_size(text)[0] <= width {
         return Cow::Borrowed(text);
     }
     let ellipsis = "…";
     let available = width - ui.calc_text_size(ellipsis)[0];
+    // Not even "…" fits: draw nothing rather than run into what follows.
+    if available < 0.0 {
+        return Cow::Borrowed("");
+    }
     let mut end = 0;
     for (index, character) in text.char_indices() {
         let next = index + character.len_utf8();

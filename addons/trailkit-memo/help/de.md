@@ -92,7 +92,7 @@ Chat-Links aus dem Spiel (`[&…]`, z. B. eine Wegmarke oder ein Gegenstand) ers
 - **Speichern** (oder **Strg+Enter** / **Strg+S**) übernimmt deine Änderungen und schließt den Editor, sobald sie gespeichert sind, **Abbrechen** verwirft sie — memo fragt vorher nach, wenn du etwas geändert hast.
 - Wählst du eine andere Notiz, legst eine neue an oder schließt das Fenster, während Änderungen offen sind, fragt memo, ob sie übernommen oder verworfen werden sollen. (Mit `"unsaved_changes": "save_automatically"` in `settings.json` wird ohne Nachfrage übernommen; ein Schalter folgt im Einstellungsfenster.)
 - **Escape** schließt das Fenster; bei ungespeicherten Änderungen fragt memo vorher nach.
-- Wird das Spiel oder das Addon beim Bearbeiten beendet, bleiben deine Änderungen als Entwurf erhalten. Beim nächsten Öffnen der Notiz wählst du **Wiederherstellen** zum Weitermachen oder **Verwerfen**. Entwürfe werden nach 30 Tagen automatisch gelöscht.
+- Wird das Spiel oder das Addon beim Bearbeiten beendet, bleiben deine Änderungen als Entwurf erhalten. Solche Notizen sind in der Liste mit einem gelben Warnzeichen markiert (eine eingeklappte Gruppe zeigt es auch), und ein Hinweis über der Liste sagt, wie viele es sind; **Zur Notiz springen** führt dich nacheinander hin, **x** blendet den Hinweis bis zum nächsten Spielstart aus. In der Notiz wählst du **Wiederherstellen** zum Weitermachen oder **Verwerfen**. Entwürfe werden nach 30 Tagen automatisch gelöscht.
 
 ## Tägliche und wöchentliche Notizen
 
@@ -180,7 +180,7 @@ memo speichert deine Notizen automatisch im Guild-Wars-2-Ordner.
 
 Deine Notizen werden kurz nach jeder Änderung gespeichert, in `addons/trailkit/memo/` im Guild-Wars-2-Ordner (`notes.json`, `settings.json` und `drafts.json`, solange ein Entwurf existiert).
 
-- Ist die Notizdatei beschädigt, startet memo mit einer leeren Liste und weist dich darauf hin. Die beschädigte Datei bleibt im Ordner `backups` daneben erhalten, es geht also nichts verloren.
+- Ist die Notizdatei beschädigt, startet memo mit einer leeren Liste und weist dich darauf hin. Die beschädigte Datei bleibt im Ordner `backups` daneben erhalten, es geht also nichts verloren. Den Hinweis kannst du mit **x** schließen; er bleibt bis zum nächsten Spielstart zu.
 - Wurden deine Notizen von einer neueren memo-Version gespeichert, lässt memo die Datei unverändert und bittet dich, das Addon zu aktualisieren.
 
 ### Wenn das Speichern fehlschlägt

@@ -14,7 +14,10 @@ use trailkit_memo_shared::{
 use trailkit_ui::{
     font_registry::FontScope,
     fonts::FontRole,
-    glyph_metrics::{draw_glyph_at, glyph_ink_box, glyph_visible_ink},
+    glyph_metrics::{
+        capital_middle, draw_glyph_at, glyph_ink_box, glyph_visible_ink, icon_visible_box,
+    },
+    icons::Icon,
     selection_bar::{draw_row_state, hide_square_row_highlight},
     style_scope::StyleScope,
     text_layout::{format_count, truncate_to_width},
@@ -79,7 +82,22 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut RowContext<'_, '_>) {
     let mut count_buffer = [0; 20];
     let count = format_count(note_count, &mut count_buffer);
     let count_x = row_content_end(ui, context) - ui.calc_text_size(count)[0];
-    let title_end = count_x - context.theme.spacing.small;
+    let mut title_end = count_x - context.theme.spacing.small;
+    // A collapsed group shows that a note inside it has unsaved changes
+    // (M185); an expanded one leaves that to the note rows.
+    let has_unsaved_changes = context.extras.unsaved_changes;
+    if !expanded && group.any_note(&|note| has_unsaved_changes.contains(note)) {
+        let (mark_start, is_hovered) = draw_unsaved_mark(
+            ui,
+            context.theme,
+            title_end,
+            row_start[1] + context.frame_padding[1],
+        );
+        if is_hovered {
+            draw_tooltip(ui, context.theme, has_unsaved_changes.tooltip);
+        }
+        title_end = mark_start - context.theme.spacing.small;
+    }
     let (label, token) = {
         let _bold = FontScope::push(ui, FontRole::BodyBold);
         let label = if is_renaming {
@@ -224,6 +242,19 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut RowContext<'_, '_>) {
         }
         title_end = badge_start - context.theme.spacing.small;
     }
+    // Unsaved changes kept as a draft (M185).
+    if context.extras.unsaved_changes.contains(note.id) {
+        let (mark_start, is_hovered) = draw_unsaved_mark(
+            ui,
+            context.theme,
+            title_end,
+            row_start[1] + context.frame_padding[1],
+        );
+        if is_hovered && is_row_hovered {
+            draw_tooltip(ui, context.theme, context.extras.unsaved_changes.tooltip);
+        }
+        title_end = mark_start - context.theme.spacing.small;
+    }
     // A note matching through its content shows its hit count (M122).
     if let Some(search) = context.search
         && let Some(hits) = search.filter.content_hits(note.id)
@@ -303,6 +334,14 @@ fn handle_hovered_row(
 /// the node spans the full width (M144), the drop line keeps the level.
 fn record_row(ui: &Ui, node: NodeId, kind: RowKind, left: f32, context: &mut RowContext<'_, '_>) {
     let [min, max] = [ui.item_rect_min(), ui.item_rect_max()];
+    if *context.reveal == Some(node) {
+        // Scroll the list so the revealed row sits in its middle (M185).
+        ui.set_scroll_from_pos_y_with_ratio(
+            f32::midpoint(min[1], max[1]) - ui.window_pos()[1],
+            0.5,
+        );
+        *context.reveal = None;
+    }
     context.rows.push(RowRect {
         node,
         kind,
@@ -373,6 +412,26 @@ fn draw_rename_input(
             .push(NoteListAction::Rename(rename.node, rename.buffer.clone()));
     }
     context.rename_steps.push(RenameStep::End);
+}
+
+/// Draws the unsaved-changes mark (M185): `triangle-alert` in `warning`
+/// ending at `end`, its middle on the middle of the title's capitals for a
+/// title drawn at `text_top`. Returns its left edge and whether the mouse is
+/// over it.
+fn draw_unsaved_mark(ui: &Ui, theme: &Theme, end: f32, text_top: f32) -> (f32, bool) {
+    let line_height = ui.text_line_height();
+    let text_middle = capital_middle().unwrap_or(line_height / 2.0);
+    let _icons = FontScope::push(ui, FontRole::Icons);
+    let mut buffer = [0; 4];
+    let glyph = Icon::TRIANGLE_ALERT.as_str(&mut buffer);
+    let width = ui.calc_text_size(glyph)[0];
+    let ink = icon_visible_box(Icon::TRIANGLE_ALERT.glyph(), ui.text_line_height());
+    let left = (end - width).round();
+    let top = (text_top + text_middle - f32::midpoint(ink[1], ink[3])).round();
+    ui.get_window_draw_list()
+        .add_text([left, top], theme.status.warning.to_array(), glyph);
+    let is_hovered = ui.is_mouse_hovering_rect([left, top], [end, top + ui.text_line_height()]);
+    (left, is_hovered)
 }
 
 /// Draws a row badge (M45, M49, M105): an outlined rounded box with a

@@ -180,6 +180,15 @@ impl Group {
             })
             .sum()
     }
+
+    /// Whether a note in this group, nested groups included, satisfies
+    /// `predicate` (e.g. a collapsed group with unsaved changes, M185).
+    pub fn any_note(&self, predicate: &impl Fn(NoteId) -> bool) -> bool {
+        self.children.iter().any(|child| match child {
+            TreeNode::Note(note) => predicate(note.id),
+            TreeNode::Group(group) => group.any_note(predicate),
+        })
+    }
 }
 
 impl TreeNode {
