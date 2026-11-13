@@ -20,10 +20,10 @@ UX rule `lay-danger-discard`), M187, R103 cleanup; mockup https://claude.ai/arti
 The cloud clone fetches only `develop`; to work on the branch: `git fetch origin feature/button-cleanup:feature/button-cleanup && git switch feature/button-cleanup`.
 
 **Open, in this order:**
-1. **PR #124:** check CI; the Windows job should fail on stale snapshots and upload `snapshot-updates` (R97): download, review every
-   changed snapshot whole against the mockup and `tokens.md` §10, commit the references, push, all required checks green. Then the
-   in-game tests 1–9 (`in-game-tests.md`), then ask for the merge OK and arm auto-merge. Side finding: the `min-de-dialog-*` fixtures
-   build the confirmation text in English (test only); fix only if the user agrees.
+1. **PR #124:** 125 snapshots reviewed (§10) and committed; the review found an unreadable tooltip on the red icon button (fixed in
+   `c9d2d22`). Still to render via CI (R97) and review: `memo-state-trash-hover-delete-*`, `ui-button-danger-icon-{hover,pressed}-*`
+   (tooltip must be readable). Then all checks green, in-game tests 1–9, merge OK, auto-merge. Side finding: `min-de-dialog-*`
+   fixtures build the confirmation text in English (test only); fix only if the user agrees.
 2. **File-length splits (R77):** approved Q91 (`note_list.rs`/`draw_group`), Q95 `draw_dropdown`, Q96 `editor/view.rs`, Q105
    `markdown_view.rs`. Grill the rest by concern, never split unasked: `theme.rs` (421), `rows.rs` (422, `draw_note_row` 91),
    `main_window.rs` (428), `actions.rs` (451, Q134), `help_text.rs::get` (104, a table; Q92 said no for `Text::get`),
