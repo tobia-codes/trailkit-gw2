@@ -120,7 +120,7 @@ fn draw_entry_menu_items(
         theme,
         Icon::TRASH_2,
         NoteListText::Delete.get(language),
-        MenuItemTone::Regular,
+        MenuItemTone::Danger,
         blocked.then(|| NoteListText::SaveOrCancelFirst.get(language)),
     ) {
         menu.actions.push(NoteListAction::Delete(node));

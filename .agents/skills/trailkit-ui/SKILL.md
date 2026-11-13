@@ -96,10 +96,9 @@ Build once, use everywhere. Planned:
   `draw_primary_button`, `draw_primary_button_with_icon` (Lucide icon +
   label, R71; primary toolbar actions, `lay-button-icon`), all text
   buttons at least `button.min_width` wide (M131), `draw_icon_button` / `draw_icon_toggle` (borderless icon
-  buttons with tooltip), danger variants for destructive actions that ask
-  first (memo M146): `draw_danger_button` (`danger` label),
-  `draw_danger_icon_button`, `draw_danger_fill_button_with_size` (the
-  confirm button of a destructive dialog: `danger` fill)
+  buttons with tooltip), delete buttons (R105, memo M146): `draw_danger_button`,
+  `draw_danger_fill_button_with_size` (e.g. the confirm button of a delete
+  question) and the icon-only `draw_danger_icon_button`, all `danger` fill
 - Toast — **exists**: `toast::draw_toast`, one message with an optional
   action button at the bottom centre of the window, 5 s, the timer pauses
   while hovered, a new one replaces the old (memo M142, M148, `ix-toasts`).
@@ -113,10 +112,15 @@ Build once, use everywhere. Planned:
   `Warning`/`Danger` with `warning.subtle`/`danger.subtle` fill and a frame
   in the status color, a status line, an optional `CardDetail` hanging under
   the text in a normal text role, buttons at the left edge (R103: only
-  primary and regular) and an optional close `x` (`draw_icon_button`).
+  primary, regular and delete) and an optional close `x` (`draw_icon_button`).
   `fits_status_card_line` lets a caller break a long text on purpose
-- Only two button styles (R103): brass primary and regular; icon buttons
-  like the close `x` look like every other one
+- Only two button styles (R103) plus delete (R105): brass primary and
+  regular; every button that deletes, and every button that throws data
+  away for good ("Discard", R106), is the `danger` fill
+  (`ButtonKind::DangerFill`) and takes the brass button's place in a row;
+  icon buttons like the close `x` look like every other one. A delete entry
+  in a menu uses `MenuItemTone::Danger`. Hover and pressed fills follow one
+  rule (R107, `tokens.md` §2 Button states)
 - Button with kind and state — **exists** (R93): `button::Button` with
   `ButtonKind` (`Regular`, `Primary`, `DangerFill`) and `ButtonState`
   (`Ready`, `Busy` = spinner, `Disabled { reason }` = `text.disabled`

@@ -1,7 +1,7 @@
 //! The draft hint above a note (M54, M184): a `warning` status card that
 //! says when the draft was saved and whether the note changed since, with
-//! "Discard" / "Restore" (primary, last). It cannot be closed: the two buttons
-//! answer it (Q336).
+//! the red "Discard" (R106) / "Restore" (primary, last). It cannot be
+//! closed: the two buttons answer it (Q336).
 
 use jiff::Timestamp;
 use nexus::imgui::Ui;
@@ -82,10 +82,11 @@ impl DraftHint {
             text: DraftText::DraftNoteChangedSince.get(language),
             style: TextStyle::Secondary,
         });
-        // "Discard" is shared with the unsaved-changes question.
-        // The brass button last (R103, Q349).
+        // "Discard" is shared with the unsaved-changes question; it throws
+        // the draft away for good, so it is red (R106). The brass button
+        // last (R103, Q349).
         let buttons = [
-            Button::new(Text::DiscardChanges.get(language)),
+            Button::new(Text::DiscardChanges.get(language)).kind(ButtonKind::DangerFill),
             Button::new(DraftText::RestoreDraft.get(language)).kind(ButtonKind::Primary),
         ];
         let outcome = draw_status_card(

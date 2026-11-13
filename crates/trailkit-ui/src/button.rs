@@ -76,16 +76,14 @@ pub fn draw_primary_button_with_size(ui: &Ui, theme: &Theme, label: &str, size: 
         .draw(ui, theme)
 }
 
-/// Draws a button for a destructive action that asks first (memo M146):
-/// the regular button background with a `danger` label, e.g. "Empty trash".
+/// Draws a delete button (R105, memo M146): a `danger` fill with a label in
+/// the window color, e.g. "Empty trash".
 pub fn draw_danger_button(ui: &Ui, theme: &Theme, label: &str) -> bool {
-    let _text = ui.push_style_color(StyleColor::Text, theme.status.danger.to_array());
-    draw_button(ui, theme, label)
+    draw_danger_fill_button_with_size(ui, theme, label, [0.0, 0.0])
 }
 
-/// Draws the confirming button of a destructive dialog (memo M146): a
-/// `danger` fill with a label in the window color, `size[0]` wide (`0.0`
-/// fits the label).
+/// Like [`draw_danger_button`] with an explicit width (`size[0]`; `0.0`
+/// fits the label), e.g. the confirming button of a delete question.
 pub fn draw_danger_fill_button_with_size(
     ui: &Ui,
     theme: &Theme,
@@ -98,11 +96,24 @@ pub fn draw_danger_fill_button_with_size(
         .draw(ui, theme)
 }
 
-/// Like [`draw_icon_button`] with a `danger` icon, for a destructive action
-/// that asks first (memo M145, "Delete permanently").
+/// Draws an icon-only delete button (R105, memo M145, "Delete
+/// permanently"): the `danger` fill of [`draw_danger_button`] with the icon
+/// in the window color, also at rest. The tooltip keeps the regular text
+/// color.
 pub fn draw_danger_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str) -> bool {
-    let _text = ui.push_style_color(StyleColor::Text, theme.status.danger.to_array());
-    draw_icon_button(ui, theme, icon, tooltip)
+    let danger = theme.status.danger;
+    draw_icon_button_with_fill(
+        ui,
+        theme,
+        icon,
+        tooltip,
+        IconButtonFill {
+            resting: danger,
+            hovered: theme.status.danger_hover,
+            pressed: theme.status.danger_active,
+            icon: Some(theme.surface.window),
+        },
+    )
 }
 
 /// Draws a primary button with a Lucide `icon` before `label` (accent
@@ -158,7 +169,13 @@ pub fn draw_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str) -> bo
 /// hardly differs from the fill: hovered it sits on `bg.active` (memo M180,
 /// a toast's close button).
 pub fn draw_popup_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str) -> bool {
-    draw_icon_button_with_hover(ui, theme, icon, tooltip, false, theme.surface.active)
+    draw_icon_button_with_fill(
+        ui,
+        theme,
+        icon,
+        tooltip,
+        IconButtonFill::plain(theme, theme.surface.active),
+    )
 }
 
 /// Like [`draw_icon_button`] in `state` (R93): disabled it shows the icon in
@@ -208,37 +225,68 @@ pub fn draw_icon_button_with_state(
 /// (ROADMAP R79, tokens.md §3). The icon is centered by its visible ink, so
 /// it lines up with a label centered by its capitals (memo M170).
 pub fn draw_icon_toggle(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str, active: bool) -> bool {
-    draw_icon_button_with_hover(ui, theme, icon, tooltip, active, theme.surface.hover)
+    let _active_text =
+        active.then(|| ui.push_style_color(StyleColor::Text, theme.text.primary.to_array()));
+    let fill = if active {
+        IconButtonFill {
+            resting: theme.surface.active,
+            hovered: theme.surface.active,
+            pressed: theme.surface.active,
+            icon: None,
+        }
+    } else {
+        IconButtonFill::plain(theme, theme.surface.hover)
+    };
+    draw_icon_button_with_fill(ui, theme, icon, tooltip, fill)
 }
 
-/// The icon button behind [`draw_icon_toggle`] and
-/// [`draw_popup_icon_button`]: `hover` is the fill while hovered and not
-/// `active`.
-fn draw_icon_button_with_hover(
+/// The fills of an icon button in its three states.
+#[derive(Debug, Clone, Copy)]
+struct IconButtonFill {
+    /// Fill while neither hovered nor pressed.
+    resting: Color,
+    /// Fill while hovered.
+    hovered: Color,
+    /// Fill while pressed.
+    pressed: Color,
+    /// Icon color; `None` takes the current `Text` style color. Only the
+    /// icon uses it, never the tooltip.
+    icon: Option<Color>,
+}
+
+impl IconButtonFill {
+    /// No fill at rest, `hovered` while hovered and `bg.active` while
+    /// pressed: a plain icon button.
+    const fn plain(theme: &Theme, hovered: Color) -> Self {
+        Self {
+            resting: Color::TRANSPARENT,
+            hovered,
+            pressed: theme.surface.active,
+            icon: None,
+        }
+    }
+}
+
+/// The icon button behind [`draw_icon_toggle`], [`draw_popup_icon_button`]
+/// and [`draw_danger_icon_button`]: the icon in `fill.icon` (else the
+/// current `Text` color) on `fill`.
+fn draw_icon_button_with_fill(
     ui: &Ui,
     theme: &Theme,
     icon: Icon,
     tooltip: &str,
-    active: bool,
-    hover: Color,
+    fill: IconButtonFill,
 ) -> bool {
-    let _active_text =
-        active.then(|| ui.push_style_color(StyleColor::Text, theme.text.primary.to_array()));
-    let resting = if active {
-        theme.surface.active.to_array()
-    } else {
-        [0.0; 4]
-    };
-    let color = ImColor32::from(ui.style_color(StyleColor::Text)).to_bits();
+    let color = fill.icon.map_or_else(
+        || ImColor32::from(ui.style_color(StyleColor::Text)).to_bits(),
+        |icon| ImColor32::from(icon.to_array()).to_bits(),
+    );
     let clicked = {
         let _colors = [
             ui.push_style_color(StyleColor::Text, [0.0; 4]),
-            ui.push_style_color(StyleColor::Button, resting),
-            ui.push_style_color(
-                StyleColor::ButtonHovered,
-                if active { resting } else { hover.to_array() },
-            ),
-            ui.push_style_color(StyleColor::ButtonActive, theme.surface.active.to_array()),
+            ui.push_style_color(StyleColor::Button, fill.resting.to_array()),
+            ui.push_style_color(StyleColor::ButtonHovered, fill.hovered.to_array()),
+            ui.push_style_color(StyleColor::ButtonActive, fill.pressed.to_array()),
         ];
         let _icons = FontScope::push(ui, FontRole::Icons);
         let mut buffer = [0; 4];

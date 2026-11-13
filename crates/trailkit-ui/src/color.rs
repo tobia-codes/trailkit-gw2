@@ -94,6 +94,27 @@ impl Color {
         };
         (lighter + 0.05) / (darker + 0.05)
     }
+
+    /// This color with its OKLab lightness lowered by `step` (`0.08` is 8 %),
+    /// hue and chroma kept; channels outside sRGB are clamped. The rule
+    /// behind the hover and pressed fills of colored buttons (R107): the
+    /// theme stores the results as hex values, and a test checks them
+    /// against this function. Alpha is kept.
+    #[must_use]
+    pub fn darkened(self, step: f32) -> Self {
+        let [lightness, green_red, blue_yellow] = to_oklab([
+            linearize(self.red),
+            linearize(self.green),
+            linearize(self.blue),
+        ]);
+        let [red, green, blue] = from_oklab([lightness - step, green_red, blue_yellow]);
+        Self {
+            red: delinearize(red),
+            green: delinearize(green),
+            blue: delinearize(blue),
+            alpha: self.alpha,
+        }
+    }
 }
 
 /// Converts an 8-bit channel value (`0..=255`, exactly representable as `f32`)
@@ -111,9 +132,53 @@ fn linearize(component: f32) -> f32 {
     }
 }
 
+/// Converts linear light back to a gamma-encoded sRGB component, clamped
+/// to `0.0..=1.0`.
+fn delinearize(component: f32) -> f32 {
+    let encoded = if component <= 0.003_130_8 {
+        12.92 * component
+    } else {
+        1.055 * component.powf(1.0 / 2.4) - 0.055
+    };
+    encoded.clamp(0.0, 1.0)
+}
+
+/// Converts linear sRGB to OKLab `[L, a, b]` (Björn Ottosson's matrices).
+fn to_oklab([red, green, blue]: [f32; 3]) -> [f32; 3] {
+    let long = (0.412_221_46 * red + 0.536_332_55 * green + 0.051_445_995 * blue).cbrt();
+    let medium = (0.211_903_5 * red + 0.680_699_5 * green + 0.107_396_96 * blue).cbrt();
+    let short = (0.088_302_46 * red + 0.281_718_85 * green + 0.629_978_7 * blue).cbrt();
+    [
+        0.210_454_26 * long + 0.793_617_8 * medium - 0.004_072_047 * short,
+        1.977_998_5 * long - 2.428_592_2 * medium + 0.450_593_7 * short,
+        0.025_904_037 * long + 0.782_771_77 * medium - 0.808_675_77 * short,
+    ]
+}
+
+/// Converts OKLab `[L, a, b]` back to linear sRGB (may leave `0.0..=1.0`).
+fn from_oklab([lightness, green_red, blue_yellow]: [f32; 3]) -> [f32; 3] {
+    let long = (lightness + 0.396_337_78 * green_red + 0.215_803_76 * blue_yellow).powi(3);
+    let medium = (lightness - 0.105_561_346 * green_red - 0.063_854_17 * blue_yellow).powi(3);
+    let short = (lightness - 0.089_484_18 * green_red - 1.291_485_5 * blue_yellow).powi(3);
+    [
+        4.076_741_7 * long - 3.307_711_6 * medium + 0.230_969_94 * short,
+        -1.268_438 * long + 2.609_757_4 * medium - 0.341_319_4 * short,
+        -0.004_196_086_3 * long - 0.703_418_6 * medium + 1.707_614_7 * short,
+    ]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn darkening_by_nothing_keeps_the_color() {
+        let brass = Color::from_rgb_hex(0xE2A740);
+        let same = brass.darkened(0.0);
+        for (before, after) in brass.to_array().iter().zip(same.to_array()) {
+            assert!((before - after).abs() < 0.5 / 255.0);
+        }
+    }
 
     #[test]
     fn parses_hex() {

@@ -293,7 +293,7 @@ fn draw_dialog_buttons(
     answer
 }
 
-/// The unsaved changes dialog (M54, M56, M70): "Discard" set apart on the
+/// The unsaved changes dialog (M54, M56, M70): the red "Discard" (R106) set apart on the
 /// left, "Keep editing" and the primary "Save" on the right. Enter saves,
 /// Escape keeps editing.
 pub(super) fn unsaved_changes_dialog(language: Language) -> DialogContent<'static> {
@@ -303,7 +303,7 @@ pub(super) fn unsaved_changes_dialog(language: Language) -> DialogContent<'stati
         status: None,
         apart: Some(DialogButton {
             label: Text::DiscardChanges.get(language),
-            kind: ButtonKind::Regular,
+            kind: ButtonKind::DangerFill,
             state: ButtonState::Ready,
             answer: WindowAction::LeaveDiscarding,
         }),
@@ -327,7 +327,7 @@ pub(super) fn unsaved_changes_dialog(language: Language) -> DialogContent<'stati
 }
 
 /// The dialog when the user leaves the editor after a failed save (M180,
-/// Q157, mockup V4): "Discard" set apart on the left, "Keep editing" and
+/// Q157, mockup V4): the red "Discard" (R106) set apart on the left, "Keep editing" and
 /// the primary "Save again" (busy while it writes) on the right; after a
 /// failed "Save again" a red "Failed again" line. While "Save again" is
 /// busy, the other answers are disabled and name the reason
@@ -358,7 +358,7 @@ pub(super) fn save_failed_dialog(
         status: (prompt.failed_again && !saving).then(|| SaveText::FailedAgain.get(language)),
         apart: Some(DialogButton {
             label: Text::DiscardChanges.get(language),
-            kind: ButtonKind::Regular,
+            kind: ButtonKind::DangerFill,
             state: others,
             answer: WindowAction::SaveFailedDiscard,
         }),

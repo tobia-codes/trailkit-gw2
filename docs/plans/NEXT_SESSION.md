@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-13 (session 34). Current state and
+Last updated: 2026-11-13 (session 35, PR #124 open). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -11,27 +11,26 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## ▶ Resume here
 
-**Session 34 (2026-11-13).** Merged after the user's OK: #116 (session 33 work), this handoff, `feature/crash-protection` (R104:
-`catch_unwind` guard around every Nexus callback; after a panic only the help window draws, opened on "Report a problem" with a warning
-card; unsaved text becomes a draft; Nexus alert only when `load` fails, Q370; `panic_msgbox` off; event `addon_stopped`;
-`trailkit_ui::draw_list` replaces `get_window_draw_list`, banned in `clippy.toml`; harness with keyboard navigation and a navigation pass
-over every state; smoke test in `tokens.md` §10; Cargo feature `fault-injection` with `cargo xtask deploy … --features`) and
-`chore/plan-event-memo-wishes`. Check all PRs merged with green CI. The deployed DLL is a `fault-injection` debug build: deploy a normal
-build before playing. The in-game check of the draft rescue (`draft=kept` in the log) is still open: confirm it on the next test.
+**First, ask the user: can you test in game now?** Pending checks with where/how/expected: [`in-game-tests.md`](in-game-tests.md)
+(user request 2026-11-13: keep it current until each item is confirmed; ask every session).
+
+**Session 35 (2026-11-13).** PR [#124](https://github.com/tobia-codes/trailkit-gw2/pull/124) merged into `develop` with auto-merge on the
+user's OK, before the in-game test (user's choice): R105 (delete always red, menu entries too), R106 (irreversible discards red, UX rule
+`lay-danger-discard`), R107 (colored button states 8 %/12 % darker), M187, R103 cleanup. Mockup https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr.
+A failed in-game test becomes a `bugfix/` branch from `develop`.
 
 **Open, in this order:**
-1. **Window flicker on first open (Q371):** fixed on `bugfix/font-size-at-load` (fonts sized at the end of `load`), confirmed in game.
-2. **Button cleanup (R103, Q338, Q350):** `DangerFill` confirm button, the error toast's `bg.active` buttons and the empty state's brass
-   button on the left onto the two styles and the order; R87 mockup first; keep the icon-label gap.
-3. **File-length splits (R77):** approved Q91 (`note_list.rs`/`draw_group`), Q95 `draw_dropdown`, Q96 `editor/view.rs`, Q105
+1. **In-game tests 1–10 of PR #124** (top of this file). Side finding: `min-de-dialog-*` fixtures build English confirmation text
+   (test only); fix only if the user agrees. Length hints on `theme.rs` (429) and `token_groups.rs` (490) are in item 2.
+2. **File-length splits (R77):** approved Q91 (`note_list.rs`/`draw_group`), Q95 `draw_dropdown`, Q96 `editor/view.rs`, Q105
    `markdown_view.rs`. Grill the rest by concern, never split unasked: `theme.rs` (421), `rows.rs` (422, `draw_note_row` 91),
    `main_window.rs` (428), `actions.rs` (451, Q134), `help_text.rs::get` (104, a table; Q92 said no for `Text::get`),
    `component_states.rs` (1127), `main_window/tests.rs` (1010), `editor.rs::draw` (101), `token_groups.rs` (466).
-4. **Wishes of 2026-11-13 (grilling; plan requirements):** event: filters ("used in notes", a meta train order: research trains,
+3. **Wishes of 2026-11-13 (grilling; plan requirements):** event: filters ("used in notes", a meta train order: research trains,
    timing, a source with licence/GDPR first), favorite events. memo: struck-through checked items, a simple daily/weekly window,
    favorites. All addons: more languages without growing the DLLs (BACKLOG BL15).
-5. **Last, once the rest is done:** a grilling round on whether the chat translation addon (BACKLOG BL16) is feasible, research first.
-6. Then the queue below (theme character grilling, B23–B25) and the review items, one at a time.
+4. **Last, once the rest is done:** a grilling round on whether the chat translation addon (BACKLOG BL16) is feasible, research first.
+5. Then the queue below (theme character grilling, B23–B25) and the review items, one at a time.
 
 **Decided, not scheduled:** Q340 – daily backups with restore (M11, M31's "Restore from backup") stay in M28's order after settings
 and export/import. Q329 – `cargo bloat` breakdown at the next release preparation (release DLL 2.51 MiB on 2026-11-13).
@@ -48,7 +47,7 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M187+, R105+, B26+, questions from 372**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M188+, R108+, B26+, questions from 379**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 
 - **Housekeeping (Q211/Q240):** the user deletes approved old local branches by hand (`chore/*`, merged PR branches).
 
@@ -87,7 +86,7 @@ Triggers/consequences: [agent reference](../agent-reference.md#recurring-checks)
   Previous “sources only from 2025” note was stale. Recheck when triggered; source:
   https://juris.curia.europa.eu/juris/liste.jsf?language=en&num=C-703%2F25
 - **WvW reset snapshots (checked 2026-11-07):** both Nov 6 EU (ran 22:12 UTC, +4.8 h) and Nov 7 NA (07:16 UTC,
-  +5.9 h) assets hold the **post-reset** matches; CI was green. Confirms review item 3. Also Nov 6 14:13 catch-up failed on GemExchange.
+  +5.9 h) assets hold the **post-reset** matches; CI was green. Confirms review item 3. GemExchange fails daily since ≤ Nov 10 (HTTP 400, guess: gem > 1 gold).
 - **DPF cron:** Nov 1 skipped, issue #11 opened manually. If Dec 1 skips, grill shifting off :00.
 - **Flipping volumes (BL9):** DataWars2 vs GW2BLTC differs 3–10×; Silver allowed free use/
   archiving Nov 1 and confirmed suspicious `calculate_sold` branch; user sent the fix.
