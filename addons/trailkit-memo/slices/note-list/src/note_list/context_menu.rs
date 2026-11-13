@@ -14,7 +14,7 @@ use trailkit_ui::{
     theme::Theme,
 };
 
-use super::{NoteListAction, RenameStep, RowContext, delete::blocks_delete};
+use super::{NoteListAction, RowContext, delete::blocks_delete, rename::RenameStep};
 use crate::i18n::NoteListText;
 
 /// What the items of an entry's menu need.
