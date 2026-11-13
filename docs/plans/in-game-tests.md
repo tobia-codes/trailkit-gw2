@@ -5,35 +5,123 @@ Pending checks the maintainer runs in Guild Wars 2, one at a time
 whether the user can test in game now; keep this list current with every
 change that needs an in-game check; remove an item only after the user
 confirms it, and note failures as bugs in the relevant plan. Every item
-names what to look at, how it looked before and how it must look now.
+says how to get there click by click, what to look at, how it looked
+before and how it must look now.
 
-## Setup
+## Setup (once per test session)
 
-1. Check out the branch named in the section and deploy a normal build
-   (this also replaces the `fault-injection` debug DLL of session 34):
-   `cargo xtask deploy trailkit-memo`
-2. In game, open memo. Test in Dark and Light (Nexus theme) where a test
-   says so; for German set the Nexus language to Deutsch.
+1. In WSL, on the branch named below: `cargo xtask deploy trailkit-memo`
+   (a normal build; it also replaces the `fault-injection` debug DLL).
+2. In game, open memo: the **notes icon** (sheet with pencil) in the Nexus
+   quick access bar.
+3. Test data: make sure the list has a group with at least one note in it
+   and one more note outside it. The two buttons **above the list** create a
+   note (sheet with plus) and a group (folder with plus); type a name, Enter.
+4. Theme: switch Dark/Light in Nexus where a test says so. German: set the
+   Nexus language to Deutsch; "narrow" means dragging the window's
+   bottom-right corner as far left as it goes.
+5. Reload memo (tests 7, 10): Nexus menu › Addons › trailkit-memo › unload,
+   then load again.
 
 ## Branch `feature/button-cleanup` (R105, R106, M187)
 
-Look at the button colors. Red means the `danger` fill: a red button with
-the label in the window color, like the brass "Save" button but red.
+"Red filled" means a red button with the label in the window color, like
+the brass "Save" button but red.
 
-| # | Where and how | Look at | Before | Now (expected) |
-|---|---------------|---------|--------|----------------|
-| 1 | Delete a note (`⋯` → Delete), then window menu `≡` → Trash. Hover the button, click it, then Cancel. | **"Empty"** button at the top of the trash list | Grey button with red text | **Red filled** button; hover makes it slightly lighter; clicking still asks first |
-| 2 | In the trash, click an entry. Hover the icon left of "Restore". | **Trash icon** button ("Delete permanently") | Red icon on no background | **Red filled** square with the icon in the window color; hover lightens it; clicking still asks first |
-| 3 | (a) Trash → "Empty"; (b) right-click a group with notes → Delete. | **Confirm button** of the question | Red filled "Delete" on the right | **Unchanged:** red filled on the right, "Cancel" left of it; Enter confirms only (b) |
-| 4 | Select a note, click `⋯` next to Edit. | **"Delete"** menu entry | White text and icon, like the other entries | **Red** text and icon; hover gives the normal row highlight |
-| 5 | Right-click a note, then a group. Then edit a note and right-click its group. | **"Delete"** menu entry | White text and icon | **Red** text and icon; while editing it is **grey** with a reason tooltip (as before) |
-| 6 | Edit a note, type something, click another note in the list. Then make the window narrow (German). | **"Discard"** button of "Unsaved changes" | Grey button on the left | **Red filled** button on the left; "Keep editing" and brass "Save" stay right. Narrow: brass on top, red "Discard" last |
-| 7 | Edit a note, type something, then reload memo in Nexus (or close the game) without saving; reopen the note. | **"Discard"** on the yellow draft card above the note | Grey button left of brass "Restore" | **Red filled** button left of brass "Restore". Narrow: "Restore" on top, red "Discard" below |
-| 8 | Make `addons/trailkit/memo/notes.json` read-only (file properties), change a note, wait about 15 s. Then edit a note, change it, Save, and leave the editor. Remove read-only afterwards. | (a) **"Try again"** on the red toast at the bottom; (b) **"Discard"** in the "Saving failed" dialog | (a) Darker filled button without frame; (b) grey button on the left | (a) **Normal grey button with frame**, like "Cancel"; (b) **red filled** button on the left, brass "Save again" right. If read-only does not make saving fail, report it |
-| 9 | Close the game, rename `notes.json`, start, open memo, look, close, rename it back. | **Two buttons** under "No notes yet" | Brass "Create your first note" **left**, "New group" right | "New group" **left**, brass "Create your first note" **right** |
+### 1 · "Empty" in the trash
+
+- **Get there:** select the extra note › `⋯` (right of "Edit", top right
+  of the note) › Delete. Then the **menu button** (top left of the title
+  bar) › **Trash**.
+- **Look at:** the **"Empty"** button at the top of the trash list; hover it.
+- **Before:** grey button with red text.
+- **Now:** **red filled** button; hover makes it slightly lighter. Click
+  it: it still asks first; click **Cancel**.
+
+### 2 · "Delete permanently" icon in the trash
+
+- **Get there:** in the trash (test 1), click the entry in the list.
+- **Look at:** the **trash icon** top right, left of brass "Restore"; hover it.
+- **Before:** red icon without background.
+- **Now:** **red filled** square with the icon in the window color; hover
+  lightens it; tooltip "Delete permanently"; clicking still asks first.
+
+### 3 · Confirm button of the delete questions (unchanged)
+
+- **Get there:** (a) in the trash click "Empty"; (b) back arrow to leave the
+  trash, right-click the group that holds a note › Delete.
+- **Look at:** the confirm button on the right of the question.
+- **Before and now (unchanged):** **red filled** "Delete permanently" /
+  "Delete", "Cancel" left of it. Escape cancels.
+
+### 4 · "Delete" in the note menu
+
+- **Get there:** select a note › `⋯` right of "Edit".
+- **Look at:** the last entry **"Delete"**; hover it.
+- **Before:** white text and icon like the other entries.
+- **Now:** **red** text and trash icon; hover gives the normal grey row
+  highlight.
+
+### 5 · "Delete" in the right-click menu
+
+- **Get there:** right-click a note in the list; then right-click the group.
+  Then select the group's note › **Edit** › right-click the group.
+- **Look at:** the entry **"Delete"**.
+- **Before:** white text and icon.
+- **Now:** **red** text and icon. While editing the group's note it is
+  **grey** with a reason tooltip (as before). Leave the editor with Cancel.
+
+### 6 · "Discard" in "Unsaved changes"
+
+- **Get there:** select a note › **Edit** › type a letter in the text ›
+  click **another note** in the list.
+- **Look at:** the **"Discard"** button on the left of the dialog.
+- **Before:** grey button.
+- **Now:** **red filled**; "Keep editing" and brass "Save" stay on the
+  right. In German and narrow: buttons stack, brass on top, red
+  "Verwerfen" last. Click "Keep editing", then Cancel.
+
+### 7 · "Discard" on the draft card
+
+- **Get there:** select a note › **Edit** › type a letter › reload memo
+  (Setup 5) without saving › open memo › select that note.
+- **Look at:** the yellow card above the note, button **"Discard"**.
+- **Before:** grey button left of brass "Restore".
+- **Now:** **red filled** button left of brass "Restore". Narrow:
+  "Restore" on top, red "Discard" below. Click "Discard" to clean up.
+
+### 8 · Save error: "Try again" toast and "Saving failed" dialog
+
+- **Get there:** in Windows Explorer open `<GW2>/addons/trailkit/memo/`,
+  `notes.json` › Properties › tick **Read-only**. In game: select a note ›
+  Edit › type a letter › **Save** › click another note.
+  If nothing fails, read-only is not enough: report it.
+- **Look at:** (a) the red toast at the bottom, button **"Try again"**;
+  (b) the dialog "Saving failed", button **"Discard"**.
+- **Before:** (a) darker filled button without frame; (b) grey button.
+- **Now:** (a) **normal grey button with frame**, like "Cancel";
+  (b) **red filled** "Discard" left, brass "Save again" right.
+- **Clean up:** untick Read-only, click "Save again".
+
+### 9 · Buttons of the empty memo
+
+- **Get there:** close the game, rename `<GW2>/addons/trailkit/memo/notes.json`
+  to `notes.json.bak`, start the game, open memo. Afterwards close the game
+  and rename it back.
+- **Look at:** the two buttons under "No notes yet".
+- **Before:** brass "Create your first note" **left**, "New group" right.
+- **Now:** "New group" **left**, brass "Create your first note" **right**.
 
 ## Branch `feature/crash-protection` (R104, merged)
 
-| # | Where and how | Look at | Before | Now (expected) |
-|---|---------------|---------|--------|----------------|
-| 10 | Deploy with `cargo xtask deploy trailkit-memo --features fault-injection`, bind the key `trailkit.memo.keybind.fault_injection` in Nexus, edit a note, type, press the key. Reload memo. Afterwards deploy a normal build again. | Help window, the note, the log in `trailkit/logs/memo/` | A panic could crash the game | memo stops and opens the help on "Report a problem"; after reloading the typed text is back as a **draft** (yellow card, test 7); the log contains **`draft=kept`** |
+### 10 · Draft rescue after a panic
+
+- **Get there:** `cargo xtask deploy trailkit-memo --features fault-injection`;
+  in Nexus › Options › Keybinds bind `trailkit.memo.keybind.fault_injection`;
+  select a note › Edit › type a letter › press the key.
+- **Look at:** the help window, then after reloading memo (Setup 5) the note,
+  then the newest log in `<GW2>/addons/trailkit/logs/memo/`.
+- **Before:** a panic could crash the game.
+- **Now:** memo stops and opens the help on "Report a problem"; after the
+  reload the typed text is back as a **draft** (yellow card, test 7); the
+  log contains **`draft=kept`**. Then deploy a normal build again (Setup 1).
