@@ -38,6 +38,8 @@ pub enum HelpText {
     NoLogReason,
     /// Status while there is no log.
     NoLogYet,
+    /// The button in memo's Nexus options tab (R53, Q307).
+    OpenHelp,
 }
 
 impl HelpText {
@@ -65,6 +67,7 @@ impl LocalizedText for HelpText {
         Self::ExportFailed,
         Self::NoLogReason,
         Self::NoLogYet,
+        Self::OpenHelp,
     ];
 
     fn get(self, language: Language) -> &'static str {
@@ -135,6 +138,8 @@ impl LocalizedText for HelpText {
             (Self::NoLogYet, Language::German) => {
                 "Es gibt noch kein Log. Nutze das Addon einen Moment und versuche es dann erneut."
             }
+            (Self::OpenHelp, Language::English) => "Open help",
+            (Self::OpenHelp, Language::German) => "Hilfe öffnen",
         }
     }
 }

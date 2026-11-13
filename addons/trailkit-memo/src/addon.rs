@@ -59,6 +59,7 @@ use trailkit_ui::{
 };
 
 use crate::main_window::{MemoWindow, NotesProblem, minimum_window_width, title_bar_texts};
+use crate::options_tab::{VERSION_LINE, draw_options_tab};
 use trailkit_memo_shared::i18n::LocalizedText;
 use trailkit_memo_shared::{
     i18n::{Language, Text},
@@ -292,6 +293,11 @@ fn load() {
     }
 
     register_render(RenderType::Render, render!(|ui| render_main_window(ui))).revert_on_unload();
+    register_render(
+        RenderType::OptionsRender,
+        render!(|ui| render_options_tab(ui)),
+    )
+    .revert_on_unload();
 }
 
 /// Called by Nexus before the addon is unloaded. Every registration was made
@@ -398,6 +404,26 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
     if let Some(help) = help {
         help.draw(ui, &theme, language);
         HELP_OPEN.store(help.is_open(), Ordering::Relaxed);
+    }
+}
+
+/// Nexus' options render callback: memo's tab in the Nexus options (R53,
+/// Q307–Q309). "Open help" opens the help window or brings it to the front
+/// (Q296); the main render callback draws it from the next frame on.
+fn render_options_tab(ui: &nexus::imgui::Ui) {
+    let theme = ThemeKind::default().theme();
+    follow_nexus_font_size(settings().text_scale, &theme.typography);
+    let language = Language::from_u8(LANGUAGE.load(Ordering::Relaxed));
+    let _theme = StyleScope::push(ui, &theme);
+    if !draw_options_tab(ui, &theme, language, VERSION_LINE) {
+        return;
+    }
+    // Never wait on the render thread; a click during load/unload is lost.
+    if let Ok(mut help) = HELP.try_lock()
+        && let Some(help) = help.as_mut()
+    {
+        help.open();
+        HELP_OPEN.store(true, Ordering::Relaxed);
     }
 }
 

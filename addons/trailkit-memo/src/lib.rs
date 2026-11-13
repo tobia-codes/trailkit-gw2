@@ -10,6 +10,8 @@
 mod addon;
 #[cfg(windows)]
 mod main_window;
+#[cfg(windows)]
+mod options_tab;
 
 // Only the Windows glue uses them; on other hosts only their tests do.
 #[cfg_attr(not(windows), allow(dead_code))]

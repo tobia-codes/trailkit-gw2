@@ -106,6 +106,14 @@ impl MemoHelp {
         self.after_open_change(was_open);
     }
 
+    /// "Open help" in the Nexus options was clicked: opens the window or
+    /// brings it to the front; never closes it (Q296).
+    pub(super) fn open(&mut self) {
+        let was_open = self.window.is_open();
+        self.window.open();
+        self.after_open_change(was_open);
+    }
+
     /// Closes the window if it is open: Nexus cleared its flag on Escape.
     pub(super) fn close(&mut self) {
         if self.window.is_open() {
