@@ -8,7 +8,7 @@
 
 use std::sync::{Mutex, MutexGuard};
 
-use nexus::imgui::{Context, FontConfig, FontGlyphRanges, FontSource, Key, Ui, sys};
+use nexus::imgui::{ConfigFlags, Context, FontConfig, FontGlyphRanges, FontSource, Key, Ui, sys};
 use trailkit_ui::{
     font_registry::install_font,
     fonts::{FALLBACK_BODY_SIZE, FontRole},
@@ -106,6 +106,9 @@ impl UiHarness {
             let io = context.io_mut();
             io.display_size = size;
             io.delta_time = 1.0 / 60.0;
+            // Like Nexus: keyboard navigation is on, so tests reach the
+            // navigation paths that crashed the game (ROADMAP R104, Q356).
+            io.config_flags.insert(ConfigFlags::NAV_ENABLE_KEYBOARD);
             for (key, code) in KEY_CODES {
                 io.key_map[key as usize] = code;
             }
