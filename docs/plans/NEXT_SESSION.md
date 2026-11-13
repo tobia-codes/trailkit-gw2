@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-13 (session 36, `chore/file-length-splits` pushed, no PR yet). Current state and
+Last updated: 2026-11-13 (session 36, `chore/file-length-splits` as draft PR). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -19,7 +19,7 @@ test (user's choice). A failed in-game test becomes a `bugfix/` branch from `dev
 
 **Session 36 (2026-11-13).** No in-game test possible. Branch `chore/file-length-splits`: R108 (names say what it is and
 does), the R77 splits Q379–Q384, Q387 (dropdown, markdown view, editor view, note list); no hint left in those files. Host +
-Windows clippy and `cargo test` pass; pushed for the Windows CI snapshot check (Q388); PR only after the user's merge OK.
+Windows clippy and `cargo test` pass; draft PR (Q389, no auto-merge) runs the Windows CI snapshot check; merge only after the user's OK.
 
 **Open, in this order:**
 1. **In-game tests 1–11** ([`in-game-tests.md`](in-game-tests.md)). Side finding: `min-de-dialog-*` fixtures build English
