@@ -11,12 +11,8 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## ▶ Resume here
 
-**First, ask the user: can you test in game now?** (user request 2026-11-13, session 35; keep asking every session until done)
-Branch `feature/button-cleanup` (R105, M187); deploy a normal build first: `cargo xtask deploy memo` (replaces the `fault-injection` DLL).
-- Trash: "Empty"/„Leeren" and the icon "Delete permanently" are red filled, hover lightens them; both still ask first.
-- "Delete"/„Löschen" in the note `⋯` menu and the list's right-click menu is red (grey while editing blocks it).
-- "Discard"/„Verwerfen" is red in the unsaved and save-failed dialogs and on the draft hint (R106). Delete questions keep the red confirm button; error toast: "Try again" regular; empty memo: "New group" left, brass right;
-  draft rescue after a panic: `draft=kept` in the log (open since session 34).
+**First, ask the user: can you test in game now?** Pending checks with where/how/expected: [`in-game-tests.md`](in-game-tests.md)
+(user request 2026-11-13: keep it current until each item is confirmed; ask every session).
 
 **Session 34 (2026-11-13).** Merged after the user's OK: #116, this handoff, `feature/crash-protection` (R104: `catch_unwind` guard
 around every Nexus callback, help window only after a panic, draft rescue, `trailkit_ui::draw_list`, Cargo feature `fault-injection` with

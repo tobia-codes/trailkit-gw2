@@ -8,6 +8,7 @@
 | [`backend.md`](backend.md) | Rust server — deferred target design |
 | [`BACKLOG.md`](BACKLOG.md) | Postponed ideas |
 | [`NEXT_SESSION.md`](NEXT_SESSION.md) | Maintainer handoff: where the work stands and what comes next |
+| [`in-game-tests.md`](in-game-tests.md) | Pending in-game checks: where, how, expected result |
 
 Plans record **decisions**, each with an id, a date and who decided:
 `R…` roadmap, `M…` memo, `B…` backend, `D…` data pipeline, `E…` event addon,
