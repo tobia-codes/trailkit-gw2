@@ -47,10 +47,8 @@ pub enum HelpText {
     /// The line under [`Self::StoppedNotice`] when unsaved text was kept as
     /// a draft (Q360).
     StoppedDetailWithDraft,
-    /// The Nexus alert after memo stopped (Q364, Q366).
-    StoppedAlert,
     /// The Nexus alert after memo stopped while loading, when there is no
-    /// help window to point to (R104).
+    /// help window to open (R104, Q370 B).
     StoppedWhileLoadingAlert,
 }
 
@@ -83,7 +81,6 @@ impl LocalizedText for HelpText {
         Self::StoppedNotice,
         Self::StoppedDetail,
         Self::StoppedDetailWithDraft,
-        Self::StoppedAlert,
         Self::StoppedWhileLoadingAlert,
     ];
 
@@ -174,12 +171,6 @@ impl LocalizedText for HelpText {
             (Self::StoppedDetailWithDraft, Language::German) => {
                 "Dein ungespeicherter Text ist als Entwurf gesichert. Melde das Problem hier \
                  und lade memo danach in der Addon-Liste von Nexus neu oder starte das Spiel neu."
-            }
-            (Self::StoppedAlert, Language::English) => {
-                "trailkit memo stopped after an error – details in the help window."
-            }
-            (Self::StoppedAlert, Language::German) => {
-                "trailkit memo wurde nach einem Fehler angehalten – Details im Hilfefenster."
             }
             (Self::StoppedWhileLoadingAlert, Language::English) => {
                 "trailkit memo stopped after an error while loading. Reload memo in the Nexus \

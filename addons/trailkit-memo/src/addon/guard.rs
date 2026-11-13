@@ -2,11 +2,11 @@
 //! [`guard`], so a panic never unwinds into Nexus and the game.
 //!
 //! The first caught panic stops memo for the rest of the session (Q359 A):
-//! unsaved editor text becomes a draft (Q360), Nexus shows one alert (Q364)
-//! and from then on the render callback only draws the shared help window,
-//! opened once on "Report a problem" with a warning card (Q366, Q367). A
-//! panic while memo already runs in that mode, or one in `load`, stops it
-//! completely. A reload in the Nexus addon list or a game restart frees the
+//! unsaved editor text becomes a draft (Q360) and from then on the render
+//! callback only draws the shared help window, opened once on "Report a
+//! problem" with a warning card (Q366, Q367). A panic while memo already
+//! runs in that mode, or one in `load`, stops it completely; only then does
+//! Nexus show an alert, because there is no window to explain it (Q370 B). A reload in the Nexus addon list or a game restart frees the
 //! DLL and starts memo fresh, so nothing here is persisted (Q369).
 //!
 //! Like `catch_unwind` in Node's `try`/`catch` around a callback: the panic
@@ -172,7 +172,8 @@ fn state_after_panic(current: RunState, callback: Callback, help_exists: bool) -
 
 /// Moves memo one step down after a panic in `callback` (see
 /// [`state_after_panic`]); on the first stop it rescues the draft, logs
-/// `addon_stopped` and sends the Nexus alert.
+/// `addon_stopped` and opens the help window, or sends the Nexus alert when
+/// there is none to open (Q370 B: the window would cover the alert).
 fn stop_after_panic(callback: Callback) {
     let current = run_state();
     let Some(next) = state_after_panic(current, callback, help_exists()) else {
@@ -195,13 +196,12 @@ fn stop_after_panic(callback: Callback) {
         draft = draft.log_name();
         "addon_stopped"
     );
-    let alert = if next == RunState::HelpOnly {
+    if next == RunState::HelpOnly {
         request_help();
-        HelpText::StoppedAlert
     } else {
-        HelpText::StoppedWhileLoadingAlert
-    };
-    send_alert(alert.get(Language::from_u8(LANGUAGE.load(Ordering::Relaxed))));
+        let language = Language::from_u8(LANGUAGE.load(Ordering::Relaxed));
+        send_alert(HelpText::StoppedWhileLoadingAlert.get(language));
+    }
 }
 
 /// What happened to the unsaved editor text.
