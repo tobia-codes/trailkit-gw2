@@ -167,6 +167,10 @@ Each rule has an id (`area-name`) so reviews can cite it.
 - `lay-one-primary` — At most one primary button per window/dialog;
   secondary actions are visually subordinate; every delete button is the
   `danger` fill and a delete menu entry the `danger` tone (R105).
+- `lay-danger-discard` — A button that throws data away so that it cannot
+  be undone ("Discard") is the `danger` fill too (R106). Deleting is red
+  even when it can be undone (R105); cancelling or closing without data
+  loss stays regular.
 - `lay-button-icon` — The primary text button of a toolbar carries a Lucide
   icon before its label (`draw_primary_button_with_icon`: Edit = pencil,
   Save = floppy disk `save`). Secondary text buttons and dialog buttons stay text only

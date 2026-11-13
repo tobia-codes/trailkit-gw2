@@ -15,7 +15,7 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 Branch `feature/button-cleanup` (R105, M187); deploy a normal build first: `cargo xtask deploy memo` (replaces the `fault-injection` DLL).
 - Trash: "Empty"/„Leeren" and the icon "Delete permanently" are red filled, hover lightens them; both still ask first.
 - "Delete"/„Löschen" in the note `⋯` menu and the list's right-click menu is red (grey while editing blocks it).
-- Delete questions keep the red confirm button; error toast: "Try again" regular; empty memo: "New group" left, brass right;
+- "Discard"/„Verwerfen" is red in the unsaved and save-failed dialogs and on the draft hint (R106). Delete questions keep the red confirm button; error toast: "Try again" regular; empty memo: "New group" left, brass right;
   draft rescue after a panic: `draft=kept` in the log (open since session 34).
 
 **Session 34 (2026-11-13).** Merged after the user's OK: #116, this handoff, `feature/crash-protection` (R104: `catch_unwind` guard
@@ -24,7 +24,7 @@ around every Nexus callback, help window only after a panic, draft rescue, `trai
 
 **Open, in this order:**
 1. **Button cleanup (R103, R105, M187):** implemented on `feature/button-cleanup` (2 commits, not pushed yet: push needs the user's OK,
-   then snapshots via CI per R97, §10 review, in-game test above, merge OK). Open: Q375 red "Discard" (mockup v4 of the R105 artifact).
+   then snapshots via CI per R97, §10 review, in-game test above, merge OK). Q375/Q376: red "Discard" (R106).
 2. **File-length splits (R77):** approved Q91 (`note_list.rs`/`draw_group`), Q95 `draw_dropdown`, Q96 `editor/view.rs`, Q105
    `markdown_view.rs`. Grill the rest by concern, never split unasked: `theme.rs` (421), `rows.rs` (422, `draw_note_row` 91),
    `main_window.rs` (428), `actions.rs` (451, Q134), `help_text.rs::get` (104, a table; Q92 said no for `Text::get`),
@@ -50,7 +50,7 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M188+, R106+, B26+, questions from 376**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M188+, R107+, B26+, questions from 377**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 
 - **Housekeeping (Q211/Q240):** the user deletes approved old local branches by hand (`chore/*`, merged PR branches).
 

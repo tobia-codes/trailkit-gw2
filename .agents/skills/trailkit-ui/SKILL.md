@@ -115,7 +115,8 @@ Build once, use everywhere. Planned:
   primary, regular and delete) and an optional close `x` (`draw_icon_button`).
   `fits_status_card_line` lets a caller break a long text on purpose
 - Only two button styles (R103) plus delete (R105): brass primary and
-  regular; every button that deletes is the `danger` fill
+  regular; every button that deletes, and every button that throws data
+  away for good ("Discard", R106), is the `danger` fill
   (`ButtonKind::DangerFill`) and takes the brass button's place in a row;
   icon buttons like the close `x` look like every other one. A delete entry
   in a menu uses `MenuItemTone::Danger`
