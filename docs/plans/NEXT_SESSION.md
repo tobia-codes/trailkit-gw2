@@ -1,39 +1,49 @@
 # Next session — handoff
 
-Last updated: 2026-11-13 (session 33). Current state and
+Last updated: 2026-11-13 (session 34). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
 
 - Phase 0 + 0b complete; daily archives sometimes run hours late. Memo standalone: storage, tree, editor/preview, chips, resets, drag & drop, search,
-  trash/undo, UX/keyboard improvements, help window and status cards through M186 are implemented and tested in game.
+  trash/undo, UX/keyboard improvements, help window and status cards through M186 and the crash protection (R104) are implemented and tested in game.
 - Decisions: `addons/trailkit-memo.md`, `ROADMAP.md`. Appearance: trailkit-ui `current-design.md`; review: tokens.md §10.
 
 ## ▶ Resume here
 
-**Session 33 (2026-11-13).** PR #116 (`feature/status-hints`, auto-merge armed after the user's OK) brings: status cards for memo's
-problem and draft hints (M184, shared `trailkit_ui::status_card`, token `warning.subtle`), notes with unsaved changes marked in the list
-plus a counting card with "Go to note" (M185, Q341–Q354), right/middle clicks into the game drop the focus (M186), the two button styles
-and their order (R103), "Open folder" opens `backups/`, and two game-crash fixes (tooltip over a chat-link chip in the editor: second
-`DrawListMut` since R102; focusing no window mid-frame: null navigation window in `ItemAdd`). Check that #116 merged with green CI.
+**Session 34 (2026-11-13).** Merged after the user's OK: #116 (session 33 work), this handoff, `feature/crash-protection` (R104:
+`catch_unwind` guard around every Nexus callback; after a panic only the help window draws, opened on "Report a problem" with a warning
+card; unsaved text becomes a draft; Nexus alert only when `load` fails, Q370; `panic_msgbox` off; event `addon_stopped`;
+`trailkit_ui::draw_list` replaces `get_window_draw_list`, banned in `clippy.toml`; harness with keyboard navigation and a navigation pass
+over every state; smoke test in `tokens.md` §10; Cargo feature `fault-injection` with `cargo xtask deploy … --features`) and
+`chore/plan-event-memo-wishes`. Check all PRs merged with green CI. The deployed DLL is a `fault-injection` debug build: deploy a normal
+build before playing. The in-game check of the draft rescue (`draft=kept` in the log) is still open: confirm it on the next test.
 
 **Open, in this order:**
-1. **Crash protection branch (R104):** Q353 `catch_unwind` around every Nexus callback (own grilling round first: keep the editor
-   text as a draft? show a hint?), Q355 clippy ban of `get_window_draw_list` and raw focus calls with a nested-safe replacement (33
-   uses, no pixel may change), Q356 harness configured like Nexus (keyboard navigation) plus a test over every state with navigation
-   planned and a chip tooltip hovered, Q358 two-minute in-game smoke test before every merge in `tokens.md` §10 and `CONTRIBUTING.md`.
+1. **Window flicker on first open (Q371, user OK), branch `bugfix/font-size-at-load`:** memo registers its fonts at the base size and
+   resizes them on the first frame (log probe: 16 → 17 px at text scale 1.0625); Nexus rebuilds the atlas and the whole window blinks
+   once. Fix: call `follow_nexus_font_size(settings().text_scale, …)` at the end of `load_addon`; keep the first-frame path for when
+   Nexus' `FontUI` is not ready yet at game start.
 2. **Button cleanup (R103, Q338, Q350):** `DangerFill` confirm button, the error toast's `bg.active` buttons and the empty state's brass
    button on the left onto the two styles and the order; R87 mockup first; keep the icon-label gap.
-3. **File-length splits, own grilling round (R77):** `theme.rs` (421 lines), `rows.rs` (422) with `draw_note_row` (91),
-   `main_window.rs` (426), plus the older hints. Propose a split by concern; never split unasked.
-4. Then the queue below (theme character grilling, B23–B25) and the review items, one at a time.
+3. **File-length splits, own grilling round (R77):** propose a split by concern for each, never split unasked: `theme.rs` (421 lines),
+   `rows.rs` (422) with `draw_note_row` (91) and `draw_group` (118), `main_window.rs` (428), `main_window/actions.rs` (451),
+   `note_list.rs` (447), `help_text.rs::get` (104, a translation table: maybe one file per text group), `component_states.rs` (1127,
+   tests: maybe one file per component group), `main_window/tests.rs` (1010), `markdown_view.rs` (`draw_markdown` 100, `draw_spans` 118),
+   `editor.rs::draw` (101), `token_groups.rs` (466).
+4. **Wishes of 2026-11-13 (grilling, in the plans' requirements):** trailkit-event: table filters such as "used in notes" and a
+   ready-made meta train order (research first: community trains, timing, travel, a reusable source with licence and GDPR checked),
+   favorite events. trailkit-memo: checked checkboxes strike their text through, a second very simple window (e.g. daily and weekly
+   notes), favorite notes with a filter.
+5. Then the queue below (theme character grilling, B23–B25) and the review items, one at a time.
 
 **Decided, not scheduled:** Q340 – daily backups with restore (M11, M31's "Restore from backup") stay in M28's order after settings
 and export/import. Q329 – `cargo bloat` breakdown at the next release preparation (release DLL 2.51 MiB on 2026-11-13).
 
-**Lessons from session 33 (keep doing):** mockups before every visible change paid off again (card, X, icon position, button order were
-corrected from drafts). Crash traps are now in nexus-addon-dev §2.9; a crash without a `panic` line is read from
-`addons/arcdps/arcdps_lastcrash.log` with `llvm-symbolizer`. Never `pkill -f` a pattern that matches the calling shell (tokens.md §10).
+**Lessons from session 34 (keep doing):** measure before fixing (a one-off log probe proved the flicker in one round). Nexus draws
+alerts as yellow text without background at the top centre; an addon window covers them. `git checkout <file>` to drop a probe also
+drops every other edit in that file: remove probes by editing. Lessons of 33: mockups first, crash traps in nexus-addon-dev §2.9,
+`arcdps_lastcrash.log` + `llvm-symbolizer` for crashes without `panic`, never `pkill -f` a pattern matching the calling shell.
 
 **Deferred by the user (2026-11-12): one theme character for addons and the coming React website.** No code yet. Mockups:
 https://claude.ai/artifact/SFFrXawiqYD6HouhdihGdv (latest: Papier A–D). Wanted: GW2-reminiscent, own character, dark, very subtle
@@ -44,7 +54,7 @@ Content Terms for fan content are not read yet; never copy game or Blish HUD art
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
 
-Next ids: **M187+, R105+, B26+, questions from 359**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M187+, R105+, B26+, questions from 372**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 
 - **Housekeeping (Q211/Q240):** the user deletes the approved old local branches by hand (all `chore/`, `contributor-docs`, `handoff-*`,
   `addon-status-*`, `help-window-design`, merged PR branches).
