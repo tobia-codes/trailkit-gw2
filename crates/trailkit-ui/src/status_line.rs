@@ -7,6 +7,8 @@ use nexus::imgui::{StyleColor, Ui};
 
 use crate::{
     font_registry::FontScope,
+    fonts::FontRole,
+    glyph_metrics::{capital_middle, glyph_icon_ink, glyph_ink_box},
     icons::Icon,
     text::{TextStyle, draw_icon},
     theme::Theme,
@@ -40,8 +42,10 @@ impl Status {
 
 /// Draws the status line at the cursor: the icon of `status`, then `text`
 /// in `style`'s font and the status color, wrapped at the current wrap
-/// position (the window's right edge unless one is pushed). Continuation
-/// lines hang under the text, not under the icon.
+/// position (the window's right edge unless one is pushed). The first line's
+/// capitals are centered on the icon's visible pixels, also when the text is
+/// smaller than the icon. Continuation lines hang under the text, not under
+/// the icon.
 pub fn draw_status_line(ui: &Ui, theme: &Theme, status: Status, text: &str, style: TextStyle) {
     let color = match status {
         Status::Success => theme.status.success,
@@ -58,11 +62,27 @@ pub fn draw_status_line(ui: &Ui, theme: &Theme, status: Status, text: &str, styl
     let content_left = ui.window_pos()[0] + ui.window_content_region_min()[0];
     let hang = text_left - content_left;
     ui.indent_by(hang);
-    ui.set_cursor_screen_pos([text_left, top]);
+    let text_offset = (icon_middle(ui, status.icon()) - text_middle(ui, style)).round();
+    ui.set_cursor_screen_pos([text_left, top + text_offset.max(0.0)]);
     {
         let _font = FontScope::push(ui, style.font());
         let _color = ui.push_style_color(StyleColor::Text, color.to_array());
         ui.text_wrapped(text);
     }
     ui.unindent_by(hang);
+}
+
+/// The middle of the visible pixels of `icon` below the line top, in the
+/// icon font.
+fn icon_middle(ui: &Ui, icon: Icon) -> f32 {
+    let _icons = FontScope::push(ui, FontRole::Icons);
+    glyph_icon_ink(icon.glyph())
+        .or_else(|| glyph_ink_box(icon.glyph()))
+        .map_or(ui.text_line_height() / 2.0, |ink| (ink[1] + ink[3]) / 2.0)
+}
+
+/// The middle of the capitals below the line top in `style`'s font.
+fn text_middle(ui: &Ui, style: TextStyle) -> f32 {
+    let _font = FontScope::push(ui, style.font());
+    capital_middle().unwrap_or(ui.text_line_height() / 2.0)
 }
