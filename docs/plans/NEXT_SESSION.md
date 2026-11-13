@@ -26,15 +26,12 @@ build before playing. The in-game check of the draft rescue (`draft=kept` in the
    Nexus' `FontUI` is not ready yet at game start.
 2. **Button cleanup (R103, Q338, Q350):** `DangerFill` confirm button, the error toast's `bg.active` buttons and the empty state's brass
    button on the left onto the two styles and the order; R87 mockup first; keep the icon-label gap.
-3. **File-length splits, own grilling round (R77):** propose a split by concern for each, never split unasked: `theme.rs` (421 lines),
-   `rows.rs` (422) with `draw_note_row` (91) and `draw_group` (118), `main_window.rs` (428), `main_window/actions.rs` (451),
-   `note_list.rs` (447), `help_text.rs::get` (104, a translation table: maybe one file per text group), `component_states.rs` (1127,
-   tests: maybe one file per component group), `main_window/tests.rs` (1010), `markdown_view.rs` (`draw_markdown` 100, `draw_spans` 118),
-   `editor.rs::draw` (101), `token_groups.rs` (466).
-4. **Wishes of 2026-11-13 (grilling, in the plans' requirements):** trailkit-event: table filters such as "used in notes" and a
-   ready-made meta train order (research first: community trains, timing, travel, a reusable source with licence and GDPR checked),
-   favorite events. trailkit-memo: checked checkboxes strike their text through, a second very simple window (e.g. daily and weekly
-   notes), favorite notes with a filter.
+3. **File-length splits (R77):** approved Q91 (`note_list.rs`/`draw_group`), Q95 `draw_dropdown`, Q96 `editor/view.rs`, Q105
+   `markdown_view.rs`. Grill the rest by concern, never split unasked: `theme.rs` (421), `rows.rs` (422, `draw_note_row` 91),
+   `main_window.rs` (428), `actions.rs` (451, Q134), `help_text.rs::get` (104, a table; Q92 said no for `Text::get`),
+   `component_states.rs` (1127), `main_window/tests.rs` (1010), `editor.rs::draw` (101), `token_groups.rs` (466).
+4. **Wishes of 2026-11-13 (grilling; plan requirements):** event: filters ("used in notes", a meta train order: research trains,
+   timing, a source with licence/GDPR first), favorite events. memo: struck-through checked items, a simple daily/weekly window, favorites.
 5. Then the queue below (theme character grilling, B23–B25) and the review items, one at a time.
 
 **Decided, not scheduled:** Q340 – daily backups with restore (M11, M31's "Restore from backup") stay in M28's order after settings
@@ -42,8 +39,7 @@ and export/import. Q329 – `cargo bloat` breakdown at the next release preparat
 
 **Lessons from session 34 (keep doing):** measure before fixing (a one-off log probe proved the flicker in one round). Nexus draws
 alerts as yellow text without background at the top centre; an addon window covers them. `git checkout <file>` to drop a probe also
-drops every other edit in that file: remove probes by editing. Lessons of 33: mockups first, crash traps in nexus-addon-dev §2.9,
-`arcdps_lastcrash.log` + `llvm-symbolizer` for crashes without `panic`, never `pkill -f` a pattern matching the calling shell.
+drops every other edit in that file: remove probes by editing. Mockups first (R87) paid off again.
 
 **Deferred by the user (2026-11-12): one theme character for addons and the coming React website.** No code yet. Mockups:
 https://claude.ai/artifact/SFFrXawiqYD6HouhdihGdv (latest: Papier A–D). Wanted: GW2-reminiscent, own character, dark, very subtle
@@ -56,8 +52,7 @@ Content Terms for fan content are not read yet; never copy game or Blish HUD art
 
 Next ids: **M187+, R105+, B26+, questions from 372**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 
-- **Housekeeping (Q211/Q240):** the user deletes the approved old local branches by hand (all `chore/`, `contributor-docs`, `handoff-*`,
-  `addon-status-*`, `help-window-design`, merged PR branches).
+- **Housekeeping (Q211/Q240):** the user deletes approved old local branches by hand (`chore/*`, merged PR branches).
 
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
@@ -80,10 +75,6 @@ Next ids: **M187+, R105+, B26+, questions from 372**. Deferred: GW2 build/Nexus 
 
 ## Earlier implementation queue — after the review work
 
-- Approved splits (R77): Q91
-  `note_list.rs`/`draw_group`, Q95 `draw_dropdown`, Q96 `editor/view.rs`, Q105 `markdown_view.rs`.
-  Q92 `Text::get`: recommendation no, no objection recorded. Grill remaining hints for
-  `Editor::draw`, `draw_lines` and the large main-window test file before splitting.
 - Q134: split `actions.rs` into tree/editor actions at its next rebuild, not beforehand.
 - Continue M28: settings/options → export/import → backups → help → release preparation
   (full tests, M67 screenshots, docs, manually measure release DLL size, R72).
