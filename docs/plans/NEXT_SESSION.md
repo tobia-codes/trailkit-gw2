@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-13 (session 34). Current state and
+Last updated: 2026-11-13 (session 35). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -11,27 +11,29 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## ▶ Resume here
 
-**Session 34 (2026-11-13).** Merged after the user's OK: #116 (session 33 work), this handoff, `feature/crash-protection` (R104:
-`catch_unwind` guard around every Nexus callback; after a panic only the help window draws, opened on "Report a problem" with a warning
-card; unsaved text becomes a draft; Nexus alert only when `load` fails, Q370; `panic_msgbox` off; event `addon_stopped`;
-`trailkit_ui::draw_list` replaces `get_window_draw_list`, banned in `clippy.toml`; harness with keyboard navigation and a navigation pass
-over every state; smoke test in `tokens.md` §10; Cargo feature `fault-injection` with `cargo xtask deploy … --features`) and
-`chore/plan-event-memo-wishes`. Check all PRs merged with green CI. The deployed DLL is a `fault-injection` debug build: deploy a normal
-build before playing. The in-game check of the draft rescue (`draft=kept` in the log) is still open: confirm it on the next test.
+**First, ask the user: can you test in game now?** (user request 2026-11-13, session 35; keep asking every session until done)
+Branch `feature/button-cleanup` (R105, M187); deploy a normal build first: `cargo xtask deploy memo` (replaces the `fault-injection` DLL).
+- Trash: "Empty"/„Leeren" and the icon "Delete permanently" are red filled, hover lightens them; both still ask first.
+- "Delete"/„Löschen" in the note `⋯` menu and the list's right-click menu is red (grey while editing blocks it).
+- Delete questions keep the red confirm button; save error toast: "Try again" is a regular button; empty memo: "New group" left, brass right.
+- Draft rescue after a panic: `draft=kept` in the log (open since session 34).
+
+**Session 34 (2026-11-13).** Merged after the user's OK: #116, this handoff, `feature/crash-protection` (R104: `catch_unwind` guard
+around every Nexus callback, help window only after a panic, draft rescue, `trailkit_ui::draw_list`, Cargo feature `fault-injection` with
+`cargo xtask deploy … --features`), `chore/plan-event-memo-wishes`, #122 flicker fix (Q371, confirmed in game), #123 (BL16).
 
 **Open, in this order:**
-1. **Window flicker on first open (Q371):** fixed on `bugfix/font-size-at-load` (fonts sized at the end of `load`), confirmed in game.
-2. **Button cleanup (R103, Q338, Q350):** `DangerFill` confirm button, the error toast's `bg.active` buttons and the empty state's brass
-   button on the left onto the two styles and the order; R87 mockup first; keep the icon-label gap.
-3. **File-length splits (R77):** approved Q91 (`note_list.rs`/`draw_group`), Q95 `draw_dropdown`, Q96 `editor/view.rs`, Q105
+1. **Button cleanup (R103, R105, M187):** implemented on `feature/button-cleanup` (2 commits, not pushed yet: push needs the user's OK,
+   then snapshots via CI per R97, §10 review, in-game test above, merge OK). Open: Q375 red "Discard" (mockup v4 of the R105 artifact).
+2. **File-length splits (R77):** approved Q91 (`note_list.rs`/`draw_group`), Q95 `draw_dropdown`, Q96 `editor/view.rs`, Q105
    `markdown_view.rs`. Grill the rest by concern, never split unasked: `theme.rs` (421), `rows.rs` (422, `draw_note_row` 91),
    `main_window.rs` (428), `actions.rs` (451, Q134), `help_text.rs::get` (104, a table; Q92 said no for `Text::get`),
    `component_states.rs` (1127), `main_window/tests.rs` (1010), `editor.rs::draw` (101), `token_groups.rs` (466).
-4. **Wishes of 2026-11-13 (grilling; plan requirements):** event: filters ("used in notes", a meta train order: research trains,
+3. **Wishes of 2026-11-13 (grilling; plan requirements):** event: filters ("used in notes", a meta train order: research trains,
    timing, a source with licence/GDPR first), favorite events. memo: struck-through checked items, a simple daily/weekly window,
    favorites. All addons: more languages without growing the DLLs (BACKLOG BL15).
-5. **Last, once the rest is done:** a grilling round on whether the chat translation addon (BACKLOG BL16) is feasible, research first.
-6. Then the queue below (theme character grilling, B23–B25) and the review items, one at a time.
+4. **Last, once the rest is done:** a grilling round on whether the chat translation addon (BACKLOG BL16) is feasible, research first.
+5. Then the queue below (theme character grilling, B23–B25) and the review items, one at a time.
 
 **Decided, not scheduled:** Q340 – daily backups with restore (M11, M31's "Restore from backup") stay in M28's order after settings
 and export/import. Q329 – `cargo bloat` breakdown at the next release preparation (release DLL 2.51 MiB on 2026-11-13).
@@ -48,7 +50,7 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M187+, R105+, B26+, questions from 372**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M188+, R106+, B26+, questions from 376**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 
 - **Housekeeping (Q211/Q240):** the user deletes approved old local branches by hand (`chore/*`, merged PR branches).
 
@@ -87,7 +89,8 @@ Triggers/consequences: [agent reference](../agent-reference.md#recurring-checks)
   Previous “sources only from 2025” note was stale. Recheck when triggered; source:
   https://juris.curia.europa.eu/juris/liste.jsf?language=en&num=C-703%2F25
 - **WvW reset snapshots (checked 2026-11-07):** both Nov 6 EU (ran 22:12 UTC, +4.8 h) and Nov 7 NA (07:16 UTC,
-  +5.9 h) assets hold the **post-reset** matches; CI was green. Confirms review item 3. Also Nov 6 14:13 catch-up failed on GemExchange.
+  +5.9 h) assets hold the **post-reset** matches; CI was green. Confirms review item 3. GemExchange fails daily since ≤ Nov 10 (HTTP 400 on
+  `coins?quantity=10000`, guess: a gem costs > 1 gold); every catch-up run fails. Not investigated yet.
 - **DPF cron:** Nov 1 skipped, issue #11 opened manually. If Dec 1 skips, grill shifting off :00.
 - **Flipping volumes (BL9):** DataWars2 vs GW2BLTC differs 3–10×; Silver allowed free use/
   archiving Nov 1 and confirmed suspicious `calculate_sold` branch; user sent the fix.
