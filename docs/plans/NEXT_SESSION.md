@@ -31,8 +31,8 @@ build before playing. The in-game check of the draft rescue (`draft=kept` in the
    `main_window.rs` (428), `actions.rs` (451, Q134), `help_text.rs::get` (104, a table; Q92 said no for `Text::get`),
    `component_states.rs` (1127), `main_window/tests.rs` (1010), `editor.rs::draw` (101), `token_groups.rs` (466).
 4. **Wishes of 2026-11-13 (grilling; plan requirements):** event: filters ("used in notes", a meta train order: research trains,
-   timing, a source with licence/GDPR first), favorite events. memo: struck-through checked items, a simple daily/weekly window, favorites.
-   All addons: more languages without growing the DLLs (BACKLOG BL15, grilling first).
+   timing, a source with licence/GDPR first), favorite events. memo: struck-through checked items, a simple daily/weekly window,
+   favorites. All addons: more languages without growing the DLLs (BACKLOG BL15).
 5. Then the queue below (theme character grilling, B23–B25) and the review items, one at a time.
 
 **Decided, not scheduled:** Q340 – daily backups with restore (M11, M31's "Restore from backup") stay in M28's order after settings
@@ -50,7 +50,6 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-
 Next ids: **M187+, R105+, B26+, questions from 372**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 
 - **Housekeeping (Q211/Q240):** the user deletes approved old local branches by hand (`chore/*`, merged PR branches).
