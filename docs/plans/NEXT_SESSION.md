@@ -1,59 +1,58 @@
 # Next session — handoff
 
-Last updated: 2026-11-12 (session 31). Current state and
+Last updated: 2026-11-13 (session 34). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
 
 - Phase 0 + 0b complete; daily archives sometimes run hours late. Memo standalone: storage, tree, editor/preview, chips, resets, drag & drop, search,
-  trash/undo and UX/keyboard improvements through M178 are implemented and tested in game.
+  trash/undo, UX/keyboard improvements, help window and status cards through M186 and the crash protection (R104) are implemented and tested in game.
 - Decisions: `addons/trailkit-memo.md`, `ROADMAP.md`. Appearance: trailkit-ui `current-design.md`; review: tokens.md §10.
 
 ## ▶ Resume here
 
-**Session 32 (2026-11-13).** R98/B25: problem reports via the backend behind a flag, GitHub form as fallback (Q288–Q293 in
-`backend.md`). Before the first release: DPF listing check (R99).
-
-**Shipped in session 32:** `feature/help-problem-page` went into `develop` with the user's merge OK after the full in-game test
-(PR with auto-merge): the help window with problem page and log export (R95, R100), memo's Nexus options tab (M182), the help
-rewrite by task with `PRIVACY.md` embedded as last topic (M181), the help window laid out like the main window (R101: shared
-`pane_columns::draw_resizable_pane_columns` and `page::draw_page`, tab/topic/list width saved in memo's `ui_state.json`), e-mail
-links (M183), the shared `text::draw_icon_text` (Q325/Q326) and the new tooltip look with the design's one shadow (R102). **PR #114
-merged 2026-11-13** (all CI checks green). The local branch `feature/help-problem-page` is gone on GitHub; the user deletes local
-leftovers by hand (Q211/Q240).
-
-**DLL size (measured 2026-11-13, R72):** release `trailkit-memo.dll` 2 629 120 bytes (2.51 MiB; 2.31 MiB before #114, about
-+200 KB for help window, problem page, log export and the new components). Tried without any gain (0 bytes each): `lto = "fat"`,
-`strip = "symbols"` (MSVC keeps symbols in the `.pdb`), ImGui C++ with `/Gy /Gw` (clang-cl already drops unused functions). Every
-Nexus addon carries its own Dear ImGui (`arcdps-imgui-sys`/cimgui); Nexus shares only the context. Remaining options cost
-performance or safety and stay rejected (R72: `opt-level` s/z, `panic = "abort"`). **Q329 (deferred by the user):** a per-crate
-breakdown with `cargo bloat` happens in the next release preparation, not before.
+**Session 34 (2026-11-13).** Merged after the user's OK: #116 (session 33 work), this handoff, `feature/crash-protection` (R104:
+`catch_unwind` guard around every Nexus callback; after a panic only the help window draws, opened on "Report a problem" with a warning
+card; unsaved text becomes a draft; Nexus alert only when `load` fails, Q370; `panic_msgbox` off; event `addon_stopped`;
+`trailkit_ui::draw_list` replaces `get_window_draw_list`, banned in `clippy.toml`; harness with keyboard navigation and a navigation pass
+over every state; smoke test in `tokens.md` §10; Cargo feature `fault-injection` with `cargo xtask deploy … --features`) and
+`chore/plan-event-memo-wishes`. Check all PRs merged with green CI. The deployed DLL is a `fault-injection` debug build: deploy a normal
+build before playing. The in-game check of the draft rescue (`draft=kept` in the log) is still open: confirm it on the next test.
 
 **Open, in this order:**
-1. **Q312 round:** draft warning and memo's problem hint ("notes recovered") onto `draw_icon_text`/`draw_status_line`; R87 mockup
-   first. New branch from freshly fetched `origin/develop`.
-2. `theme.rs` has 418 code lines (hint at 400): propose a split by concern via grilling, never split unasked (R77).
-3. Then the queue below (theme character grilling, B23–B25) and the review items, one at a time.
+1. **Window flicker on first open (Q371, user OK), branch `bugfix/font-size-at-load`:** memo registers its fonts at the base size and
+   resizes them on the first frame (log probe: 16 → 17 px at text scale 1.0625); Nexus rebuilds the atlas and the whole window blinks
+   once. Fix: call `follow_nexus_font_size(settings().text_scale, …)` at the end of `load_addon`; keep the first-frame path for when
+   Nexus' `FontUI` is not ready yet at game start.
+2. **Button cleanup (R103, Q338, Q350):** `DangerFill` confirm button, the error toast's `bg.active` buttons and the empty state's brass
+   button on the left onto the two styles and the order; R87 mockup first; keep the icon-label gap.
+3. **File-length splits (R77):** approved Q91 (`note_list.rs`/`draw_group`), Q95 `draw_dropdown`, Q96 `editor/view.rs`, Q105
+   `markdown_view.rs`. Grill the rest by concern, never split unasked: `theme.rs` (421), `rows.rs` (422, `draw_note_row` 91),
+   `main_window.rs` (428), `actions.rs` (451, Q134), `help_text.rs::get` (104, a table; Q92 said no for `Text::get`),
+   `component_states.rs` (1127), `main_window/tests.rs` (1010), `editor.rs::draw` (101), `token_groups.rs` (466).
+4. **Wishes of 2026-11-13 (grilling; plan requirements):** event: filters ("used in notes", a meta train order: research trains,
+   timing, a source with licence/GDPR first), favorite events. memo: struck-through checked items, a simple daily/weekly window, favorites.
+5. Then the queue below (theme character grilling, B23–B25) and the review items, one at a time.
 
-**Lessons from session 32 (keep doing):** mockups before every visible change (R87) paid off: the user corrected panes, page head,
-shadow size and tooltip look from the drafts. Snapshot tests must place tooltips with `StyleScope::push_with_cursor_extent(…, None)`,
-never the real cursor, or images change between runs. A shared component that sets a style color itself (tooltip border) overrides
-callers that pushed their own: give such callers an explicit variant (`draw_tooltip_with_border`).
+**Decided, not scheduled:** Q340 – daily backups with restore (M11, M31's "Restore from backup") stay in M28's order after settings
+and export/import. Q329 – `cargo bloat` breakdown at the next release preparation (release DLL 2.51 MiB on 2026-11-13).
+
+**Lessons from session 34 (keep doing):** measure before fixing (a one-off log probe proved the flicker in one round). Nexus draws
+alerts as yellow text without background at the top centre; an addon window covers them. `git checkout <file>` to drop a probe also
+drops every other edit in that file: remove probes by editing. Mockups first (R87) paid off again.
 
 **Deferred by the user (2026-11-12): one theme character for addons and the coming React website.** No code yet. Mockups:
 https://claude.ai/artifact/SFFrXawiqYD6HouhdihGdv (latest: Papier A–D). Wanted: GW2-reminiscent, own character, dark, very subtle
 (background about `#060709`–`#0d0e17`), crisp edges. Rejected: mountains, waypoint markers, header band/spine, web-template look. Closest:
-Papercraft Q–T and Flecken U–X (posterized mottled paper); recommended Papier B Rissrand. ImGui draws flat fills, polygons, one-direction
-gradients, offset shapes as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass never decorates. Before code:
-grilling (name, variant, Light, tokens in `theme.rs`/`tokens.json`, one place in `draw_window`) plus R87. ArenaNet's Content Terms
-for fan content are not read yet; never copy game or Blish HUD art, never look official.
+Papercraft Q–T and Flecken U–X; recommended Papier B Rissrand. ImGui draws flat fills, polygons, one-direction gradients, offset shapes
+as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass never decorates. Before code: grilling plus R87. ArenaNet's
+Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
 
-Next ids: **M184+, R103+, B26+, questions from 330**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M187+, R105+, B26+, questions from 372**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 
-- **Housekeeping (Q211/Q240):** the user deletes the approved old local branches by hand (all `chore/`, `contributor-docs`, `handoff-*`,
-  `addon-status-*`, `help-window-design`, merged PR branches).
+- **Housekeeping (Q211/Q240):** the user deletes approved old local branches by hand (`chore/*`, merged PR branches).
 
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
@@ -76,10 +75,6 @@ Next ids: **M184+, R103+, B26+, questions from 330**. Deferred: GW2 build/Nexus 
 
 ## Earlier implementation queue — after the review work
 
-- Approved splits (R77): Q91
-  `note_list.rs`/`draw_group`, Q95 `draw_dropdown`, Q96 `editor/view.rs`, Q105 `markdown_view.rs`.
-  Q92 `Text::get`: recommendation no, no objection recorded. Grill remaining hints for
-  `Editor::draw`, `draw_lines` and the large main-window test file before splitting.
 - Q134: split `actions.rs` into tree/editor actions at its next rebuild, not beforehand.
 - Continue M28: settings/options → export/import → backups → help → release preparation
   (full tests, M67 screenshots, docs, manually measure release DLL size, R72).
