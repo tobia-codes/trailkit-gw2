@@ -11,18 +11,18 @@
 //! The view never changes anything itself: clicks are returned as a
 //! [`MarkdownAction`] for the caller to apply.
 
-use crate::draw_list::window_draw_list;
-use crate::tooltip::draw_tooltip;
-use std::ops::Range;
+mod inline_text;
 
-use nexus::imgui::{MouseCursor, StyleColor, Ui};
+use nexus::imgui::{MouseCursor, Ui};
 
+use self::inline_text::draw_spans;
 use crate::{
-    chat_link_chip::{ChipContext, chip_tooltip, chip_width, draw_chip},
+    chat_link_chip::ChipContext,
+    draw_list::window_draw_list,
     font_registry::FontScope,
     fonts::FontRole,
     icons::Icon,
-    markdown::{Block, ListMarker, MarkdownDocument, Span, TaskMarker},
+    markdown::{Block, ListMarker, MarkdownDocument, TaskMarker},
     separator::draw_compact_separator,
     text::{TextStyle, draw_icon},
     text_search::SearchQuery,
@@ -91,6 +91,19 @@ struct LineBounds {
     right: f32,
 }
 
+/// Horizontal layout shared by every block of a document.
+#[derive(Debug, Clone, Copy)]
+struct BlockLayout {
+    /// Left edge of unindented text (screen x).
+    left: f32,
+    /// Right edge no text may cross (screen x).
+    right: f32,
+    /// Indent per nesting level.
+    indent: f32,
+    /// Width of the list marker column, gap included.
+    marker_column: f32,
+}
+
 /// The font of the first line of `document`, e.g. to keep an even gap above it.
 #[must_use]
 pub fn first_line_font(document: &MarkdownDocument) -> FontRole {
@@ -116,7 +129,6 @@ pub fn draw_markdown(
     let width = ui.content_region_avail()[0]
         .min(average_character_width * READABLE_LINE_CHARACTERS)
         .max(average_character_width);
-    let right = origin_x + width;
     let indent = theme.list.indent;
     // The marker column must fit the widest marker (a task box) plus a gap,
     // whatever the font size; otherwise the text touches the checkbox.
@@ -127,7 +139,12 @@ pub fn draw_markdown(
     }
     .max(ui.calc_text_size("00.")[0])
         + theme.spacing.extra_small;
-    let marker_column = marker_column.max(indent);
+    let layout = BlockLayout {
+        left: origin_x,
+        right: origin_x + width,
+        indent,
+        marker_column: marker_column.max(indent),
+    };
 
     let mut action = None;
     for (index, block) in document.blocks.iter().enumerate() {
@@ -142,71 +159,71 @@ pub fn draw_markdown(
         if index > 0 && !continues_list {
             ui.dummy([0.0, theme.spacing.small]);
         }
-        let clicked = match block {
-            Block::Heading { level, spans } => {
-                if index > 0 {
-                    ui.dummy([0.0, theme.spacing.small]);
-                }
-                let bounds = LineBounds {
-                    left: origin_x,
-                    right,
-                };
-                draw_spans(
-                    ui,
-                    spans,
-                    Some(TextStyle::heading(*level)),
-                    bounds,
-                    theme,
-                    chips,
-                    highlight.as_deref_mut(),
-                )
-            }
-            Block::Paragraph { depth, spans } => {
-                let bounds = LineBounds {
-                    left: origin_x + f32::from(*depth) * indent,
-                    right,
-                };
-                draw_spans(
-                    ui,
-                    spans,
-                    None,
-                    bounds,
-                    theme,
-                    chips,
-                    highlight.as_deref_mut(),
-                )
-            }
-            Block::ListItem {
-                depth,
-                marker,
-                spans,
-            } => {
-                let left = origin_x + f32::from(depth.saturating_sub(1)) * indent;
-                let marker_click = draw_list_marker(ui, *marker, left, marker_column, theme);
-                let bounds = LineBounds {
-                    left: left + marker_column,
-                    right,
-                };
-                let text_click = draw_spans(
-                    ui,
-                    spans,
-                    None,
-                    bounds,
-                    theme,
-                    chips,
-                    highlight.as_deref_mut(),
-                );
-                marker_click.or(text_click)
-            }
-            Block::Rule => {
-                draw_compact_separator(ui, theme);
-                None
-            }
-        };
+        let clicked = draw_block(
+            ui,
+            block,
+            index > 0,
+            layout,
+            theme,
+            chips,
+            highlight.as_deref_mut(),
+        );
         action = action.or(clicked);
     }
     ui.dummy([0.0, 0.0]);
     action
+}
+
+/// Draws one `block` on the current line with the document's `layout`;
+/// `follows_block` adds the gap a heading keeps from what is above it.
+/// Returns what the user clicked.
+fn draw_block(
+    ui: &Ui,
+    block: &Block,
+    follows_block: bool,
+    layout: BlockLayout,
+    theme: &Theme,
+    chips: ChipContext<'_>,
+    highlight: Option<&mut SearchHighlight<'_>>,
+) -> Option<MarkdownAction> {
+    match block {
+        Block::Heading { level, spans } => {
+            if follows_block {
+                ui.dummy([0.0, theme.spacing.small]);
+            }
+            let bounds = LineBounds {
+                left: layout.left,
+                right: layout.right,
+            };
+            let style = Some(TextStyle::heading(*level));
+            draw_spans(ui, spans, style, bounds, theme, chips, highlight)
+        }
+        Block::Paragraph { depth, spans } => {
+            let bounds = LineBounds {
+                left: layout.left + f32::from(*depth) * layout.indent,
+                right: layout.right,
+            };
+            draw_spans(ui, spans, None, bounds, theme, chips, highlight)
+        }
+        Block::ListItem {
+            depth,
+            marker,
+            spans,
+        } => {
+            let left = layout.left + f32::from(depth.saturating_sub(1)) * layout.indent;
+            let marker_click = draw_list_marker(ui, *marker, left, layout.marker_column, theme);
+            let bounds = LineBounds {
+                left: left + layout.marker_column,
+                right: layout.right,
+            };
+            let text_click = draw_spans(ui, spans, None, bounds, theme, chips, highlight);
+            marker_click.or(text_click)
+        }
+        Block::Rule => {
+            draw_compact_separator(ui, theme);
+            None
+        }
+    }
 }
 
 /// Opens `url` if it is openable (M37, M183): a web link in the default
@@ -296,276 +313,4 @@ fn draw_list_marker(
     // Text continues on the same line, right of the marker column.
     ui.set_cursor_screen_pos([left + marker_width, line_top]);
     action
-}
-
-/// Lays out `spans` word by word between `bounds`, starting at the current
-/// line, and leaves the cursor below the last line. The block's text style
-/// is `heading` or [`TextStyle::Body`] (Q276): it sets the color, and a
-/// heading also the font of every span; other spans pick their body face
-/// (bold, italic) themselves; chat codes are drawn as chips; `highlight` marks
-/// search hits. Returns a link or chip click.
-fn draw_spans(
-    ui: &Ui,
-    spans: &[Span],
-    heading: Option<TextStyle>,
-    bounds: LineBounds,
-    theme: &Theme,
-    chips: ChipContext<'_>,
-    mut highlight: Option<&mut SearchHighlight<'_>>,
-) -> Option<MarkdownAction> {
-    // Lines are `typography.line_height` apart; `y` is the text top, below
-    // the leading of the line.
-    let (line_height, leading) = {
-        let _font = FontScope::push(ui, heading.map_or(FontRole::Body, TextStyle::font));
-        let font_size = ui.current_font_size();
-        (
-            theme.typography.line_height_for(font_size),
-            theme.typography.leading_for(font_size),
-        )
-    };
-    let mut x = bounds.left;
-    let mut y = ui.cursor_screen_pos()[1] + leading;
-    let mut action = None;
-    let mut hits: Vec<Range<usize>> = Vec::new();
-    // The block's role sets the text color (Q276); links keep their own.
-    let _color = ui.push_style_color(
-        StyleColor::Text,
-        heading.unwrap_or(TextStyle::Body).color(theme).to_array(),
-    );
-
-    for (index, span) in spans.iter().enumerate() {
-        if span.is_line_break() {
-            x = bounds.left;
-            y += line_height;
-            continue;
-        }
-        let role = heading.map_or_else(
-            || FontRole::body(span.style.bold, span.style.italic),
-            TextStyle::font,
-        );
-        let _font = FontScope::push(ui, role);
-        if let Some(chip) = &span.chip {
-            let width = chip_width(ui, chip, theme, chips);
-            if x > bounds.left && x + width > bounds.right {
-                x = bounds.left;
-                y += line_height;
-            }
-            let _id = ui.push_id(i32::try_from(index).unwrap_or(i32::MAX));
-            ui.set_cursor_screen_pos([x, y]);
-            ui.invisible_button("##chip", [width, ui.text_line_height()]);
-            let hovered = ui.is_item_hovered();
-            let clicked = ui.is_item_clicked();
-            draw_chip(ui, window_draw_list(ui), chip, [x, y], theme, chips);
-            if let Some(highlight) = highlight.as_deref_mut()
-                && !highlight.query.hit_ranges(&chip.code).is_empty()
-            {
-                highlight.record_hit(ui, y);
-                window_draw_list(ui)
-                    .add_rect(
-                        [x, y],
-                        [x + width, y + ui.text_line_height()],
-                        theme.accent.text.to_array(),
-                    )
-                    .rounding(theme.radius.small)
-                    .thickness(theme.border.width)
-                    .build();
-            }
-            if hovered {
-                ui.set_mouse_cursor(Some(MouseCursor::Hand));
-                chip_tooltip(ui, chip, theme, chips, true);
-            }
-            if clicked {
-                ui.set_clipboard_text(&chip.code);
-                action = action.or_else(|| Some(MarkdownAction::ChatLinkCopied(chip.code.clone())));
-            }
-            x += width;
-            continue;
-        }
-        match highlight.as_deref() {
-            Some(highlight) => highlight.query.collect_hit_ranges(&span.text, &mut hits),
-            None => hits.clear(),
-        }
-        let mut token_offset = 0;
-        for token in span.text.split_inclusive(' ') {
-            let word = token.trim_end_matches(' ');
-            let word_offset = token_offset;
-            token_offset += token.len();
-            let word_width = ui.calc_text_size(word)[0];
-            if x > bounds.left && x + word_width > bounds.right {
-                x = bounds.left;
-                y += line_height;
-            }
-            if !word.is_empty() {
-                let word_hits = WordHits {
-                    ranges: &hits,
-                    offset: word_offset,
-                };
-                let clicked = draw_word(
-                    ui,
-                    word,
-                    span,
-                    bounds,
-                    theme,
-                    (&mut x, &mut y),
-                    line_height,
-                    word_hits,
-                );
-                if let Some(first_hit) = clicked.first_hit_y
-                    && let Some(highlight) = highlight.as_deref_mut()
-                {
-                    highlight.record_hit(ui, first_hit);
-                }
-                action = action.or(clicked.action);
-            }
-            let trailing_spaces = &token[word.len()..];
-            if x > bounds.left {
-                x += ui.calc_text_size(trailing_spaces)[0];
-            }
-        }
-    }
-    ui.set_cursor_screen_pos([bounds.left, y - leading + line_height]);
-    action
-}
-
-/// Search hits of a span, seen from one word of it.
-#[derive(Debug, Clone, Copy)]
-struct WordHits<'ranges> {
-    /// Hit byte ranges in the span text, sorted.
-    ranges: &'ranges [Range<usize>],
-    /// Byte offset of the word in the span text.
-    offset: usize,
-}
-
-/// What drawing one word produced.
-#[derive(Debug, Default)]
-struct WordOutcome {
-    /// A link click.
-    action: Option<MarkdownAction>,
-    /// Screen y of the first marked piece, if any.
-    first_hit_y: Option<f32>,
-}
-
-/// Draws one word at `position` (`x`, `y`), breaking it between characters if
-/// it is wider than a whole line, marks its search hits and advances the
-/// position. Returns a link click and where a hit was marked.
-#[expect(
-    clippy::too_many_arguments,
-    reason = "layout state is threaded through explicitly to avoid per-frame allocation"
-)]
-fn draw_word(
-    ui: &Ui,
-    word: &str,
-    span: &Span,
-    bounds: LineBounds,
-    theme: &Theme,
-    position: (&mut f32, &mut f32),
-    line_height: f32,
-    hits: WordHits<'_>,
-) -> WordOutcome {
-    let (x, y) = position;
-    let mut outcome = WordOutcome::default();
-    let mut rest = word;
-    let mut piece_offset = hits.offset;
-    while !rest.is_empty() {
-        let available = bounds.right - *x;
-        let piece = fitting_prefix(ui, rest, available, *x <= bounds.left);
-        let piece_width = ui.calc_text_size(piece)[0];
-        if mark_hits(ui, piece, piece_offset, hits.ranges, [*x, *y], theme) {
-            outcome.first_hit_y = outcome.first_hit_y.or(Some(*y));
-        }
-        ui.set_cursor_screen_pos([*x, *y]);
-        let clicked = draw_piece(ui, piece, span, theme);
-        outcome.action = outcome.action.or(clicked);
-        *x += piece_width;
-        piece_offset += piece.len();
-        rest = &rest[piece.len()..];
-        if !rest.is_empty() {
-            *x = bounds.left;
-            *y += line_height;
-        }
-    }
-    outcome
-}
-
-/// Draws the `accent.highlight` background behind the parts of `piece`
-/// (starting at byte `offset` of its span and drawn at `origin`) covered by
-/// `ranges`. Returns whether anything was marked.
-fn mark_hits(
-    ui: &Ui,
-    piece: &str,
-    offset: usize,
-    ranges: &[Range<usize>],
-    origin: [f32; 2],
-    theme: &Theme,
-) -> bool {
-    let piece_end = offset + piece.len();
-    let mut marked = false;
-    for range in ranges {
-        if range.end <= offset || range.start >= piece_end {
-            continue;
-        }
-        let start = range.start.max(offset) - offset;
-        let end = range.end.min(piece_end) - offset;
-        let left = origin[0] + ui.calc_text_size(&piece[..start])[0];
-        let right = origin[0] + ui.calc_text_size(&piece[..end])[0];
-        window_draw_list(ui)
-            .add_rect(
-                [left, origin[1]],
-                [right, origin[1] + ui.text_line_height()],
-                theme.accent.highlight.to_array(),
-            )
-            .filled(true)
-            .rounding(theme.radius.small)
-            .build();
-        marked = true;
-    }
-    marked
-}
-
-/// The longest prefix of `text` (whole characters) narrower than `available`;
-/// at least one character if `at_line_start`, so layout always progresses.
-fn fitting_prefix<'text>(
-    ui: &Ui,
-    text: &'text str,
-    available: f32,
-    at_line_start: bool,
-) -> &'text str {
-    if ui.calc_text_size(text)[0] <= available {
-        return text;
-    }
-    let mut end = 0;
-    for (index, character) in text.char_indices() {
-        let next = index + character.len_utf8();
-        if ui.calc_text_size(&text[..next])[0] > available {
-            break;
-        }
-        end = next;
-    }
-    if end == 0 && at_line_start {
-        end = text.chars().next().map_or(text.len(), char::len_utf8);
-    }
-    &text[..end]
-}
-
-/// Draws a piece of text at the cursor, as a link if the span has one.
-fn draw_piece(ui: &Ui, piece: &str, span: &Span, theme: &Theme) -> Option<MarkdownAction> {
-    let Some(url) = &span.style.link else {
-        ui.text(piece);
-        return None;
-    };
-    ui.text_colored(theme.text.link.to_array(), piece);
-    let [min, max] = [ui.item_rect_min(), ui.item_rect_max()];
-    window_draw_list(ui)
-        .add_line(
-            [min[0], max[1]],
-            [max[0], max[1]],
-            theme.text.link.to_array(),
-        )
-        .build();
-    if ui.is_item_hovered() {
-        ui.set_mouse_cursor(Some(MouseCursor::Hand));
-        draw_tooltip(ui, theme, crate::markdown::link_target_label(url));
-    }
-    ui.is_item_clicked()
-        .then(|| MarkdownAction::OpenLink(url.clone()))
 }
