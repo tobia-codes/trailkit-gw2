@@ -341,8 +341,8 @@ impl ButtonColors {
             },
             ButtonKind::DangerFill => Self {
                 fill: theme.status.danger,
-                hovered: theme.status.danger.with_alpha(0.85),
-                pressed: theme.status.danger.with_alpha(0.7),
+                hovered: theme.status.danger_hover,
+                pressed: theme.status.danger_active,
                 label: theme.surface.window,
                 bordered: false,
             },

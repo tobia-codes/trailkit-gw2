@@ -109,8 +109,8 @@ pub fn draw_danger_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str
         tooltip,
         IconButtonFill {
             resting: danger,
-            hovered: danger.with_alpha(0.85),
-            pressed: danger.with_alpha(0.7),
+            hovered: theme.status.danger_hover,
+            pressed: theme.status.danger_active,
             icon: Some(theme.surface.window),
         },
     )

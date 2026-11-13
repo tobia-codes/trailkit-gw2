@@ -117,6 +117,14 @@ pub struct TextColors {
     pub on_accent: Color,
 }
 
+/// OKLab lightness step from a colored button's fill to its hover fill
+/// (R107): 8 % darker in both themes.
+pub const HOVER_DARKENING: f32 = 0.08;
+
+/// OKLab lightness step from a colored button's fill to its pressed fill
+/// (R107): 12 % darker in both themes.
+pub const PRESSED_DARKENING: f32 = 0.12;
+
 /// Accent colors: brass, spent only on the primary action, focus and
 /// selection (R71).
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -124,9 +132,11 @@ pub struct AccentColors {
     /// `accent`: fill of the primary button and the selection bar. A fill
     /// only: in the light theme it is too light for text or thin lines.
     pub base: Color,
-    /// `accent.hover`: hovered primary button.
+    /// `accent.hover`: hovered primary button, `accent` darkened by
+    /// [`HOVER_DARKENING`] (R107).
     pub hover: Color,
-    /// `accent.active`: pressed primary button.
+    /// `accent.active`: pressed primary button, `accent` darkened by
+    /// [`PRESSED_DARKENING`] (R107).
     pub active: Color,
     /// `accent.text`: brass as text, icon or line on a surface (active
     /// toggles, check marks, drop line); ≥ 4.5:1 in both themes.
@@ -145,6 +155,12 @@ pub struct StatusColors {
     pub warning: Color,
     /// `danger`.
     pub danger: Color,
+    /// `danger.hover`: hovered delete button, `danger` darkened by
+    /// [`HOVER_DARKENING`] (R105, R107).
+    pub danger_hover: Color,
+    /// `danger.active`: pressed delete button, `danger` darkened by
+    /// [`PRESSED_DARKENING`] (R105, R107).
+    pub danger_active: Color,
     /// `danger.subtle`: `danger` tinted into `bg.popup` (20 % Dark, 10 %
     /// Light), the fill of an error toast (memo M180, Q144 B) and of a
     /// `danger` status card (memo M184).
@@ -455,8 +471,8 @@ impl Theme {
         },
         accent: AccentColors {
             base: Color::from_rgb_hex(0xE2A740),
-            hover: Color::from_rgb_hex(0xEDB65A),
-            active: Color::from_rgb_hex(0xC98F2A),
+            hover: Color::from_rgb_hex(0xC88E1E),
+            active: Color::from_rgb_hex(0xBB8200),
             text: Color::from_rgb_hex(0xE8B055),
             highlight: Color::from_rgb_hex(0xE2A740).with_alpha(0.24),
         },
@@ -464,6 +480,8 @@ impl Theme {
             success: Color::from_rgb_hex(0x5CC48A),
             warning: Color::from_rgb_hex(0xE9B44C),
             danger: Color::from_rgb_hex(0xF08A84),
+            danger_hover: Color::from_rgb_hex(0xD4716C),
+            danger_active: Color::from_rgb_hex(0xC76561),
             // 20 % `danger` over `bg.popup` (#1A2029); 22 % would leave
             // `text.secondary` below 4.5:1.
             danger_subtle: Color::from_rgb_hex(0x45353B),
@@ -548,8 +566,8 @@ impl Theme {
         },
         accent: AccentColors {
             base: Color::from_rgb_hex(0xE2A740),
-            hover: Color::from_rgb_hex(0xD69A32),
-            active: Color::from_rgb_hex(0xC48A24),
+            hover: Color::from_rgb_hex(0xC88E1E),
+            active: Color::from_rgb_hex(0xBB8200),
             text: Color::from_rgb_hex(0x8A5A10),
             highlight: Color::from_rgb_hex(0xE2A740).with_alpha(0.42),
         },
@@ -557,6 +575,8 @@ impl Theme {
             success: Color::from_rgb_hex(0x176B3C),
             warning: Color::from_rgb_hex(0x8A5A00),
             danger: Color::from_rgb_hex(0xB3261E),
+            danger_hover: Color::from_rgb_hex(0x970000),
+            danger_active: Color::from_rgb_hex(0x890000),
             // 10 % `danger` over `bg.popup` (#FFFFFF).
             danger_subtle: Color::from_rgb_hex(0xF7E9E8),
             // 10 % `warning` over `bg.popup` (#FFFFFF).
@@ -687,6 +707,65 @@ mod tests {
                     theme.text.on_accent,
                     accent,
                 );
+            }
+            // A delete button's label is `bg.window` (R105).
+            for (danger_name, danger) in [
+                ("danger", theme.status.danger),
+                ("danger.hover", theme.status.danger_hover),
+                ("danger.active", theme.status.danger_active),
+            ] {
+                assert_readable(
+                    kind,
+                    &format!("bg.window on {danger_name}"),
+                    theme.surface.window,
+                    danger,
+                );
+            }
+        }
+    }
+
+    /// Hover and pressed fills of colored buttons follow one rule (R107):
+    /// the rest fill darkened by a fixed OKLab lightness step. The theme
+    /// stores hex values; they may differ from the formula by rounding only.
+    #[test]
+    fn button_state_fills_follow_the_darkening_rule() {
+        for kind in ThemeKind::ALL {
+            let theme = kind.theme();
+            for (name, base, stored, step) in [
+                (
+                    "accent.hover",
+                    theme.accent.base,
+                    theme.accent.hover,
+                    HOVER_DARKENING,
+                ),
+                (
+                    "accent.active",
+                    theme.accent.base,
+                    theme.accent.active,
+                    PRESSED_DARKENING,
+                ),
+                (
+                    "danger.hover",
+                    theme.status.danger,
+                    theme.status.danger_hover,
+                    HOVER_DARKENING,
+                ),
+                (
+                    "danger.active",
+                    theme.status.danger,
+                    theme.status.danger_active,
+                    PRESSED_DARKENING,
+                ),
+            ] {
+                let expected = base.darkened(step).to_array();
+                for (channel, (stored, expected)) in
+                    stored.to_array().iter().zip(expected).take(3).enumerate()
+                {
+                    assert!(
+                        (stored - expected).abs() <= 1.0 / 255.0,
+                        "{kind:?}: {name} channel {channel} is {stored:.4}, rule gives {expected:.4}"
+                    );
+                }
             }
         }
     }

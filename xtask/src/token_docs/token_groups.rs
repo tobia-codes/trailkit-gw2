@@ -155,8 +155,16 @@ fn accent_group(colors: AccentColors) -> TokenGroup {
         title: "Accent",
         tokens: vec![
             color("accent", base, "Fill of the primary button, selection bar"),
-            color("accent.hover", hover, "Hovered primary button"),
-            color("accent.active", active, "Pressed primary button"),
+            color(
+                "accent.hover",
+                hover,
+                "Hovered primary button (8 % darker, R107)",
+            ),
+            color(
+                "accent.active",
+                active,
+                "Pressed primary button (12 % darker, R107)",
+            ),
             color("accent.text", text, "Brass as text, icon or line"),
             color("accent.highlight", highlight, "Behind search hits"),
         ],
@@ -169,6 +177,8 @@ fn status_group(colors: StatusColors) -> TokenGroup {
         success,
         warning,
         danger,
+        danger_hover,
+        danger_active,
         danger_subtle,
         warning_subtle,
         info,
@@ -178,7 +188,21 @@ fn status_group(colors: StatusColors) -> TokenGroup {
         tokens: vec![
             color("success", success, "Success"),
             color("warning", warning, "Warnings, invalid chat links"),
-            color("danger", danger, "Destructive actions"),
+            color(
+                "danger",
+                danger,
+                "Destructive actions, fill of delete buttons",
+            ),
+            color(
+                "danger.hover",
+                danger_hover,
+                "Hovered delete button (8 % darker, R107)",
+            ),
+            color(
+                "danger.active",
+                danger_active,
+                "Pressed delete button (12 % darker, R107)",
+            ),
             color(
                 "danger.subtle",
                 danger_subtle,
