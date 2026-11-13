@@ -52,6 +52,7 @@ use trailkit_storage::{
 };
 use trailkit_ui::{font_registry::register_fonts, theme::ThemeKind, title_bar::TitleBarState};
 
+use crate::help_document::help_document;
 use crate::main_window::{MemoWindow, NotesProblem};
 use trailkit_memo_shared::i18n::LocalizedText;
 use trailkit_memo_shared::{
@@ -257,10 +258,11 @@ fn load() {
     });
     register_keybind_with_string(KEYBIND_TOGGLE, on_toggle, UNBOUND).revert_on_unload();
     register_wnd_proc(catch_window_keys).revert_on_unload();
-    // UI strings plus the help pages, which the help window draws.
+    // UI strings plus the help with the privacy policy, which the help
+    // window draws; this also builds both help texts off the render thread.
     register_fonts(
         GLYPHS_KEY,
-        &(crate::all_texts() + include_str!("../help/en.md") + include_str!("../help/de.md")),
+        &(crate::all_texts() + help_document(Language::English) + help_document(Language::German)),
         &ThemeKind::default().theme().typography,
     );
 

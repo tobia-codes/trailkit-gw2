@@ -35,6 +35,7 @@ use trailkit_ui::{
 };
 
 use crate::{
+    help_document::help_document,
     help_text::HelpText,
     log_export::{ExportError, ExportOutcome, ExportStage, problem_report_url, write_log_export},
     main_window::help_title_bar_toggle,
@@ -145,7 +146,7 @@ impl MemoHelp {
         };
         let content = HelpWindowContent {
             id: WINDOW_ID,
-            help_text: help_markdown(language),
+            help_text: help_document(language),
             texts: window_texts(language),
             problem: ProblemPage {
                 export_button,
@@ -332,14 +333,6 @@ fn downloads_folder() -> std::io::Result<PathBuf> {
         let folder = PathBuf::from(OsString::from_wide(path.as_wide()));
         CoTaskMemFree(Some(path.0.cast_const().cast()));
         Ok(folder)
-    }
-}
-
-/// Memo's help pages in `language` (`help/<language>.md`).
-const fn help_markdown(language: Language) -> &'static str {
-    match language {
-        Language::English => include_str!("../../help/en.md"),
-        Language::German => include_str!("../../help/de.md"),
     }
 }
 
