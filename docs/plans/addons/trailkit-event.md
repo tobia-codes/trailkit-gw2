@@ -26,6 +26,14 @@ configurable tables, and highlighting of events referenced in trailkit-memo.
 - Project-wide: own settings window, help page, en/de, themes, performance.
 - Title bar `?` button, problem page and own log (ROADMAP R89).
 
+### Wishes from 2026-11-13 (not grilled yet)
+- **More table filters**, e.g. "used in notes" (events referenced in memo) and a
+  **ready-made meta train order**: the events in the best order to complete as many
+  as possible. Needs research first: which trains the community runs (e.g. core
+  Tyria and expansion metas), their timing rules and travel times, and whether a
+  public, reusable source exists (licence, GDPR, rule 10).
+- **Favorite events**: mark events in a table as favorites, and filter by them.
+
 ## Technical design (proposal)
 
 - Official schedules come from trailkit-core (curated dataset, see data-pipeline / backend
@@ -43,7 +51,9 @@ configurable tables, and highlighting of events referenced in trailkit-memo.
 
 ## Open questions
 
-- None currently (round 14 settled E8–E15).
+- The wishes of 2026-11-13 (filters incl. "used in notes" and meta train order,
+  favorite events) need a grilling round; the meta train order needs research
+  before it.
 
 ## Decisions
 
