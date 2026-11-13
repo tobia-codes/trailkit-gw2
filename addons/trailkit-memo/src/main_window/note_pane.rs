@@ -116,7 +116,7 @@ impl MemoWindow {
                 self.actions.push(WindowAction::FinishEditing);
             }
             if !saving && ui.is_item_hovered() {
-                draw_tooltip(ui, Text::SaveTooltip.get(language));
+                draw_tooltip(ui, theme, Text::SaveTooltip.get(language));
             }
         } else if self.selected_note().is_some() {
             // Editing is the main action of the reading view: the one brass

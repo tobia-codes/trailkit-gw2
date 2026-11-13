@@ -204,7 +204,7 @@ impl SearchField {
                 .filled(true)
                 .rounding(theme.radius.small)
                 .build();
-            draw_tooltip(ui, tooltip);
+            draw_tooltip(ui, theme, tooltip);
         }
         let color = if hovered {
             theme.text.primary

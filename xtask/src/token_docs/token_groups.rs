@@ -6,8 +6,8 @@ use trailkit_ui::{
     color::Color,
     theme::{
         AccentColors, BorderTokens, ButtonMetrics, ChipCategoryColors, ChipColors, CoinColors,
-        EventColors, ListMetrics, MenuMetrics, PaneMetrics, Radii, ResetColors, Spacing,
-        StatusColors, SurfaceColors, TextColors, Theme, Typography,
+        EventColors, ListMetrics, MenuMetrics, PaneMetrics, Radii, ResetColors, ShadowTokens,
+        Spacing, StatusColors, SurfaceColors, TextColors, Theme, Typography,
     },
 };
 
@@ -203,6 +203,25 @@ fn border_group(tokens: BorderTokens) -> TokenGroup {
                 "Dividers, outline of windows, panes, popups, dialogs",
             ),
             pixels("border.width", width, "Border thickness"),
+        ],
+    }
+}
+
+/// The tooltip shadow (Q327), the one shadow of the design.
+fn shadow_group(tokens: ShadowTokens) -> TokenGroup {
+    let ShadowTokens {
+        popup,
+        popup_offset,
+    } = tokens;
+    TokenGroup {
+        title: "Shadows",
+        tokens: vec![
+            color("shadow.popup", popup, "Shadow below tooltips"),
+            pixels(
+                "shadow.popup.offset",
+                popup_offset,
+                "How far it reaches below",
+            ),
         ],
     }
 }
@@ -413,7 +432,11 @@ fn radius_group(radii: Radii) -> TokenGroup {
     TokenGroup {
         title: "Corner radii",
         tokens: vec![
-            pixels("radius.sm", small, "Chips, badges, scrollbar grabs"),
+            pixels(
+                "radius.sm",
+                small,
+                "Chips, badges, scrollbar grabs, tooltips",
+            ),
             pixels(
                 "radius.md",
                 medium,
@@ -470,6 +493,7 @@ pub(super) fn token_groups(theme: Theme) -> Vec<TokenGroup> {
         button,
         menu,
         radius,
+        shadow,
         typography,
     } = theme;
     vec![
@@ -485,6 +509,7 @@ pub(super) fn token_groups(theme: Theme) -> Vec<TokenGroup> {
         spacing_group(spacing),
         layout_group(list, pane, button, menu),
         radius_group(radius),
+        shadow_group(shadow),
         typography_group(typography),
     ]
 }

@@ -12,9 +12,9 @@ mod delete;
 mod rows;
 
 use std::collections::HashSet;
-use trailkit_ui::tooltip::{draw_tooltip, draw_tooltip_with};
+use trailkit_ui::tooltip::{draw_tooltip, draw_tooltip_with_border};
 
-use nexus::imgui::{MouseButton, StyleColor, Ui, WindowHoveredFlags};
+use nexus::imgui::{MouseButton, Ui, WindowHoveredFlags};
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText, Text},
     list_filter::ListFilter,
@@ -281,7 +281,7 @@ impl NoteList {
                 ui.button_with_size(icon.as_str(&mut buffer), [width, 0.0])
             };
             if ui.is_item_hovered() {
-                draw_tooltip(ui, tooltip.get(language));
+                draw_tooltip(ui, theme, tooltip.get(language));
             }
             if clicked {
                 clicked_action = Some(action);
@@ -343,7 +343,7 @@ impl NoteList {
             } else if self.drag_blocked_by_search
                 && ui.is_mouse_dragging_with_threshold(MouseButton::Left, DRAG_THRESHOLD)
             {
-                draw_tooltip(ui, search.texts.clear_search_to_move);
+                draw_tooltip(ui, theme, search.texts.clear_search_to_move);
             }
         } else if let Some(node) = pressed {
             self.drag = Some(TreeDrag {
@@ -508,8 +508,7 @@ impl NoteList {
         } else {
             theme.accent.text
         };
-        let _border = ui.push_style_color(StyleColor::Border, border.to_array());
-        draw_tooltip_with(ui, || {
+        draw_tooltip_with_border(ui, theme, border, || {
             if is_impossible {
                 // A status text in the danger color (Q277, Q325).
                 draw_icon_text(

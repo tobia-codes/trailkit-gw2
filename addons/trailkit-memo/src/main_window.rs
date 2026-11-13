@@ -374,7 +374,7 @@ impl MemoWindow {
         self.handle_text_scale_keys(ui);
         self.handle_search_keys(ui);
         self.update_search();
-        self.update_text_scale(ui, language);
+        self.update_text_scale(ui, language, theme);
         self.draw_problem(ui, language, theme);
 
         // Only a list that is drawn claims the key again below.

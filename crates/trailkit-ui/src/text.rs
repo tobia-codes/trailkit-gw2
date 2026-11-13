@@ -147,7 +147,7 @@ pub fn draw_truncated_text(
     };
     // The tooltip uses the regular tooltip font, not the text's style.
     if truncated && ui.is_item_hovered() {
-        draw_tooltip(ui, text);
+        draw_tooltip(ui, theme, text);
     }
     truncated
 }

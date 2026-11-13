@@ -563,7 +563,7 @@ fn draw_piece(ui: &Ui, piece: &str, span: &Span, theme: &Theme) -> Option<Markdo
         .build();
     if ui.is_item_hovered() {
         ui.set_mouse_cursor(Some(MouseCursor::Hand));
-        draw_tooltip(ui, crate::markdown::link_target_label(url));
+        draw_tooltip(ui, theme, crate::markdown::link_target_label(url));
     }
     ui.is_item_clicked()
         .then(|| MarkdownAction::OpenLink(url.clone()))

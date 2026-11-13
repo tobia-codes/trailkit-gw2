@@ -72,6 +72,8 @@ pub struct Theme {
     pub menu: MenuMetrics,
     /// Corner radii (`radius.*`, R71).
     pub radius: Radii,
+    /// Shadows (`shadow.*`, Q327): only tooltips have one.
+    pub shadow: ShadowTokens,
     /// Font sizes and line height (`font.*`).
     pub typography: Typography,
 }
@@ -211,10 +213,22 @@ impl ChipColors {
     }
 }
 
+/// Shadow tokens (Q327, Q328): the one exception to "no shadows" (R71) is
+/// the tooltip, which floats over panes and rows and was hard to see. ImGui
+/// cannot blur, so a shadow is the same shape drawn offset and darker.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ShadowTokens {
+    /// `shadow.popup`: the color of a tooltip's shadow.
+    pub popup: Color,
+    /// `shadow.popup.offset`: how far the shadow reaches below the tooltip,
+    /// in pixels.
+    pub popup_offset: f32,
+}
+
 /// Corner radii in pixels (R71).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Radii {
-    /// `radius.sm` (4): chips, badges, scrollbar grab.
+    /// `radius.sm` (4): chips, badges, scrollbar grab, tooltips (Q328).
     pub small: f32,
     /// `radius.md` (6): buttons, inputs, dropdowns, rows, menu items.
     pub medium: f32,
@@ -458,6 +472,10 @@ impl Theme {
             subtle: Color::from_rgb_hex(0xFFFFFF).with_alpha(0.06),
             width: 1.0,
         },
+        shadow: ShadowTokens {
+            popup: Color::from_rgb_hex(0x000000).with_alpha(0.55),
+            popup_offset: 2.0,
+        },
         reset: ResetColors {
             daily: Color::from_rgb_hex(0xE8B055),
             weekly: Color::from_rgb_hex(0xB8A6F0),
@@ -542,6 +560,10 @@ impl Theme {
             // About 8 % warm black over the light surfaces.
             subtle: Color::from_rgb_hex(0x1E180C).with_alpha(0.08),
             width: 1.0,
+        },
+        shadow: ShadowTokens {
+            popup: Color::from_rgb_hex(0x1E180C).with_alpha(0.18),
+            popup_offset: 2.0,
         },
         reset: ResetColors {
             daily: Color::from_rgb_hex(0x8A5A10),

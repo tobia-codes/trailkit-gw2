@@ -195,7 +195,7 @@ pub fn draw_icon_button_with_state(
                 color,
             );
             if ui.is_item_hovered() {
-                draw_tooltip(ui, tooltip);
+                draw_tooltip(ui, theme, tooltip);
             }
             false
         }
@@ -246,7 +246,7 @@ fn draw_icon_button_with_hover(
     };
     draw_icon_centered(ui, icon, [ui.item_rect_min(), ui.item_rect_max()], color);
     if !tooltip.is_empty() && ui.is_item_hovered() {
-        draw_tooltip(ui, tooltip);
+        draw_tooltip(ui, theme, tooltip);
     }
     clicked
 }

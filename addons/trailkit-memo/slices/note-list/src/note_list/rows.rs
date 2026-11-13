@@ -237,7 +237,11 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut RowContext<'_, '_>) {
             count,
         );
         if is_row_hovered && ui.io().mouse_pos[0] >= count_x {
-            draw_tooltip(ui, search.texts.content_hits.replace("{count}", count));
+            draw_tooltip(
+                ui,
+                context.theme,
+                search.texts.content_hits.replace("{count}", count),
+            );
         }
         title_end = count_x - context.theme.spacing.small;
     }
@@ -275,7 +279,7 @@ fn handle_hovered_row(
     context: &mut RowContext<'_, '_>,
 ) {
     if label != title && !label.is_empty() {
-        draw_tooltip(ui, title);
+        draw_tooltip(ui, context.theme, title);
     }
     if ui.is_mouse_double_clicked(MouseButton::Left) {
         context.rename_steps.push(RenameStep::Start(node));

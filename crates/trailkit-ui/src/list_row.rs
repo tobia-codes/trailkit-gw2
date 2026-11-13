@@ -87,7 +87,7 @@ pub fn draw_list_row(ui: &Ui, theme: &Theme, row: &ListRow<'_>) -> ListRowRespon
     draw_row_state_in(ui, theme, row.selected, rect);
     let title_truncated = draw_row_texts(ui, theme, row, rect);
     if title_truncated && ui.is_item_hovered() {
-        draw_tooltip(ui, row.title);
+        draw_tooltip(ui, theme, row.title);
     }
     ListRowResponse {
         clicked,

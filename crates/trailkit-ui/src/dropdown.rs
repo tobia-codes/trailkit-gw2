@@ -116,7 +116,7 @@ pub fn draw_dropdown(
         }
     });
     if is_hovered && !is_open {
-        draw_tooltip(ui, tooltip);
+        draw_tooltip(ui, theme, tooltip);
     }
     let border = tint.unwrap_or(if is_open {
         theme.border.focus
