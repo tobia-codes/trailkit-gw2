@@ -318,7 +318,7 @@ pub fn chip_tooltip(
     context: ChipContext<'_>,
     copyable: bool,
 ) {
-    draw_tooltip_with(ui, || {
+    draw_tooltip_with(ui, theme, || {
         match chip.link {
             Ok(ChatLink::Coins { .. }) => {}
             Ok(link) => {

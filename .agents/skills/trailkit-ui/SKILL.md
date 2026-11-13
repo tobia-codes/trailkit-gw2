@@ -31,7 +31,9 @@ Read only reference sections relevant to the task, rather than every linked file
 2. **Calm, flat, always rounded (nothing is square, hover states included: R81)** — ink-tinted dark and parchment-warm
    light surfaces with one brass accent spent sparingly (R71); radii 4 / 6 /
    10 by element size; windows, panes, popups and dialogs get a faint 1 px
-   `border.subtle` outline (memo M103); no highlight edges, no shadows.
+   `border.subtle` outline (memo M103); no highlight edges, no shadows —
+   except tooltips: `border` outline, `radius.sm` and a hard 2 px
+   `shadow.popup` below, so they stand out from panes and rows (Q327).
    Clear hierarchy through spacing, typography and color, not decoration.
 3. **Clarity** — every control has a visible label; icons always have a
    tooltip; destructive actions ask for confirmation; unsaved changes warn

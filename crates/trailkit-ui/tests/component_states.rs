@@ -19,14 +19,19 @@ use trailkit_ui::{
     dropdown::draw_dropdown,
     empty_state::{EmptyState, EmptyStateButtons, draw_empty_state},
     icons::Icon,
+    list_row::{ListRow, ListRowDetail, draw_list_row},
     menu::{MenuItemTone, begin_submenu, draw_menu_item, draw_menu_item_with_icon, draw_popup},
     pane::draw_pane,
     separator::draw_compact_separator,
     splitter::draw_vertical_splitter,
+    status_line::{Status, draw_status_line},
     style_scope::StyleScope,
     text::{TextStyle, draw_icon, draw_text, draw_text_wrapped, draw_truncated_text},
     theme::{Theme, ThemeKind},
-    title_bar::{TitleBarState, TitleBarTexts, TitleBarToggle, draw_window as draw_title_bar},
+    title_bar::{
+        TitleBarState, TitleBarTexts, TitleBarToggle, TogglePlacement,
+        draw_window as draw_title_bar,
+    },
     toast::{Toast, ToastAction, ToastExtras, ToastTone, draw_toast, draw_toast_with_extras},
 };
 use trailkit_ui_testing::{
@@ -563,11 +568,13 @@ fn every_title_bar_state() {
             icon: Icon::SEARCH,
             tooltip: "Tools",
             active: false,
+            placement: TogglePlacement::Leading,
         },
         TitleBarToggle {
             icon: Icon::X,
             tooltip: "Note list",
             active: true,
+            placement: TogglePlacement::Leading,
         },
     ];
     let texts = TitleBarTexts {
@@ -629,6 +636,66 @@ fn every_title_bar_state() {
     }
 }
 
+/// The help `?` at the right end of the title row (memo Q171), next to a
+/// leading toggle, at rest, hovered, and active while the help is open.
+#[test]
+fn every_trailing_title_bar_toggle_state() {
+    let size = [320.0, 120.0];
+    let texts = TitleBarTexts {
+        title: "Notes",
+        collapse: "Collapse",
+        expand: "Expand",
+        close: "Close",
+    };
+    for (kind, theme_name) in THEMES {
+        let theme = kind.theme();
+        for (state_name, help_open, position) in [
+            ("rest", false, [160.0, 100.0]),
+            ("hover", false, [size[0] - 100.0, 25.0]),
+            ("active", true, [160.0, 100.0]),
+        ] {
+            let toggles = [
+                TitleBarToggle {
+                    icon: Icon::MENU,
+                    tooltip: "Menu",
+                    active: false,
+                    placement: TogglePlacement::Leading,
+                },
+                TitleBarToggle {
+                    icon: Icon::CIRCLE_HELP,
+                    tooltip: "Help",
+                    active: help_open,
+                    placement: TogglePlacement::Trailing,
+                },
+            ];
+            let mut state = TitleBarState::default();
+            let mut open = true;
+            let mut harness = UiHarness::new(size);
+            let mut draw = |ui: &Ui| {
+                let _style = StyleScope::push_with_cursor_extent(ui, &theme, None);
+                let _clicked = draw_title_bar(
+                    ui,
+                    &theme,
+                    Window::new("Notes###title")
+                        .position([0.0, 0.0], Condition::Always)
+                        .size(size, Condition::Always),
+                    texts,
+                    &toggles,
+                    &mut state,
+                    &mut open,
+                    || {},
+                );
+            };
+            assert_state(
+                &mut harness,
+                ("title-bar-help", state_name, theme_name),
+                &mouse(position, false),
+                &mut draw,
+            );
+        }
+    }
+}
+
 #[test]
 fn every_splitter_state() {
     let size = [260.0, 120.0];
@@ -663,6 +730,110 @@ fn every_splitter_state() {
             &mut harness,
             names("pressed"),
             &mouse(over_splitter, true),
+            &mut draw,
+        );
+    }
+}
+
+/// Every status in the Body style, and a long text wrapped in the Small
+/// style with its lines hanging under the text (R96).
+#[test]
+fn every_status_line_state() {
+    let long = "The log could not be saved because the Downloads folder is not writable.";
+    for (kind, theme_name) in THEMES {
+        let theme = kind.theme();
+        let size = [300.0, 130.0];
+        let mut harness = UiHarness::new(size);
+        let mut draw = |ui: &Ui| {
+            in_window(ui, &theme, size, || {
+                draw_status_line(ui, &theme, Status::Success, "Saved", TextStyle::Body);
+                draw_status_line(ui, &theme, Status::Warning, "Check it", TextStyle::Body);
+                draw_status_line(ui, &theme, Status::Danger, "Failed", TextStyle::Body);
+            });
+        };
+        assert_state(
+            &mut harness,
+            ("status-line", "body", theme_name),
+            &mouse([290.0, 120.0], false),
+            &mut draw,
+        );
+        // Only one harness may exist at a time.
+        drop(harness);
+        let size = [220.0, 110.0];
+        let mut harness = UiHarness::new(size);
+        let mut draw = |ui: &Ui| {
+            in_window(ui, &theme, size, || {
+                draw_status_line(ui, &theme, Status::Danger, long, TextStyle::Small);
+            });
+        };
+        assert_state(
+            &mut harness,
+            ("status-line", "small-wrapped", theme_name),
+            &mouse([210.0, 100.0], false),
+            &mut draw,
+        );
+    }
+}
+
+/// The list row: a plain row, a selected one, a group with count and detail
+/// line, a shortened title and an urgent detail, at rest and hovered.
+#[test]
+fn every_list_row_state() {
+    let size = [240.0, 190.0];
+    for (kind, theme_name) in THEMES {
+        let theme = kind.theme();
+        let mut harness = UiHarness::new(size);
+        let mut draw = |ui: &Ui| {
+            in_window(ui, &theme, size, || {
+                let row = |id, selected, title, style, trailing, detail| ListRow {
+                    id,
+                    selected,
+                    title,
+                    title_style: style,
+                    trailing,
+                    detail,
+                };
+                let days = |text, color| Some(ListRowDetail { text, color });
+                for list_row in [
+                    row("##a", false, "Daily chores", TextStyle::Body, None, None),
+                    row("##b", true, "Farming route", TextStyle::Body, None, None),
+                    row(
+                        "##c",
+                        false,
+                        "Guild notes",
+                        TextStyle::BodyStrong,
+                        Some("12"),
+                        days("29 days left", theme.text.secondary),
+                    ),
+                    row(
+                        "##d",
+                        false,
+                        "A very long title that cannot fit the row",
+                        TextStyle::Body,
+                        None,
+                        days("3 days left", theme.status.danger),
+                    ),
+                ] {
+                    draw_list_row(ui, &theme, &list_row);
+                }
+            });
+        };
+        assert_state(
+            &mut harness,
+            ("list-row", "rest", theme_name),
+            &mouse([230.0, 180.0], false),
+            &mut draw,
+        );
+        assert_state(
+            &mut harness,
+            ("list-row", "hover", theme_name),
+            &mouse([60.0, 14.0], false),
+            &mut draw,
+        );
+        assert_state(
+            &mut harness,
+            ("list-row", "hover-truncated", theme_name),
+            &mouse([60.0, 150.0], false),
             &mut draw,
         );
     }

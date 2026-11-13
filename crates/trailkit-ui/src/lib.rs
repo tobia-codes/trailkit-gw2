@@ -24,6 +24,7 @@ pub mod chat_link;
 pub mod color;
 pub mod editor;
 pub mod fonts;
+pub mod help_topics;
 pub mod icons;
 pub mod markdown;
 pub mod text;
@@ -45,11 +46,19 @@ pub mod font_registry;
 #[cfg(windows)]
 pub mod glyph_metrics;
 #[cfg(windows)]
+pub mod help_window;
+#[cfg(windows)]
+pub mod list_row;
+#[cfg(windows)]
 pub mod markdown_view;
 #[cfg(windows)]
 pub mod menu;
 #[cfg(windows)]
+pub mod page;
+#[cfg(windows)]
 pub mod pane;
+#[cfg(windows)]
+pub mod pane_columns;
 #[cfg(windows)]
 pub mod selection_bar;
 #[cfg(windows)]
@@ -58,6 +67,8 @@ pub mod separator;
 pub mod spinner;
 #[cfg(windows)]
 pub mod splitter;
+#[cfg(windows)]
+pub mod status_line;
 #[cfg(windows)]
 pub mod style_scope;
 #[cfg(windows)]

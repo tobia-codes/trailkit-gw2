@@ -6,7 +6,7 @@ use jiff::Timestamp;
 use nexus::imgui::{ChildWindow, Ui};
 use trailkit_ui::{
     button::ButtonState,
-    markdown_view::{MarkdownAction, open_web_link},
+    markdown_view::{MarkdownAction, open_link},
     separator::draw_separator,
     text::{TextStyle, draw_text_wrapped},
     theme::Theme,
@@ -94,7 +94,7 @@ impl MemoWindow {
         // A trashed note cannot change: only links open.
         for action in output.actions {
             if let NoteViewAction::Markdown(MarkdownAction::OpenLink(url)) = action {
-                open_web_link(&url);
+                open_link(&url);
             }
         }
     }

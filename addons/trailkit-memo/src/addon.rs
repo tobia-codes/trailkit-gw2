@@ -1,4 +1,5 @@
-//! Nexus glue: addon export, load/unload and render callback (Windows only).
+//! Nexus glue: addon export, load/unload and registrations (Windows only);
+//! the render callbacks are in `render`.
 //!
 //! Threading (nexus-addon-dev skill §2): the keybind callback only flips an
 //! atomic; the render callback returns after one relaxed atomic load while the
@@ -36,7 +37,6 @@ use nexus::{
     gui::{
         RenderType, deregister_close_on_escape, register_close_on_escape, register_render, render,
     },
-    imgui::{Condition, Window},
     keybind::{keybind_handler, register_keybind_with_string},
     localization::{set_translation, translate},
     paths::get_addon_dir,
@@ -50,30 +50,29 @@ use trailkit_storage::{
     AddonName, BACKUPS_DIRECTORY_NAME, DocumentStore, LoadOutcome, ReadOnlyReason,
     TRAILKIT_DIRECTORY_NAME, TrailkitDirectory,
 };
-use trailkit_ui::{
-    font_registry::{follow_body_size, font_size_of, register_fonts},
-    style_scope::StyleScope,
-    text::{TextStyle, draw_text, draw_text_wrapped},
-    theme::{ThemeKind, Typography},
-    title_bar::{TitleBarState, draw_window},
-};
+use trailkit_ui::{font_registry::register_fonts, theme::ThemeKind, title_bar::TitleBarState};
 
-use crate::main_window::{MemoWindow, NotesProblem, minimum_window_width, title_bar_texts};
+use crate::help_document::help_document;
+use crate::main_window::{MemoWindow, NotesProblem};
 use trailkit_memo_shared::i18n::LocalizedText;
 use trailkit_memo_shared::{
     i18n::{Language, Text},
     note_tree::NotesDocument,
-    settings::{QuickAccessIcon, Settings, TextScale},
+    settings::{QuickAccessIcon, Settings},
     storage_worker::{
         LoadedDocuments, SaveConnection, SavingAllowed, SettingsSummary, StorageSaver,
         StorageWorker, WorkerTiming, log_load_outcome,
     },
 };
 
+mod help;
 mod logging;
+mod render;
 mod storage;
 
-use self::storage::{receive_loaded_notes, restart_storage_worker_if_asked, start_storage};
+use self::help::MemoHelp;
+
+use self::storage::start_storage;
 
 nexus::export! {
     name: "trailkit-memo",
@@ -194,6 +193,16 @@ const MESSAGE_PASSED: u32 = 1;
 /// Effective UI language, stored as the [`Language`] discriminant.
 static LANGUAGE: AtomicU8 = AtomicU8::new(Language::English as u8);
 
+/// Memo's help window (R100); created in `load`, dropped in `unload`. The
+/// render thread only uses `try_lock`.
+static HELP: Mutex<Option<MemoHelp>> = Mutex::new(None);
+
+/// Whether the help window is open, so the render callback also draws while
+/// only the help window is shown. Written by the render callback, and set to
+/// `false` by Nexus on Escape (close on Escape), which the render callback
+/// then applies to the window.
+static HELP_OPEN: AtomicBool = AtomicBool::new(false);
+
 /// Collapsed state of the main window's title bar (R71); render thread only.
 static TITLE_BAR: Mutex<TitleBarState> = Mutex::new(TitleBarState::NEW);
 
@@ -231,6 +240,8 @@ fn load() {
     // the DLL goes away. `AtomicBool` has the same in-memory representation
     // as `bool`, and Nexus only stores `false` into it (a single-byte write).
     register_close_on_escape(window_title, unsafe { &mut *VISIBLE.as_ptr() });
+    // SAFETY: as above, with the static `HELP_OPEN`.
+    register_close_on_escape(help::WINDOW_ID, unsafe { &mut *HELP_OPEN.as_ptr() });
 
     for language in Language::ALL {
         set_translation(
@@ -247,14 +258,21 @@ fn load() {
     });
     register_keybind_with_string(KEYBIND_TOGGLE, on_toggle, UNBOUND).revert_on_unload();
     register_wnd_proc(catch_window_keys).revert_on_unload();
+    // UI strings plus the help with the privacy policy, which the help
+    // window draws; this also builds both help texts off the render thread.
     register_fonts(
         GLYPHS_KEY,
-        &crate::all_texts(),
+        &(crate::all_texts() + help_document(Language::English) + help_document(Language::German)),
         &ThemeKind::default().theme().typography,
     );
 
     NEXUS_LINK.store(get_nexus_link().cast_mut(), Ordering::Release);
 
+    if let Ok(mut help) = HELP.lock() {
+        *help = Some(MemoHelp::new(
+            trailkit_directory.as_ref().map(TrailkitDirectory::logs),
+        ));
+    }
     let settings = start_storage(trailkit_directory);
 
     if settings.quick_access_icon == QuickAccessIcon::Shown {
@@ -270,7 +288,16 @@ fn load() {
         .revert_on_unload();
     }
 
-    register_render(RenderType::Render, render!(|ui| render_main_window(ui))).revert_on_unload();
+    register_render(
+        RenderType::Render,
+        render!(|ui| render::render_main_window(ui)),
+    )
+    .revert_on_unload();
+    register_render(
+        RenderType::OptionsRender,
+        render!(|ui| render::render_options_tab(ui)),
+    )
+    .revert_on_unload();
 }
 
 /// Called by Nexus before the addon is unloaded. Every registration was made
@@ -281,6 +308,7 @@ fn unload() {
     if let Some(window_title) = WINDOW_TITLE.get() {
         deregister_close_on_escape(window_title);
     }
+    deregister_close_on_escape(help::WINDOW_ID);
     NEXUS_LINK.store(std::ptr::null_mut(), Ordering::Release);
     // Unsaved edits become a draft; the worker writes it while shutting down (M54).
     if let Ok(mut notes) = NOTES.lock()
@@ -295,6 +323,10 @@ fn unload() {
     if let Ok(mut notes) = NOTES.lock() {
         *notes = NotesState::Unavailable;
     }
+    if let Ok(mut help) = HELP.lock() {
+        *help = None;
+    }
+    HELP_OPEN.store(false, Ordering::Relaxed);
     // Last, so every line above still reaches the file; writes `session_end`.
     logging::stop_logging();
 }
@@ -330,94 +362,6 @@ fn detect_nexus_language() -> Option<String> {
     translate(LANGUAGE_PROBE_KEY).filter(|code| code != LANGUAGE_PROBE_KEY)
 }
 
-/// Draws the main window. Returns immediately while the window is closed, and
-/// skips drawing (keeping it open) outside gameplay unless the settings allow it.
-fn render_main_window(ui: &nexus::imgui::Ui) {
-    // Stay false on every path that does not draw the window, so the game keeps
-    // these keys while memo is hidden.
-    SEARCH_KEY_ARMED.store(false, Ordering::Relaxed);
-    DELETE_KEY_ARMED.store(false, Ordering::Relaxed);
-    reopen_hidden_window_if_needed();
-    if !VISIBLE.load(Ordering::Relaxed) || !settings().allows_drawing(is_gameplay()) {
-        return;
-    }
-    // Never wait on the render thread; if `load`/`unload` holds the lock, skip a frame.
-    let Ok(mut notes) = NOTES.try_lock() else {
-        return;
-    };
-    receive_loaded_notes(&mut notes);
-    let text_scale = match &*notes {
-        NotesState::Ready(window) => window.text_scale(),
-        NotesState::Loading { .. } | NotesState::Unavailable => settings().text_scale,
-    };
-    // Theme selection comes with the settings window (step 8); until then the default theme.
-    let theme = ThemeKind::default().theme();
-    follow_nexus_font_size(text_scale, &theme.typography);
-    let language = Language::from_u8(LANGUAGE.load(Ordering::Relaxed));
-    let title = WINDOW_TITLE
-        .get()
-        .map_or("###trailkit-memo", String::as_str);
-
-    let _theme = StyleScope::push(ui, &theme);
-    let mut open = true;
-    let mut title_bar = TITLE_BAR
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
-    // The memo toggle (window menu; R78) exists once notes are loaded.
-    let toggles = match &*notes {
-        NotesState::Ready(window) => Some(window.title_bar_toggles(language)),
-        NotesState::Loading { .. } | NotesState::Unavailable => None,
-    };
-    let clicked_toggle = draw_window(
-        ui,
-        &theme,
-        Window::new(title)
-            .size([640.0, 420.0], Condition::FirstUseEver)
-            .size_constraints([minimum_window_width(ui), 0.0], [f32::MAX, f32::MAX]),
-        title_bar_texts(language),
-        toggles.as_ref().map_or(&[][..], |toggles| &toggles[..]),
-        &mut title_bar,
-        &mut open,
-        || match &mut *notes {
-            NotesState::Loading { .. } => {
-                draw_text(ui, &theme, TextStyle::Body, Text::Loading.get(language));
-            }
-            NotesState::Unavailable => draw_text_wrapped(
-                ui,
-                &theme,
-                TextStyle::Body,
-                Text::NotesInaccessible.get(language),
-            ),
-            NotesState::Ready(window) => {
-                if SEARCH_ESCAPED.swap(false, Ordering::Relaxed) {
-                    window.clear_search_by_escape();
-                }
-                if SEARCH_KEY_PRESSED.swap(false, Ordering::Relaxed) {
-                    window.toggle_search_by_key();
-                }
-                if DELETE_KEY_PRESSED.swap(false, Ordering::Relaxed) {
-                    window.delete_selected_by_key(language);
-                }
-                window.draw(ui, language, &theme);
-            }
-        },
-    );
-    drop(title_bar);
-    if let NotesState::Ready(window) = &mut *notes {
-        if let Some(index) = clicked_toggle {
-            window.apply_title_bar_toggle(index);
-        }
-        window.draw_dialog(ui, language, &theme);
-        restart_storage_worker_if_asked(window);
-    }
-    apply_close_request(&mut notes, open);
-    if let NotesState::Ready(window) = &*notes {
-        let visible = VISIBLE.load(Ordering::Relaxed);
-        SEARCH_KEY_ARMED.store(window.takes_search_key() && visible, Ordering::Relaxed);
-        DELETE_KEY_ARMED.store(window.takes_delete_key() && visible, Ordering::Relaxed);
-    }
-}
-
 /// Catches memo's keys that would not reach ImGui on the input thread (M174,
 /// M175), while they belong to the window; otherwise the game gets them. Only
 /// flips atomics (nexus-addon-dev skill §2).
@@ -444,59 +388,4 @@ extern "C-unwind" fn catch_window_keys(
         }
     }
     MESSAGE_PASSED
-}
-
-/// Shows the hidden window again when Nexus hid it too early: Escape in the
-/// focused, non-empty search field only clears the search (M124), and with
-/// unsaved changes a keybind or quick access click asks first (M54).
-fn reopen_hidden_window_if_needed() {
-    if !VISIBLE.load(Ordering::Relaxed) && SEARCH_TAKES_ESCAPE.swap(false, Ordering::Relaxed) {
-        VISIBLE.store(true, Ordering::Relaxed);
-        SEARCH_ESCAPED.store(true, Ordering::Relaxed);
-    }
-    if !VISIBLE.load(Ordering::Relaxed) && UNSAVED_CHANGES.load(Ordering::Relaxed) {
-        VISIBLE.store(true, Ordering::Relaxed);
-        CLOSE_REQUESTED.store(true, Ordering::Relaxed);
-    }
-}
-
-/// Handles a close request of this frame; `open` is false after a click on the
-/// title bar's close button, which closes the window menu along with it.
-fn apply_close_request(notes: &mut NotesState, open: bool) {
-    if !open && let NotesState::Ready(window) = notes {
-        window.close_window_menu();
-    }
-    let close_requested = !open || CLOSE_REQUESTED.swap(false, Ordering::Relaxed);
-    let may_close = match notes {
-        NotesState::Ready(window) => {
-            let may_close =
-                window.take_close_approval() || (close_requested && window.request_close());
-            UNSAVED_CHANGES.store(window.has_unsaved_changes(), Ordering::Relaxed);
-            SEARCH_TAKES_ESCAPE.store(window.search_takes_escape(), Ordering::Relaxed);
-            may_close
-        }
-        _ => close_requested,
-    };
-    if may_close {
-        UNSAVED_CHANGES.store(false, Ordering::Relaxed);
-        SEARCH_TAKES_ESCAPE.store(false, Ordering::Relaxed);
-        VISIBLE.store(false, Ordering::Relaxed);
-    }
-}
-
-/// Resizes the shared fonts when Nexus' `FontUI` size or the memo text
-/// scale changes (M35, M79): body size = `FontUI` size × `text_scale`, the
-/// other sizes are `typography`'s factors of it (R96).
-fn follow_nexus_font_size(text_scale: TextScale, typography: &Typography) {
-    let link = NEXUS_LINK.load(Ordering::Acquire);
-    if link.is_null() {
-        return;
-    }
-    // SAFETY: `link` is non-null and points to Nexus' link data, which lives as
-    // long as Nexus (cleared in `unload`). `font_ui` is either null or a font
-    // of the current atlas; `font_size_of` only reads its size.
-    let size = unsafe { font_size_of(std::ptr::addr_of!((*link).font_ui).read_volatile()) };
-    if let Some(size) = size {
-        follow_body_size(size * text_scale.factor(), typography);
-    }
 }

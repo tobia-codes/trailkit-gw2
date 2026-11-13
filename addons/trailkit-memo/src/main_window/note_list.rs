@@ -112,7 +112,7 @@ impl MemoWindow {
                 return;
             };
             let lines = reset_tooltip_lines(period, language, Timestamp::now());
-            draw_tooltip_with(ui, || {
+            draw_tooltip_with(ui, theme, || {
                 for line in &lines {
                     draw_text(ui, theme, TextStyle::Body, line);
                 }

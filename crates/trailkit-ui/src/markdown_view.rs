@@ -73,7 +73,7 @@ impl<'query> SearchHighlight<'query> {
 pub enum MarkdownAction {
     /// A task checkbox was clicked; toggle it with `markdown::toggle_task`.
     ToggleTask(TaskMarker),
-    /// A web link was clicked; open it with [`open_web_link`].
+    /// A web or e-mail link was clicked; open it with [`open_link`].
     OpenLink(String),
     /// A chat-link chip was clicked and its code copied to the clipboard
     /// (memo plan M75); show "Copied" by passing it as
@@ -208,13 +208,14 @@ pub fn draw_markdown(
     action
 }
 
-/// Opens `url` in the default browser if it is a web link (M37); other
-/// schemes are ignored. Logs a failure.
-pub fn open_web_link(url: &str) {
-    if !crate::markdown::is_web_link(url) {
+/// Opens `url` if it is openable (M37, M183): a web link in the default
+/// browser, an e-mail link in the default mail program; other schemes are
+/// ignored. Logs a failure.
+pub fn open_link(url: &str) {
+    if !crate::markdown::is_openable_link(url) {
         return;
     }
-    // `url.dll` hands the URL to the default browser without a shell, so the
+    // `url.dll` hands the URL to its default program without a shell, so the
     // URL cannot inject commands.
     let result = std::process::Command::new("rundll32")
         .args(["url.dll,FileProtocolHandler", url])
@@ -562,7 +563,7 @@ fn draw_piece(ui: &Ui, piece: &str, span: &Span, theme: &Theme) -> Option<Markdo
         .build();
     if ui.is_item_hovered() {
         ui.set_mouse_cursor(Some(MouseCursor::Hand));
-        draw_tooltip(ui, url);
+        draw_tooltip(ui, theme, crate::markdown::link_target_label(url));
     }
     ui.is_item_clicked()
         .then(|| MarkdownAction::OpenLink(url.clone()))

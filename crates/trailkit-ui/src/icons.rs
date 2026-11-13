@@ -111,8 +111,18 @@ impl Icon {
     pub const CIRCLE_ALERT: Self = Self('\u{e077}');
     /// `circle-check` (font name `check-circle-2`): a success toast (memo M180).
     pub const CIRCLE_CHECK: Self = Self('\u{e226}');
+    /// `download`: exports the log (help window, R100).
+    pub const DOWNLOAD: Self = Self('\u{e0b2}');
+    /// `external-link`: after the label of a button that leaves the game,
+    /// e.g. the GitHub report (R100, `lay-button-icon-position`).
+    pub const EXTERNAL_LINK: Self = Self('\u{e0b9}');
+    /// `info`: an informational status line (R100).
+    pub const INFO: Self = Self('\u{e0f9}');
+    /// `circle-help`: opens the help window
+    /// (Q171, R100).
+    pub const CIRCLE_HELP: Self = Self('\u{e082}');
     /// Every icon above; keep in sync when adding one.
-    pub const ALL: [Self; 48] = [
+    pub const ALL: [Self; 52] = [
         Self::FOLDER_INPUT,
         Self::MENU,
         Self::FILE_TEXT,
@@ -161,6 +171,10 @@ impl Icon {
         Self::BAN,
         Self::CIRCLE_ALERT,
         Self::CIRCLE_CHECK,
+        Self::DOWNLOAD,
+        Self::EXTERNAL_LINK,
+        Self::INFO,
+        Self::CIRCLE_HELP,
     ];
 
     /// The glyph as a character of the icon font.

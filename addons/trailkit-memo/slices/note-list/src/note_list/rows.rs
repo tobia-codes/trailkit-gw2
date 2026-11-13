@@ -15,7 +15,7 @@ use trailkit_ui::{
     font_registry::FontScope,
     fonts::FontRole,
     glyph_metrics::{draw_glyph_at, glyph_ink_box, glyph_visible_ink},
-    selection_bar::{draw_row_highlight, draw_selection_bar, hide_square_row_highlight},
+    selection_bar::{draw_row_state, hide_square_row_highlight},
     style_scope::StyleScope,
     text_layout::{format_count, truncate_to_width},
     text_search::SearchQuery,
@@ -99,10 +99,7 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut RowContext<'_, '_>) {
                 .opened(expanded, Condition::Always)
                 .push(ui)
         };
-        draw_row_highlight(ui, context.theme, context.selected == Some(node));
-        if context.selected == Some(node) {
-            draw_selection_bar(ui, context.theme);
-        }
+        draw_row_state(ui, context.theme, context.selected == Some(node));
         draw_tree_arrow(
             ui,
             context.theme,
@@ -203,10 +200,7 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut RowContext<'_, '_>) {
             .flags(flags)
             .push(ui)
     };
-    draw_row_highlight(ui, context.theme, context.selected == Some(node));
-    if context.selected == Some(node) {
-        draw_selection_bar(ui, context.theme);
-    }
+    draw_row_state(ui, context.theme, context.selected == Some(node));
     let row_start = [row_start[0], ui.item_rect_min()[1]];
     record_row(ui, node, RowKind::Note, row_start[0], context);
     // Ask the tree node itself: it spans the whole row, and once a click
@@ -243,7 +237,11 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut RowContext<'_, '_>) {
             count,
         );
         if is_row_hovered && ui.io().mouse_pos[0] >= count_x {
-            draw_tooltip(ui, search.texts.content_hits.replace("{count}", count));
+            draw_tooltip(
+                ui,
+                context.theme,
+                search.texts.content_hits.replace("{count}", count),
+            );
         }
         title_end = count_x - context.theme.spacing.small;
     }
@@ -281,7 +279,7 @@ fn handle_hovered_row(
     context: &mut RowContext<'_, '_>,
 ) {
     if label != title && !label.is_empty() {
-        draw_tooltip(ui, title);
+        draw_tooltip(ui, context.theme, title);
     }
     if ui.is_mouse_double_clicked(MouseButton::Left) {
         context.rename_steps.push(RenameStep::Start(node));

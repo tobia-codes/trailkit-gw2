@@ -3,8 +3,9 @@
 //! ImGui's own title bar has a filled triangle, a drawn cross and a band in
 //! its own color. Trailkit windows hide it (`NO_TITLE_BAR`) and draw this
 //! one instead, on the window background (ROADMAP R78): the addon's own
-//! toggles and the title in bold on the left, a Lucide chevron that
-//! collapses the window and a Lucide `x` that closes it on the right. The
+//! leading toggles and the title in bold on the left, its trailing toggles
+//! (e.g. the help `?`), a Lucide chevron that collapses the window and a
+//! Lucide `x` that closes it on the right. The
 //! row uses the window padding, so the first and the last button line up
 //! with the panes below. ImGui still moves the window when its empty areas
 //! are dragged; windows without a title bar are exempt from
@@ -35,8 +36,20 @@ pub struct TitleBarTexts<'texts> {
     pub close: &'texts str,
 }
 
-/// A toggle of the addon on the left of the title (e.g. memo's window menu,
-/// memo M166), drawn with [`draw_icon_toggle`].
+/// Where a [`TitleBarToggle`] sits in the title row.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum TogglePlacement {
+    /// On the left of the title, e.g. memo's window menu (memo M166).
+    #[default]
+    Leading,
+    /// At the right end, before the chevron and the close button, e.g. the
+    /// help `?` (memo Q171, ROADMAP R100).
+    Trailing,
+}
+
+/// A toggle of the addon in the title row (e.g. memo's window menu, memo
+/// M166, or the help `?`), drawn with [`draw_icon_toggle`]. Toggles are
+/// hidden while the window is collapsed.
 #[derive(Debug, Clone, Copy)]
 pub struct TitleBarToggle<'texts> {
     /// The Lucide icon.
@@ -45,6 +58,8 @@ pub struct TitleBarToggle<'texts> {
     pub tooltip: &'texts str,
     /// Whether what it toggles is shown.
     pub active: bool,
+    /// Left of the title or at the right end.
+    pub placement: TogglePlacement,
 }
 
 /// What the title bar remembers between frames: whether the window is
@@ -136,8 +151,9 @@ struct TitleRowClicks {
     toggle: Option<usize>,
 }
 
-/// Draws the addon toggles (hidden while collapsed), the bold title, the
-/// chevron and the close button in one row.
+/// Draws the leading toggles, the bold title, the trailing toggles (all
+/// toggles hidden while collapsed), the chevron and the close button in one
+/// row.
 fn draw_title_row(
     ui: &Ui,
     theme: &Theme,
@@ -153,16 +169,22 @@ fn draw_title_row(
     };
     let row_top = ui.cursor_screen_pos()[1];
     let mut title_x = ui.cursor_screen_pos()[0];
-    if !state.collapsed {
-        for (index, toggle) in toggles.iter().enumerate() {
-            if index > 0 {
-                ui.same_line_with_spacing(0.0, theme.spacing.small);
-            }
-            if draw_icon_toggle(ui, theme, toggle.icon, toggle.tooltip, toggle.active) {
-                clicks.toggle = Some(index);
-            }
-            title_x = ui.item_rect_max()[0] + theme.spacing.small;
+    let shown = |placement| {
+        toggles
+            .iter()
+            .enumerate()
+            .filter(move |(_, toggle)| !state.collapsed && toggle.placement == placement)
+    };
+    let mut any_leading = false;
+    for (index, toggle) in shown(TogglePlacement::Leading) {
+        if any_leading {
+            ui.same_line_with_spacing(0.0, theme.spacing.small);
         }
+        any_leading = true;
+        if draw_icon_toggle(ui, theme, toggle.icon, toggle.tooltip, toggle.active) {
+            clicks.toggle = Some(index);
+        }
+        title_x = ui.item_rect_max()[0] + theme.spacing.small;
     }
     let row_height = title_row_height(ui);
     let row_bottom = row_top + row_height;
@@ -182,12 +204,22 @@ fn draw_title_row(
     };
     let spacing = theme.spacing.extra_small;
     let right = ui.window_content_region_max()[0];
-    let buttons_width = icon_button_width(ui, icon) + spacing + icon_button_width(ui, Icon::X);
-    if toggles.is_empty() || state.collapsed {
+    let trailing_width: f32 = shown(TogglePlacement::Trailing)
+        .map(|(_, toggle)| icon_button_width(ui, toggle.icon) + spacing)
+        .sum();
+    let buttons_width =
+        trailing_width + icon_button_width(ui, icon) + spacing + icon_button_width(ui, Icon::X);
+    if !any_leading {
         // Nothing was drawn on the left yet: keep the row's height.
         ui.dummy([0.0, row_height]);
     }
     ui.same_line_with_pos(right - buttons_width);
+    for (index, toggle) in shown(TogglePlacement::Trailing) {
+        if draw_icon_toggle(ui, theme, toggle.icon, toggle.tooltip, toggle.active) {
+            clicks.toggle = Some(index);
+        }
+        ui.same_line_with_spacing(0.0, spacing);
+    }
     clicks.collapse_clicked = draw_icon_button(ui, theme, icon, tooltip);
     ui.same_line_with_spacing(0.0, spacing);
     if draw_icon_button(ui, theme, Icon::X, texts.close) {

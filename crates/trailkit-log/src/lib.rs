@@ -21,6 +21,7 @@
 mod day_files;
 mod error_chain;
 mod events;
+mod export;
 mod line;
 mod logger;
 mod panic_hook;
@@ -40,6 +41,9 @@ use trailkit_storage::{AddonName, TrailkitDirectory};
 pub use day_files::log_files;
 pub use error_chain::ErrorChain;
 pub use events::BUILT_IN_EVENTS;
+pub use export::{
+    EXPORT_DAYS, LogExport, MAX_EXPORT_BYTES, build_log_export, export_file_name, has_logs,
+};
 
 use crate::{
     events::{EVENT_SESSION_END, EVENT_SESSION_START, is_critical},

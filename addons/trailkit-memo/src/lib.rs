@@ -10,6 +10,16 @@
 mod addon;
 #[cfg(windows)]
 mod main_window;
+#[cfg(windows)]
+mod options_tab;
+
+// Only the Windows glue uses them; on other hosts only their tests do.
+#[cfg_attr(not(windows), allow(dead_code))]
+mod help_document;
+#[cfg_attr(not(windows), allow(dead_code))]
+mod help_text;
+#[cfg_attr(not(windows), allow(dead_code))]
+mod log_export;
 
 use trailkit_memo_drafts::i18n::DraftText;
 use trailkit_memo_editor::i18n::EditorText;
@@ -36,6 +46,7 @@ pub fn all_texts() -> String {
         + &SearchText::all_texts()
         + &TrashText::all_texts()
         + &SaveText::all_texts()
+        + &help_text::HelpText::all_texts()
 }
 
 #[cfg(test)]
@@ -44,11 +55,14 @@ mod tests {
 
     #[test]
     fn every_character_is_in_the_subset_fonts() {
+        use trailkit_memo_shared::i18n::Language;
         use trailkit_ui::fonts::{
             OPEN_SANS_BOLD, OPEN_SANS_BOLD_ITALIC, OPEN_SANS_ITALIC, OPEN_SANS_REGULAR, covers,
         };
-        // UI strings plus the help pages (rendered with the same fonts).
-        let texts = all_texts() + include_str!("../help/en.md") + include_str!("../help/de.md");
+        // UI strings plus the help with the privacy policy (same fonts).
+        let texts = all_texts()
+            + help_document::help_document(Language::English)
+            + help_document::help_document(Language::German);
         for font in [
             OPEN_SANS_BOLD,
             OPEN_SANS_BOLD_ITALIC,

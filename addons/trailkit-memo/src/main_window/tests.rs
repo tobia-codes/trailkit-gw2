@@ -3,6 +3,7 @@
 
 mod save_errors;
 mod states;
+mod title_bar_help;
 mod trash;
 
 use std::time::Duration;
@@ -119,11 +120,26 @@ fn draw_in_language(
     theme: ThemeKind,
     language: Language,
 ) {
+    draw_like_the_addon(ui, memo, size, theme, language, false);
+}
+
+/// Draws `memo` like the addon does: theme, window with the window menu
+/// and the help `?` (active while `help_open`) in the title bar, then its
+/// dialog. A click on the window menu toggle is applied.
+fn draw_like_the_addon(
+    ui: &Ui,
+    memo: &mut MemoWindow,
+    size: [f32; 2],
+    theme: ThemeKind,
+    language: Language,
+    help_open: bool,
+) {
     let theme = theme.theme();
     let _style = StyleScope::push_with_cursor_extent(ui, &theme, None);
     let mut title_bar = TitleBarState::default();
     let mut open = true;
-    let toggles = memo.title_bar_toggles(language);
+    let [menu] = memo.title_bar_toggles(language);
+    let toggles = [menu, help_title_bar_toggle(language, help_open)];
     let clicked = draw_window(
         ui,
         &theme,
@@ -136,8 +152,8 @@ fn draw_in_language(
         &mut open,
         || memo.draw(ui, language, &theme),
     );
-    if let Some(index) = clicked {
-        memo.apply_title_bar_toggle(index);
+    if clicked == Some(0) {
+        memo.apply_title_bar_toggle(0);
     }
     memo.draw_dialog(ui, language, &theme);
 }

@@ -2,7 +2,7 @@
 //! the wheel rests and shown as a percentage while it changes (M80).
 
 use nexus::imgui::{Ui, WindowHoveredFlags};
-use trailkit_ui::tooltip::draw_tooltip;
+use trailkit_ui::{theme::Theme, tooltip::draw_tooltip};
 
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText, Text, label_with_percent},
@@ -51,8 +51,9 @@ impl MemoWindow {
     }
 
     /// Applies a changed text size once the wheel rests and shows its
-    /// percentage next to the mouse while it changes (M80).
-    pub(super) fn update_text_scale(&mut self, ui: &Ui, language: Language) {
+    /// percentage next to the mouse in a `theme` tooltip while it changes
+    /// (M80).
+    pub(super) fn update_text_scale(&mut self, ui: &Ui, language: Language, theme: &Theme) {
         let Some(changed_at) = self.text_scale_changed_at else {
             return;
         };
@@ -65,6 +66,7 @@ impl MemoWindow {
         if elapsed < TEXT_SCALE_INDICATOR_SECONDS {
             draw_tooltip(
                 ui,
+                theme,
                 label_with_percent(
                     Text::TextSize.get(language),
                     self.settings.text_scale.factor() * 100.0,

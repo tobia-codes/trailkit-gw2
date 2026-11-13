@@ -7,7 +7,7 @@
 //! per content change, never per frame; the Windows-only `markdown_view`
 //! draws the result.
 
-use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd};
+use pulldown_cmark::{Event, HeadingLevel, LinkType, Options, Parser, Tag, TagEnd};
 
 use crate::chat_link::{ChatLinkChip, find_chat_codes};
 
@@ -90,7 +90,8 @@ pub struct SpanStyle {
     pub bold: bool,
     /// Italic text.
     pub italic: bool,
-    /// Target of a clickable link; only `http(s)` links are kept (M37).
+    /// Target of a clickable link; only `http(s)` and `mailto:` links are
+    /// kept (M37, M183).
     pub link: Option<String>,
 }
 
@@ -199,11 +200,24 @@ pub fn uncheck_all_tasks(source: &str) -> Option<String> {
     Some(unchecked)
 }
 
-/// Whether `url` may be opened in the browser (M37: `http(s)` only).
+/// The scheme of an e-mail link, which opens the default mail program.
+const MAIL_SCHEME: &str = "mailto:";
+
+/// Whether `url` may be opened (memo M37, extended by M183): `http(s)` in the
+/// browser and `mailto:` in the mail program; every other scheme stays text.
 #[must_use]
-pub fn is_web_link(url: &str) -> bool {
+pub fn is_openable_link(url: &str) -> bool {
     let lower = url.trim_start().to_ascii_lowercase();
-    lower.starts_with("https://") || lower.starts_with("http://")
+    lower.starts_with("https://") || lower.starts_with("http://") || lower.starts_with(MAIL_SCHEME)
+}
+
+/// What a link's tooltip shows: the full URL, or only the address of an
+/// e-mail link (M183).
+#[must_use]
+pub fn link_target_label(url: &str) -> &str {
+    url.get(..MAIL_SCHEME.len())
+        .filter(|scheme| scheme.eq_ignore_ascii_case(MAIL_SCHEME))
+        .map_or(url, |_| &url[MAIL_SCHEME.len()..])
 }
 
 /// The visible text of `document` for searching (memo plan M120): span
@@ -370,8 +384,18 @@ impl Builder {
             }
             Tag::Emphasis => self.italic += 1,
             Tag::Strong => self.bold += 1,
-            Tag::Link { dest_url, .. } => {
-                self.link = is_web_link(&dest_url).then(|| dest_url.into_string());
+            Tag::Link {
+                link_type,
+                dest_url,
+                ..
+            } => {
+                // An e-mail autolink (`<a@b.de>`) carries the bare address.
+                let url = if link_type == LinkType::Email {
+                    format!("{MAIL_SCHEME}{dest_url}")
+                } else {
+                    dest_url.into_string()
+                };
+                self.link = is_openable_link(&url).then_some(url);
             }
             _ => {}
         }
@@ -640,11 +664,40 @@ mod tests {
     }
 
     #[test]
-    fn web_link_detection() {
-        assert!(is_web_link("https://example.com"));
-        assert!(is_web_link("HTTP://example.com"));
-        assert!(!is_web_link("javascript:alert(1)"));
-        assert!(!is_web_link("file:///C:/x"));
+    fn openable_link_detection() {
+        assert!(is_openable_link("https://example.com"));
+        assert!(is_openable_link("HTTP://example.com"));
+        assert!(is_openable_link("mailto:someone@example.com"));
+        assert!(!is_openable_link("javascript:alert(1)"));
+        assert!(!is_openable_link("file:///C:/x"));
+    }
+
+    #[test]
+    fn an_email_autolink_becomes_a_mail_link() {
+        let document = parse("Write to <someone@example.com>.");
+        let links: Vec<_> = document
+            .blocks
+            .iter()
+            .flat_map(|block| match block {
+                Block::Paragraph { spans, .. } => spans.clone(),
+                _ => Vec::new(),
+            })
+            .filter_map(|span| span.style.link)
+            .collect();
+        assert_eq!(links, ["mailto:someone@example.com"]);
+    }
+
+    #[test]
+    fn a_mail_link_tooltip_shows_only_the_address() {
+        assert_eq!(
+            link_target_label("mailto:someone@example.com"),
+            "someone@example.com"
+        );
+        assert_eq!(link_target_label("MAILTO:a@b.de"), "a@b.de");
+        assert_eq!(
+            link_target_label("https://example.com"),
+            "https://example.com"
+        );
     }
 
     #[test]

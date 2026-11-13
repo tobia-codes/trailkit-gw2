@@ -411,7 +411,7 @@ fn draw_toast_actions(
         if let Some(tooltip) = action.tooltip
             && ui.is_item_hovered()
         {
-            draw_tooltip(ui, tooltip);
+            draw_tooltip(ui, theme, tooltip);
         }
         if layout == ToastLayout::ActionsStacked {
             position[1] += geometry.row_step;

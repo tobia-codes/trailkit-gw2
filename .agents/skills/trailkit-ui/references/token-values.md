@@ -126,9 +126,16 @@ use which token is binding in [`tokens.md`](tokens.md).
 
 | Token | Dark | Light | Purpose |
 | --- | --- | --- | --- |
-| `radius.sm` | 4 px | 4 px | Chips, badges, scrollbar grabs |
+| `radius.sm` | 4 px | 4 px | Chips, badges, scrollbar grabs, tooltips |
 | `radius.md` | 6 px | 6 px | Buttons, inputs, dropdowns, rows, menu items |
 | `radius.lg` | 10 px | 10 px | Windows, panes, popups, dialogs |
+
+## Shadows
+
+| Token | Dark | Light | Purpose |
+| --- | --- | --- | --- |
+| `shadow.popup` | #000000 at 55 % | #1E180C at 18 % | Shadow below tooltips |
+| `shadow.popup.offset` | 2 px | 2 px | How far it reaches below |
 
 ## Typography
 

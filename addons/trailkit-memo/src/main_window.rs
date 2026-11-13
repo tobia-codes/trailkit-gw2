@@ -24,10 +24,12 @@ use nexus::imgui::{Ui, WindowFocusedFlags};
 use trailkit_ui::{
     font_registry::FontScope,
     fonts::FontRole,
+    help_window::{HelpTab, HelpWindowState},
     icons::Icon,
     pane::draw_pane,
+    text_layout::body_characters_width,
     theme::Theme,
-    title_bar::{TitleBarTexts, TitleBarToggle},
+    title_bar::{TitleBarTexts, TitleBarToggle, TogglePlacement},
     toast::Toast,
 };
 
@@ -46,9 +48,11 @@ use trailkit_memo_shared::{
     note_tree::{GroupId, NodeId, Note, NoteId, NotesDocument},
     settings::{Settings, TextScale, UnsavedChanges},
     storage_worker::{SaveConnection, StorageSaver},
-    ui_state::UiState,
+    ui_state::{HelpWindowTab, UiState},
     undo::UndoHistory,
 };
+
+use crate::help_text::HelpText;
 
 use self::{
     actions::{LeaveReason, WindowAction},
@@ -84,15 +88,6 @@ enum WindowToastKind {
     Message,
     /// An entry went to the trash: offers undo and the trash (M158).
     MovedToTrash,
-}
-
-/// Minimum widths of the two-pane layout in pixels (M40, M73).
-#[derive(Debug, Clone, Copy)]
-struct PaneWidths {
-    /// Narrowest the note list may be dragged.
-    tree_minimum: f32,
-    /// Room the note pane keeps beside the note list.
-    note_minimum: f32,
 }
 
 /// A problem with `notes.json` shown above the notes (M31).
@@ -379,7 +374,7 @@ impl MemoWindow {
         self.handle_text_scale_keys(ui);
         self.handle_search_keys(ui);
         self.update_search();
-        self.update_text_scale(ui, language);
+        self.update_text_scale(ui, language, theme);
         self.draw_problem(ui, language, theme);
 
         // Only a list that is drawn claims the key again below.
@@ -414,14 +409,8 @@ impl MemoWindow {
         if self.document.root.is_empty() && !self.trash.visible {
             draw_empty_state(ui, language, theme, &mut self.actions);
         } else {
-            let character_width = ui.calc_text_size("n")[0];
-            let pane_minimum = character_width * MINIMUM_PANE_CHARACTERS + 2.0 * theme.pane.padding;
-            let widths = PaneWidths {
-                tree_minimum: character_width * MINIMUM_TREE_CHARACTERS + 2.0 * theme.pane.padding,
-                note_minimum: pane_minimum,
-            };
             if self.note_list_shown() {
-                self.draw_two_panes(ui, language, theme, widths);
+                self.draw_two_panes(ui, language, theme);
             } else {
                 draw_pane(ui, theme, "note", [0.0, 0.0], || {
                     self.draw_note_pane(ui, language, theme);
@@ -436,6 +425,30 @@ impl MemoWindow {
         !self.ui_state.note_list_hidden && self.editor.is_none()
     }
 
+    /// The help window's saved tab, topic and topic list width (R101).
+    #[must_use]
+    pub fn help_window_state(&self) -> HelpWindowState {
+        HelpWindowState {
+            tab: match self.ui_state.help_tab {
+                HelpWindowTab::Help => HelpTab::Help,
+                HelpWindowTab::ReportProblem => HelpTab::ReportProblem,
+            },
+            topic: self.ui_state.help_topic,
+            topic_list_characters: self.ui_state.help_topic_list_characters,
+        }
+    }
+
+    /// Saves the help window's `state` with the other window state (R101).
+    pub fn save_help_window_state(&mut self, state: HelpWindowState) {
+        self.ui_state.help_tab = match state.tab {
+            HelpTab::Help => HelpWindowTab::Help,
+            HelpTab::ReportProblem => HelpWindowTab::ReportProblem,
+        };
+        self.ui_state.help_topic = state.topic;
+        self.ui_state.help_topic_list_characters = state.topic_list_characters;
+        self.saver.save_ui_state(self.ui_state);
+    }
+
     /// The memo toggle of the title bar (R78): the window menu (M166). The
     /// caller shows none while the notes are not loaded.
     #[must_use]
@@ -444,6 +457,7 @@ impl MemoWindow {
             icon: Icon::MENU,
             tooltip: Text::WindowMenu.get(language),
             active: self.window_menu_open,
+            placement: TogglePlacement::Leading,
         }]
     }
 
@@ -481,13 +495,24 @@ impl MemoWindow {
 /// The narrowest the window may get (M168), in the body font it is drawn with.
 #[must_use]
 pub fn minimum_window_width(ui: &Ui) -> f32 {
-    let _body_font = FontScope::push(ui, FontRole::Body);
-    ui.calc_text_size("n")[0] * MINIMUM_WINDOW_CHARACTERS
+    body_characters_width(ui, MINIMUM_WINDOW_CHARACTERS)
 }
 
 /// The note `shown`, if it exists.
 fn shown_note_in(document: &NotesDocument, shown: Option<NoteId>) -> Option<&Note> {
     document.note(shown?)
+}
+
+/// The title bar `?` that opens and closes the help window (memo Q171,
+/// ROADMAP R100); active while the help window is open.
+#[must_use]
+pub fn help_title_bar_toggle(language: Language, help_open: bool) -> TitleBarToggle<'static> {
+    TitleBarToggle {
+        icon: Icon::CIRCLE_HELP,
+        tooltip: HelpText::Help.get(language),
+        active: help_open,
+        placement: TogglePlacement::Trailing,
+    }
 }
 
 /// The localized title and tooltips of the main window's title bar (R71).

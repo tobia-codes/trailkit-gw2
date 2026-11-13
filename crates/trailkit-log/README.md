@@ -16,6 +16,7 @@ analyse a log a user sends.
 | `logger` | the `log::Log` implementation: filter, event/fields, Nexus forwarding |
 | `writer` | writer thread owning the files, day and part switch, size cap, `log_full`, reserve for critical events |
 | `day_files` | file names, listing, cleanup at start, unclean-session detection, `log_files` |
+| `export` | `build_log_export`: the text of the help window's "Export log" (R95), `export_file_name`, `has_logs` |
 | `line` | line format, quoting, path scrubber |
 | `panic_hook` | `panic` line, chained before nexus-rs' hook |
 | `error_chain` | `ErrorChain`: an error with all its causes |
@@ -53,6 +54,35 @@ drop(session);
 Use `key = value` for numbers and `&str`, `key:% = value` for anything that
 implements `Display`. Choose an existing event before adding a new one; a new
 event needs a row in the table below.
+
+## Export
+
+`build_log_export` turns the log folder into one text for the help window's
+problem page (R95); the caller writes it to Downloads as
+`trailkit-logs-<yyyymmdd>.txt` (`export_file_name` adds ` (2)`, ` (3)`, … instead of
+overwriting). It holds the newest **3 days** with a log of every addon folder:
+
+```text
+trailkit log export
+exported: 2026-11-12T10:15:00+01:00
+days: 2026-11-10 to 2026-11-12
+addons: memo 0.3.0
+trimmed: no
+
+===== memo 0.3.0 =====
+--- memo-20261112.log ---
+<the file's lines>
+--- memo-20261111.log ---
+…
+```
+
+An addon folder without day files shows `(no logs)`. Foreign files are never
+read. The text is at most **5 MiB**: if it would be larger, the oldest day
+goes first (for all addons), then the oldest lines of the remaining day,
+shared evenly between the addons; every trim is a `trimmed:` line in the
+header and `LogExport::trimmed` is set. The export only reads; the log's own
+privacy rules (no user content, no absolute paths) are what keeps it safe to
+attach to a public issue.
 
 ## Log format
 
@@ -126,8 +156,10 @@ searches, moved windows, key presses) are not logged. Nothing is sent anywhere: 
 | `backup_delete_failed` | WARN | `file`, `error` | An expired safety copy cannot be deleted |
 | `folder_unlistable` | WARN | `folder`, `error` | A folder cannot be listed during the safety-copy cleanup |
 | `local_time_failed` | WARN | `error` | Windows could not convert to local time; times are shown in UTC |
-| `folder_open_failed` | WARN | `error` | Explorer could not be started for the addon folder |
+| `folder_open_failed` | WARN | `error` | Explorer could not be started for the addon folder or the saved log export |
 | `link_open_failed` | WARN | `error` | The browser could not be started for a link |
+| `log_check_failed` | WARN | `error` | The help window could not start the check whether a log exists; the export button stays usable |
+| `log_export_failed` | WARN | `stage` (`thread`/`read`/`downloads`/`write`), `error` | "Export log" failed: the export thread did not start, the logs could not be read, the Downloads folder is unknown, or the file could not be written |
 | `font_pixels_missing` | WARN | – | The font atlas pixels are not in memory; glyphs are centered by their quads |
 
 Windows error codes often seen in `error`: `os error 5` access denied, `32`

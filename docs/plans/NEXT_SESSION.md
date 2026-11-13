@@ -11,30 +11,19 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## ▶ Resume here
 
-**Session 31 (2026-11-12).** R98/B25: problem reports via the backend behind a flag, GitHub form as fallback (Q288–Q293 in
-`backend.md`). Q286 (tooltip looks like a button) is a later design round. Before the first release: DPF listing check (R99).
+**Session 32 (2026-11-13).** R98/B25: problem reports via the backend behind a flag, GitHub form as fallback (Q288–Q293 in
+`backend.md`). Before the first release: DPF listing check (R99).
 
-**▶ Work branch: `feature/help-problem-page`** (local only on the user's WSL machine, **not pushed**, 16 commits ahead of
-`origin/develop`; keep working on it, no new branch, no push without the user's OK). Done: `trailkit-log::export`, `help_topics`,
-R96 components, the shared help window in `trailkit-ui`, and in session 31 the **memo wiring** (f5fe420, 5a6db13, 1af2e81):
-`TogglePlacement::Trailing` in the title bar with memo's `?` before the chevron (Q171), `addon/help.rs` (`MemoHelp`: log check and
-export on short-lived threads, Downloads via `SHGetKnownFolderPath`, Explorer `/select`, issue form via `problem_report_url`),
-`help_text.rs` (en/de texts; the German status texts for saved/trimmed/no log were drafted by Claude, not in the mockup),
-`log_export.rs`, events `log_check_failed`/`log_export_failed`, Escape closes the help window (`HELP_OPEN` registered with Nexus),
-and the `?` in every memo snapshot (user OK; 327 changed only in the title row). Not deployed or tested in game yet.
+**Shipped in session 32:** `feature/help-problem-page` went into `develop` with the user's merge OK after the full in-game test
+(PR with auto-merge): the help window with problem page and log export (R95, R100), memo's Nexus options tab (M182), the help
+rewrite by task with `PRIVACY.md` embedded as last topic (M181), the help window laid out like the main window (R101: shared
+`pane_columns::draw_resizable_pane_columns` and `page::draw_page`, tab/topic/list width saved in memo's `ui_state.json`), e-mail
+links (M183), the shared `text::draw_icon_text` (Q325/Q326) and the new tooltip look with the design's one shadow (R102). Check that
+the PR merged and CI passed; if not, fix on a follow-up branch from `origin/develop`.
 **Open, in this order:**
-1. **Nexus options tab "Open help" (user wants it, R53):** waiting for the user's answers and visual OK (R87) on
-   https://claude.ai/artifact/94EzMkYMDQHFmLw1b2fTdZ — **Q307** buttons: A only "Open help" until a settings window exists
-   (recommended) or B with a disabled "Open settings"; **Q308** look: trailkit style on its own surface (recommended) or Nexus' own
-   style (C); **Q309** header: window title Heading2, `trailkit-memo <version>` Secondary (recommended). Then: record the answers in
-   the memo plan, `RT_OptionsRender` → `HelpWindow::open` (never closes; Q296), snapshots.
-2. **Help rewrite M181:** nine topics in `help/{en,de}.md` (`##` topic, one Secondary lead sentence, `###` structure), privacy topic from
-   `PRIVACY.md`/`.de.md`, parity test with `subsection_counts`; mention the `?`, the help window and Escape (rule 6).
-3. **Ask the user:** the markdown view spaces `###` headings and paragraphs wider than the mockup (shared renderer, changes note
-   snapshots): keep or tighten? Draft warning and problem hint still hand-draw status colors (an icon needs R87).
-4. **Validate and ship (R74):** fmt, host and `cargo xwin` clippy, `cargo test`, `cargo xtask ui-test` (about 4 min, background, no filter;
-   one `UiHarness` at a time), `check-file-length`, `check-names`, `cargo xtask deploy memo`, in-game test (export, Explorer selection,
-   ` (2)` naming, GitHub link, Escape with both windows open), then the user's merge OK: push, PR into `develop`, auto-merge.
+1. **Q312 round:** draft warning and memo's problem hint ("notes recovered") onto `draw_icon_text`/`draw_status_line`; R87 mockup
+   first. New branch from freshly fetched `origin/develop`.
+2. `theme.rs` has 418 code lines (hint at 400): propose a split by concern via grilling, never split unasked (R77).
 
 **Deferred by the user (2026-11-12): one theme character for addons and the coming React website.** No code yet. Mockups:
 https://claude.ai/artifact/SFFrXawiqYD6HouhdihGdv (latest: Papier A–D). Wanted: GW2-reminiscent, own character, dark, very subtle
@@ -46,7 +35,7 @@ for fan content are not read yet; never copy game or Blish HUD art, never look o
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
 
-Next ids: **M182+, R101+, B26+, questions from 310** (Q307–Q309 open). Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M184+, R103+, B26+, questions from 329**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 
 - **Housekeeping (Q211/Q240):** the user deletes the approved old local branches by hand (all `chore/`, `contributor-docs`, `handoff-*`,
   `addon-status-*`, `help-window-design`, merged PR branches).

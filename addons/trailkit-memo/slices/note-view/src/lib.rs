@@ -4,7 +4,7 @@
 //!
 //! Depends only on `trailkit-memo-shared`, never on another slice: what
 //! other slices add (the kind dropdown, the draft hint) the app draws or
-//! hands in as a neutral [`note_view::TitleTrailing`]. The view compiles for
+//! hands in as a neutral [`trailkit_ui::page::TitleTrailing`]. The view compiles for
 //! Windows.
 
 pub mod i18n;

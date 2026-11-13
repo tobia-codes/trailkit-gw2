@@ -113,7 +113,9 @@ editor's formatting buttons that light up for the formatting at the cursor
   measure rows with `button_width` / `icon_label_button_width`, never with
   `calc_text_size` + padding, or right-aligned rows drift.
   No highlight edges and no shadows (a top highlight was tried and dropped
-  after the in-game test, R71).
+  after the in-game test, R71). The one exception is the tooltip (Q327):
+  `border` outline, `radius.sm` corners and `shadow.popup` drawn as the same
+  shape `shadow.popup.offset` lower (ImGui cannot blur).
 - Lines (separators, outlines) sit on whole pixels: a 1 px line drawn
   between two pixel rows blurs into a soft 2 px band. `draw_separator`
   snaps; custom-drawn lines must do the same.
