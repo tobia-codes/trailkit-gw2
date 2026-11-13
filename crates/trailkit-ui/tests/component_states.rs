@@ -8,6 +8,7 @@
 #![cfg(windows)]
 
 use std::cell::Cell;
+use trailkit_ui::draw_list::window_draw_list;
 
 use nexus::imgui::{Condition, Ui, Window, WindowFlags};
 use trailkit_ui::{
@@ -1017,7 +1018,7 @@ fn tooltip_while_the_window_draw_list_is_held() {
     let mut harness = UiHarness::new(size);
     let _image = harness.frame(&mouse([40.0, 30.0], false), |ui: &Ui| {
         in_window(ui, &theme, size, || {
-            let draw_list = ui.get_window_draw_list();
+            let draw_list = window_draw_list(ui);
             draw_tooltip(ui, &theme, "Tooltip");
             draw_list.add_line([0.0, 0.0], [1.0, 1.0], [1.0; 4]).build();
         });

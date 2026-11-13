@@ -8,6 +8,7 @@
 //! note list) are tree nodes and stay in their slice; they share only the
 //! row state through [`draw_row_state`].
 
+use crate::draw_list::window_draw_list;
 use std::borrow::Cow;
 
 use nexus::imgui::{Selectable, Ui};
@@ -101,7 +102,7 @@ fn draw_row_texts(ui: &Ui, theme: &Theme, row: &ListRow<'_>, [min, max]: [[f32; 
     let padding = ui.clone_style().frame_padding;
     let [left, top] = [min[0] + padding[0], min[1] + padding[1]];
     let right = max[0] - padding[0];
-    let draw_list = ui.get_window_draw_list();
+    let draw_list = window_draw_list(ui);
     let mut title_end = right;
     if let Some(trailing) = row.trailing {
         let trailing_x = right - ui.calc_text_size(trailing)[0];

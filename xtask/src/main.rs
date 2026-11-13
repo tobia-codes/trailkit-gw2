@@ -3,7 +3,7 @@
 //! Commands:
 //! - `build-icons [--check]` — render the addons' SVG icons to the committed
 //!   PNGs (ROADMAP R57).
-//! - `deploy <addon> [--release]` — cross-compile an addon with cargo-xwin and
+//! - `deploy <addon> [--release] [--features <list>]` — cross-compile an addon with cargo-xwin and
 //!   copy the DLL into the Guild Wars 2 `addons` folder (ROADMAP R32).
 //! - `check-branch [--head <branch>] [--base <branch>]` — verify branch names
 //!   (ROADMAP R14); defaults to the current branch.
@@ -43,7 +43,8 @@ usage: cargo xtask <command>
 
 commands:
   build-icons [--check]        render addon SVG icons to PNG (--check: only verify)
-  deploy <addon> [--release]   build an addon for Windows and copy it into the GW2 addons folder
+  deploy <addon> [--release] [--features <list>]
+                               build an addon for Windows and copy it into the GW2 addons folder
   check-branch [--head B] [--base B]  verify the branch name (default: current branch)
   install-hooks                enable the git hooks in .githooks/
   check-file-length [--all]    hint at long Rust files/functions changed on this branch (advisory)
@@ -63,12 +64,8 @@ fn main() -> Result<()> {
     let args: Vec<&str> = args.iter().map(String::as_str).collect();
     match args.as_slice() {
         ["deploy", addon, rest @ ..] => {
-            let profile = match rest {
-                [] => deploy::Profile::Debug,
-                ["--release"] => deploy::Profile::Release,
-                _ => bail!("unexpected arguments: {rest:?}\n\n{USAGE}"),
-            };
-            deploy::run(addon, profile)
+            let (profile, features) = parse_deploy_options(rest)?;
+            deploy::run(addon, profile, features)
         }
         ["build-icons"] => build_icons::run(build_icons::Mode::Write),
         ["build-icons", "--check"] => build_icons::run(build_icons::Mode::Check),
@@ -113,4 +110,55 @@ fn parse_branch_options<'a>(options: &[&'a str]) -> Result<(Option<&'a str>, Opt
         }
     }
     Ok((head, base))
+}
+
+/// Parses the options after `deploy <addon>`: `--release` and
+/// `--features <list>`, each at most once, in any order.
+///
+/// # Errors
+/// Returns an error for an unknown, repeated or incomplete option.
+fn parse_deploy_options<'a>(options: &[&'a str]) -> Result<(deploy::Profile, Option<&'a str>)> {
+    let mut profile = deploy::Profile::Debug;
+    let mut features = None;
+    let mut rest = options;
+    loop {
+        rest = match rest {
+            [] => return Ok((profile, features)),
+            ["--release", tail @ ..] if profile == deploy::Profile::Debug => {
+                profile = deploy::Profile::Release;
+                tail
+            }
+            ["--features", list, tail @ ..] if features.is_none() && !list.starts_with("--") => {
+                features = Some(*list);
+                tail
+            }
+            _ => bail!("unexpected arguments: {options:?}\n\n{USAGE}"),
+        };
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn deploy_options_in_any_order() {
+        let parsed = parse_deploy_options(&["--features", "fault-injection", "--release"]).ok();
+        assert_eq!(
+            parsed,
+            Some((deploy::Profile::Release, Some("fault-injection")))
+        );
+        assert_eq!(
+            parse_deploy_options(&[]).ok(),
+            Some((deploy::Profile::Debug, None))
+        );
+    }
+
+    #[test]
+    fn deploy_options_reject_repeats_and_gaps() {
+        assert!(parse_deploy_options(&["--release", "--release"]).is_err());
+        assert!(parse_deploy_options(&["--features"]).is_err());
+        assert!(parse_deploy_options(&["--features", "--release"]).is_err());
+        assert!(parse_deploy_options(&["--debug"]).is_err());
+    }
 }

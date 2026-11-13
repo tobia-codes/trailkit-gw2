@@ -10,6 +10,7 @@
 //! after it. The layout is rebuilt only when the text, the width or the font
 //! size changes; only visible lines are drawn.
 
+use crate::draw_list::window_draw_list;
 use nexus::imgui::{
     ChildWindow, InputTextCallbackHandler, InputTextMultilineCallback, Key, MouseButton,
     MouseCursor, StyleColor, StyleVar, TextCallbackData, Ui, WindowHoveredFlags,
@@ -403,7 +404,7 @@ impl TextEditor {
         visible_height: f32,
         chips: ChipContext<'_>,
     ) {
-        let draw_list = ui.get_window_draw_list();
+        let draw_list = window_draw_list(ui);
         let editor_hovered = is_editor_hovered(ui);
         // Text sits in the middle of its taller line.
         let leading = theme.typography.leading_for(ui.current_font_size());
@@ -471,7 +472,7 @@ impl TextEditor {
                             draw_list.add_text(position, theme.text.primary.to_array(), piece);
                             continue;
                         };
-                        let [min, max] = draw_chip(ui, &draw_list, chip, position, theme, chips);
+                        let [min, max] = draw_chip(ui, draw_list, chip, position, theme, chips);
                         // The chip covers the selection drawn below it.
                         if selection.start < span.range.end && span.range.start < selection.end {
                             draw_list

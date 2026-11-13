@@ -5,6 +5,7 @@
 //! included, so it touches the pane edges. [`draw_separator`] spans only the
 //! available content width.
 
+use crate::draw_list::window_draw_list;
 use nexus::imgui::Ui;
 
 use crate::{font_registry::FontScope, fonts::FontRole, glyph_metrics::glyph_bounds, theme::Theme};
@@ -56,7 +57,7 @@ fn draw_line(ui: &Ui, theme: &Theme, above: f32, below: f32) {
     ui.dummy([width, thickness]);
     let middle = start[1].round() + ((thickness - 1.0) / 2.0).floor();
     let left = start[0].round();
-    ui.get_window_draw_list()
+    window_draw_list(ui)
         .add_line(
             [left, middle],
             [left + width.round(), middle],

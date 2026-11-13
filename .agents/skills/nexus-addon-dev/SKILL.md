@@ -158,16 +158,19 @@ Rules:
    lower worker thread priority (`THREAD_PRIORITY_BELOW_NORMAL`), skip
    refreshes during loading screens if not needed, never do I/O on the render
    thread — even "small" file reads.
-8. **Panics**: a panic must never cross the FFI boundary. nexus-rs installs a
-   panic hook; `trailkit-log` chains its own in front (writes a `panic` line).
+8. **Panics**: a panic must never cross the FFI boundary. Every Nexus
+   callback runs inside the addon's `guard` (`catch_unwind`, R104); a caught
+   panic stops the addon, not the game. nexus-rs installs a panic hook
+   (message box off); `trailkit-log` chains its own in front (writes a
+   `panic` line).
    Worker threads catch and log errors, never `unwrap()`.
 9. **ImGui crash traps (two game crashes, 2026-11-13, Q357):**
    - imgui-rs allows one `DrawListMut` per draw list at a time and panics on a
-     second. While holding `ui.get_window_draw_list()`, call nothing that
-     draws on its own (tooltips, buttons with tooltips); helpers that may run
-     inside such a scope use the raw `sys::igGetWindowDrawList()` (tooltip
-     shadow, button labels, status card).
-   - Never change focus or navigation mid-frame (`igSetWindowFocus*`):
+     second. `Ui::get_window_draw_list` is therefore banned in `clippy.toml`;
+     use `trailkit_ui::draw_list::window_draw_list`, a copyable handle on the
+     raw list with the same builders and pixels (R104, Q355).
+   - Never change focus or navigation mid-frame (`igSetWindowFocus*`, banned
+     in `clippy.toml`):
      ImGui may already have planned keyboard navigation for the frame and
      reads a null navigation window in the next item (access violation in
      `ItemAdd`). Use ImGui's own end-of-frame path instead (memo M186 marks a
@@ -312,8 +315,8 @@ Project contract (to be finalized in `docs/plans/addons/trailkit-core.md`):
 - Submenus overlap their parent by `ItemInnerSpacing.x`; `menu::begin_submenu` sets it to 0.
 - A tooltip sits at mouse + 24 px × `style.MouseCursorScale`; `StyleScope` sets the scale
   from the measured cursor (`cursor_extent`).
-- `DrawListMut` is a singleton in imgui-rs: shared components draw through the raw
-  `ImDrawList_*` calls when a caller may hold one.
+- `DrawListMut` is a singleton in imgui-rs: draw through
+  `trailkit_ui::draw_list::window_draw_list` (the imgui-rs call is banned).
 
 **Fonts and icons**
 

@@ -1,7 +1,9 @@
 //! Snapshots of every view, menu, dialog and hover state of the window in both
 //! themes (ROADMAP R82): the reference images are reviewed against the design
 //! system (`tokens.md` §10). Behavior is tested elsewhere; this file only
-//! brings the window into each state.
+//! brings the window into each state. Every state is also run once more with
+//! keyboard navigation planned (ROADMAP R104, Q356): the ImGui crash traps
+//! of the nexus-addon-dev skill §2.9 only fire then.
 
 use trailkit_memo_shared::{drafts::Draft, i18n::local_utc_offset, note_tree::TrashEntry};
 use trailkit_memo_trash::trash_view::TrashAction;
@@ -9,6 +11,7 @@ use trailkit_ui::markdown_view::MarkdownAction;
 
 use super::{trash::document_with_trash, *};
 
+mod chip_tooltips;
 mod minimum_width;
 mod save_errors;
 
@@ -150,6 +153,45 @@ fn assert_state_in(
             env!("CARGO_MANIFEST_DIR"),
             &format!("memo-state-{name}-{theme_name}"),
             &image,
+        );
+    }
+    survive_navigation(language, size, &make, steps);
+}
+
+/// Navigation keys pressed one per frame, as a player would: each makes
+/// ImGui plan a keyboard navigation move for that frame.
+const NAVIGATION_KEYS: [u32; 4] = [0x09, 0x28, 0x26, 0x27];
+
+/// Brings a fresh window into the state of `steps`, then presses each of
+/// [`NAVIGATION_KEYS`] with the mouse where it last was (e.g. over a chip
+/// tooltip). Checks nothing but that no frame panics or crashes (R104,
+/// Q356); one theme is enough, the draw calls do not depend on it.
+fn survive_navigation(
+    language: Language,
+    size: [f32; 2],
+    make: impl Fn() -> Fixture,
+    steps: &[FrameInput],
+) {
+    let (mut memo, _worker, _directory) = make();
+    let mut harness = UiHarness::new(size);
+    let mut draw_frame = |ui: &Ui| draw_in_language(ui, &mut memo, size, ThemeKind::Dark, language);
+    for step in std::iter::repeat_n(&FrameInput::default(), 2).chain(steps) {
+        harness.step(step, &mut draw_frame);
+    }
+    let mouse_position = steps.last().map_or([0.0, 0.0], |last| last.mouse_position);
+    for key in NAVIGATION_KEYS {
+        let press = FrameInput {
+            mouse_position,
+            keys: vec![key],
+            ..FrameInput::default()
+        };
+        harness.step(&press, &mut draw_frame);
+        harness.step(
+            &FrameInput {
+                mouse_position,
+                ..FrameInput::default()
+            },
+            &mut draw_frame,
         );
     }
 }

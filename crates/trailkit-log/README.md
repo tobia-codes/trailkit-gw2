@@ -93,7 +93,7 @@ attach to a public issue.
 | Path | `addons/trailkit/logs/<addon>/<addon>-<yyyymmdd>.log`, e.g. `memo/memo-20261109.log`; one folder per addon, one file per local day; a full file continues in `memo-20261109_1.log`, `_2`, … |
 | Encoding | UTF-8, one line per entry, `\n` line ends, appended unbuffered |
 | Retention | At start every addon deletes whole files of **all** addons' folders: only the newest **14 days with a log** stay, none older than **30 days**. Nothing is read or rewritten; empty folders go too |
-| Size cap | **1 MiB** per file, at most **5 files** per day. In the last file normal lines stop 8 KiB early: `log_full` is written once, then only critical events (`panic`, `worker_died`, `save_gave_up`, `session_start`, `session_end`) until midnight |
+| Size cap | **1 MiB** per file, at most **5 files** per day. In the last file normal lines stop 8 KiB early: `log_full` is written once, then only critical events (`panic`, `worker_died`, `save_gave_up`, `addon_stopped`, `session_start`, `session_end`) until midnight |
 | Memory | Nothing is held in memory: lines are appended, only the last 8 KiB of the newest file are read at start to see whether the previous session ended with `session_end` |
 | Levels written | ERROR, WARN, INFO; DEBUG only in debug builds. Dependencies (targets not starting with `trailkit`): WARN and ERROR only |
 | Nexus | WARN and ERROR also go to `Nexus.log` in the addon's channel (without the time) |
@@ -142,6 +142,7 @@ searches, moved windows, key presses) are not logged. Nothing is sent anywhere: 
 | `folder_unavailable` | ERROR | `error` | Nexus did not return the `trailkit/` folder; nothing is saved or logged; only in `Nexus.log` |
 | `worker_start_failed` | ERROR | `error` | The storage worker thread could not start; notes are unavailable |
 | `worker_died` | ERROR | – | The storage worker thread panicked (see the `panic` line before it) |
+| `addon_stopped` | ERROR | `callback` (`load`/`unload`/`render`/`options_render`/`keybind`/`window_messages`), `mode` (`help_only`/`stopped`), `draft` (`kept`/`none`/`failed`, first stop only) | A Nexus callback panicked (see the `panic` line before it); the crash protection stopped the addon instead of the game (ROADMAP R104). `help_only`: only the help window still draws; `stopped`: nothing does until the addon is reloaded. Critical |
 | `worker_restarted` | INFO | – | The user restarted the dead storage worker ("Erneut versuchen"); it loads nothing and writes the shown documents |
 | `worker_restart_failed` | WARN | `error` | "Try again" could not restart the storage worker (still running, died while loading, or no thread); the user may try again |
 | `load_finished` | INFO | `notes`, `drafts`, `missing` (only when `settings.json`, `notes.json` or `ui_state.json` does not exist), `text_scale`, `ms` | All documents were read; one line per session. `missing=notes.json` outside a first start explains lost notes |

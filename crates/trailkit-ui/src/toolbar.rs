@@ -2,6 +2,7 @@
 //! line, and items aligned to the toolbar's right end; both wrap onto a new
 //! line in narrow windows.
 
+use crate::draw_list::window_draw_list;
 use nexus::imgui::Ui;
 
 use crate::theme::Theme;
@@ -20,7 +21,7 @@ pub fn begin_toolbar_group(ui: &Ui, theme: &Theme, width: f32) {
         return;
     }
     let inset = (height * 0.2).round();
-    ui.get_window_draw_list()
+    window_draw_list(ui)
         .add_line(
             [x + 0.5, y + inset],
             [x + 0.5, y + height - inset],

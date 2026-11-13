@@ -2,6 +2,7 @@
 //! invisible until hovered or dragged, then an accent line with the resize
 //! cursor (Windows only).
 
+use crate::draw_list::window_draw_list;
 use nexus::imgui::{MouseCursor, Ui};
 
 use crate::theme::Theme;
@@ -38,7 +39,7 @@ pub fn draw_vertical_splitter(
             theme.accent.hover
         };
         let line_x = start[0] + gap / 2.0;
-        ui.get_window_draw_list()
+        window_draw_list(ui)
             .add_line(
                 [line_x, start[1]],
                 [line_x, start[1] + height],

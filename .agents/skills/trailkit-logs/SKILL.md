@@ -55,11 +55,14 @@ trims before concluding that a line is missing.
    - `previous_session_unclean`: the session before ended without
      `session_end` (crash or killed game). Its last lines are the best clue.
    - `panic`: message, `thread` and `at=file.rs:line`. A `worker_died` right
-     after means the storage worker was the thread.
+     after means the storage worker was the thread; an `addon_stopped` right
+     after means a Nexus callback (`callback=`) panicked and the crash
+     protection stopped the addon, not the game (R104; `draft=kept` saved
+     the unsaved text).
    - `log_full`: that day logged 5 MiB (five files); something logs in a loop
      (a bug). Find the repeated event just before it; normal lines after it
      are missing until midnight, only `panic`, `worker_died`,
-     `save_gave_up`, `session_start` and `session_end` still arrive.
+     `save_gave_up`, `addon_stopped`, `session_start` and `session_end` still arrive.
    - `save_gave_up`: a change is not on disk (all automatic writes or the
      last write at unload failed). Followed by `save_recovered` if a later
      write succeeded; without it the user lost that change. The

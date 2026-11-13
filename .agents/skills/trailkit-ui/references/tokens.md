@@ -280,3 +280,21 @@ changing anything; guessing took three rounds on M132 and M170.
    and read `Nexus.log`: it appears seconds later while the window is open. Remove
    it before committing.
 3. Compare the map with the logged numbers, and fix what does not match.
+
+**Navigation pass.** The harness turns on keyboard navigation like Nexus, and
+`assert_state` runs every state once more with Tab and arrow keys pressed and
+the mouse where the steps left it, checking only that no frame panics or
+crashes (R104, Q356). Chip tooltips have their own states
+(`tests/states/chip_tooltips.rs`).
+
+**Smoke test before every merge (R104, Q358).** Snapshots cannot see the game,
+so every addon change gets two minutes in game with a fresh deploy before the
+merge is asked for:
+
+1. Open the window and edit a note; hover a chat-link chip in the view and in
+   the editor.
+2. Move through the window with Tab and the arrow keys.
+3. Right- and middle-click into the game, then type: the game gets the keys.
+4. Collapse and expand the window; open the help window.
+5. Close the window with unsaved changes (memo asks).
+6. Unload and load the addon in Nexus: no crash, the draft is offered.

@@ -6,6 +6,7 @@
 //! rule 7); the settings window will be the likely second user.
 
 use nexus::imgui::{StyleColor, StyleVar, Ui, WindowHoveredFlags};
+use trailkit_ui::draw_list::window_draw_list;
 use trailkit_ui::tooltip::draw_tooltip;
 use trailkit_ui::{
     font_registry::FontScope, fonts::FontRole, glyph_metrics::glyph_ink_box, icons::Icon,
@@ -82,7 +83,6 @@ impl SearchField {
         let input_y = start[1] + theme.spacing.small / 2.0;
         let end = [start[0] + width, start[1] + height];
         let padding = ui.clone_style().frame_padding;
-        // `DrawListMut` is a singleton: take it only for each drawing step.
         // Like ImGui's own inputs (`FrameBgHovered`), but not while typing.
         let is_hovered = ui.is_mouse_hovering_rect(start, end)
             && ui.is_window_hovered_with_flags(
@@ -93,7 +93,7 @@ impl SearchField {
         } else {
             theme.surface.input
         };
-        ui.get_window_draw_list()
+        window_draw_list(ui)
             .add_rect(start, end, fill.to_array())
             .filled(true)
             .rounding(theme.radius.medium)
@@ -130,7 +130,7 @@ impl SearchField {
         } else {
             theme.border.color
         };
-        ui.get_window_draw_list()
+        window_draw_list(ui)
             .add_rect(start, end, frame.to_array())
             .rounding(theme.radius.medium)
             .thickness(theme.border.width)
@@ -195,7 +195,7 @@ impl SearchField {
         };
         let hovered = ui.is_item_hovered();
         if hovered {
-            ui.get_window_draw_list()
+            window_draw_list(ui)
                 .add_rect(
                     box_start,
                     [box_start[0] + box_size[0], box_start[1] + box_size[1]],
@@ -213,8 +213,7 @@ impl SearchField {
         };
         let _icons = FontScope::push(ui, FontRole::Icons);
         let mut buffer = [0; 4];
-        ui.get_window_draw_list()
-            .add_text(position, color.to_array(), Icon::X.as_str(&mut buffer));
+        window_draw_list(ui).add_text(position, color.to_array(), Icon::X.as_str(&mut buffer));
         clicked
     }
 }
@@ -233,7 +232,7 @@ fn field_icon_inks(ui: &Ui) -> ([f32; 4], [f32; 4]) {
 fn draw_magnifier(ui: &Ui, theme: &Theme, [left, middle]: [f32; 2], ink: [f32; 4]) {
     let _icons = FontScope::push(ui, FontRole::Icons);
     let mut buffer = [0; 4];
-    ui.get_window_draw_list().add_text(
+    window_draw_list(ui).add_text(
         [left - ink[0], middle - (ink[1] + ink[3]) / 2.0],
         theme.text.secondary.to_array(),
         Icon::SEARCH.as_str(&mut buffer),

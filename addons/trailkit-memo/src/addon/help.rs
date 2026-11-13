@@ -28,7 +28,8 @@ use trailkit_ui::{
     busy::BusyState,
     button::ButtonState,
     help_window::{
-        HelpAction, HelpWindow, HelpWindowContent, HelpWindowState, HelpWindowTexts, ProblemPage,
+        HelpAction, HelpTab, HelpWindow, HelpWindowContent, HelpWindowState, HelpWindowTexts,
+        ProblemNotice, ProblemPage,
     },
     markdown_view::open_link,
     status_line::Status,
@@ -134,6 +135,13 @@ impl MemoHelp {
         self.after_open_change(was_open);
     }
 
+    /// memo stopped on an error (R104, Q366): opens the window on "Report a
+    /// problem" or brings it to the front there.
+    pub(super) fn open_on_problem_tab(&mut self) {
+        self.window.show_tab(HelpTab::ReportProblem);
+        self.open();
+    }
+
     /// Closes the window if it is open: Nexus cleared its flag on Escape.
     pub(super) fn close(&mut self) {
         if self.window.is_open() {
@@ -144,6 +152,40 @@ impl MemoHelp {
     /// Takes the replies of the worker threads and draws the window if it
     /// is open; carries out what the user asked for.
     pub(super) fn draw(&mut self, ui: &Ui, theme: &Theme, language: Language) {
+        self.draw_with_notice(ui, theme, language, None);
+    }
+
+    /// Like [`Self::draw`] after memo stopped on an error: the problem page
+    /// shows the warning card (R104, Q367), with the draft sentence when
+    /// `draft_kept`.
+    pub(super) fn draw_stopped(
+        &mut self,
+        ui: &Ui,
+        theme: &Theme,
+        language: Language,
+        draft_kept: bool,
+    ) {
+        let detail = if draft_kept {
+            HelpText::StoppedDetailWithDraft
+        } else {
+            HelpText::StoppedDetail
+        };
+        let notice = ProblemNotice {
+            text: HelpText::StoppedNotice.get(language),
+            detail: detail.get(language),
+        };
+        self.draw_with_notice(ui, theme, language, Some(notice));
+    }
+
+    /// Draws the window as [`Self::draw`] does, with `notice` on the problem
+    /// page.
+    fn draw_with_notice(
+        &mut self,
+        ui: &Ui,
+        theme: &Theme,
+        language: Language,
+        notice: Option<ProblemNotice<'_>>,
+    ) {
         if !self.window.is_open() {
             return;
         }
@@ -170,6 +212,7 @@ impl MemoHelp {
             problem: ProblemPage {
                 export_button,
                 status,
+                notice,
             },
             chips: chip_context(language),
         };

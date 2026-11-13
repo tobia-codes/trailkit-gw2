@@ -3,6 +3,7 @@
 //! (M134, M146) and storage problems.
 
 use nexus::imgui::{Condition, Key, MouseButton, StyleColor, StyleVar, Ui, Window, WindowFlags};
+use trailkit_ui::draw_list::window_draw_list;
 use trailkit_ui::{
     button::{Button, ButtonKind, ButtonState},
     font_registry::FontScope,
@@ -178,7 +179,7 @@ pub(super) fn draw_dialog_card(
         window_position[1] + ((window_size[1] - height) / 2.0).max(0.0),
     ];
     let max = [min[0] + width, min[1] + height];
-    let draw_list = ui.get_window_draw_list();
+    let draw_list = window_draw_list(ui);
     draw_list
         .add_rect(min, max, theme.surface.panel.to_array())
         .filled(true)

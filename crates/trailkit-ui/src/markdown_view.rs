@@ -11,6 +11,7 @@
 //! The view never changes anything itself: clicks are returned as a
 //! [`MarkdownAction`] for the caller to apply.
 
+use crate::draw_list::window_draw_list;
 use crate::tooltip::draw_tooltip;
 use std::ops::Range;
 
@@ -276,7 +277,7 @@ fn draw_list_marker(
                 None
             };
             if let Some(fill) = fill {
-                ui.get_window_draw_list()
+                window_draw_list(ui)
                     .add_rect(ui.item_rect_min(), ui.item_rect_max(), fill.to_array())
                     .filled(true)
                     .rounding(theme.radius.medium)
@@ -354,12 +355,12 @@ fn draw_spans(
             ui.invisible_button("##chip", [width, ui.text_line_height()]);
             let hovered = ui.is_item_hovered();
             let clicked = ui.is_item_clicked();
-            draw_chip(ui, &ui.get_window_draw_list(), chip, [x, y], theme, chips);
+            draw_chip(ui, window_draw_list(ui), chip, [x, y], theme, chips);
             if let Some(highlight) = highlight.as_deref_mut()
                 && !highlight.query.hit_ranges(&chip.code).is_empty()
             {
                 highlight.record_hit(ui, y);
-                ui.get_window_draw_list()
+                window_draw_list(ui)
                     .add_rect(
                         [x, y],
                         [x + width, y + ui.text_line_height()],
@@ -507,7 +508,7 @@ fn mark_hits(
         let end = range.end.min(piece_end) - offset;
         let left = origin[0] + ui.calc_text_size(&piece[..start])[0];
         let right = origin[0] + ui.calc_text_size(&piece[..end])[0];
-        ui.get_window_draw_list()
+        window_draw_list(ui)
             .add_rect(
                 [left, origin[1]],
                 [right, origin[1] + ui.text_line_height()],
@@ -554,7 +555,7 @@ fn draw_piece(ui: &Ui, piece: &str, span: &Span, theme: &Theme) -> Option<Markdo
     };
     ui.text_colored(theme.text.link.to_array(), piece);
     let [min, max] = [ui.item_rect_min(), ui.item_rect_max()];
-    ui.get_window_draw_list()
+    window_draw_list(ui)
         .add_line(
             [min[0], max[1]],
             [max[0], max[1]],

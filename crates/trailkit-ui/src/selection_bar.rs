@@ -12,6 +12,7 @@
 //! pixel, so a 3 px bar drawn with `rounding` stays square; the round ends
 //! are drawn as circles instead.
 
+use crate::draw_list::window_draw_list;
 use nexus::imgui::{ColorStackToken, StyleColor, Ui};
 
 use crate::theme::Theme;
@@ -34,7 +35,7 @@ fn draw_selection_bar_in(ui: &Ui, theme: &Theme, [min, max]: [[f32; 2]; 2]) {
     );
     let radius = width / 2.0;
     let color = theme.accent.base.to_array();
-    let draw_list = ui.get_window_draw_list();
+    let draw_list = window_draw_list(ui);
     draw_list
         .add_rect(
             [left, bar_top + radius],
@@ -75,7 +76,7 @@ fn draw_row_highlight_in(ui: &Ui, theme: &Theme, selected: bool, [min, max]: [[f
     } else {
         return;
     };
-    ui.get_window_draw_list()
+    window_draw_list(ui)
         .add_rect(min, max, color.to_array())
         .filled(true)
         .rounding(theme.radius.medium)

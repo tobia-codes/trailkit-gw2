@@ -1,7 +1,8 @@
 //! memo's Nexus render callbacks (render thread only, nexus-addon-dev skill
 //! §2): the main window with its title bar toggles and the help window
 //! (`RT_Render`), and memo's tab in the Nexus options (`RT_OptionsRender`,
-//! M182). The state they read lives in the parent module's statics.
+//! M182). The state they read lives in the parent module's statics. After
+//! memo stopped on an error only the help window is drawn (R104, Q366).
 
 use std::sync::atomic::Ordering;
 
@@ -23,6 +24,7 @@ use super::{
     CLOSE_REQUESTED, DELETE_KEY_ARMED, DELETE_KEY_PRESSED, HELP, HELP_OPEN, LANGUAGE, NEXUS_LINK,
     NOTES, NotesState, SEARCH_ESCAPED, SEARCH_KEY_ARMED, SEARCH_KEY_PRESSED, SEARCH_TAKES_ESCAPE,
     TITLE_BAR, UNSAVED_CHANGES, VISIBLE, WINDOW_TITLE,
+    guard::{RunState, draft_kept, run_state, take_help_request, try_lock_after_panic},
     help::MemoHelp,
     is_gameplay, settings,
     storage::{receive_loaded_notes, restart_storage_worker_if_asked},
@@ -32,10 +34,20 @@ use crate::{
     options_tab::{VERSION_LINE, draw_options_tab},
 };
 
+/// Nexus' render callback: draws memo while it runs, only the help window
+/// after it stopped on an error (R104), nothing once it stopped completely.
+pub(super) fn render(ui: &nexus::imgui::Ui) {
+    match run_state() {
+        RunState::Running => render_main_window(ui),
+        RunState::HelpOnly => render_help_only(ui),
+        RunState::Stopped => {}
+    }
+}
+
 /// Draws the main window and the help window. Returns immediately while
 /// both are closed, and skips drawing (keeping them open) outside gameplay
 /// unless the settings allow it.
-pub(super) fn render_main_window(ui: &nexus::imgui::Ui) {
+fn render_main_window(ui: &nexus::imgui::Ui) {
     // Stay false on every path that does not draw the window, so the game keeps
     // these keys while memo is hidden.
     SEARCH_KEY_ARMED.store(false, Ordering::Relaxed);
@@ -45,6 +57,9 @@ pub(super) fn render_main_window(ui: &nexus::imgui::Ui) {
     if !(main_visible || HELP_OPEN.load(Ordering::Relaxed))
         || !settings().allows_drawing(is_gameplay())
     {
+        // The test key also works while memo is closed (Q365).
+        #[cfg(feature = "fault-injection")]
+        super::fault_injection::panic_if_requested();
         return;
     }
     // Never wait on the render thread; if `load`/`unload` holds the lock, skip a frame.
@@ -63,6 +78,8 @@ pub(super) fn render_main_window(ui: &nexus::imgui::Ui) {
     let _theme = StyleScope::push(ui, &theme);
     let mut help = HELP.try_lock().ok();
     let mut help = help.as_mut().and_then(|help| help.as_mut());
+    #[cfg(feature = "fault-injection")]
+    super::fault_injection::panic_if_requested();
     if let Some(help) = help.as_deref_mut()
         && !HELP_OPEN.load(Ordering::Relaxed)
     {
@@ -85,10 +102,45 @@ pub(super) fn render_main_window(ui: &nexus::imgui::Ui) {
     }
 }
 
+/// Draws only the help window after memo stopped on an error (R104, Q366):
+/// opened on "Report a problem" with the warning card when the panic or the
+/// keybind asked for it. Touches neither the notes nor memo's settings
+/// window state, and stays visible outside gameplay, so the way to report
+/// the problem is never hidden.
+fn render_help_only(ui: &nexus::imgui::Ui) {
+    // Never wait on the render thread; the lock may be poisoned by the panic.
+    let Some(mut help) = try_lock_after_panic(&HELP) else {
+        return;
+    };
+    let Some(help) = help.as_mut() else {
+        return;
+    };
+    if take_help_request() {
+        help.open_on_problem_tab();
+        HELP_OPEN.store(true, Ordering::Relaxed);
+    } else if !HELP_OPEN.load(Ordering::Relaxed) {
+        // Nexus cleared the flag on Escape.
+        help.close();
+    }
+    if !help.is_open() {
+        return;
+    }
+    let theme = ThemeKind::default().theme();
+    follow_nexus_font_size(settings().text_scale, &theme.typography);
+    let language = Language::from_u8(LANGUAGE.load(Ordering::Relaxed));
+    let _theme = StyleScope::push(ui, &theme);
+    help.draw_stopped(ui, &theme, language, draft_kept());
+    HELP_OPEN.store(help.is_open(), Ordering::Relaxed);
+}
+
 /// Nexus' options render callback: memo's tab in the Nexus options (R53,
 /// Q307–Q309). "Open help" opens the help window or brings it to the front
-/// (Q296); the main render callback draws it from the next frame on.
+/// (Q296); the main render callback draws it from the next frame on. Draws
+/// nothing after memo stopped on an error (R104).
 pub(super) fn render_options_tab(ui: &nexus::imgui::Ui) {
+    if run_state() != RunState::Running {
+        return;
+    }
     let theme = ThemeKind::default().theme();
     follow_nexus_font_size(settings().text_scale, &theme.typography);
     let language = Language::from_u8(LANGUAGE.load(Ordering::Relaxed));

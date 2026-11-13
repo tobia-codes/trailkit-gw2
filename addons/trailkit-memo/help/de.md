@@ -39,6 +39,8 @@ Das **?** in der Titelleiste öffnet dieses Hilfefenster; ein weiterer Klick sch
 
 Das Fenster hat zwei Tabs: **Hilfe** mit diesen Themen und **Problem melden**, das dein Log als Textdatei speichert und das Problemformular auf GitHub öffnet. Bis zum Neustart des Spiels öffnet sich das Fenster wieder auf dem Tab und Thema, das du zuletzt angesehen hast.
 
+Stößt memo auf einen Fehler, hält es an, statt das Spiel abstürzen zu lassen: Dein ungespeicherter Text bleibt als Entwurf erhalten und dieses Fenster öffnet sich auf **Problem melden**. Bis du memo in der Addon-Liste von Nexus neu lädst oder das Spiel neu startest, öffnen Keybind und Schnellzugriffssymbol dieses Fenster.
+
 ## Notizen und Gruppen
 
 Deine Notizen stehen in einer Liste, die du sortieren und in Gruppen ordnen kannst.

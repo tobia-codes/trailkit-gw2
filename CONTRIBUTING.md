@@ -248,7 +248,9 @@ Tests never call live services; tools use committed fixtures. Every command:
   lists an exception.
 - **Pull request** into `develop`, linked to its issue. Describe what changed
   and why, list the snapshots you added and, for addon changes, what you tested
-  in game. Docs (README, help page, plan) change in the same PR as the
+  in game: at least the two-minute smoke test of
+  [`tokens.md` §10](.agents/skills/trailkit-ui/references/tokens.md) (R104)
+  with a fresh `cargo xtask deploy`. Docs (README, help page, plan) change in the same PR as the
   behavior.
 - **CI must pass**: formatting, Clippy and tests on Windows, branch name,
   `cargo deny`. Fix failures; never bypass a hook or a check.
