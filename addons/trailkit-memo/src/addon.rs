@@ -288,6 +288,14 @@ fn load_addon() {
         ));
     }
     let settings = start_storage(trailkit_directory);
+    // Size the fonts now, while no memo window is open: resizing them on the
+    // first frame rebuilds Nexus' font atlas and the whole window blinks once
+    // (Q371). If Nexus' `FontUI` is not ready yet (game start), the render
+    // callback still sizes them on the first frame.
+    render::follow_nexus_font_size(
+        settings.text_scale,
+        &ThemeKind::default().theme().typography,
+    );
 
     if settings.quick_access_icon == QuickAccessIcon::Shown {
         load_texture_from_memory(TEXTURE_QUICK_ACCESS, QUICK_ACCESS_PNG, None);

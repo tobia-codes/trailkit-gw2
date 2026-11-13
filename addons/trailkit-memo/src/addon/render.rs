@@ -298,8 +298,9 @@ fn apply_close_request(notes: &mut NotesState, open: bool) {
 
 /// Resizes the shared fonts when Nexus' `FontUI` size or the memo text
 /// scale changes (M35, M79): body size = `FontUI` size × `text_scale`, the
-/// other sizes are `typography`'s factors of it (R96).
-fn follow_nexus_font_size(text_scale: TextScale, typography: &Typography) {
+/// other sizes are `typography`'s factors of it (R96). `load` calls it once
+/// too, so the first open does not rebuild the font atlas (Q371).
+pub(super) fn follow_nexus_font_size(text_scale: TextScale, typography: &Typography) {
     let link = NEXUS_LINK.load(Ordering::Acquire);
     if link.is_null() {
         return;
