@@ -366,16 +366,18 @@ impl MemoWindow {
         });
     }
 
-    /// Draws the card about notes with unsaved changes (M185). It stays
-    /// hidden while the only such note is the one shown (Q347); "Go to note"
-    /// reveals the next one after the shown note, wrapping around.
+    /// Draws the card about notes with unsaved changes (M185). It stays while
+    /// a draft is left and it is not closed; while the only such note is the
+    /// one shown, it has no "Go to note" (Q354). The button reveals the next
+    /// such note after the shown one, wrapping around.
     fn draw_draft_overview(&mut self, ui: &Ui, language: Language, theme: &Theme) {
         let shown = self.ui_state.shown_note;
-        let count = match self.unsaved_notes.as_slice() {
-            [only] if Some(*only) == shown => 0,
-            notes => notes.len(),
-        };
-        if self.draft_overview.draw(ui, language, theme, count)
+        let count = self.unsaved_notes.len();
+        let can_go_to_note =
+            !matches!(self.unsaved_notes.as_slice(), [only] if Some(*only) == shown);
+        if self
+            .draft_overview
+            .draw(ui, language, theme, count, can_go_to_note)
             == Some(DraftOverviewAction::GoToNote)
         {
             let after_shown = shown

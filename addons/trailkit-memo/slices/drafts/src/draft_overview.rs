@@ -32,13 +32,16 @@ pub struct DraftOverview {
 
 impl DraftOverview {
     /// Draws the card for `count` notes with unsaved changes, unless it was
-    /// closed or `count` is zero. Returns the user's choice.
+    /// closed or `count` is zero. `can_go_to_note` is false while the only
+    /// such note is the one shown: the button has no target then (Q354).
+    /// Returns the user's choice.
     pub fn draw(
         &mut self,
         ui: &Ui,
         language: Language,
         theme: &Theme,
         count: usize,
+        can_go_to_note: bool,
     ) -> Option<DraftOverviewAction> {
         if self.closed || count == 0 {
             return None;
@@ -60,7 +63,8 @@ impl DraftOverview {
                 &mut label.insert((count, language, text)).2
             }
         };
-        let buttons = [Button::new(DraftText::GoToNote.get(language))];
+        let go_to_note = [Button::new(DraftText::GoToNote.get(language))];
+        let buttons: &[Button<'_>] = if can_go_to_note { &go_to_note } else { &[] };
         let outcome = draw_status_card(
             ui,
             theme,
@@ -68,7 +72,7 @@ impl DraftOverview {
                 status: CardStatus::Warning,
                 text: label,
                 detail: None,
-                buttons: &buttons,
+                buttons,
                 close_tooltip: Some(Text::CloseWindow.get(language)),
             },
         );

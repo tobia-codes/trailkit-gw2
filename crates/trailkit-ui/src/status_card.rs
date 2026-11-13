@@ -92,6 +92,9 @@ pub struct StatusCardOutcome {
 /// out, so the card has its final height in the first frame. Must not be
 /// called while the window's draw list is already split into channels.
 pub fn draw_status_card(ui: &Ui, theme: &Theme, card: &StatusCard<'_>) -> StatusCardOutcome {
+    // Icon buttons take their icon as ImGui id: without its own id scope the
+    // card's `x` would clash with the title bar's, and ImGui drops the click.
+    let _id = ui.push_id(card.text);
     let mut outcome = StatusCardOutcome::default();
     let window_left = ui.window_pos()[0];
     let [left, top] = ui.cursor_screen_pos();

@@ -1091,6 +1091,49 @@ fn a_right_click_outside_takes_the_focus() {
     assert!(!focused.get(), "a right click outside takes the focus");
 }
 
+/// The card's close button works while another `x` icon button of the same
+/// window was drawn first, as the title bar's is: both take the icon as
+/// ImGui id, so the card needs its own id scope (M185, the `x` did nothing in
+/// game).
+#[test]
+fn the_status_card_closes_next_to_another_close_button() {
+    let theme = ThemeKind::Dark.theme();
+    let size = [260.0, 300.0];
+    let close_center = [232.0, 28.0];
+    let closed = Cell::new(false);
+    let buttons = [Button::new("Open folder")];
+    let mut harness = UiHarness::new(size);
+    for down in [false, true, false, false] {
+        let _image = harness.frame(&mouse(close_center, down), |ui: &Ui| {
+            in_window(ui, &theme, size, || {
+                let start = ui.cursor_screen_pos();
+                // Another `x` first, out of the way at the bottom.
+                ui.set_cursor_screen_pos([start[0], size[1] - 40.0]);
+                let _title_close = draw_icon_button(ui, &theme, Icon::X, "Close");
+                ui.set_cursor_screen_pos(start);
+                let outcome = draw_status_card(
+                    ui,
+                    &theme,
+                    &StatusCard {
+                        status: CardStatus::Danger,
+                        text: "Your notes could not be loaded. The damaged file was kept as:",
+                        detail: Some(CardDetail {
+                            text: "backups/notes.corrupt.json",
+                            style: TextStyle::Body,
+                        }),
+                        buttons: &buttons,
+                        close_tooltip: Some("Close"),
+                    },
+                );
+                if outcome.closed {
+                    closed.set(true);
+                }
+            });
+        });
+    }
+    assert!(closed.get(), "a click on the card's x closes it");
+}
+
 /// The empty state in every variant: title only with two buttons, icon with
 /// title and hint, one button, and the buttons stacked in a narrow pane (Q283: one layout).
 #[test]
