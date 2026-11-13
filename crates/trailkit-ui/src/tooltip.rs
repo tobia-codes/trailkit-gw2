@@ -5,10 +5,11 @@
 //! outline, small corners and the design's one shadow (Q327). Every tooltip goes
 //! through this module; clippy bans the plain ImGui calls (see `clippy.toml`).
 
-use nexus::imgui::{StyleColor, StyleVar, Ui};
+use nexus::imgui::{StyleColor, StyleVar, Ui, sys};
 
 use crate::{
     color::Color,
+    dropdown::packed,
     glyph_metrics::capital_middle,
     icons::Icon,
     text::{IconText, TextFlow, TextStyle, draw_icon_text},
@@ -90,20 +91,43 @@ pub fn draw_tooltip_with_border(ui: &Ui, theme: &Theme, border: Color, content: 
 /// window below the tooltip, which ImGui draws first, so only the part below
 /// the tooltip shows. The clip rectangle is widened, as the tooltip may
 /// reach beyond that window.
+///
+/// Draws through the raw draw list, not `ui.get_window_draw_list()`: a
+/// tooltip is often shown while its caller holds the window's `DrawListMut`
+/// (the editor over a chat-link chip), and imgui-rs panics on a second one.
 fn draw_shadow(ui: &Ui, theme: &Theme, [min, max]: [[f32; 2]; 2]) {
     let offset = theme.shadow.popup_offset;
-    let draw_list = ui.get_window_draw_list();
-    draw_list.with_clip_rect([0.0, 0.0], ui.io().display_size, || {
-        draw_list
-            .add_rect(
-                [min[0], min[1] + offset],
-                [max[0], max[1] + offset],
-                theme.shadow.popup.to_array(),
-            )
-            .filled(true)
-            .rounding(theme.radius.small)
-            .build();
-    });
+    let display = ui.io().display_size;
+    // SAFETY: called on the render thread inside a frame, so the current
+    // window's draw list is valid; the pushed clip rectangle is popped again
+    // before returning, and the calls only add one rectangle.
+    unsafe {
+        let draw_list = sys::igGetWindowDrawList();
+        sys::ImDrawList_PushClipRect(
+            draw_list,
+            sys::ImVec2 { x: 0.0, y: 0.0 },
+            sys::ImVec2 {
+                x: display[0],
+                y: display[1],
+            },
+            false,
+        );
+        sys::ImDrawList_AddRectFilled(
+            draw_list,
+            sys::ImVec2 {
+                x: min[0],
+                y: min[1] + offset,
+            },
+            sys::ImVec2 {
+                x: max[0],
+                y: max[1] + offset,
+            },
+            packed(theme.shadow.popup),
+            theme.radius.small,
+            sys::ImDrawCornerFlags_All as i32,
+        );
+        sys::ImDrawList_PopClipRect(draw_list);
+    }
 }
 
 /// How many whole pixels the capitals of the current font sit below the middle

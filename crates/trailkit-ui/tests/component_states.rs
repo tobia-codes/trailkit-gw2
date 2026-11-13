@@ -34,6 +34,7 @@ use trailkit_ui::{
         draw_window as draw_title_bar,
     },
     toast::{Toast, ToastAction, ToastExtras, ToastTone, draw_toast, draw_toast_with_extras},
+    tooltip::draw_tooltip,
 };
 use trailkit_ui_testing::{
     harness::{FrameInput, UiHarness},
@@ -1004,6 +1005,23 @@ fn every_status_card_state() {
             );
         }
     }
+}
+
+/// A tooltip shown while the caller holds the window's draw list, as the
+/// editor does over a chat-link chip: imgui-rs allows one `DrawListMut` at a
+/// time, so a tooltip must not take a second one (it crashed the game).
+#[test]
+fn tooltip_while_the_window_draw_list_is_held() {
+    let theme = ThemeKind::Dark.theme();
+    let size = [200.0, 80.0];
+    let mut harness = UiHarness::new(size);
+    let _image = harness.frame(&mouse([40.0, 30.0], false), |ui: &Ui| {
+        in_window(ui, &theme, size, || {
+            let draw_list = ui.get_window_draw_list();
+            draw_tooltip(ui, &theme, "Tooltip");
+            draw_list.add_line([0.0, 0.0], [1.0, 1.0], [1.0; 4]).build();
+        });
+    });
 }
 
 /// The empty state in every variant: title only with two buttons, icon with
