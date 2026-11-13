@@ -32,6 +32,7 @@ build before playing. The in-game check of the draft rescue (`draft=kept` in the
    `component_states.rs` (1127), `main_window/tests.rs` (1010), `editor.rs::draw` (101), `token_groups.rs` (466).
 4. **Wishes of 2026-11-13 (grilling; plan requirements):** event: filters ("used in notes", a meta train order: research trains,
    timing, a source with licence/GDPR first), favorite events. memo: struck-through checked items, a simple daily/weekly window, favorites.
+   All addons: more languages without growing the DLLs (BACKLOG BL15, grilling first).
 5. Then the queue below (theme character grilling, B23–B25) and the review items, one at a time.
 
 **Decided, not scheduled:** Q340 – daily backups with restore (M11, M31's "Restore from backup") stay in M28's order after settings
