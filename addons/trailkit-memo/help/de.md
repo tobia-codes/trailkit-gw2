@@ -77,7 +77,7 @@ Klicke oben rechts in einer Notiz auf **Bearbeiten** oder doppelklicke die Notiz
 ### Checkboxen und Links
 
 - **Checkboxen** in einer Notiz kannst du direkt abhaken, ohne den Editor.
-- **Links** öffnen sich im Browser (nur `http://` und `https://`); fahre mit der Maus darüber, um das Ziel zu sehen.
+- **Links** öffnen sich im Browser (nur `http://` und `https://`), E-Mail-Adressen in deinem Mailprogramm; fahre mit der Maus darüber, um das Ziel zu sehen.
 
 ### Chat-Links
 

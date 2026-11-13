@@ -9,7 +9,7 @@ use super::{HelpWindowState, ParsedHelp, ParsedTopic};
 use crate::{
     chat_link_chip::ChipContext,
     list_row::{ListRow, draw_list_row},
-    markdown_view::{MarkdownAction, draw_markdown, first_line_font, open_web_link},
+    markdown_view::{MarkdownAction, draw_markdown, first_line_font, open_link},
     page::{PageHead, draw_page},
     pane_columns::{FillColumn, FixedColumn, PaneColumns, draw_resizable_pane_columns},
     text::TextStyle,
@@ -103,6 +103,6 @@ fn draw_topic(ui: &Ui, theme: &Theme, topic: &ParsedTopic, chips: ChipContext<'_
         draw_markdown(ui, &topic.document, theme, chips, None)
     });
     if let Some(Some(MarkdownAction::OpenLink(url))) = action {
-        open_web_link(&url);
+        open_link(&url);
     }
 }

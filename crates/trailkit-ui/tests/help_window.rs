@@ -256,3 +256,49 @@ fn every_help_window_state_at_the_minimum_width() {
         }
     }
 }
+
+/// A topic with an e-mail link (memo M183), as in the privacy topic.
+const HELP_MAIL: &str = "## Privacy\nWhat stays on your PC and what leaves it.\n\n### Contact\nWrite to <privacy@example.com> if you have questions.\n";
+
+/// Over the e-mail address in [`HELP_MAIL`] at the minimum width.
+const MAIL_LINK: [f32; 2] = [270.0, 212.0];
+
+#[test]
+fn a_hovered_email_link_shows_its_address() {
+    for (kind, theme_name) in [(ThemeKind::Dark, "dark"), (ThemeKind::Light, "light")] {
+        let theme = kind.theme();
+        let mut window = HelpWindow::new();
+        window.open();
+        let content = HelpWindowContent {
+            id: "help",
+            help_text: HELP_MAIL,
+            texts: TEXTS_EN,
+            problem: ProblemPage {
+                export_button: ButtonState::Ready,
+                status: None,
+            },
+            chips: ChipContext { text: &chip_text },
+        };
+        let mut harness = UiHarness::new([IMAGE_WIDTH, HEIGHT]);
+        let input = FrameInput {
+            mouse_position: MAIL_LINK,
+            ..FrameInput::default()
+        };
+        let image = harness.settle(SETTLE_FRAMES, &input, |ui: &Ui| {
+            let _style = StyleScope::push(ui, &theme);
+            window.draw_in(
+                ui,
+                &theme,
+                Window::new("help")
+                    .position([0.0, 0.0], Condition::Always)
+                    .size([10.0, HEIGHT], Condition::Always),
+                &content,
+            );
+        });
+        assert_snapshot(
+            env!("CARGO_MANIFEST_DIR"),
+            &format!("help-window-mail-link-hover-{theme_name}"),
+            &image,
+        );
+    }
+}

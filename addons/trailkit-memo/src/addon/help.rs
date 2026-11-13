@@ -30,7 +30,7 @@ use trailkit_ui::{
     help_window::{
         HelpAction, HelpWindow, HelpWindowContent, HelpWindowState, HelpWindowTexts, ProblemPage,
     },
-    markdown_view::open_web_link,
+    markdown_view::open_link,
     status_line::Status,
     theme::Theme,
     title_bar::{TitleBarTexts, TitleBarToggle},
@@ -179,7 +179,7 @@ impl MemoHelp {
         }
         match action {
             Some(HelpAction::ExportLog) => self.start_export(language),
-            Some(HelpAction::ReportProblem) => open_web_link(&problem_report_url(
+            Some(HelpAction::ReportProblem) => open_link(&problem_report_url(
                 env!("CARGO_PKG_REPOSITORY"),
                 ISSUE_FORM_ADDON,
                 env!("CARGO_PKG_VERSION"),

@@ -77,7 +77,7 @@ Click **Edit** at the top right of a note, or double-click the note. You edit th
 ### Checkboxes and links
 
 - **Checkboxes** in a note can be ticked directly, without the editor.
-- **Links** open in your browser (only `http://` and `https://`); hover a link to see where it goes.
+- **Links** open in your browser (only `http://` and `https://`), e-mail addresses in your mail program; hover a link to see where it goes.
 
 ### Chat links
 

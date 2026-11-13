@@ -7,7 +7,7 @@ use std::sync::Arc;
 use jiff::Timestamp;
 use trailkit_ui::{
     markdown,
-    markdown_view::{MarkdownAction, open_web_link},
+    markdown_view::{MarkdownAction, open_link},
 };
 
 use trailkit_memo_editor::{
@@ -438,7 +438,7 @@ impl MemoWindow {
                     self.save_notes();
                 }
             }
-            WindowAction::Markdown(MarkdownAction::OpenLink(url)) => open_web_link(url),
+            WindowAction::Markdown(MarkdownAction::OpenLink(url)) => open_link(url),
             WindowAction::Markdown(MarkdownAction::ChatLinkCopied(_)) => {
                 self.toast = Some(WindowToast {
                     toast: Toast::new(chip_text(ChipText::Copied, language).to_owned()),
