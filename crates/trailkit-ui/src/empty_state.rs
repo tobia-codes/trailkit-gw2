@@ -29,7 +29,8 @@ pub struct EmptyState<'text> {
 }
 
 /// The buttons of an empty state: always one primary (`lay-one-primary`)
-/// and at most one regular button right of it (below it if both do not fit).
+/// and at most one regular button left of it; if both do not fit side by
+/// side, the primary one stacks on top (R103).
 #[derive(Debug, Clone, Copy)]
 pub struct EmptyStateButtons<'text> {
     /// Label of the primary button.
@@ -119,8 +120,9 @@ fn draw_centered_paragraph(ui: &Ui, theme: &Theme, style: TextStyle, text: &str,
     ui.set_cursor_pos([x, y + spacing[1]]);
 }
 
-/// Draws `buttons` centered in `width`, side by side if they fit, else
-/// stacked; returns the clicked one.
+/// Draws `buttons` centered in `width`, side by side with the primary one
+/// on the right if they fit, else stacked with the primary one on top
+/// (R103); returns the clicked one.
 fn draw_buttons(
     ui: &Ui,
     theme: &Theme,
@@ -139,14 +141,19 @@ fn draw_buttons(
         _ => primary_width,
     };
     indent_to_center(ui, row_width, width);
-    let mut action =
-        draw_primary_button(ui, theme, buttons.primary).then_some(EmptyStateAction::Primary);
-    if let (Some(label), Some(secondary)) = (buttons.secondary, secondary_width) {
-        if fits_one_row {
-            ui.same_line_with_spacing(0.0, spacing);
-        } else {
-            indent_to_center(ui, secondary, width);
+    let secondary = buttons.secondary.zip(secondary_width);
+    let mut action = None;
+    if fits_one_row && let Some((label, _)) = secondary {
+        if draw_button(ui, theme, label) {
+            action = Some(EmptyStateAction::Secondary);
         }
+        ui.same_line_with_spacing(0.0, spacing);
+    }
+    if draw_primary_button(ui, theme, buttons.primary) {
+        action = Some(EmptyStateAction::Primary);
+    }
+    if !fits_one_row && let Some((label, secondary)) = secondary {
+        indent_to_center(ui, secondary, width);
         if draw_button(ui, theme, label) {
             action = Some(EmptyStateAction::Secondary);
         }

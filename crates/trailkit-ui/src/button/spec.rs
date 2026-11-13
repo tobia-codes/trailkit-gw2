@@ -29,12 +29,13 @@ use crate::{
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ButtonKind {
     /// The current `Button` style colors with a `border` frame, e.g.
-    /// "Cancel"; on a tinted error toast `bg.active` (memo M180).
+    /// "Cancel", also on a tinted toast or status card (R103).
     #[default]
     Regular,
     /// The one primary (brass) button of a view (`lay-one-primary`).
     Primary,
-    /// The `danger` fill that confirms a destructive action (memo M146).
+    /// The `danger` fill of every delete button, e.g. "Empty trash" or the
+    /// confirming button of a delete question (R105, memo M146).
     DangerFill,
 }
 

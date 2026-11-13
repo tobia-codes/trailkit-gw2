@@ -10,7 +10,7 @@
 
 use crate::draw_list::window_draw_list;
 use crate::tooltip::draw_tooltip;
-use nexus::imgui::{ChildWindow, ImColor32, StyleColor, Ui, WindowHoveredFlags};
+use nexus::imgui::{ChildWindow, ImColor32, Ui, WindowHoveredFlags};
 
 use crate::{
     button::{Button, ButtonState, draw_popup_icon_button, icon_button_width},
@@ -321,13 +321,6 @@ pub fn draw_toast_with_extras(
     let padding = theme.spacing.small;
     let [left, top] = [card_start[0] + padding, card_start[1] + padding];
     draw_toast_text(ui, theme, toast, extras, [left, top]);
-    // Buttons on the tinted error fill use `bg.active`, so they stand out.
-    let _buttons = (toast.tone == ToastTone::Error).then(|| {
-        [
-            ui.push_style_color(StyleColor::Button, theme.surface.active.to_array()),
-            ui.push_style_color(StyleColor::ButtonHovered, theme.surface.pressed.to_array()),
-        ]
-    });
     outcome.clicked_action = draw_toast_actions(ui, theme, actions, geometry, [left, top]);
     if let Some(tooltip) = extras.close_tooltip {
         let right = card_end[0] - padding;
