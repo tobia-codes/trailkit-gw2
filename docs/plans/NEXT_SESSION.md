@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-13 (session 35). Current state and
+Last updated: 2026-11-13 (session 35, PR #124 open). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -14,13 +14,16 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 **First, ask the user: can you test in game now?** Pending checks with where/how/expected: [`in-game-tests.md`](in-game-tests.md)
 (user request 2026-11-13: keep it current until each item is confirmed; ask every session).
 
-**Session 34 (2026-11-13).** Merged after the user's OK: #116, this handoff, `feature/crash-protection` (R104: `catch_unwind` guard
-around every Nexus callback, help window only after a panic, draft rescue, `trailkit_ui::draw_list`, Cargo feature `fault-injection` with
-`cargo xtask deploy … --features`), `chore/plan-event-memo-wishes`, #122 flicker fix (Q371, confirmed in game), #123 (BL16).
+**Session 35 (2026-11-13).** PR [#124](https://github.com/tobia-codes/trailkit-gw2/pull/124) `feature/button-cleanup` → `develop` is open
+(user OK to push and open it; auto-merge NOT armed). R105 (delete always red, menu entries too), R106 (irreversible discards red,
+UX rule `lay-danger-discard`), M187, R103 cleanup; mockup https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr (v6, section anchors).
+The cloud clone fetches only `develop`; to work on the branch: `git fetch origin feature/button-cleanup:feature/button-cleanup && git switch feature/button-cleanup`.
 
 **Open, in this order:**
-1. **Button cleanup (R103, R105, M187):** implemented on `feature/button-cleanup` (2 commits, not pushed yet: push needs the user's OK,
-   then snapshots via CI per R97, §10 review, in-game test above, merge OK). Q375/Q376: red "Discard" (R106).
+1. **PR #124:** check CI; the Windows job should fail on stale snapshots and upload `snapshot-updates` (R97): download, review every
+   changed snapshot whole against the mockup and `tokens.md` §10, commit the references, push, all required checks green. Then the
+   in-game tests 1–9 (`in-game-tests.md`), then ask for the merge OK and arm auto-merge. Side finding: the `min-de-dialog-*` fixtures
+   build the confirmation text in English (test only); fix only if the user agrees.
 2. **File-length splits (R77):** approved Q91 (`note_list.rs`/`draw_group`), Q95 `draw_dropdown`, Q96 `editor/view.rs`, Q105
    `markdown_view.rs`. Grill the rest by concern, never split unasked: `theme.rs` (421), `rows.rs` (422, `draw_note_row` 91),
    `main_window.rs` (428), `actions.rs` (451, Q134), `help_text.rs::get` (104, a table; Q92 said no for `Text::get`),
