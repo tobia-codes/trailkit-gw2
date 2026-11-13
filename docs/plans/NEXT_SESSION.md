@@ -18,12 +18,27 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 (PR with auto-merge): the help window with problem page and log export (R95, R100), memo's Nexus options tab (M182), the help
 rewrite by task with `PRIVACY.md` embedded as last topic (M181), the help window laid out like the main window (R101: shared
 `pane_columns::draw_resizable_pane_columns` and `page::draw_page`, tab/topic/list width saved in memo's `ui_state.json`), e-mail
-links (M183), the shared `text::draw_icon_text` (Q325/Q326) and the new tooltip look with the design's one shadow (R102). Check that
-the PR merged and CI passed; if not, fix on a follow-up branch from `origin/develop`.
+links (M183), the shared `text::draw_icon_text` (Q325/Q326) and the new tooltip look with the design's one shadow (R102). **PR #114
+merged 2026-11-13** (all CI checks green). The local branch `feature/help-problem-page` is gone on GitHub; the user deletes local
+leftovers by hand (Q211/Q240).
+
+**DLL size (measured 2026-11-13, R72):** release `trailkit-memo.dll` 2 629 120 bytes (2.51 MiB; 2.31 MiB before #114, about
++200 KB for help window, problem page, log export and the new components). Tried without any gain (0 bytes each): `lto = "fat"`,
+`strip = "symbols"` (MSVC keeps symbols in the `.pdb`), ImGui C++ with `/Gy /Gw` (clang-cl already drops unused functions). Every
+Nexus addon carries its own Dear ImGui (`arcdps-imgui-sys`/cimgui); Nexus shares only the context. Remaining options cost
+performance or safety and stay rejected (R72: `opt-level` s/z, `panic = "abort"`). **Q329 (deferred by the user):** a per-crate
+breakdown with `cargo bloat` happens in the next release preparation, not before.
+
 **Open, in this order:**
 1. **Q312 round:** draft warning and memo's problem hint ("notes recovered") onto `draw_icon_text`/`draw_status_line`; R87 mockup
    first. New branch from freshly fetched `origin/develop`.
 2. `theme.rs` has 418 code lines (hint at 400): propose a split by concern via grilling, never split unasked (R77).
+3. Then the queue below (theme character grilling, B23–B25) and the review items, one at a time.
+
+**Lessons from session 32 (keep doing):** mockups before every visible change (R87) paid off: the user corrected panes, page head,
+shadow size and tooltip look from the drafts. Snapshot tests must place tooltips with `StyleScope::push_with_cursor_extent(…, None)`,
+never the real cursor, or images change between runs. A shared component that sets a style color itself (tooltip border) overrides
+callers that pushed their own: give such callers an explicit variant (`draw_tooltip_with_border`).
 
 **Deferred by the user (2026-11-12): one theme character for addons and the coming React website.** No code yet. Mockups:
 https://claude.ai/artifact/SFFrXawiqYD6HouhdihGdv (latest: Papier A–D). Wanted: GW2-reminiscent, own character, dark, very subtle
@@ -35,7 +50,7 @@ for fan content are not read yet; never copy game or Blish HUD art, never look o
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
 
-Next ids: **M184+, R103+, B26+, questions from 329**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M184+, R103+, B26+, questions from 330**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 
 - **Housekeeping (Q211/Q240):** the user deletes the approved old local branches by hand (all `chore/`, `contributor-docs`, `handoff-*`,
   `addon-status-*`, `help-window-design`, merged PR branches).
