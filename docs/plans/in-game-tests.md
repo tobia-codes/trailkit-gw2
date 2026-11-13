@@ -6,7 +6,7 @@ whether the user can test in game now; keep this list current with every
 change that needs an in-game check; remove an item only after the user
 confirms it, and note failures as bugs in the relevant plan. Every item
 says how to get there click by click, what to look at, how it looked
-before and how it must look now.
+before, how it must look now and links the approved design (R87 mockup).
 
 ## Setup (once per test session)
 
@@ -26,10 +26,12 @@ before and how it must look now.
 ## Branch `feature/button-cleanup` (R105, R106, M187)
 
 "Red filled" means a red button with the label in the window color, like
-the brass "Save" button but red.
+the brass "Save" button but red. Approved design for all tests below:
+[button cleanup mockup](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr) (each test links its section).
 
 ### 1 · "Empty" in the trash
 
+- **Design:** [mockup, section `trash-buttons`](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr#trash-buttons)
 - **Get there:** select the extra note › `⋯` (right of "Edit", top right
   of the note) › Delete. Then the **menu button** (top left of the title
   bar) › **Trash**.
@@ -40,6 +42,7 @@ the brass "Save" button but red.
 
 ### 2 · "Delete permanently" icon in the trash
 
+- **Design:** [mockup, section `trash-buttons`](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr#trash-buttons)
 - **Get there:** in the trash (test 1), click the entry in the list.
 - **Look at:** the **trash icon** top right, left of brass "Restore"; hover it.
 - **Before:** red icon without background.
@@ -48,6 +51,7 @@ the brass "Save" button but red.
 
 ### 3 · Confirm button of the delete questions (unchanged)
 
+- **Design:** [mockup, section `delete-dialog`](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr#delete-dialog)
 - **Get there:** (a) in the trash click "Empty"; (b) back arrow to leave the
   trash, right-click the group that holds a note › Delete.
 - **Look at:** the confirm button on the right of the question.
@@ -56,6 +60,7 @@ the brass "Save" button but red.
 
 ### 4 · "Delete" in the note menu
 
+- **Design:** [mockup, section `menu-delete`](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr#menu-delete)
 - **Get there:** select a note › `⋯` right of "Edit".
 - **Look at:** the last entry **"Delete"**; hover it.
 - **Before:** white text and icon like the other entries.
@@ -64,6 +69,7 @@ the brass "Save" button but red.
 
 ### 5 · "Delete" in the right-click menu
 
+- **Design:** [mockup, section `menu-delete`](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr#menu-delete)
 - **Get there:** right-click a note in the list; then right-click the group.
   Then select the group's note › **Edit** › right-click the group.
 - **Look at:** the entry **"Delete"**.
@@ -73,6 +79,7 @@ the brass "Save" button but red.
 
 ### 6 · "Discard" in "Unsaved changes"
 
+- **Design:** [mockup, section `discard-dialogs`](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr#discard-dialogs)
 - **Get there:** select a note › **Edit** › type a letter in the text ›
   click **another note** in the list.
 - **Look at:** the **"Discard"** button on the left of the dialog.
@@ -83,6 +90,7 @@ the brass "Save" button but red.
 
 ### 7 · "Discard" on the draft card
 
+- **Design:** [mockup, section `draft-card`](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr#draft-card)
 - **Get there:** select a note › **Edit** › type a letter › reload memo
   (Setup 5) without saving › open memo › select that note.
 - **Look at:** the yellow card above the note, button **"Discard"**.
@@ -92,6 +100,7 @@ the brass "Save" button but red.
 
 ### 8 · Save error: "Try again" toast and "Saving failed" dialog
 
+- **Design:** [mockup, section `error-toast`](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr#error-toast) and [discard dialogs](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr#discard-dialogs)
 - **Get there:** in Windows Explorer open `<GW2>/addons/trailkit/memo/`,
   `notes.json` › Properties › tick **Read-only**. In game: select a note ›
   Edit › type a letter › **Save** › click another note.
@@ -105,6 +114,7 @@ the brass "Save" button but red.
 
 ### 9 · Buttons of the empty memo
 
+- **Design:** [mockup, section `empty-state`](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr#empty-state)
 - **Get there:** close the game, rename `<GW2>/addons/trailkit/memo/notes.json`
   to `notes.json.bak`, start the game, open memo. Afterwards close the game
   and rename it back.
