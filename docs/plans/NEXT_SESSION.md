@@ -14,22 +14,16 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 **Session 32 (2026-11-13).** R98/B25: problem reports via the backend behind a flag, GitHub form as fallback (Q288–Q293 in
 `backend.md`). Before the first release: DPF listing check (R99).
 
-**▶ Work branch: `feature/help-problem-page`** (local only on the user's WSL machine, **not pushed**; keep working on it, no new
-branch, no push without the user's OK). Session 32 added: memo's Nexus options tab (M182, `options_tab.rs`, `addon/render.rs`), the
-help rewrite by task with `PRIVACY.md` embedded as last topic (M181, `help_document.rs`), the help window laid out like the main
-window (R101: shared `pane_columns::draw_resizable_pane_columns` and `page::draw_page`, tab/topic/list width saved in memo's
-`ui_state.json`), e-mail links (M183, `open_link`/`is_openable_link`), and the shared `text::draw_icon_text` (Q325/Q326, status
-line text centered on its icon). Deployed after every step. **In game confirmed by the user:** export to Downloads with ` (2)` and
-Explorer selection; all help texts. **Still to test in game:** two panes, splitter limits (8/30 characters), saved tab/topic/width
-after a restart, e-mail link, Nexus options "Open help", GitHub link, status line centering, the tooltips with the 6 px gap, and
-Escape with main and help window open (adjust the Keyboard shortcuts line in `help/{en,de}.md` if both close).
+**Shipped in session 32:** `feature/help-problem-page` went into `develop` with the user's merge OK after the full in-game test
+(PR with auto-merge): the help window with problem page and log export (R95, R100), memo's Nexus options tab (M182), the help
+rewrite by task with `PRIVACY.md` embedded as last topic (M181), the help window laid out like the main window (R101: shared
+`pane_columns::draw_resizable_pane_columns` and `page::draw_page`, tab/topic/list width saved in memo's `ui_state.json`), e-mail
+links (M183), the shared `text::draw_icon_text` (Q325/Q326) and the new tooltip look with the design's one shadow (R102). Check that
+the PR merged and CI passed; if not, fix on a follow-up branch from `origin/develop`.
 **Open, in this order:**
-1. **Finish the in-game test** above, fix findings.
-2. **Ship (R74):** fmt, host and `cargo xwin` clippy, `cargo test`, `cargo xtask ui-test` (full run, background), `check-file-length`,
-   `check-names`; then only with the user's merge OK in that conversation: push, PR into `develop`, `gh pr merge --auto --merge
-   --delete-branch`.
-3. **Q312 round (after the merge):** draft warning and memo's problem hint ("notes recovered") onto `draw_icon_text`/
-   `draw_status_line`; R87 mockup first.
+1. **Q312 round:** draft warning and memo's problem hint ("notes recovered") onto `draw_icon_text`/`draw_status_line`; R87 mockup
+   first. New branch from freshly fetched `origin/develop`.
+2. `theme.rs` has 418 code lines (hint at 400): propose a split by concern via grilling, never split unasked (R77).
 
 **Deferred by the user (2026-11-12): one theme character for addons and the coming React website.** No code yet. Mockups:
 https://claude.ai/artifact/SFFrXawiqYD6HouhdihGdv (latest: Papier A–D). Wanted: GW2-reminiscent, own character, dark, very subtle
