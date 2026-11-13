@@ -20,10 +20,7 @@ over every state; smoke test in `tokens.md` §10; Cargo feature `fault-injection
 build before playing. The in-game check of the draft rescue (`draft=kept` in the log) is still open: confirm it on the next test.
 
 **Open, in this order:**
-1. **Window flicker on first open (Q371, user OK), branch `bugfix/font-size-at-load`:** memo registers its fonts at the base size and
-   resizes them on the first frame (log probe: 16 → 17 px at text scale 1.0625); Nexus rebuilds the atlas and the whole window blinks
-   once. Fix: call `follow_nexus_font_size(settings().text_scale, …)` at the end of `load_addon`; keep the first-frame path for when
-   Nexus' `FontUI` is not ready yet at game start.
+1. **Window flicker on first open (Q371):** fixed on `bugfix/font-size-at-load` (fonts sized at the end of `load`), confirmed in game.
 2. **Button cleanup (R103, Q338, Q350):** `DangerFill` confirm button, the error toast's `bg.active` buttons and the empty state's brass
    button on the left onto the two styles and the order; R87 mockup first; keep the icon-label gap.
 3. **File-length splits (R77):** approved Q91 (`note_list.rs`/`draw_group`), Q95 `draw_dropdown`, Q96 `editor/view.rs`, Q105
