@@ -98,10 +98,10 @@ pub fn draw_danger_fill_button_with_size(
 
 /// Draws an icon-only delete button (R105, memo M145, "Delete
 /// permanently"): the `danger` fill of [`draw_danger_button`] with the icon
-/// in the window color, also at rest.
+/// in the window color, also at rest. The tooltip keeps the regular text
+/// color.
 pub fn draw_danger_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str) -> bool {
     let danger = theme.status.danger;
-    let _icon = ui.push_style_color(StyleColor::Text, theme.surface.window.to_array());
     draw_icon_button_with_fill(
         ui,
         theme,
@@ -111,6 +111,7 @@ pub fn draw_danger_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str
             resting: danger,
             hovered: danger.with_alpha(0.85),
             pressed: danger.with_alpha(0.7),
+            icon: Some(theme.surface.window),
         },
     )
 }
@@ -231,6 +232,7 @@ pub fn draw_icon_toggle(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str, activ
             resting: theme.surface.active,
             hovered: theme.surface.active,
             pressed: theme.surface.active,
+            icon: None,
         }
     } else {
         IconButtonFill::plain(theme, theme.surface.hover)
@@ -247,6 +249,9 @@ struct IconButtonFill {
     hovered: Color,
     /// Fill while pressed.
     pressed: Color,
+    /// Icon color; `None` takes the current `Text` style color. Only the
+    /// icon uses it, never the tooltip.
+    icon: Option<Color>,
 }
 
 impl IconButtonFill {
@@ -257,13 +262,14 @@ impl IconButtonFill {
             resting: Color::TRANSPARENT,
             hovered,
             pressed: theme.surface.active,
+            icon: None,
         }
     }
 }
 
 /// The icon button behind [`draw_icon_toggle`], [`draw_popup_icon_button`]
-/// and [`draw_danger_icon_button`]: the icon in the current `Text` color on
-/// `fill`.
+/// and [`draw_danger_icon_button`]: the icon in `fill.icon` (else the
+/// current `Text` color) on `fill`.
 fn draw_icon_button_with_fill(
     ui: &Ui,
     theme: &Theme,
@@ -271,7 +277,10 @@ fn draw_icon_button_with_fill(
     tooltip: &str,
     fill: IconButtonFill,
 ) -> bool {
-    let color = ImColor32::from(ui.style_color(StyleColor::Text)).to_bits();
+    let color = fill.icon.map_or_else(
+        || ImColor32::from(ui.style_color(StyleColor::Text)).to_bits(),
+        |icon| ImColor32::from(icon.to_array()).to_bits(),
+    );
     let clicked = {
         let _colors = [
             ui.push_style_color(StyleColor::Text, [0.0; 4]),
