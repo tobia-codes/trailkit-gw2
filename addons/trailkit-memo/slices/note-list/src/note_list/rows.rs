@@ -2,6 +2,7 @@
 //! badges and search hits, row interaction and the inline rename input.
 
 use std::borrow::Cow;
+use trailkit_ui::draw_list::window_draw_list;
 use trailkit_ui::tooltip::draw_tooltip;
 
 use nexus::imgui::{
@@ -132,7 +133,7 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut RowContext<'_, '_>) {
         if let Some(search) = context.search {
             draw_title_hits(ui, context.theme, search.query, &label, title_position);
         }
-        ui.get_window_draw_list().add_text(
+        window_draw_list(ui).add_text(
             title_position,
             context.theme.text.primary.to_array(),
             &*label,
@@ -145,7 +146,7 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut RowContext<'_, '_>) {
         RowKind::CollapsedGroup(group.id)
     };
     record_row(ui, node, kind, row_start[0], context);
-    ui.get_window_draw_list().add_text(
+    window_draw_list(ui).add_text(
         [count_x, row_start[1] + context.frame_padding[1]],
         context.theme.text.secondary.to_array(),
         count,
@@ -262,7 +263,7 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut RowContext<'_, '_>) {
         let mut count_buffer = [0; 20];
         let count = format_count(hits, &mut count_buffer);
         let count_x = title_end - ui.calc_text_size(count)[0];
-        ui.get_window_draw_list().add_text(
+        window_draw_list(ui).add_text(
             [count_x, row_start[1] + context.frame_padding[1]],
             context.theme.text.secondary.to_array(),
             count,
@@ -371,7 +372,7 @@ fn draw_rename_input(
     };
     let theme = context.theme;
     let row_end = ui.window_content_region_max()[0] + ui.window_pos()[0];
-    ui.get_window_draw_list()
+    window_draw_list(ui)
         .add_rect(
             row_start,
             [row_end, row_start[1] + ui.frame_height()],
@@ -428,8 +429,7 @@ fn draw_unsaved_mark(ui: &Ui, theme: &Theme, end: f32, text_top: f32) -> (f32, b
     let ink = icon_visible_box(Icon::TRIANGLE_ALERT.glyph(), ui.text_line_height());
     let left = (end - width).round();
     let top = (text_top + text_middle - f32::midpoint(ink[1], ink[3])).round();
-    ui.get_window_draw_list()
-        .add_text([left, top], theme.status.warning.to_array(), glyph);
+    window_draw_list(ui).add_text([left, top], theme.status.warning.to_array(), glyph);
     let is_hovered = ui.is_mouse_hovering_rect([left, top], [end, top + ui.text_line_height()]);
     (left, is_hovered)
 }
@@ -467,7 +467,7 @@ fn draw_row_badge(ui: &Ui, badge: RowBadge, anchor: [f32; 2], theme: &Theme) -> 
     // Whole pixels, so the outline stays sharp instead of a soft band.
     let stroke = (line_height / 12.0).round().max(1.0);
     let max = [start[0] + width, start[1] + height];
-    let draw_list = ui.get_window_draw_list();
+    let draw_list = window_draw_list(ui);
     draw_list
         .add_rect(start, max, color.with_alpha(0.16).to_array())
         .rounding(line_height * 0.25)
@@ -494,7 +494,7 @@ fn draw_title_hits(ui: &Ui, theme: &Theme, query: &SearchQuery, title: &str, pos
     for range in query.hit_ranges(title) {
         let left = position[0] + ui.calc_text_size(&title[..range.start])[0];
         let right = position[0] + ui.calc_text_size(&title[..range.end])[0];
-        ui.get_window_draw_list()
+        window_draw_list(ui)
             .add_rect(
                 [left, position[1]],
                 [right, position[1] + ui.text_line_height()],

@@ -7,6 +7,7 @@
 //! the log folders. The steps are started one by one; the GitHub button is
 //! never disabled.
 
+use crate::draw_list::window_draw_list;
 use nexus::imgui::Ui;
 
 use super::{HelpAction, HelpWindowContent};
@@ -121,7 +122,7 @@ fn draw_step_number(ui: &Ui, theme: &Theme, number: u8, center: [f32; 2], diamet
     let label = format_count(usize::from(number), &mut buffer);
     let _style = TextStyle::BodyStrong.push(ui, theme);
     let label_size = ui.calc_text_size(label);
-    let draw_list = ui.get_window_draw_list();
+    let draw_list = window_draw_list(ui);
     draw_list
         .add_circle(center, diameter / 2.0, theme.surface.active.to_array())
         .filled(true)

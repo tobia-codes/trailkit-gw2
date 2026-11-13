@@ -8,6 +8,7 @@
 //! a spinner and a close button. It is drawn as a child window, so it lies
 //! above the window's content and takes the clicks there.
 
+use crate::draw_list::window_draw_list;
 use crate::tooltip::draw_tooltip;
 use nexus::imgui::{ChildWindow, ImColor32, StyleColor, Ui, WindowHoveredFlags};
 
@@ -305,7 +306,7 @@ pub fn draw_toast_with_extras(
     let card_end = [card_start[0] + width, card_start[1] + height];
     let (fill, frame) = toast.tone.card_colors(theme);
     {
-        let draw_list = ui.get_window_draw_list();
+        let draw_list = window_draw_list(ui);
         draw_list
             .add_rect(card_start, card_end, fill.to_array())
             .filled(true)

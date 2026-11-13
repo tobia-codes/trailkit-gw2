@@ -4,7 +4,9 @@
 //! cannot be decoded. Used by the markdown view and the editor.
 
 use crate::tooltip::draw_tooltip_with;
-use nexus::imgui::{DrawListMut, ImColor32, Ui};
+use nexus::imgui::{ImColor32, Ui};
+
+use crate::draw_list::WindowDrawList;
 
 use crate::{
     chat_link::{ChatLink, ChatLinkChip, ChatLinkError, ChatLinkKind, ChipText},
@@ -242,7 +244,7 @@ pub fn chip_width(ui: &Ui, chip: &ChatLinkChip, theme: &Theme, context: ChipCont
 /// rectangle `[min, max]`.
 pub fn draw_chip(
     ui: &Ui,
-    draw_list: &DrawListMut<'_>,
+    draw_list: WindowDrawList<'_>,
     chip: &ChatLinkChip,
     position: [f32; 2],
     theme: &Theme,

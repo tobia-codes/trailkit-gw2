@@ -3,6 +3,7 @@
 //! the ways to the notes, the search and the trash, and hides the note list.
 
 use nexus::imgui::{ChildWindow, MouseButton, StyleVar, Ui};
+use trailkit_ui::draw_list::window_draw_list;
 use trailkit_ui::{
     font_registry::FontScope,
     fonts::FontRole,
@@ -120,7 +121,7 @@ impl MemoWindow {
             return;
         };
         let backdrop_start = ui.window_pos();
-        ui.get_window_draw_list()
+        window_draw_list(ui)
             .add_rect(
                 backdrop_start,
                 [backdrop_start[0] + size[0], backdrop_start[1] + size[1]],
@@ -196,14 +197,14 @@ fn draw_window_menu_row(ui: &Ui, theme: &Theme, row: &WindowMenuRow) -> bool {
             middle - (ink[1] + ink[3]) / 2.0,
         ];
         let mut buffer = [0; 4];
-        ui.get_window_draw_list().add_text(
+        window_draw_list(ui).add_text(
             position,
             theme.text.primary.to_array(),
             row.icon.as_str(&mut buffer),
         );
     }
     let text_y = middle - capital_middle().unwrap_or(ui.text_line_height() / 2.0);
-    let draw_list = ui.get_window_draw_list();
+    let draw_list = window_draw_list(ui);
     draw_list.add_text(
         [left + 2.0 * gap + square, text_y],
         theme.text.primary.to_array(),

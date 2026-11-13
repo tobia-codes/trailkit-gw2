@@ -92,9 +92,9 @@ pub fn draw_tooltip_with_border(ui: &Ui, theme: &Theme, border: Color, content: 
 /// the tooltip shows. The clip rectangle is widened, as the tooltip may
 /// reach beyond that window.
 ///
-/// Draws through the raw draw list, not `ui.get_window_draw_list()`: a
-/// tooltip is often shown while its caller holds the window's `DrawListMut`
-/// (the editor over a chat-link chip), and imgui-rs panics on a second one.
+/// Draws through the raw draw list (with its own clip rectangle): a tooltip
+/// is often shown while its caller holds a draw list handle (the editor over
+/// a chat-link chip), which `window_draw_list` allows (R104).
 fn draw_shadow(ui: &Ui, theme: &Theme, [min, max]: [[f32; 2]; 2]) {
     let offset = theme.shadow.popup_offset;
     let display = ui.io().display_size;

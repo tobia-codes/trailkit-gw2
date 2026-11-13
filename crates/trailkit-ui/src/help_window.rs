@@ -17,6 +17,7 @@
 mod help_tab;
 mod problem_tab;
 
+use crate::draw_list::window_draw_list;
 use nexus::imgui::{Condition, Ui, Window};
 
 use crate::{
@@ -411,7 +412,7 @@ fn draw_tab(ui: &Ui, theme: &Theme, label: &str, shown: bool) -> bool {
     } else {
         None
     };
-    let draw_list = ui.get_window_draw_list();
+    let draw_list = window_draw_list(ui);
     if let Some(fill) = fill {
         draw_list
             .add_rect(min, max, fill.to_array())

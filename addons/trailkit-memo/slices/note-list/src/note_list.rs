@@ -12,6 +12,7 @@ mod delete;
 mod rows;
 
 use std::collections::HashSet;
+use trailkit_ui::draw_list::window_draw_list;
 use trailkit_ui::tooltip::{draw_tooltip, draw_tooltip_with_border};
 
 use nexus::imgui::{MouseButton, Ui, WindowHoveredFlags};
@@ -574,7 +575,7 @@ fn node_title(document: &NotesDocument, node: NodeId) -> Option<&str> {
 /// Draws the drop line between rows or the highlight of a collapsed group
 /// (trailkit-ui skill §4) into the list's window.
 fn draw_drop_indicator(ui: &Ui, theme: &Theme, indicator: DropIndicator) {
-    let draw_list = ui.get_window_draw_list();
+    let draw_list = window_draw_list(ui);
     let color = theme.accent.text.to_array();
     let thickness = 2.0 * theme.border.width;
     match indicator {
