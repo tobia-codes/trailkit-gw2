@@ -1,7 +1,8 @@
 //! Fault injection for the in-game test of the crash protection (ROADMAP
 //! R104, Q365); only built with the Cargo feature `fault-injection`. An
-//! unbound keybind asks for a panic, and the next frame that draws memo's
-//! windows panics while it holds the notes, like a real bug would.
+//! unbound keybind asks for a panic, and the next frame panics: while memo's
+//! windows are drawn it holds the notes, like a real bug would; while they
+//! are closed it panics before drawing anything.
 
 use std::sync::atomic::{AtomicBool, Ordering};
 

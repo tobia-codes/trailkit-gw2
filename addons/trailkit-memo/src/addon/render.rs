@@ -57,6 +57,9 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
     if !(main_visible || HELP_OPEN.load(Ordering::Relaxed))
         || !settings().allows_drawing(is_gameplay())
     {
+        // The test key also works while memo is closed (Q365).
+        #[cfg(feature = "fault-injection")]
+        super::fault_injection::panic_if_requested();
         return;
     }
     // Never wait on the render thread; if `load`/`unload` holds the lock, skip a frame.
