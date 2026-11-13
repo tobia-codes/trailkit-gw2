@@ -20,11 +20,10 @@ UX rule `lay-danger-discard`), R107 (button states: colored fills 8 %/12 % darke
 The cloud clone fetches only `develop`; to work on the branch: `git fetch origin feature/button-cleanup:feature/button-cleanup && git switch feature/button-cleanup`.
 
 **Open, in this order:**
-1. **PR #124:** 125 snapshots reviewed (§10) and committed. Since then: tooltip fix of the red icon button (`c9d2d22`) and R107
-   (brass/red hover and pressed 8 %/12 % darker, `1225491`). Next CI run re-renders every hover/pressed snapshot of brass and red
-   buttons (and the splitter hover): download `snapshot-updates` (R97), review each whole against mockup section `proposal` and §10,
-   commit, all checks green. Then in-game tests 1–10, merge OK, auto-merge. Touched files with length hints: `theme.rs` (429),
-   `token_groups.rs` (490), both already in item 2. Side finding: `min-de-dialog-*` fixtures build English text (test only).
+1. **PR #124:** all snapshots reviewed (§10) and committed (157: 125 + 32 for the tooltip fix and R107, `22378c7`). Check that
+   every required CI check is green on the head; if the Windows job still fails, take `snapshot-updates` again (R97). Then
+   in-game tests 1–10, merge OK, auto-merge. Length hints on touched `theme.rs` (429) and `token_groups.rs` (490) are in item 2.
+   Side finding: `min-de-dialog-*` fixtures build English confirmation text (test only); fix only if the user agrees.
 2. **File-length splits (R77):** approved Q91 (`note_list.rs`/`draw_group`), Q95 `draw_dropdown`, Q96 `editor/view.rs`, Q105
    `markdown_view.rs`. Grill the rest by concern, never split unasked: `theme.rs` (421), `rows.rs` (422, `draw_note_row` 91),
    `main_window.rs` (428), `actions.rs` (451, Q134), `help_text.rs::get` (104, a table; Q92 said no for `Text::get`),
