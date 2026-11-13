@@ -196,8 +196,11 @@ pub struct IconText<'text> {
 /// the first line's capitals line up, whatever the two sizes are: the
 /// smaller of the two moves down by the difference, rounded to whole pixels,
 /// so nothing reaches above the line top.
+///
+/// Returns the screen x where the text starts, e.g. to hang a further line
+/// under it.
 #[cfg(windows)]
-pub fn draw_icon_text(ui: &Ui, theme: &Theme, content: &IconText<'_>) {
+pub fn draw_icon_text(ui: &Ui, theme: &Theme, content: &IconText<'_>) -> f32 {
     let [left, top] = ui.cursor_screen_pos();
     let icon_middle = {
         let _icons = FontScope::push(ui, FontRole::Icons);
@@ -233,6 +236,7 @@ pub fn draw_icon_text(ui: &Ui, theme: &Theme, content: &IconText<'_>) {
             ui.unindent_by(hang);
         }
     }
+    text_left
 }
 
 #[cfg(test)]

@@ -180,7 +180,7 @@ memo saves your notes automatically in your Guild Wars 2 folder.
 
 Your notes are saved a moment after every change, in `addons/trailkit/memo/` inside your Guild Wars 2 folder (`notes.json`, `settings.json`, and `drafts.json` while a draft exists).
 
-- If the notes file is damaged, memo starts with an empty list and tells you. The damaged file is kept in the `backups` folder next to it, so nothing is lost.
+- If the notes file is damaged, memo starts with an empty list and tells you. The damaged file is kept in the `backups` folder next to it, so nothing is lost. You can close this hint with **x**; it stays closed until the game restarts.
 - If your notes were saved by a newer version of memo, memo leaves the file untouched and asks you to update the addon.
 
 ### When saving fails

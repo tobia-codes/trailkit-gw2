@@ -4,13 +4,12 @@
 
 use nexus::imgui::{Condition, Key, MouseButton, StyleColor, StyleVar, Ui, Window, WindowFlags};
 use trailkit_ui::{
-    button::{Button, ButtonKind, ButtonState, draw_button},
+    button::{Button, ButtonKind, ButtonState},
     font_registry::FontScope,
     fonts::FontRole,
-    icons::Icon,
-    separator::draw_separator,
+    status_card::{CardDetail, CardStatus, StatusCard, draw_status_card},
     status_line::{Status, draw_status_line},
-    text::{TextStyle, draw_icon, draw_text_wrapped},
+    text::{TextStyle, draw_text_wrapped},
     theme::Theme,
 };
 
@@ -23,47 +22,47 @@ use super::{
 };
 
 impl MemoWindow {
-    /// Draws the storage problem hint, if any (M31).
+    /// Draws the storage problem hint, if any, as a status card (M31,
+    /// M184). Only the recovered hint can be closed, for this session: the
+    /// damaged file was moved away, so the next load is clean (Q336, Q337).
     pub(super) fn draw_problem(&mut self, ui: &Ui, language: Language, theme: &Theme) {
         let Some(problem) = &self.problem else {
             return;
         };
-        draw_icon(ui, Icon::TRIANGLE_ALERT, theme.status.warning);
-        ui.same_line();
-        let offers_folder = match problem {
-            NotesProblem::Recovered(path) => {
-                draw_text_wrapped(
-                    ui,
-                    theme,
-                    TextStyle::Body,
-                    Text::NotesRecovered.get(language),
-                );
-                draw_text_wrapped(ui, theme, TextStyle::Body, path);
-                true
-            }
-            NotesProblem::NewerVersion => {
-                draw_text_wrapped(
-                    ui,
-                    theme,
-                    TextStyle::Body,
-                    Text::NotesNewerVersion.get(language),
-                );
-                false
-            }
-            NotesProblem::Inaccessible => {
-                draw_text_wrapped(
-                    ui,
-                    theme,
-                    TextStyle::Body,
-                    Text::NotesInaccessible.get(language),
-                );
-                true
-            }
+        let open_folder = [Button::new(Text::OpenFolder.get(language))];
+        let card = match problem {
+            NotesProblem::Recovered(path) => StatusCard {
+                status: CardStatus::Danger,
+                text: Text::NotesRecovered.get(language),
+                detail: Some(CardDetail {
+                    text: path,
+                    style: TextStyle::Body,
+                }),
+                buttons: &open_folder,
+                close_tooltip: Some(Text::CloseWindow.get(language)),
+            },
+            NotesProblem::NewerVersion => StatusCard {
+                status: CardStatus::Warning,
+                text: Text::NotesNewerVersion.get(language),
+                detail: None,
+                buttons: &[],
+                close_tooltip: None,
+            },
+            NotesProblem::Inaccessible => StatusCard {
+                status: CardStatus::Danger,
+                text: Text::NotesInaccessible.get(language),
+                detail: None,
+                buttons: &open_folder,
+                close_tooltip: None,
+            },
         };
-        if offers_folder && draw_button(ui, theme, Text::OpenFolder.get(language)) {
+        let outcome = draw_status_card(ui, theme, &card);
+        if outcome.clicked_button.is_some() {
             self.actions.push(WindowAction::OpenFolder);
         }
-        draw_separator(ui, theme);
+        if outcome.closed {
+            self.problem = None;
+        }
     }
 }
 

@@ -108,6 +108,15 @@ Build once, use everywhere. Planned:
   `draw_toast_with_extras` a counter, a spinner and a close `x`. A busy
   action (`ToastAction::busy`) shows a spinner. `ToastTone::Success`:
   `circle-check` in `success`, 5 s
+- Status card — **exists** (memo M184): `status_card::draw_status_card`,
+  a state that needs attention in place (not a toast): `CardStatus`
+  `Warning`/`Danger` with `warning.subtle`/`danger.subtle` fill and a frame
+  in the status color, a status line, an optional `CardDetail` hanging under
+  the text in a normal text role, buttons at the left edge (R103: only
+  primary and regular) and an optional close `x` (`draw_icon_button`).
+  `fits_status_card_line` lets a caller break a long text on purpose
+- Only two button styles (R103): brass primary and regular; icon buttons
+  like the close `x` look like every other one
 - Button with kind and state — **exists** (R93): `button::Button` with
   `ButtonKind` (`Regular`, `Primary`, `DangerFill`) and `ButtonState`
   (`Ready`, `Busy` = spinner, `Disabled { reason }` = `text.disabled`

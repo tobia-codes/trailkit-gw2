@@ -24,6 +24,7 @@ use trailkit_ui::{
     pane::draw_pane,
     separator::draw_compact_separator,
     splitter::draw_vertical_splitter,
+    status_card::{CardDetail, CardStatus, StatusCard, draw_status_card},
     status_line::{Status, draw_status_line},
     style_scope::StyleScope,
     text::{TextStyle, draw_icon, draw_text, draw_text_wrapped, draw_truncated_text},
@@ -939,6 +940,69 @@ fn icons_in_text_colors() {
             &mouse([190.0, 50.0], false),
             &mut draw,
         );
+    }
+}
+
+/// The status card in both statuses (M184): `danger` with a detail line,
+/// a button and the close button, at rest and with the close button
+/// hovered; `warning` with a secondary detail and two buttons that wrap into
+/// two rows in a narrow window.
+#[test]
+fn every_status_card_state() {
+    // Tall enough for no scrollbar; the hover sits on the close button.
+    let size = [260.0, 300.0];
+    let close_hover = [232.0, 28.0];
+    for (kind, theme_name) in THEMES {
+        let theme = kind.theme();
+        let mut harness = UiHarness::new(size);
+        let buttons = [Button::new("Open folder")];
+        let wide_buttons = [
+            Button::new("Restore unsaved changes").kind(ButtonKind::Primary),
+            Button::new("Discard"),
+        ];
+        let mut draw = |ui: &Ui| {
+            in_window(ui, &theme, size, || {
+                draw_status_card(
+                    ui,
+                    &theme,
+                    &StatusCard {
+                        status: CardStatus::Danger,
+                        text: "Your notes could not be loaded. The damaged file was kept as:",
+                        detail: Some(CardDetail {
+                            text: "backups/notes.corrupt.json",
+                            style: TextStyle::Body,
+                        }),
+                        buttons: &buttons,
+                        close_tooltip: Some("Close"),
+                    },
+                );
+                draw_status_card(
+                    ui,
+                    &theme,
+                    &StatusCard {
+                        status: CardStatus::Warning,
+                        text: "Unsaved changes from 11/01/2026, 08:00",
+                        detail: Some(CardDetail {
+                            text: "The note was changed since.",
+                            style: TextStyle::Secondary,
+                        }),
+                        buttons: &wide_buttons,
+                        close_tooltip: None,
+                    },
+                );
+            });
+        };
+        for (state, input) in [
+            ("rest", mouse([250.0, 295.0], false)),
+            ("close-hovered", mouse(close_hover, false)),
+        ] {
+            assert_state(
+                &mut harness,
+                ("status-card", state, theme_name),
+                &input,
+                &mut draw,
+            );
+        }
     }
 }
 

@@ -39,8 +39,15 @@ impl Status {
 
 /// Draws the status line at the cursor: the icon of `status`, then `text`
 /// in `style`'s font, both in the status color, wrapped at the current wrap
-/// position ([`draw_icon_text`] with [`TextFlow::Wrapped`]).
-pub fn draw_status_line(ui: &Ui, theme: &Theme, status: Status, text: &str, style: TextStyle) {
+/// position ([`draw_icon_text`] with [`TextFlow::Wrapped`]). Returns the
+/// screen x where the text starts.
+pub fn draw_status_line(
+    ui: &Ui,
+    theme: &Theme,
+    status: Status,
+    text: &str,
+    style: TextStyle,
+) -> f32 {
     let color = match status {
         Status::Success => theme.status.success,
         Status::Warning => theme.status.warning,
@@ -58,5 +65,5 @@ pub fn draw_status_line(ui: &Ui, theme: &Theme, status: Status, text: &str, styl
             text_color: Some(color),
             flow: TextFlow::Wrapped,
         },
-    );
+    )
 }
