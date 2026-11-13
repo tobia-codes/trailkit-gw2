@@ -13,7 +13,7 @@ use crate::{
     color::Color,
     font_registry::FontScope,
     fonts::FontRole,
-    glyph_metrics::{glyph_icon_ink, glyph_ink_box},
+    glyph_metrics::icon_visible_box,
     icons::Icon,
     menu::{draw_fitted_popup, draw_menu_row_highlight, draw_menu_row_label, place_next_popup},
     theme::Theme,
@@ -178,9 +178,7 @@ pub(crate) fn draw_icon_into(
     let mut buffer = [0; 4];
     let glyph = icon.as_str(&mut buffer);
     let line = ui.text_line_height();
-    let ink = glyph_icon_ink(icon.glyph())
-        .or_else(|| glyph_ink_box(icon.glyph()))
-        .unwrap_or([0.0, 0.0, line, line]);
+    let ink = icon_visible_box(icon.glyph(), line);
     let y = ((top + bottom - ink[1] - ink[3]) / 2.0).round();
     let begin = glyph.as_ptr().cast::<std::ffi::c_char>();
     // SAFETY: called on the render thread inside a frame with a draw list

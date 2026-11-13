@@ -16,7 +16,7 @@ use crate::{
     dropdown::icon_width,
     font_registry::FontScope,
     fonts::FontRole,
-    glyph_metrics::{capital_middle, glyph_icon_ink, glyph_ink_box},
+    glyph_metrics::{capital_middle, icon_visible_box},
     icons::Icon,
     spinner::draw_spinner,
     theme::Theme,
@@ -257,9 +257,7 @@ fn draw_icon_button_with_hover(
 fn draw_icon_centered(ui: &Ui, icon: Icon, [min, max]: [[f32; 2]; 2], color: u32) {
     let _icons = FontScope::push(ui, FontRole::Icons);
     let line = ui.text_line_height();
-    let ink = glyph_icon_ink(icon.glyph())
-        .or_else(|| glyph_ink_box(icon.glyph()))
-        .unwrap_or([0.0, 0.0, line, line]);
+    let ink = icon_visible_box(icon.glyph(), line);
     let position = nexus::imgui::sys::ImVec2 {
         x: ((min[0] + max[0] - ink[0] - ink[2]) / 2.0).round(),
         y: ((min[1] + max[1] - ink[1] - ink[3]) / 2.0).round(),

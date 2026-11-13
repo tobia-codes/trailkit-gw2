@@ -5,7 +5,8 @@
 //! never pushes a font or a text color by hand: it calls [`draw_text`],
 //! [`draw_text_wrapped`] or [`draw_truncated_text`] with a style, and
 //! [`TextStyle::push`] only where it has to measure, center or style an
-//! input (Q281). Icons go through [`draw_icon`].
+//! input (Q281). Icons go through [`draw_icon`], an icon in front of a text
+//! through [`draw_icon_text`] (Q325).
 //!
 //! The roles and their colors are platform-independent; drawing is Windows
 //! only, like all ImGui code (ROADMAP R39).
@@ -16,7 +17,11 @@ use nexus::imgui::{ColorStackToken, StyleColor, Ui};
 use crate::{color::Color, fonts::FontRole, theme::Theme};
 #[cfg(windows)]
 use crate::{
-    font_registry::FontScope, icons::Icon, text_layout::truncate_to_width, tooltip::draw_tooltip,
+    font_registry::FontScope,
+    glyph_metrics::{capital_middle, icon_visible_box},
+    icons::Icon,
+    text_layout::truncate_to_width,
+    tooltip::draw_tooltip,
 };
 
 /// A text role: font and color of one kind of text (`tokens.md` §7.1).
@@ -154,6 +159,80 @@ pub fn draw_icon(ui: &Ui, icon: Icon, color: Color) {
     let _icons = FontScope::push(ui, FontRole::Icons);
     let mut buffer = [0; 4];
     ui.text_colored(color.to_array(), icon.as_str(&mut buffer));
+}
+
+/// Whether the text of [`draw_icon_text`] wraps.
+#[cfg(windows)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TextFlow {
+    /// One line, e.g. in a tooltip, which sizes itself to its content.
+    SingleLine,
+    /// Wrapped at the current wrap position (the window's right edge unless
+    /// one is pushed); continuation lines hang under the text, not under the
+    /// icon.
+    Wrapped,
+}
+
+/// An icon in front of a text (Q325): what [`draw_icon_text`] draws.
+#[cfg(windows)]
+#[derive(Debug, Clone, Copy)]
+pub struct IconText<'text> {
+    /// The icon.
+    pub icon: Icon,
+    /// The icon's color; it follows the icon's role (`tokens.md` §7.1).
+    pub icon_color: Color,
+    /// The text.
+    pub text: &'text str,
+    /// The text's role: its font, and its color unless `text_color` is set.
+    pub style: TextStyle,
+    /// A color instead of the role's, only for status texts (Q285).
+    pub text_color: Option<Color>,
+    /// One line or wrapped.
+    pub flow: TextFlow,
+}
+
+/// Draws `content` at the cursor: the icon, the icon-label gap of buttons,
+/// then the text. The middle of the icon's visible pixels and the middle of
+/// the first line's capitals line up, whatever the two sizes are: the
+/// smaller of the two moves down by the difference, rounded to whole pixels,
+/// so nothing reaches above the line top.
+#[cfg(windows)]
+pub fn draw_icon_text(ui: &Ui, theme: &Theme, content: &IconText<'_>) {
+    let [left, top] = ui.cursor_screen_pos();
+    let icon_middle = {
+        let _icons = FontScope::push(ui, FontRole::Icons);
+        let ink = icon_visible_box(content.icon.glyph(), ui.text_line_height());
+        (ink[1] + ink[3]) / 2.0
+    };
+    let text_middle = {
+        let _font = FontScope::push(ui, content.style.font());
+        capital_middle().unwrap_or(ui.text_line_height() / 2.0)
+    };
+    let difference = (icon_middle - text_middle).round();
+    ui.set_cursor_screen_pos([left, top + (-difference).max(0.0)]);
+    draw_icon(ui, content.icon, content.icon_color);
+    ui.same_line_with_spacing(0.0, crate::button::icon_label_gap(theme));
+    let text_left = ui.cursor_screen_pos()[0];
+    let text_top = top + difference.max(0.0);
+    let _font = FontScope::push(ui, content.style.font());
+    let color = content.text_color.unwrap_or(content.style.color(theme));
+    let _color = ui.push_style_color(StyleColor::Text, color.to_array());
+    match content.flow {
+        TextFlow::SingleLine => {
+            ui.set_cursor_screen_pos([text_left, text_top]);
+            ui.text(content.text);
+        }
+        TextFlow::Wrapped => {
+            // Wrapped lines start at the window's content edge; indent them
+            // to the text and put the first line back beside the icon.
+            let content_left = ui.window_pos()[0] + ui.window_content_region_min()[0];
+            let hang = text_left - content_left;
+            ui.indent_by(hang);
+            ui.set_cursor_screen_pos([text_left, text_top]);
+            ui.text_wrapped(content.text);
+            ui.unindent_by(hang);
+        }
+    }
 }
 
 #[cfg(test)]

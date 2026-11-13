@@ -27,7 +27,7 @@ use trailkit_ui::{
     fonts::FontRole,
     icons::Icon,
     separator::draw_separator_above_rows,
-    text::{TextStyle, draw_icon, draw_text},
+    text::{IconText, TextFlow, TextStyle, draw_icon_text, draw_text},
     text_search::SearchQuery,
     theme::Theme,
 };
@@ -511,10 +511,19 @@ impl NoteList {
         let _border = ui.push_style_color(StyleColor::Border, border.to_array());
         draw_tooltip_with(ui, || {
             if is_impossible {
-                draw_icon(ui, Icon::BAN, theme.status.danger);
-                ui.same_line_with_spacing(0.0, theme.spacing.small);
-                // Status text keeps its code until `draw_status_line` (Q277).
-                ui.text_colored(theme.status.danger.to_array(), title);
+                // A status text in the danger color (Q277, Q325).
+                draw_icon_text(
+                    ui,
+                    theme,
+                    &IconText {
+                        icon: Icon::BAN,
+                        icon_color: theme.status.danger,
+                        text: title,
+                        style: TextStyle::Body,
+                        text_color: Some(theme.status.danger),
+                        flow: TextFlow::SingleLine,
+                    },
+                );
             } else {
                 draw_text(ui, theme, TextStyle::Body, title);
             }

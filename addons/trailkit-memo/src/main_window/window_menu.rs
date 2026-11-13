@@ -6,7 +6,7 @@ use nexus::imgui::{ChildWindow, MouseButton, StyleVar, Ui};
 use trailkit_ui::{
     font_registry::FontScope,
     fonts::FontRole,
-    glyph_metrics::{capital_middle, glyph_icon_ink, glyph_ink_box},
+    glyph_metrics::{capital_middle, icon_visible_box},
     icons::Icon,
     pane::draw_pane,
     selection_bar::draw_row_state,
@@ -190,9 +190,7 @@ fn draw_window_menu_row(ui: &Ui, theme: &Theme, row: &WindowMenuRow) -> bool {
     let square = icon_square_side(ui);
     {
         let _icons = FontScope::push(ui, FontRole::Icons);
-        let ink = glyph_icon_ink(row.icon.glyph())
-            .or_else(|| glyph_ink_box(row.icon.glyph()))
-            .unwrap_or([0.0, 0.0, square, square]);
+        let ink = icon_visible_box(row.icon.glyph(), square);
         let position = [
             left + gap + (square - (ink[2] - ink[0])) / 2.0 - ink[0],
             middle - (ink[1] + ink[3]) / 2.0,

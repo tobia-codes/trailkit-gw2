@@ -70,6 +70,17 @@ pub fn glyph_visible_ink(character: char) -> Option<[f32; 4]> {
     glyph_ink_above(character, INK_COVERAGE_THRESHOLD)
 }
 
+/// The visible box `[left, top, right, bottom]` of the icon glyph `character`
+/// in the current (icon) font, as in [`glyph_visible_ink`]: its
+/// [`glyph_icon_ink`], else its quad, else a square of `fallback` (e.g. the
+/// line height). The one place that decides where an icon really is, so
+/// buttons, menus and icon texts center it the same way.
+pub fn icon_visible_box(character: char, fallback: f32) -> [f32; 4] {
+    glyph_icon_ink(character)
+        .or_else(|| glyph_ink_box(character))
+        .unwrap_or([0.0, 0.0, fallback, fallback])
+}
+
 /// Like [`glyph_visible_ink`] for line icons (memo M170): also counts the faint
 /// pixels of thin strokes, such as the bars of `menu`, so an icon is centered by
 /// everything the eye sees of it.

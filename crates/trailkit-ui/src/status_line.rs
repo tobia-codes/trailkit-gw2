@@ -3,14 +3,11 @@
 //! greying out. Dialogs use [`TextStyle::Body`], the log export uses
 //! [`TextStyle::Small`].
 
-use nexus::imgui::{StyleColor, Ui};
+use nexus::imgui::Ui;
 
 use crate::{
-    font_registry::FontScope,
-    fonts::FontRole,
-    glyph_metrics::{capital_middle, glyph_icon_ink, glyph_ink_box},
     icons::Icon,
-    text::{TextStyle, draw_icon},
+    text::{IconText, TextFlow, TextStyle, draw_icon_text},
     theme::Theme,
 };
 
@@ -41,11 +38,8 @@ impl Status {
 }
 
 /// Draws the status line at the cursor: the icon of `status`, then `text`
-/// in `style`'s font and the status color, wrapped at the current wrap
-/// position (the window's right edge unless one is pushed). The first line's
-/// capitals are centered on the icon's visible pixels, also when the text is
-/// smaller than the icon. Continuation lines hang under the text, not under
-/// the icon.
+/// in `style`'s font, both in the status color, wrapped at the current wrap
+/// position ([`draw_icon_text`] with [`TextFlow::Wrapped`]).
 pub fn draw_status_line(ui: &Ui, theme: &Theme, status: Status, text: &str, style: TextStyle) {
     let color = match status {
         Status::Success => theme.status.success,
@@ -53,36 +47,16 @@ pub fn draw_status_line(ui: &Ui, theme: &Theme, status: Status, text: &str, styl
         Status::Danger => theme.status.danger,
         Status::Info => theme.status.info,
     };
-    let top = ui.cursor_screen_pos()[1];
-    draw_icon(ui, status.icon(), color);
-    ui.same_line_with_spacing(0.0, theme.spacing.extra_small * 1.5);
-    let text_left = ui.cursor_screen_pos()[0];
-    // Wrapped lines start at the window's content edge; indent them to the
-    // text and put the first line back where the icon's line continues.
-    let content_left = ui.window_pos()[0] + ui.window_content_region_min()[0];
-    let hang = text_left - content_left;
-    ui.indent_by(hang);
-    let text_offset = (icon_middle(ui, status.icon()) - text_middle(ui, style)).round();
-    ui.set_cursor_screen_pos([text_left, top + text_offset.max(0.0)]);
-    {
-        let _font = FontScope::push(ui, style.font());
-        let _color = ui.push_style_color(StyleColor::Text, color.to_array());
-        ui.text_wrapped(text);
-    }
-    ui.unindent_by(hang);
-}
-
-/// The middle of the visible pixels of `icon` below the line top, in the
-/// icon font.
-fn icon_middle(ui: &Ui, icon: Icon) -> f32 {
-    let _icons = FontScope::push(ui, FontRole::Icons);
-    glyph_icon_ink(icon.glyph())
-        .or_else(|| glyph_ink_box(icon.glyph()))
-        .map_or(ui.text_line_height() / 2.0, |ink| (ink[1] + ink[3]) / 2.0)
-}
-
-/// The middle of the capitals below the line top in `style`'s font.
-fn text_middle(ui: &Ui, style: TextStyle) -> f32 {
-    let _font = FontScope::push(ui, style.font());
-    capital_middle().unwrap_or(ui.text_line_height() / 2.0)
+    draw_icon_text(
+        ui,
+        theme,
+        &IconText {
+            icon: status.icon(),
+            icon_color: color,
+            text,
+            style,
+            text_color: Some(color),
+            flow: TextFlow::Wrapped,
+        },
+    );
 }
