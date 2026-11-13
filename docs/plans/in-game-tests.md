@@ -37,7 +37,7 @@ the brass "Save" button but red. Approved design for all tests below:
   bar) › **Trash**.
 - **Look at:** the **"Empty"** button at the top of the trash list; hover it.
 - **Before:** grey button with red text.
-- **Now:** **red filled** button; hover makes it slightly lighter. Click
+- **Now:** **red filled** button; hover changes its shade slightly, like the red confirm button of a delete question. Click
   it: it still asks first; click **Cancel**.
 
 ### 2 · "Delete permanently" icon in the trash
@@ -47,7 +47,7 @@ the brass "Save" button but red. Approved design for all tests below:
 - **Look at:** the **trash icon** top right, left of brass "Restore"; hover it.
 - **Before:** red icon without background.
 - **Now:** **red filled** square with the icon in the window color; hover
-  lightens it; tooltip "Delete permanently"; clicking still asks first.
+  changes its shade slightly; the tooltip "Delete permanently" is readable; clicking still asks first.
 
 ### 3 · Confirm button of the delete questions (unchanged)
 
