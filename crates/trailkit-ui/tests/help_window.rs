@@ -238,7 +238,8 @@ fn every_help_window_state_at_the_minimum_width() {
                 ..FrameInput::default()
             };
             let image = harness.settle(SETTLE_FRAMES, &input, |ui: &Ui| {
-                let _style = StyleScope::push(ui, &theme);
+                // The default tooltip offset, not the real cursor (it differs per run).
+                let _style = StyleScope::push_with_cursor_extent(ui, &theme, None);
                 window.draw_in(
                     ui,
                     &theme,
@@ -285,7 +286,8 @@ fn a_hovered_email_link_shows_its_address() {
             ..FrameInput::default()
         };
         let image = harness.settle(SETTLE_FRAMES, &input, |ui: &Ui| {
-            let _style = StyleScope::push(ui, &theme);
+            // The default tooltip offset, not the real cursor (it differs per run).
+            let _style = StyleScope::push_with_cursor_extent(ui, &theme, None);
             window.draw_in(
                 ui,
                 &theme,
