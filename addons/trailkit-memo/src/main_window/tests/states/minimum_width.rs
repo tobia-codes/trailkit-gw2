@@ -35,7 +35,7 @@ const MINIMUM_RAIDS_ROW: [f32; 2] = [60.0, 170.0];
 /// layout.
 #[test]
 fn views_at_the_minimum_width() {
-    let views: [NamedFixture; 24] = [
+    let views: [NamedFixture; 27] = [
         ("no-selection", || {
             memo_window(sample_document(), UiState::default())
         }),
@@ -71,6 +71,9 @@ fn views_at_the_minimum_width() {
             with_problem(NotesProblem::Inaccessible)
         }),
         ("draft-hint", with_draft),
+        ("draft-elsewhere", with_draft_elsewhere),
+        ("drafts-collapsed-group", with_drafts_in_collapsed_group),
+        ("drafts-after-go-to-note", after_go_to_note),
         ("window-menu-in-trash", || {
             let mut fixture = trash_entries();
             fixture.0.window_menu_open = true;
@@ -164,12 +167,14 @@ fn menus_at_the_minimum_width() {
 /// The longer German texts at the narrowest window (M168).
 #[test]
 fn german_at_the_minimum_width() {
-    let views: [NamedFixture; 9] = [
+    let views: [NamedFixture; 11] = [
         ("note", selected),
         ("empty", || {
             memo_window(NotesDocument::default(), UiState::default())
         }),
         ("draft-hint", with_draft),
+        ("draft-elsewhere", with_draft_elsewhere),
+        ("drafts-collapsed-group", with_drafts_in_collapsed_group),
         ("trash-nothing-selected", trash_entries),
         ("trash-selected", trash_entry_chosen),
         ("dialog-unsaved", unsaved_dialog),

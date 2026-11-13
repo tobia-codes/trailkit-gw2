@@ -13,8 +13,10 @@ use trailkit_ui::{
     theme::Theme,
 };
 
+use trailkit_memo_drafts::i18n::DraftText;
 use trailkit_memo_note_list::note_list::{
     ListSearch, ListSearchTexts, NoteList, NoteListAction, NoteListInput, NoteRowExtras,
+    UnsavedChanges,
 };
 use trailkit_memo_reset_schedule::{
     i18n::ResetText,
@@ -136,6 +138,10 @@ impl MemoWindow {
                     badge: &badge,
                     badge_tooltip: &mut badge_tooltip,
                     context_menu: &mut context_menu,
+                    unsaved_changes: UnsavedChanges {
+                        notes: &self.unsaved_notes,
+                        tooltip: DraftText::UnsavedChangesMark.get(language),
+                    },
                 },
             },
         );

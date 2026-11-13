@@ -49,6 +49,16 @@ pub(super) fn for_each_note_mut(nodes: &mut [TreeNode], visit: &mut impl FnMut(&
     }
 }
 
+/// Calls `visit` for every note in `nodes` and nested groups, in list order.
+pub(super) fn for_each_note(nodes: &[TreeNode], visit: &mut impl FnMut(&Note)) {
+    for node in nodes {
+        match node {
+            TreeNode::Note(note) => visit(note),
+            TreeNode::Group(group) => for_each_note(&group.children, visit),
+        }
+    }
+}
+
 /// Searches `nodes` recursively for the note `id`.
 pub(super) fn find_note(nodes: &[TreeNode], id: NoteId) -> Option<&Note> {
     nodes.iter().find_map(|node| match node {

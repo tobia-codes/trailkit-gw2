@@ -73,6 +73,25 @@ pub struct NoteRowExtras<'a> {
     pub badge_tooltip: &'a mut dyn FnMut(&Ui, &Note),
     /// Draws extra items of a note's context menu, after "Move to" (M160).
     pub context_menu: &'a mut dyn FnMut(&Ui, &Note),
+    /// Which notes have unsaved changes kept as a draft (M185).
+    pub unsaved_changes: UnsavedChanges<'a>,
+}
+
+/// The notes whose rows carry the unsaved-changes mark (M185).
+#[derive(Clone, Copy)]
+pub struct UnsavedChanges<'a> {
+    /// The notes with a draft.
+    pub notes: &'a [NoteId],
+    /// The mark's tooltip.
+    pub tooltip: &'a str,
+}
+
+impl UnsavedChanges<'_> {
+    /// Whether `note` carries the mark.
+    #[must_use]
+    pub fn contains(&self, note: NoteId) -> bool {
+        self.notes.contains(&note)
+    }
 }
 
 /// What the list shows this frame.
@@ -179,6 +198,9 @@ pub struct NoteList {
     rows: Vec<RowRect>,
     /// A row was pressed while searching: dragging cannot move it (M125).
     drag_blocked_by_search: bool,
+    /// A row to scroll into the middle of the list when it is drawn next
+    /// (M185).
+    reveal: Option<NodeId>,
 }
 
 /// Everything the row drawing functions need besides the nodes.
@@ -212,9 +234,18 @@ struct RowContext<'frame, 'input> {
     search: Option<&'frame ListSearch<'input>>,
     /// Badges and menu items of other slices.
     extras: &'frame mut NoteRowExtras<'input>,
+    /// The row to scroll to, taken once it is drawn.
+    reveal: &'frame mut Option<NodeId>,
 }
 
 impl NoteList {
+    /// Scrolls the list so the row of `node` sits in its middle the next time
+    /// it is drawn (M185). The caller makes the row visible: groups
+    /// expanded, no search hiding it.
+    pub fn reveal(&mut self, node: NodeId) {
+        self.reveal = Some(node);
+    }
+
     /// Puts `node` into rename mode with `title` in the input (a just
     /// created entry, M43).
     pub fn start_rename(&mut self, node: NodeId, title: String) {
@@ -329,6 +360,7 @@ impl NoteList {
             frame_padding: style.frame_padding,
             search: search.as_ref(),
             extras: &mut extras,
+            reveal: &mut self.reveal,
         };
         rows::draw_nodes(ui, &document.root, &mut context);
         let pressed = context.pressed;

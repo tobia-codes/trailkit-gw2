@@ -595,6 +595,26 @@ fn a_group_cannot_be_dropped_into_itself() {
     );
 }
 
+/// "Go to note" reveals a note in a collapsed group: the group expands (and
+/// is saved so), the note is selected and shown (M185).
+#[test]
+fn revealing_a_note_expands_its_group_and_selects_it() {
+    let mut document = sample_document();
+    for node in &mut document.root {
+        if let Node::Group(group) = node {
+            group.expanded = false;
+        }
+    }
+    let Some(NodeId::Note(weekly)) = weekly_note(&document) else {
+        panic!("the sample has a weekly note in a group");
+    };
+    let (mut window, _worker, _directory) = memo_window(document, UiState::default());
+    window.apply(&WindowAction::RevealNote(weekly), Language::English);
+    assert_eq!(expanded_flags(&window.document), vec![true]);
+    assert_eq!(window.ui_state.selected, Some(NodeId::Note(weekly)));
+    assert_eq!(window.ui_state.shown_note, Some(weekly));
+}
+
 /// The id of the weekly note inside the "Raids" group of
 /// [`sample_document`].
 fn weekly_note(document: &NotesDocument) -> Option<NodeId> {

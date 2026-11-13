@@ -10,7 +10,7 @@
 use nexus::imgui::{Ui, sys};
 
 use crate::{
-    button::{Button, draw_icon_button, icon_button_width, icon_label_gap},
+    button::{Button, ButtonKind, draw_icon_button, icon_button_width, icon_label_gap},
     color::Color,
     dropdown::packed,
     font_registry::FontScope,
@@ -68,8 +68,8 @@ pub struct StatusCard<'text> {
     pub text: &'text str,
     /// An optional line under it.
     pub detail: Option<CardDetail<'text>>,
-    /// The buttons in a row at the left edge; a button that does not fit
-    /// starts a new row.
+    /// The buttons in a row at the left edge, the brass one last; when the
+    /// row does not fit they stack, the brass one first (R103, Q349).
     pub buttons: &'text [Button<'text>],
     /// The close button's tooltip, or `None` for a card that stays while its
     /// state lasts (Q336).
@@ -219,8 +219,10 @@ fn draw_detail(ui: &Ui, theme: &Theme, detail: CardDetail<'_>, text_left: f32, r
     ui.unindent_by(hang);
 }
 
-/// Draws `buttons` in rows between `left` and `right` below the content,
-/// lowers `bottom` to the last row's bottom and returns the clicked index.
+/// Draws `buttons` in one row from `left` in their order, the brass button
+/// last (R103, Q349). When the row does not fit before `right`, they stack,
+/// the brass button first. Lowers `bottom` to the last button's bottom and
+/// returns the index of the clicked one.
 fn draw_buttons(
     ui: &Ui,
     theme: &Theme,
@@ -229,21 +231,38 @@ fn draw_buttons(
     bottom: &mut f32,
 ) -> Option<usize> {
     let spacing = ui.clone_style().item_spacing;
+    let row_width = buttons
+        .iter()
+        .map(|button| button.measure(ui, theme) + spacing[0])
+        .sum::<f32>()
+        - spacing[0];
+    let stacked = row_width > right - left;
+    let is_primary = |button: &Button<'_>| button.kind == ButtonKind::Primary;
+    // Stacked: the brass button first, then the others in their order.
+    let order = buttons
+        .iter()
+        .enumerate()
+        .filter(|(_, button)| !stacked || is_primary(button))
+        .chain(
+            buttons
+                .iter()
+                .enumerate()
+                .filter(|(_, button)| stacked && !is_primary(button)),
+        );
     let mut clicked = None;
     let mut x = left;
-    let mut y = *bottom + spacing[1];
-    for (index, button) in buttons.iter().enumerate() {
-        let width = button.measure(ui, theme);
-        if x > left && x + width > right {
-            x = left;
-            y = *bottom + spacing[1];
-        }
-        ui.set_cursor_screen_pos([x, y]);
+    for (index, button) in order {
+        let y = if stacked || x == left {
+            *bottom + spacing[1]
+        } else {
+            ui.item_rect_min()[1]
+        };
+        ui.set_cursor_screen_pos([if stacked { left } else { x }, y]);
         if button.draw(ui, theme) {
             clicked = Some(index);
         }
         *bottom = ui.item_rect_max()[1];
-        x += width + spacing[0];
+        x = ui.item_rect_max()[0] + spacing[0];
     }
     clicked
 }

@@ -33,7 +33,10 @@ use trailkit_ui::{
     toast::Toast,
 };
 
-use trailkit_memo_drafts::draft_hint::DraftHint;
+use trailkit_memo_drafts::{
+    draft_hint::DraftHint,
+    draft_overview::{DraftOverview, DraftOverviewAction},
+};
 use trailkit_memo_editor::editor::Editor;
 use trailkit_memo_note_list::note_list::NoteList;
 use trailkit_memo_note_view::note_view::NoteView;
@@ -151,6 +154,11 @@ pub struct MemoWindow {
     /// Cached draft hint label (note, language, text), so it is not
     /// formatted every frame.
     draft_hint: DraftHint,
+    /// The card above the panes about notes with unsaved changes (M185).
+    draft_overview: DraftOverview,
+    /// The notes with a draft in list order, refreshed every frame into the
+    /// same buffer (M185).
+    unsaved_notes: Vec<NoteId>,
     /// When reset notes must be checked next (M90); `None` checks at once,
     /// e.g. after an action that may have unblocked a waiting reset (M89).
     next_reset_check: Option<Timestamp>,
@@ -242,6 +250,8 @@ impl MemoWindow {
             settings,
             close_approved: false,
             draft_hint: DraftHint::default(),
+            draft_overview: DraftOverview::default(),
+            unsaved_notes: Vec::new(),
             dialog_height: None,
             next_reset_check: None,
             search_field: SearchField::default(),
@@ -341,6 +351,52 @@ impl MemoWindow {
         std::mem::take(&mut self.close_approved)
     }
 
+    /// Lists the notes with a draft in list order (M185); notes in the trash
+    /// do not count. Cheap without drafts, the usual case.
+    fn collect_unsaved_notes(&mut self) {
+        self.unsaved_notes.clear();
+        if self.drafts.drafts.is_empty() {
+            return;
+        }
+        let (drafts, unsaved_notes) = (&self.drafts, &mut self.unsaved_notes);
+        self.document.for_each_note(|note| {
+            if drafts.get(note.id).is_some() {
+                unsaved_notes.push(note.id);
+            }
+        });
+    }
+
+    /// Draws the card about notes with unsaved changes (M185). It stays
+    /// hidden while the only such note is the one shown (Q347); "Go to note"
+    /// reveals the next one after the shown note, wrapping around.
+    fn draw_draft_overview(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+        let shown = self.ui_state.shown_note;
+        let count = match self.unsaved_notes.as_slice() {
+            [only] if Some(*only) == shown => 0,
+            notes => notes.len(),
+        };
+        if self.draft_overview.draw(ui, language, theme, count)
+            == Some(DraftOverviewAction::GoToNote)
+        {
+            let after_shown = shown
+                .and_then(|shown| {
+                    let mut passed = false;
+                    let mut next = None;
+                    self.document.for_each_note(|note| {
+                        if passed && next.is_none() && self.unsaved_notes.contains(&note.id) {
+                            next = Some(note.id);
+                        }
+                        passed |= note.id == shown;
+                    });
+                    next
+                })
+                .or_else(|| self.unsaved_notes.first().copied());
+            if let Some(note) = after_shown {
+                self.actions.push(WindowAction::RevealNote(note));
+            }
+        }
+    }
+
     /// Keeps unsaved changes as a draft before the addon unloads (M54); the
     /// storage worker writes it during its shutdown.
     pub fn keep_draft_for_unload(&mut self) {
@@ -376,6 +432,8 @@ impl MemoWindow {
         self.update_search();
         self.update_text_scale(ui, language, theme);
         self.draw_problem(ui, language, theme);
+        self.collect_unsaved_notes();
+        self.draw_draft_overview(ui, language, theme);
 
         // Only a list that is drawn claims the key again below.
         self.note_list_takes_delete_key = false;

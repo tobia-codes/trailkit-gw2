@@ -318,6 +318,67 @@ fn with_draft() -> Fixture {
     fixture
 }
 
+/// A draft of `note` kept from an earlier session.
+fn draft_of(note: NoteId) -> Draft {
+    Draft {
+        note,
+        title: "Draft".to_owned(),
+        body: "- [ ] A draft line".to_owned(),
+        saved_at: same_local_time_everywhere(),
+        note_updated_at: fixed_time(),
+    }
+}
+
+/// The "Dailies" note at the root of the sample.
+fn dailies_note(document: &NotesDocument) -> Option<NoteId> {
+    document
+        .root
+        .iter()
+        .filter_map(|node| match node {
+            Node::Note(note) => Some(note.id),
+            Node::Group(_) => None,
+        })
+        .nth(1)
+}
+
+/// Unsaved changes in "Dailies" while "Shopping list" is shown: the card
+/// above the panes in the singular and the mark on the row (M185).
+pub(super) fn with_draft_elsewhere() -> Fixture {
+    let mut fixture = selected();
+    if let Some(note) = dailies_note(&fixture.0.document) {
+        fixture.0.drafts.drafts.push(draft_of(note));
+    }
+    fixture
+}
+
+/// Unsaved changes in "Dailies" and in "Weekly clears" inside the collapsed
+/// "Raids": the card in the plural, the marks on the note and the group row
+/// (M185).
+pub(super) fn with_drafts_in_collapsed_group() -> Fixture {
+    let mut fixture = with_draft_elsewhere();
+    if let Some(NodeId::Note(weekly)) = weekly_note(&fixture.0.document) {
+        fixture.0.drafts.drafts.push(draft_of(weekly));
+    }
+    for node in &mut fixture.0.document.root {
+        if let Node::Group(group) = node {
+            group.expanded = false;
+        }
+    }
+    fixture
+}
+
+/// "Go to note" led to "Weekly clears": "Raids" expanded, the note shown with
+/// its draft card, the card above still counting both notes (M185).
+pub(super) fn after_go_to_note() -> Fixture {
+    let mut fixture = with_drafts_in_collapsed_group();
+    if let Some(NodeId::Note(weekly)) = weekly_note(&fixture.0.document) {
+        fixture
+            .0
+            .apply(&WindowAction::RevealNote(weekly), Language::English);
+    }
+    fixture
+}
+
 /// A time that local time shows as the same wall clock in every time zone, so
 /// a snapshot with a formatted time matches on the CI runner too.
 fn same_local_time_everywhere() -> Timestamp {
@@ -754,4 +815,19 @@ fn problems_and_drafts() {
         &[],
     );
     assert_state("draft-hint", WIDE, with_draft, &[]);
+    assert_state("draft-elsewhere", WIDE, with_draft_elsewhere, &[]);
+    // The tooltip of the mark on the "Dailies" row (M185).
+    assert_state(
+        "draft-mark-tooltip",
+        WIDE,
+        with_draft_elsewhere,
+        &hover([152.0, 214.0]),
+    );
+    assert_state(
+        "drafts-collapsed-group",
+        WIDE,
+        with_drafts_in_collapsed_group,
+        &[],
+    );
+    assert_state("drafts-after-go-to-note", WIDE, after_go_to_note, &[]);
 }
