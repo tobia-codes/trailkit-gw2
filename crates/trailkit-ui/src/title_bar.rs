@@ -11,7 +11,10 @@
 //! are dragged; windows without a title bar are exempt from
 //! `ConfigWindowsMoveFromTitleBarOnly`.
 
-use nexus::imgui::{Condition, StyleColor, Ui, Window, WindowFlags};
+use nexus::imgui::{
+    Condition, MouseButton, StyleColor, Ui, Window, WindowFlags, WindowFocusedFlags,
+    WindowHoveredFlags, sys,
+};
 
 use crate::{
     button::{draw_icon_button, draw_icon_toggle, draw_label, icon_button_width},
@@ -117,6 +120,7 @@ pub fn draw_window<Label: AsRef<str>>(
     }
     let mut clicked_toggle = None;
     window.flags(flags).build(ui, || {
+        release_focus_on_outside_click(ui);
         if !state.collapsed {
             state.expanded_size = ui.window_size();
         }
@@ -133,6 +137,23 @@ pub fn draw_window<Label: AsRef<str>>(
         }
     });
     clicked_toggle
+}
+
+/// Takes the focus from the current window when the right or middle mouse
+/// button clicks outside every ImGui window, e.g. into the game. ImGui does
+/// that only for the left button; keys must not keep going to a window the
+/// player clicked away from (memo M186).
+fn release_focus_on_outside_click(ui: &Ui) {
+    let clicked =
+        ui.is_mouse_clicked(MouseButton::Right) || ui.is_mouse_clicked(MouseButton::Middle);
+    if clicked
+        && ui.is_window_focused_with_flags(WindowFocusedFlags::ROOT_AND_CHILD_WINDOWS)
+        && !ui.is_window_hovered_with_flags(WindowHoveredFlags::ANY_WINDOW)
+    {
+        // SAFETY: called on the render thread inside a frame; a null name
+        // makes ImGui focus no window.
+        unsafe { sys::igSetWindowFocus_Str(std::ptr::null()) };
+    }
 }
 
 /// The height of the title row: that of its icon buttons. The window's own font

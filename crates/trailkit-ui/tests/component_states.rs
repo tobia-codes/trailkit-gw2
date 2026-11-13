@@ -1024,6 +1024,73 @@ fn tooltip_while_the_window_draw_list_is_held() {
     });
 }
 
+/// A right click outside every window takes the focus from a trailkit
+/// window, as a left click does in ImGui (memo M186); a right click inside
+/// keeps it.
+#[test]
+fn a_right_click_outside_takes_the_focus() {
+    let theme = ThemeKind::Dark.theme();
+    let size = [320.0, 240.0];
+    let texts = TitleBarTexts {
+        title: "Notes",
+        collapse: "Collapse",
+        expand: "Expand",
+        close: "Close",
+    };
+    let mut state = TitleBarState::default();
+    let mut open = true;
+    let focused = Cell::new(false);
+    let mut harness = UiHarness::new(size);
+    let mut frame = |harness: &mut UiHarness, input: FrameInput| {
+        let _image = harness.frame(&input, |ui: &Ui| {
+            let _style = StyleScope::push_with_cursor_extent(ui, &theme, None);
+            let _clicked = draw_title_bar(
+                ui,
+                &theme,
+                Window::new("Notes###focus")
+                    .position([0.0, 0.0], Condition::Always)
+                    .size([200.0, 140.0], Condition::Always),
+                texts,
+                &[],
+                &mut state,
+                &mut open,
+                || focused.set(ui.is_window_focused()),
+            );
+        });
+    };
+    let right = |position: [f32; 2], down: bool| FrameInput {
+        mouse_position: position,
+        right_button_down: down,
+        ..FrameInput::default()
+    };
+    let inside = [100.0, 100.0];
+    let outside = [280.0, 200.0];
+    for input in [
+        mouse(inside, true),
+        mouse(inside, false),
+        mouse(inside, false),
+    ] {
+        frame(&mut harness, input);
+    }
+    assert!(focused.get(), "a left click inside focuses the window");
+    for input in [
+        right(inside, true),
+        right(inside, false),
+        right(inside, false),
+    ] {
+        frame(&mut harness, input);
+    }
+    assert!(focused.get(), "a right click inside keeps the focus");
+    for input in [
+        right(outside, true),
+        right(outside, false),
+        right(outside, false),
+    ] {
+        frame(&mut harness, input);
+    }
+    assert!(!focused.get(), "a right click outside takes the focus");
+}
+
 /// The empty state in every variant: title only with two buttons, icon with
 /// title and hint, one button, and the buttons stacked in a narrow pane (Q283: one layout).
 #[test]
