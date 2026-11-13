@@ -53,10 +53,10 @@ Each rule has an id (`area-name`) so reviews can cite it.
   Escape and a click on the dimmed area choose the harmless answer (e.g.
   "Keep editing"), never one that saves or discards.
   Card: `bg.panel`, 1 px `border` frame, `space.lg` padding, min ≈ 28
-  characters wide, max 90 % of the window, text wraps. Button row: the
-  destructive button on the left, the others right-aligned with the primary
-  button last (right); when the row does not fit, buttons stack full width,
-  primary first, destructive last.
+  characters wide, max 90 % of the window, text wraps. Button row:
+  right-aligned with the primary button last (right); a delete question's
+  `danger` button takes the primary's place (R105). When the row does not
+  fit, buttons stack full width, primary (or delete) first.
 - `overlay-sleep` — Closed windows cost nothing: skip all work for hidden
   windows (no layout, no text formatting).
 - `overlay-click-through` — Purely informational overlays may offer a
@@ -165,8 +165,8 @@ Each rule has an id (`area-name`) so reviews can cite it.
   not through color alone or decoration. One small radius (4 px) and a
   faint outline (`border.subtle`) for all surfaces, nothing more.
 - `lay-one-primary` — At most one primary button per window/dialog;
-  secondary actions are visually subordinate; destructive actions use the
-  `danger` variant and sit apart from the primary action.
+  secondary actions are visually subordinate; every delete button is the
+  `danger` fill and a delete menu entry the `danger` tone (R105).
 - `lay-button-icon` — The primary text button of a toolbar carries a Lucide
   icon before its label (`draw_primary_button_with_icon`: Edit = pencil,
   Save = floppy disk `save`). Secondary text buttons and dialog buttons stay text only
