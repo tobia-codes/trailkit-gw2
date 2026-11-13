@@ -12,7 +12,7 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 ## ▶ Resume here
 
 **Session 32 (2026-11-13).** R98/B25: problem reports via the backend behind a flag, GitHub form as fallback (Q288–Q293 in
-`backend.md`). Q286 (tooltip looks like a button) is a later design round. Before the first release: DPF listing check (R99).
+`backend.md`). Before the first release: DPF listing check (R99).
 
 **▶ Work branch: `feature/help-problem-page`** (local only on the user's WSL machine, **not pushed**; keep working on it, no new
 branch, no push without the user's OK). Session 32 added: memo's Nexus options tab (M182, `options_tab.rs`, `addon/render.rs`), the
@@ -41,7 +41,7 @@ for fan content are not read yet; never copy game or Blish HUD art, never look o
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
 
-Next ids: **M184+, R102+, B26+, questions from 327**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M184+, R103+, B26+, questions from 329**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 
 - **Housekeeping (Q211/Q240):** the user deletes the approved old local branches by hand (all `chore/`, `contributor-docs`, `handoff-*`,
   `addon-status-*`, `help-window-design`, merged PR branches).
