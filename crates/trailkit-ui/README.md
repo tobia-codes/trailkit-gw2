@@ -27,13 +27,13 @@ Latin up to Extended-B plus punctuation, the icon font only the icons in
 | `icons` | Lucide icon glyphs used by trailkit (add new ones here) | any |
 | `text` | `TextStyle` — the text roles of `tokens.md` §7.1 (font and color, any platform); `draw_text`, `draw_text_wrapped`, `draw_truncated_text` ("…" plus full-text tooltip), `draw_icon`, `draw_icon_text` (icon in front of a text in any role, icon and capitals centered on each other, one line or wrapped; Q325), `TextStyle::push` only for measuring, centering and inputs (R96) | any / Windows |
 | `empty_state` | `draw_empty_state` — the one empty-state layout: optional icon in `text.disabled`, Body title, Secondary hint, optional buttons with one primary (Q283) | Windows |
-| `editor` | the word-wrapping text editor: platform-independent `buffer` (text, cursor, undo) and `layout`, plus `highlight` and the drawing `view` (Windows) (M58–M60) | any / Windows |
+| `editor` | the word-wrapping text editor: platform-independent `buffer` (text, cursor, undo) and `layout`, plus `highlight` and the drawing `view` (Windows; `keyboard` handles keys, `lines` draws the visible lines) (M58–M60) | any / Windows |
 | `text_search` | `SearchQuery`: whitespace-separated terms, case-insensitive, shared by list filtering and hit highlighting (M118–M120) | any |
 | `help_topics` | `parse_help_topics`: the `##` topics of an addon's `help/<language>.md`, `subsection_counts` for the language parity test (R95) | any |
 | `markdown` | markdown → blocks and styled spans; task toggling; `http(s)`-only links | any |
 | `button` | `draw_button` (label centered by its capitals, M85), `draw_primary_button` (accent, `lay-one-primary`), `draw_primary_button_with_icon` (icon + label), `draw_icon_button` / `draw_icon_toggle` (borderless, tooltip), `draw_popup_icon_button` (hover on `bg.active`), `draw_icon_button_with_state`; every text button is a `Button` with `ButtonKind` and `ButtonState` (`Ready` / `Busy` / `Disabled { reason }`, R93), the `draw_*` functions are short forms, `button_width`, `icon_button_width`, `icon_label_button_width`; `Button::opens_link` adds `external-link` after the label (`lay-button-icon-position`, R100); text buttons are at least `button.min_width` wide (M131) | Windows |
 | `menu` | `draw_menu_item` (Lucide check mark), `begin_submenu` (Lucide chevron, opens flush beside the parent, M98/M99) | Windows |
-| `dropdown` | `draw_dropdown` (themed select box, popup list with check mark, M87; variants `Field` and compact `Chip`, M102), `dropdown_width`, `dropdown_height` | Windows |
+| `dropdown` | `draw_dropdown` (themed select box: the selected content in a button, the option list with a check mark below it, M87, R71), `dropdown_width` | Windows |
 | `pane` | `draw_pane` — a content region on `bg.panel` with `pane.padding` on every side (`lay-pane-padding`); its size comes from the caller | Windows |
 | `pane_columns` | `draw_resizable_pane_columns` — panes side by side with a splitter in each gap: fixed columns with widths in body characters, the last one fills; memo's main window and the help window (R101) | Windows |
 | `page` | `draw_page` — a page head inside a pane: Heading1 title with an optional `TitleTrailing` widget, optional Secondary line, separator, scrolling content; memo's note view and the help window (R101) | Windows |
@@ -53,7 +53,7 @@ Latin up to Extended-B plus punctuation, the icon font only the icons in
 | `separator` | `draw_separator` — horizontal line that ends at the window/pane padding | Windows |
 | `style_scope` | `StyleScope` — RAII guard that pushes a theme onto the shared ImGui context and pops it on drop; `StyleScope::transparent_frame` for borderless inputs (no per-frame allocation) | Windows |
 | `font_registry` | registers the shared fonts and glyphs with Nexus, follows the `FontUI` size, `FontScope` guard | Windows |
-| `markdown_view` | draws a parsed markdown document with word wrapping; returns task/link clicks and copies chat-link chips | Windows |
+| `markdown_view` | draws a parsed markdown document block by block; `inline_text` wraps words, links and chat-link chips and marks search hits; returns task/link clicks and copies chat-link chips | Windows |
 | `chat_link` | finds and decodes GW2 chat codes (`[&…]`) | any |
 | `chat_link_chip` | draws a chat-link chip and its tooltip; texts come from the addon (`ChipContext`) | Windows |
 | `cursor_extent` | measures the mouse cursor (GW2 draws a large one) so `StyleScope` places tooltips right of it | Windows |

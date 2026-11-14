@@ -1,12 +1,12 @@
 //! Dropdown (select box) shared by all addons (memo plan M87).
 //!
 //! ImGui's plain combo does not follow the theme (label centering, borders,
-//! the chosen option marked by color only), so the field is a themed button
-//! that opens a popup list below it. The field has the width of its widest
-//! option, so it does not jump when the choice changes.
+//! the chosen option marked by color only), so the selected content sits in
+//! a themed button that opens the option list below it. The dropdown has the
+//! width of its widest option, so it does not jump when the choice changes.
 
 use crate::tooltip::draw_tooltip;
-use nexus::imgui::{ImColor32, Selectable, StyleColor, Ui};
+use nexus::imgui::{ImColor32, Selectable, Style, StyleColor, Ui};
 
 use crate::{
     button::draw_label,
@@ -51,21 +51,51 @@ pub fn draw_dropdown(
 ) -> Option<usize> {
     let width = dropdown_width(ui, options);
     let style = ui.clone_style();
-    let text = tint.unwrap_or(theme.text.primary);
     let _id = ui.push_id(id);
-    let popup_id = "##options";
 
     // Filled and hovered like a button (`StyleScope` colors).
-    let clicked = ui.button_with_size("##field", [width, ui.frame_height()]);
+    let clicked = ui.button_with_size("##selected_content", [width, ui.frame_height()]);
     let is_hovered = ui.is_item_hovered();
-    let [min, max] = [ui.item_rect_min(), ui.item_rect_max()];
+    let bounds = [ui.item_rect_min(), ui.item_rect_max()];
     if clicked {
-        ui.open_popup(popup_id);
+        ui.open_popup(OPTION_LIST_ID);
     }
+    let (picked, is_open) = draw_option_list(ui, theme, &style, tint, options, selected, bounds);
+    if is_hovered && !is_open {
+        draw_tooltip(ui, theme, tooltip);
+    }
+    draw_selected_content(
+        ui,
+        theme,
+        &style,
+        tint,
+        options.get(selected).copied(),
+        bounds,
+        is_open,
+    );
+    picked.filter(|&index| index != selected)
+}
 
-    // The popup rows need room for the widest option, a gap and the check
-    // mark inside the popup's own padding.
-    let popup_width =
+/// ImGui ID of the popup that holds the option list.
+const OPTION_LIST_ID: &str = "##options";
+
+/// Draws the open option list below the dropdown at `bounds` (its min and
+/// max corner), if it is open: every option as a menu row, the chosen one
+/// highlighted and check-marked. Returns the option the user clicked, if
+/// any, and whether the list is open this frame.
+fn draw_option_list(
+    ui: &Ui,
+    theme: &Theme,
+    style: &Style,
+    tint: Option<Color>,
+    options: &[&str],
+    selected: usize,
+    [min, max]: [[f32; 2]; 2],
+) -> (Option<usize>, bool) {
+    let width = max[0] - min[0];
+    // The rows need room for the widest option, a gap and the check mark
+    // inside the popup's own padding.
+    let list_width =
         width.max(width - 2.0 * style.frame_padding[0] + 2.0 * style.window_padding[0]);
     place_next_popup([min[0], max[1]], 0.0);
     // SAFETY: a plain ImGui call on the render thread inside a frame; it only
@@ -73,7 +103,7 @@ pub fn draw_dropdown(
     unsafe {
         nexus::imgui::sys::igSetNextWindowSizeConstraints(
             nexus::imgui::sys::ImVec2 {
-                x: popup_width,
+                x: list_width,
                 y: 0.0,
             },
             nexus::imgui::sys::ImVec2 {
@@ -86,7 +116,7 @@ pub fn draw_dropdown(
     }
     let mut picked = None;
     let mut is_open = false;
-    draw_fitted_popup(ui, theme, popup_id, || {
+    draw_fitted_popup(ui, theme, OPTION_LIST_ID, || {
         is_open = true;
         for (index, option) in options.iter().enumerate() {
             let is_selected = index == selected;
@@ -115,9 +145,22 @@ pub fn draw_dropdown(
             }
         }
     });
-    if is_hovered && !is_open {
-        draw_tooltip(ui, theme, tooltip);
-    }
+    (picked, is_open)
+}
+
+/// Draws what the closed dropdown at `bounds` (its min and max corner)
+/// shows: its frame (focus color while the list is open), the selected
+/// option's `label` and the chevron.
+fn draw_selected_content(
+    ui: &Ui,
+    theme: &Theme,
+    style: &Style,
+    tint: Option<Color>,
+    label: Option<&str>,
+    [min, max]: [[f32; 2]; 2],
+    is_open: bool,
+) {
+    let frame_padding = style.frame_padding[0];
     let border = tint.unwrap_or(if is_open {
         theme.border.focus
     } else {
@@ -130,22 +173,21 @@ pub fn draw_dropdown(
         theme.border.width.max(1.0),
         theme.radius.medium,
     );
-    if let Some(label) = options.get(selected) {
+    if let Some(label) = label {
         draw_label(
             label,
-            min[0] + style.frame_padding[0],
+            min[0] + frame_padding,
             [min[1], max[1]],
-            packed(text),
+            packed(tint.unwrap_or(theme.text.primary)),
         );
     }
     draw_icon(
         ui,
         Icon::CHEVRON_DOWN,
-        max[0] - style.frame_padding[0] - icon_width(ui),
+        max[0] - frame_padding - icon_width(ui),
         [min[1], max[1]],
         packed(tint.unwrap_or(theme.text.secondary)),
     );
-    picked.filter(|&index| index != selected)
 }
 
 /// The width of one icon glyph at the current font size.

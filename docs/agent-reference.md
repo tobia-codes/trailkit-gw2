@@ -16,6 +16,14 @@ abbreviations are allowed (`id`, `url`, `api`, `http`, `json`, `ui`, `dll`,
 `gw2`). No single-letter names except trivial index loops. No catch-all names
 (`Manager`, `Helper`, `Utils`, `Misc`, `Data`, `Info`).
 
+**Names say what it is and does (R108).** Name UI code from the user's view:
+what the element is and what the function does (`draw_selected_content`,
+`draw_option_list`, `draw_chat_link`), not which ImGui widget or primitive
+draws it (`draw_button_content`, `draw_rows`, `draw_span`). ImGui terms only
+where the code really is about ImGui mechanics (`draw_keyboard_sink`). Avoid
+project-wide loaded words in a different sense: "input" is a text input field,
+"render" is the Nexus render thread/callback; drawing is "draw".
+
 | What | Convention | Example |
 |------|-----------|---------|
 | Rust types, traits, enum variants | `UpperCamelCase`, acronyms as words | `NoteTree`, `ApiKey`, `HttpClient` |

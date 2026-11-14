@@ -9,40 +9,30 @@
 mod context_menu;
 pub use context_menu::{EntryMenu, draw_note_menu};
 mod delete;
+mod drag_and_drop;
+mod rename;
 mod rows;
 
 use std::collections::HashSet;
-use trailkit_ui::draw_list::window_draw_list;
-use trailkit_ui::tooltip::{draw_tooltip, draw_tooltip_with_border};
 
-use nexus::imgui::{MouseButton, Ui, WindowHoveredFlags};
+use nexus::imgui::{MouseButton, Ui};
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText, Text},
     list_filter::ListFilter,
-    note_tree::{GroupId, InsertionPoint, MoveCheck, NodeId, Note, NoteId, NotesDocument},
+    note_tree::{GroupId, InsertionPoint, NodeId, Note, NoteId, NotesDocument},
     row_badge::RowBadge,
 };
 use trailkit_ui::{
-    button::icon_button_width,
-    font_registry::FontScope,
-    fonts::FontRole,
-    icons::Icon,
-    separator::draw_separator_above_rows,
-    text::{IconText, TextFlow, TextStyle, draw_icon_text, draw_text},
-    text_search::SearchQuery,
-    theme::Theme,
+    button::icon_button_width, font_registry::FontScope, fonts::FontRole, icons::Icon,
+    separator::draw_separator_above_rows, text_search::SearchQuery, theme::Theme,
+    tooltip::draw_tooltip,
 };
 
-use crate::tree_drag::{
-    DRAG_THRESHOLD, DropIndicator, DropTarget, EXPAND_DELAY_SECONDS, RowRect, resolve_drop,
+use self::{
+    drag_and_drop::TreeDrag,
+    rename::{RenameState, RenameStep},
 };
-
-/// Opacity of the dragged row and its children while dragging (M106).
-const DRAGGED_ROW_ALPHA: f32 = 0.4;
-
-/// Auto-scroll speed while dragging near the list's edge, in rows per
-/// second at the very edge (M111).
-const DRAG_SCROLL_ROWS_PER_SECOND: f32 = 12.0;
+use crate::tree_drag::RowRect;
 
 /// The search texts the list shows, filled by the app from the search
 /// slice's texts (question 50).
@@ -145,47 +135,6 @@ pub struct NoteListOutput {
     pub takes_delete_key: bool,
 }
 
-/// An inline rename in progress (M44).
-#[derive(Debug)]
-struct RenameState {
-    /// The note or group being renamed.
-    node: NodeId,
-    /// The edited title.
-    buffer: String,
-    /// Whether keyboard focus was already given to the input.
-    focused: bool,
-}
-
-/// A change of the rename state requested while drawing; applied after
-/// all rows, so every row of a frame sees the same state.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum RenameStep {
-    /// Start renaming this node.
-    Start(NodeId),
-    /// Leave rename mode (committed or cancelled).
-    End,
-}
-
-/// A press on a row that may become a drag (M106).
-#[derive(Debug)]
-struct TreeDrag {
-    /// The pressed note or group.
-    node: NodeId,
-    /// Mouse position of the press.
-    pressed_at: [f32; 2],
-    /// Whether the mouse moved far enough to drag; until then a release
-    /// selects the row.
-    is_dragging: bool,
-    /// Where a drop would go in this frame, if the mouse is over the list.
-    target: Option<DropTarget>,
-    /// Whether the move to `target` is possible, changes nothing or changes
-    /// the tree.
-    check: MoveCheck,
-    /// The collapsed group hovered in its middle and since when (ImGui
-    /// time); it expands after [`EXPAND_DELAY_SECONDS`] (M108).
-    collapsed_hover: Option<(GroupId, f64)>,
-}
-
 /// State of the list that outlives a frame.
 #[derive(Debug, Default)]
 pub struct NoteList {
@@ -245,26 +194,6 @@ impl NoteList {
     /// expanded, no search hiding it.
     pub fn reveal(&mut self, node: NodeId) {
         self.reveal = Some(node);
-    }
-
-    /// Puts `node` into rename mode with `title` in the input (a just
-    /// created entry, M43).
-    pub fn start_rename(&mut self, node: NodeId, title: String) {
-        self.rename = Some(RenameState {
-            node,
-            buffer: title,
-            focused: false,
-        });
-    }
-
-    /// Cancels a running drag (Escape, trailkit-ui skill §4). Returns
-    /// whether one was running.
-    pub fn cancel_drag(&mut self) -> bool {
-        let is_dragging = self.drag.as_ref().is_some_and(|drag| drag.is_dragging);
-        if is_dragging {
-            self.drag = None;
-        }
-        is_dragging
     }
 
     /// Draws the "new note" / "new group" buttons and the separator below
@@ -365,29 +294,7 @@ impl NoteList {
         };
         rows::draw_nodes(ui, &document.root, &mut context);
         let pressed = context.pressed;
-        if let Some(search) = &search {
-            // Positions in a filtered list are ambiguous: no drag & drop
-            // while searching (M125).
-            if pressed.is_some() {
-                self.drag_blocked_by_search = true;
-            }
-            if !ui.is_mouse_down(MouseButton::Left) {
-                self.drag_blocked_by_search = false;
-            } else if self.drag_blocked_by_search
-                && ui.is_mouse_dragging_with_threshold(MouseButton::Left, DRAG_THRESHOLD)
-            {
-                draw_tooltip(ui, theme, search.texts.clear_search_to_move);
-            }
-        } else if let Some(node) = pressed {
-            self.drag = Some(TreeDrag {
-                node,
-                pressed_at: ui.io().mouse_pos,
-                is_dragging: false,
-                target: None,
-                check: MoveCheck::Unchanged,
-                collapsed_hover: None,
-            });
-        }
+        self.start_press(ui, theme, pressed, search.as_ref());
         self.track_drag(ui, theme, style.indent_spacing, document, &mut output);
         // Right-click on an empty spot of the list (M96): create at the end
         // of the root level.
@@ -413,155 +320,6 @@ impl NoteList {
             && !ui.io().want_text_input;
         output
     }
-
-    /// Applies the rename changes requested while drawing, in order.
-    fn apply_rename_steps(&mut self, document: &NotesDocument) {
-        for step in self.rename_steps.drain(..) {
-            match step {
-                RenameStep::Start(node) => {
-                    if let Some(title) = node_title(document, node) {
-                        self.rename = Some(RenameState {
-                            node,
-                            buffer: title.to_owned(),
-                            focused: false,
-                        });
-                    }
-                }
-                RenameStep::End => self.rename = None,
-            }
-        }
-    }
-
-    /// Follows a drag over the list (M106–M111): starts it once the mouse
-    /// moved [`DRAG_THRESHOLD`], finds the drop target, draws the drop line
-    /// or group highlight, expands a collapsed group after a rest and
-    /// scrolls near the list's edges. Runs inside the list's window after
-    /// its rows; `indent` is the width of one tree level.
-    fn track_drag(
-        &mut self,
-        ui: &Ui,
-        theme: &Theme,
-        indent: f32,
-        document: &NotesDocument,
-        output: &mut NoteListOutput,
-    ) {
-        let Some(drag) = &mut self.drag else {
-            return;
-        };
-        let mouse = ui.io().mouse_pos;
-        if !drag.is_dragging {
-            let moved = [mouse[0] - drag.pressed_at[0], mouse[1] - drag.pressed_at[1]];
-            if !ui.is_mouse_down(MouseButton::Left) || moved[0].hypot(moved[1]) < DRAG_THRESHOLD {
-                return;
-            }
-            drag.is_dragging = true;
-        }
-        // The pressed row stays the active item while dragging.
-        let is_over_list =
-            ui.is_window_hovered_with_flags(WindowHoveredFlags::ALLOW_WHEN_BLOCKED_BY_ACTIVE_ITEM);
-        drag.target = is_over_list
-            .then(|| resolve_drop(&self.rows, mouse[1], indent))
-            .flatten();
-        drag.check = drag.target.map_or(MoveCheck::Unchanged, |target| {
-            document.check_move(drag.node, target.point)
-        });
-        if !is_over_list {
-            drag.collapsed_hover = None;
-            return;
-        }
-
-        // A collapsed group expands after the drag rested on it (M108).
-        let collapsed_group = drag
-            .target
-            .and_then(|target| target.collapsed_group)
-            .filter(|_| drag.check != MoveCheck::Impossible);
-        drag.collapsed_hover = match (collapsed_group, drag.collapsed_hover) {
-            (Some(group), Some((hovered, since))) if hovered == group => {
-                if ui.time() - since >= EXPAND_DELAY_SECONDS {
-                    output
-                        .actions
-                        .push(NoteListAction::SetExpanded(group, true));
-                }
-                Some((hovered, since))
-            }
-            (Some(group), _) => Some((group, ui.time())),
-            (None, _) => None,
-        };
-
-        if drag.check == MoveCheck::Changes
-            && let Some(target) = drag.target
-        {
-            draw_drop_indicator(ui, theme, target.indicator);
-        }
-        scroll_near_edges(ui, theme);
-    }
-
-    /// Ends a press or drag on the list when the left button is released: a
-    /// press without drag selects the row, a drag moves the node to its drop
-    /// target (M106–M111). While dragging, the title floats next to the
-    /// cursor with a gold border, red with a ban icon over an impossible
-    /// target (M109, M116). Call once per frame after the whole window, as
-    /// the list may not be drawn (list hidden).
-    pub fn finish_drag(
-        &mut self,
-        ui: &Ui,
-        theme: &Theme,
-        document: &NotesDocument,
-    ) -> Option<NoteListAction> {
-        let drag = self.drag.as_mut()?;
-        if !ui.is_mouse_down(MouseButton::Left) {
-            let action = if !drag.is_dragging {
-                Some(match drag.node {
-                    NodeId::Group(group) => NoteListAction::ClickGroup(group),
-                    NodeId::Note(_) => NoteListAction::Select(drag.node),
-                })
-            } else if drag.check == MoveCheck::Changes
-                && let Some(target) = drag.target
-            {
-                Some(NoteListAction::Move(drag.node, target.point))
-            } else {
-                None
-            };
-            self.drag = None;
-            return action;
-        }
-        if !drag.is_dragging {
-            return None;
-        }
-        let title = node_title(document, drag.node).unwrap_or_default();
-        let is_impossible = drag.target.is_some() && drag.check == MoveCheck::Impossible;
-        // The list may not be drawn next frame (list hidden); its target
-        // is only valid for this one.
-        drag.target = None;
-        drag.check = MoveCheck::Unchanged;
-        // A gold border ties the label to the drop line; red over an
-        // impossible target (M116).
-        let border = if is_impossible {
-            theme.status.danger
-        } else {
-            theme.accent.text
-        };
-        draw_tooltip_with_border(ui, theme, border, || {
-            if is_impossible {
-                // A status text in the danger color (Q277, Q325).
-                draw_icon_text(
-                    ui,
-                    theme,
-                    &IconText {
-                        icon: Icon::BAN,
-                        icon_color: theme.status.danger,
-                        text: title,
-                        style: TextStyle::Body,
-                        text_color: Some(theme.status.danger),
-                        flow: TextFlow::SingleLine,
-                    },
-                );
-            } else {
-                draw_text(ui, theme, TextStyle::Body, title);
-            }
-        });
-        None
-    }
 }
 
 /// The title of a note or group in `document`.
@@ -570,46 +328,4 @@ fn node_title(document: &NotesDocument, node: NodeId) -> Option<&str> {
         NodeId::Note(id) => document.note(id).map(|note| note.title.as_str()),
         NodeId::Group(id) => document.group(id).map(|group| group.title.as_str()),
     }
-}
-
-/// Draws the drop line between rows or the highlight of a collapsed group
-/// (trailkit-ui skill §4) into the list's window.
-fn draw_drop_indicator(ui: &Ui, theme: &Theme, indicator: DropIndicator) {
-    let draw_list = window_draw_list(ui);
-    let color = theme.accent.text.to_array();
-    let thickness = 2.0 * theme.border.width;
-    match indicator {
-        DropIndicator::Line { y, left, right } => {
-            draw_list
-                .add_line([left, y], [right, y], color)
-                .thickness(thickness)
-                .build();
-        }
-        DropIndicator::Highlight { min, max } => {
-            draw_list
-                .add_rect(min, max, color)
-                .rounding(theme.radius.medium)
-                .thickness(thickness)
-                .build();
-        }
-    }
-}
-
-/// Scrolls the current window while the mouse is within one row height of
-/// its top or bottom edge, faster closer to the edge (M111).
-fn scroll_near_edges(ui: &Ui, theme: &Theme) {
-    let band =
-        ui.text_line_height() + 2.0 * ui.clone_style().frame_padding[1] + theme.list.item_spacing;
-    let top = ui.window_pos()[1];
-    let bottom = top + ui.window_size()[1];
-    let mouse_y = ui.io().mouse_pos[1];
-    let depth = if mouse_y < top + band {
-        -(top + band - mouse_y) / band
-    } else if mouse_y > bottom - band {
-        (mouse_y - (bottom - band)) / band
-    } else {
-        return;
-    };
-    let step = depth.clamp(-1.0, 1.0) * DRAG_SCROLL_ROWS_PER_SECOND * band * ui.io().delta_time;
-    ui.set_scroll_y((ui.scroll_y() + step).clamp(0.0, ui.scroll_max_y()));
 }

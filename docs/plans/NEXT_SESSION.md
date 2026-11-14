@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-13 (session 35, PR #124 open). Current state and
+Last updated: 2026-11-14 (session 36, PR #125 merged). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -14,18 +14,20 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 **First, ask the user: can you test in game now?** Pending checks with where/how/expected: [`in-game-tests.md`](in-game-tests.md)
 (user request 2026-11-13: keep it current until each item is confirmed; ask every session).
 
-**Session 35 (2026-11-13).** PR [#124](https://github.com/tobia-codes/trailkit-gw2/pull/124) merged into `develop` with auto-merge on the
-user's OK, before the in-game test (user's choice): R105 (delete always red, menu entries too), R106 (irreversible discards red, UX rule
-`lay-danger-discard`), R107 (colored button states 8 %/12 % darker), M187, R103 cleanup. Mockup https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr.
-A failed in-game test becomes a `bugfix/` branch from `develop`.
+**Session 35:** PR [#124](https://github.com/tobia-codes/trailkit-gw2/pull/124) (R105–R107, M187) merged before the in-game
+test (user's choice). A failed in-game test becomes a `bugfix/` branch from `develop`.
+
+**Session 36 (2026-11-13).** No in-game test possible. Branch `chore/file-length-splits`: R108 (names say what it is and
+does), the R77 splits Q379–Q384, Q387 (dropdown, markdown view, editor view, note list); no hint left in those files. Host +
+Windows clippy and `cargo test` pass; CI green incl. snapshots; merged with the user's OK (2026-11-14); in-game tests 12–15 added.
 
 **Open, in this order:**
-1. **In-game tests 1–10 of PR #124** (top of this file). Side finding: `min-de-dialog-*` fixtures build English confirmation text
-   (test only); fix only if the user agrees. Length hints on `theme.rs` (429) and `token_groups.rs` (490) are in item 2.
-2. **File-length splits (R77):** approved Q91 (`note_list.rs`/`draw_group`), Q95 `draw_dropdown`, Q96 `editor/view.rs`, Q105
-   `markdown_view.rs`. Grill the rest by concern, never split unasked: `theme.rs` (421), `rows.rs` (422, `draw_note_row` 91),
-   `main_window.rs` (428), `actions.rs` (451, Q134), `help_text.rs::get` (104, a table; Q92 said no for `Text::get`),
-   `component_states.rs` (1127), `main_window/tests.rs` (1010), `editor.rs::draw` (101), `token_groups.rs` (466).
+1. **In-game tests 1–15** ([`in-game-tests.md`](in-game-tests.md)). Side finding: `min-de-dialog-*` fixtures build English
+   confirmation text (test only); fix only if the user agrees.
+2. **Remaining length hints:** grill the rest by concern, never split unasked: `theme.rs` (429),
+   `rows.rs` `draw_note_row` (91), `main_window.rs` (428), `actions.rs` (451, Q134), `help_text.rs::get` (98, a table; Q92 said
+   no for `Text::get`), `i18n.rs::get` (88), `component_states.rs` (1127), `main_window/tests.rs` (1010), `editor.rs::draw`
+   (101), `token_groups.rs` (490, Q141 keeps it).
 3. **Wishes of 2026-11-13 (grilling; plan requirements):** event: filters ("used in notes", a meta train order: research trains,
    timing, a source with licence/GDPR first), favorite events. memo: struck-through checked items, a simple daily/weekly window,
    favorites. All addons: more languages without growing the DLLs (BACKLOG BL15).
@@ -47,7 +49,7 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M188+, R108+, B26+, questions from 379**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M188+, R109+, B26+, questions from 386**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 
 - **Housekeeping (Q211/Q240):** the user deletes approved old local branches by hand (`chore/*`, merged PR branches).
 

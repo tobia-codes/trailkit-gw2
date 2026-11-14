@@ -6,7 +6,7 @@ use trailkit_ui::draw_list::window_draw_list;
 use trailkit_ui::tooltip::draw_tooltip;
 
 use nexus::imgui::{
-    Condition, Key, MouseButton, StyleColor, StyleVar, TreeNode, TreeNodeFlags, Ui,
+    Condition, MouseButton, StyleColor, StyleVar, TreeNode, TreeNodeFlags, TreeNodeToken, Ui,
 };
 use trailkit_memo_shared::{
     note_tree::{Group, NodeId, Note, TreeNode as Node},
@@ -20,14 +20,17 @@ use trailkit_ui::{
     },
     icons::Icon,
     selection_bar::{draw_row_state, hide_square_row_highlight},
-    style_scope::StyleScope,
     text_layout::{format_count, truncate_to_width},
     text_search::SearchQuery,
     theme::Theme,
     tree_arrow::draw_tree_arrow,
 };
 
-use super::{DRAGGED_ROW_ALPHA, NoteListAction, RenameStep, RowContext, context_menu};
+use super::{
+    NoteListAction, RowContext, context_menu,
+    drag_and_drop::DRAGGED_ROW_ALPHA,
+    rename::{RenameStep, draw_rename_input},
+};
 use crate::{
     badge_geometry::{center_matched_size, centered_pen},
     tree_drag::{RowKind, RowRect},
@@ -60,13 +63,6 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut RowContext<'_, '_>) {
         .rename
         .as_ref()
         .is_some_and(|rename| rename.node == node);
-    let mut flags = TreeNodeFlags::OPEN_ON_ARROW
-        | TreeNodeFlags::SPAN_FULL_WIDTH
-        | TreeNodeFlags::FRAME_PADDING;
-    if context.selected == Some(node) {
-        flags |= TreeNodeFlags::SELECTED;
-    }
-
     // M50: groups stand out by a bold title and their note count, shown
     // right-aligned in the secondary text color like other row info (M49).
     let row_start = ui.cursor_screen_pos();
@@ -99,47 +95,8 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut RowContext<'_, '_>) {
         }
         title_end = mark_start - context.theme.spacing.small;
     }
-    let (label, token) = {
-        let _bold = FontScope::push(ui, FontRole::BodyBold);
-        let label = if is_renaming {
-            Cow::Borrowed("")
-        } else {
-            truncate_to_width(ui, &group.title, title_end - (row_start[0] + title_offset))
-        };
-        // The node draws hover, selection and its triangle in the text
-        // color; a transparent text color hides the triangle, and the
-        // Lucide chevron and the title are drawn over it (R71).
-        let token = {
-            let _hidden_triangle = ui.push_style_color(StyleColor::Text, [0.0; 4]);
-            let _square_highlight = hide_square_row_highlight(ui);
-            TreeNode::new("group")
-                .label::<&str, _>("")
-                .flags(flags)
-                .opened(expanded, Condition::Always)
-                .push(ui)
-        };
-        draw_row_state(ui, context.theme, context.selected == Some(node));
-        draw_tree_arrow(
-            ui,
-            context.theme,
-            token.is_some(),
-            row_start,
-            context.frame_padding,
-        );
-        let title_position = [
-            row_start[0] + title_offset,
-            row_start[1] + context.frame_padding[1],
-        ];
-        if let Some(search) = context.search {
-            draw_title_hits(ui, context.theme, search.query, &label, title_position);
-        }
-        window_draw_list(ui).add_text(
-            title_position,
-            context.theme.text.primary.to_array(),
-            &*label,
-        );
-        (label, token)
-    };
+    let title_span = [row_start[0] + title_offset, title_end];
+    let (label, token) = draw_group_title(ui, group, expanded, row_start, title_span, context);
     let kind = if expanded {
         RowKind::ExpandedGroup(group.id)
     } else {
@@ -172,16 +129,73 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut RowContext<'_, '_>) {
     if is_renaming {
         ui.same_line_with_spacing(0.0, 0.0);
         let _bold = FontScope::push(ui, FontRole::BodyBold);
-        draw_rename_input(
-            ui,
-            row_start,
-            [row_start[0] + title_offset, title_end],
-            context,
-        );
+        draw_rename_input(ui, row_start, title_span, context);
     }
     if let Some(_token) = token {
         draw_nodes(ui, &group.children, context);
     }
+}
+
+/// Draws the group's tree node with its selection state, chevron and bold
+/// title between `title_span` (start and end x), the title truncated and
+/// its search hits marked; empty while it is being renamed. Returns the
+/// drawn title and the node's token, `Some` while the group is open.
+fn draw_group_title<'ui, 'group>(
+    ui: &'ui Ui,
+    group: &'group Group,
+    expanded: bool,
+    row_start: [f32; 2],
+    title_span: [f32; 2],
+    context: &RowContext<'_, '_>,
+) -> (Cow<'group, str>, Option<TreeNodeToken<'ui>>) {
+    let node = NodeId::Group(group.id);
+    let is_renaming = context
+        .rename
+        .as_ref()
+        .is_some_and(|rename| rename.node == node);
+    let mut flags = TreeNodeFlags::OPEN_ON_ARROW
+        | TreeNodeFlags::SPAN_FULL_WIDTH
+        | TreeNodeFlags::FRAME_PADDING;
+    if context.selected == Some(node) {
+        flags |= TreeNodeFlags::SELECTED;
+    }
+    let [title_x, title_end] = title_span;
+    let _bold = FontScope::push(ui, FontRole::BodyBold);
+    let label = if is_renaming {
+        Cow::Borrowed("")
+    } else {
+        truncate_to_width(ui, &group.title, title_end - title_x)
+    };
+    // The node draws hover, selection and its triangle in the text
+    // color; a transparent text color hides the triangle, and the
+    // Lucide chevron and the title are drawn over it (R71).
+    let token = {
+        let _hidden_triangle = ui.push_style_color(StyleColor::Text, [0.0; 4]);
+        let _square_highlight = hide_square_row_highlight(ui);
+        TreeNode::new("group")
+            .label::<&str, _>("")
+            .flags(flags)
+            .opened(expanded, Condition::Always)
+            .push(ui)
+    };
+    draw_row_state(ui, context.theme, context.selected == Some(node));
+    draw_tree_arrow(
+        ui,
+        context.theme,
+        token.is_some(),
+        row_start,
+        context.frame_padding,
+    );
+    let title_position = [title_x, row_start[1] + context.frame_padding[1]];
+    if let Some(search) = context.search {
+        draw_title_hits(ui, context.theme, search.query, &label, title_position);
+    }
+    window_draw_list(ui).add_text(
+        title_position,
+        context.theme.text.primary.to_array(),
+        &*label,
+    );
+    (label, token)
 }
 
 /// Horizontal offset of a group title from the row start: ImGui puts it
@@ -351,68 +365,6 @@ fn record_row(ui: &Ui, node: NodeId, kind: RowKind, left: f32, context: &mut Row
         top: min[1],
         bottom: max[1],
     });
-}
-
-/// Draws the inline rename input and records commit or cancel (M44).
-///
-/// Inline editing in lists (`lay-inline-edit`): the input has no background
-/// of its own, so the row keeps one uniform color; a focus border frames the
-/// whole row starting at `row_start`. The input text spans `title_span`
-/// (start and end x), where the title was drawn before renaming, so badges
-/// next to it stay visible.
-fn draw_rename_input(
-    ui: &Ui,
-    row_start: [f32; 2],
-    title_span: [f32; 2],
-    context: &mut RowContext<'_, '_>,
-) {
-    let [title_x, title_end] = title_span;
-    let Some(rename) = context.rename.as_mut() else {
-        return;
-    };
-    let theme = context.theme;
-    let row_end = ui.window_content_region_max()[0] + ui.window_pos()[0];
-    window_draw_list(ui)
-        .add_rect(
-            row_start,
-            [row_end, row_start[1] + ui.frame_height()],
-            theme.border.focus.to_array(),
-        )
-        .thickness(theme.border.width.max(1.0))
-        .rounding(theme.radius.medium)
-        .build();
-
-    let padding_x = theme.spacing.extra_small;
-    let _padding = ui.push_style_var(StyleVar::FramePadding([
-        padding_x,
-        context.frame_padding[1],
-    ]));
-    let _background = StyleScope::transparent_frame(ui);
-    ui.set_cursor_screen_pos([title_x - padding_x, row_start[1]]);
-    if !rename.focused {
-        ui.set_keyboard_focus_here();
-        rename.focused = true;
-    }
-    ui.set_next_item_width((title_end - title_x + 2.0 * padding_x).max(1.0));
-    let entered = ui
-        .input_text("##rename", &mut rename.buffer)
-        .auto_select_all(true)
-        .enter_returns_true(true)
-        .build();
-    // Enter or leaving the input commits, Escape cancels.
-    let commits = if entered {
-        true
-    } else if ui.is_item_deactivated() {
-        !ui.is_key_pressed(Key::Escape)
-    } else {
-        return;
-    };
-    if commits {
-        context
-            .actions
-            .push(NoteListAction::Rename(rename.node, rename.buffer.clone()));
-    }
-    context.rename_steps.push(RenameStep::End);
 }
 
 /// Draws the unsaved-changes mark (M185): `triangle-alert` in `warning`

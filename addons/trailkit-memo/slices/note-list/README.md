@@ -6,7 +6,7 @@ M43–M50, M96–M117). Depends only on
 
 | Module | Content |
 |--------|---------|
-| `note_list` | `NoteList`: the "New note / New group" header (M128), tree rows with titles, counts, badges and search hits, inline rename (M44), context menus with "Move to…" (M112), drag & drop with drop line, auto-scroll and drag label (M106–M117) (Windows only) |
+| `note_list` | `NoteList`: the "New note / New group" header (M128), tree rows with titles, counts, badges and search hits, inline rename (M44), context menus with "Move to…" (M112), drag & drop with drop line, auto-scroll and drag label (M106–M117); submodules `rows`, `rename`, `drag_and_drop`, `context_menu`, `delete` (Windows only) |
 | `badge_geometry` | whole-pixel geometry of a row badge, so its letter is centered at every text size (M105, M132) |
 | `tree_drag` | drop zones: turns the mouse position over the recorded rows into an insertion point and its indicator (ImGui-free) |
 | `i18n` | the slice's texts (`NoteListText`, en/de) |

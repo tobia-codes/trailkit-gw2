@@ -109,6 +109,8 @@ from [`crates/trailkit-ui`](crates/trailkit-ui/README.md).
   `missing_docs_in_private_items`) report what is missing.
 - **Readable names.** No abbreviations beyond widely known ones (`id`, `url`,
   `api`, `ui` …), no catch-all names (`Manager`, `Utils`, `Data`, `Info`).
+  Names say what something is and does from the user's view, not which
+  ImGui widget draws it (`draw_selected_content`, not `draw_button_content`).
   Rust files `snake_case.rs`, module folders as `foo.rs` + `foo/` (no
   `mod.rs`), other paths `kebab-case`, crates `trailkit-*`, data keys
   `snake_case`. The binding table:
