@@ -46,7 +46,7 @@ references with autocompletion and status.
 - **A second, very simple window** next to the main window that shows, for
   example, the daily and weekly notes.
 - **Favorite notes**: mark notes as favorites and filter by them. *Grilling started
-  2026-11-14: M188–M191; open questions below (Q407, Q408, Q414–Q419).*
+  2026-11-14: M188–M191; open questions below (Q407, Q408, Q416–Q419).*
 
 ## Technical design (proposal)
 
@@ -79,12 +79,7 @@ references with autocompletion and status.
   "Switch to manual order to move"? Recommendation: yes.
 - **Q419 – Badge and sort:** the badge counts active filters only, not a non-manual sort; the sort is saved in
   `ui_state.json` like the filter (M189)? Recommendation: yes to both.
-- **Q414 – Data model diagram:** a Mermaid class diagram in `addons/trailkit-memo/docs/data-model.md` (rendered by
-  GitHub, reviewable in diffs): every stored file (`notes.json` with groups, notes and trash, drafts, `ui_state.json`),
-  fields, `schema_version` and a version history; linked from memo's README; updated in the same PR as every model
-  change. Recommendation: yes.
-- **Q415 – Standing rule:** every addon with stored data keeps such a `docs/data-model.md` (agent reference and
-  `CONTRIBUTING.md`, like help rule 6). Recommendation: yes.
+- *Q414, Q415 settled (2026-11-14) as ROADMAP R113: Mermaid data model diagrams in `docs/data-model.md`.*
 
 *Answered yes on 2026-11-09: Q151, Q164, Q165, Q166 (amended), Q168 (amended), Q169, Q170, Q171; mockup V4 approved (R87). Kept here until M180 and R89 are implemented.*
 
