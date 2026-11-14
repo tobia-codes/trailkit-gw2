@@ -4,7 +4,15 @@
 //! Components never use raw colors or numbers; they read tokens from the
 //! active [`Theme`]. Sizes are in pixels at 100 % UI scaling.
 
+mod layout;
+mod typography;
+
+pub use layout::{ButtonLayout, ListLayout, MenuLayout, PaneLayout, Radii, Spacing};
+pub use typography::Typography;
+
 use crate::{chat_link::ChipCategory, color::Color};
+use layout::{BUTTON_LAYOUT, LIST_LAYOUT, MENU_LAYOUT, PANE_LAYOUT, RADII, SPACING};
+use typography::TYPOGRAPHY;
 
 /// The built-in themes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -62,14 +70,14 @@ pub struct Theme {
     pub chip: ChipColors,
     /// Spacing scale (`space.*`).
     pub spacing: Spacing,
-    /// List metrics (`list.*`).
-    pub list: ListMetrics,
-    /// Pane metrics (`pane.*`).
-    pub pane: PaneMetrics,
-    /// Button metrics (`button.*`, memo plan M131).
-    pub button: ButtonMetrics,
-    /// Menu metrics (`menu.*`, memo M177).
-    pub menu: MenuMetrics,
+    /// List layout (`list.*`).
+    pub list: ListLayout,
+    /// Pane layout (`pane.*`).
+    pub pane: PaneLayout,
+    /// Button layout (`button.*`, memo plan M131).
+    pub button: ButtonLayout,
+    /// Menu layout (`menu.*`, memo M177).
+    pub menu: MenuLayout,
     /// Corner radii (`radius.*`, R71).
     pub radius: Radii,
     /// Shadows (`shadow.*`, Q327): only tooltips have one.
@@ -245,17 +253,6 @@ pub struct ShadowTokens {
     pub popup_offset: f32,
 }
 
-/// Corner radii in pixels (R71).
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Radii {
-    /// `radius.sm` (4): chips, badges, scrollbar grab, tooltips (Q328).
-    pub small: f32,
-    /// `radius.md` (6): buttons, inputs, dropdowns, rows, menu items.
-    pub medium: f32,
-    /// `radius.lg` (10): windows, panes, popups, dialogs.
-    pub large: f32,
-}
-
 /// Gold, silver and copper, as the game colors coin amounts.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct CoinColors {
@@ -281,172 +278,6 @@ pub struct EventColors {
     /// `event.custom`.
     pub custom: Color,
 }
-
-/// Spacing scale in pixels.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Spacing {
-    /// `space.xs` (4).
-    pub extra_small: f32,
-    /// `space.sm` (8).
-    pub small: f32,
-    /// `space.md` (12).
-    pub medium: f32,
-    /// `space.lg` (16).
-    pub large: f32,
-    /// `space.xl` (24).
-    pub extra_large: f32,
-}
-
-/// List metrics in pixels.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct ListMetrics {
-    /// `list.item_spacing`: vertical gap between rows.
-    pub item_spacing: f32,
-    /// `list.indent`: indentation per tree level.
-    pub indent: f32,
-    /// `list.selection_bar_width`: width of the brass bar on the left edge
-    /// of the selected row (R71).
-    pub selection_bar_width: f32,
-    /// `list.selection_bar_inset`: gap between the bar and the top and
-    /// bottom of its row.
-    pub selection_bar_inset: f32,
-}
-
-/// Pane metrics in pixels (content regions inside a window).
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct PaneMetrics {
-    /// `pane.padding`: inner padding on every side of a pane; no content
-    /// touches a pane edge (`lay-pane-padding`).
-    pub padding: f32,
-    /// `pane.gap`: space between two neighboring panes (holds the splitter).
-    pub gap: f32,
-}
-
-/// Button metrics.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct ButtonMetrics {
-    /// `button.min_width`: minimum width of a button with a text label, as a
-    /// multiple of the current font size, so it scales with the text size
-    /// (memo plan M131). Icon-only buttons stay square.
-    pub min_width: f32,
-}
-
-impl ButtonMetrics {
-    /// The minimum width of a text button in pixels for `font_size`.
-    #[must_use]
-    pub fn min_width_for(&self, font_size: f32) -> f32 {
-        (font_size * self.min_width).round()
-    }
-}
-
-/// Menu metrics (memo M177).
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct MenuMetrics {
-    /// `menu.padding`: gap between a menu's edge and its rows.
-    pub padding: f32,
-    /// `menu.row_padding_x`: gap between a row's edge and its content.
-    pub row_padding_x: f32,
-    /// `menu.row_padding_y`: gap between a row's edge and its text line.
-    pub row_padding_y: f32,
-    /// `menu.row_gap`: gap between two rows.
-    pub row_gap: f32,
-    /// `menu.min_width`: minimum width of a command menu, as a multiple of the
-    /// current font size, so it scales with the text size.
-    pub min_width: f32,
-}
-
-impl MenuMetrics {
-    /// The minimum width of a command menu in pixels for `font_size`.
-    #[must_use]
-    pub fn min_width_for(&self, font_size: f32) -> f32 {
-        (font_size * self.min_width).round()
-    }
-}
-
-/// Font sizes as factors of the Nexus body size (R96), and the line height.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Typography {
-    /// `font.size.small`: small text.
-    pub small: f32,
-    /// `font.size.body`: body text.
-    pub body: f32,
-    /// `font.size.heading3`: level 3 heading and below.
-    pub heading3: f32,
-    /// `font.size.heading2`: level 2 heading.
-    pub heading2: f32,
-    /// `font.size.heading1`: level 1 heading.
-    pub heading1: f32,
-    /// `font.line_height`: line height of running text (notes, editor) as a
-    /// multiple of the font size; roomy enough for chat-link chips (M77).
-    pub line_height: f32,
-}
-
-impl Typography {
-    /// The line height of running text in `font_size`, in whole pixels.
-    #[must_use]
-    pub fn line_height_for(&self, font_size: f32) -> f32 {
-        (font_size * self.line_height).round()
-    }
-
-    /// The space above the text in such a line (half the extra height), so
-    /// text sits in the middle of its line.
-    #[must_use]
-    pub fn leading_for(&self, font_size: f32) -> f32 {
-        ((self.line_height_for(font_size) - font_size) / 2.0).floor()
-    }
-}
-
-/// Tokens shared by both built-in themes (sizes, not colors).
-const SPACING: Spacing = Spacing {
-    extra_small: 4.0,
-    small: 8.0,
-    medium: 12.0,
-    large: 16.0,
-    extra_large: 24.0,
-};
-
-/// List metrics shared by both built-in themes.
-const LIST_METRICS: ListMetrics = ListMetrics {
-    item_spacing: 4.0,
-    indent: 16.0,
-    selection_bar_width: 3.0,
-    selection_bar_inset: 6.0,
-};
-
-/// Corner radii shared by both built-in themes.
-const RADII: Radii = Radii {
-    small: 4.0,
-    medium: 6.0,
-    large: 10.0,
-};
-
-/// Pane metrics shared by both built-in themes (`space.sm`).
-const PANE_METRICS: PaneMetrics = PaneMetrics {
-    padding: SPACING.small,
-    gap: SPACING.small,
-};
-
-/// Button metrics shared by both built-in themes.
-const BUTTON_METRICS: ButtonMetrics = ButtonMetrics { min_width: 4.0 };
-
-/// Menu metrics shared by both built-in themes.
-const MENU_METRICS: MenuMetrics = MenuMetrics {
-    padding: 6.0,
-    row_padding_x: 10.0,
-    row_padding_y: 7.0,
-    row_gap: 2.0,
-    min_width: 14.0,
-};
-
-/// Font sizes shared by both built-in themes.
-const TYPOGRAPHY: Typography = Typography {
-    small: 0.85,
-    body: 1.0,
-    heading3: 1.15,
-    heading2: 1.3,
-    heading1: 1.5,
-    line_height: 1.5,
-};
 
 impl Theme {
     /// The built-in dark theme (default): ink-tinted surfaces, brass accent.
@@ -536,10 +367,10 @@ impl Theme {
             custom: Color::from_rgb_hex(0xB8A6F0),
         },
         spacing: SPACING,
-        list: LIST_METRICS,
-        pane: PANE_METRICS,
-        button: BUTTON_METRICS,
-        menu: MENU_METRICS,
+        list: LIST_LAYOUT,
+        pane: PANE_LAYOUT,
+        button: BUTTON_LAYOUT,
+        menu: MENU_LAYOUT,
         radius: RADII,
         typography: TYPOGRAPHY,
     };
@@ -629,10 +460,10 @@ impl Theme {
             custom: Color::from_rgb_hex(0x6141B5),
         },
         spacing: SPACING,
-        list: LIST_METRICS,
-        pane: PANE_METRICS,
-        button: BUTTON_METRICS,
-        menu: MENU_METRICS,
+        list: LIST_LAYOUT,
+        pane: PANE_LAYOUT,
+        button: BUTTON_LAYOUT,
+        menu: MENU_LAYOUT,
         radius: RADII,
         typography: TYPOGRAPHY,
     };
