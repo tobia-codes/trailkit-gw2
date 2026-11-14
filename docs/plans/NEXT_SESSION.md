@@ -32,10 +32,10 @@ Core-mandatory plan R109 merged (PR #130); R110–R112 and the frontend topics w
 
 **Open, in this order:**
 1. **In-game tests 1–16** ([`in-game-tests.md`](in-game-tests.md)) whenever the user is at the PC; deploy `develop` first.
-   **Continue the favorites grilling** (Q407, Q408, Q414–Q419), then mockup (R87), then implementation.
-   **Wishes of 2026-11-14 to grill** (ROADMAP R109–R112 and "Open"): core required (R109) with a lock screen in every addon
-   (R110), core setup guide (R111), only-tokens rule and audit (R112), repo layout with the React frontend, frontend
-   technology, one theme source for addons and frontend.
+   **First (user, 2026-11-14): grill the wishes of 2026-11-14** (ROADMAP R109–R112 and "Open"): core required (R109) with a
+   lock screen in every addon (R110), core setup guide (R111), only-tokens rule and audit (R112), repo layout with the React
+   frontend, frontend technology, one theme source for addons and frontend. **Then** continue the favorites grilling on
+   `feature/memo-favorites` (Q407, Q408, Q416–Q419; Q414/Q415 settled as R113), mockup (R87), implementation.
 2. **Remaining wishes of 2026-11-13:** memo struck-through checked items, then the second window. event:
    filters ("used in notes", a meta train order: research trains, timing, a source with licence/GDPR first), favorite events.
    All addons: more languages without growing the DLLs (BACKLOG BL15; reworks the `get` tables kept whole in Q392).
@@ -53,7 +53,7 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M192+, R113+, B26+, questions from 420**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M192+, R114+, B26+, questions from 420**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
 1. **Storage failures:** done (memo M180, 2026-11-10).
