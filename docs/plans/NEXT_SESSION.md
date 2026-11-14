@@ -17,9 +17,9 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 **Sessions 36–37:** R77 splits done (PRs #125, #127; Q379–Q398); merged before in-game test 16 at the user's request.
 A failed in-game test becomes a `bugfix/` branch.
 
-**Cloud sessions:** auto mode may refuse `git commit`; then ask the user and never work around it. `gh pr create` fails (GraphQL
-blocked): create PRs with `gh api repos/{owner}/{repo}/pulls`, arm auto-merge with `PUT .../pulls/{n}/ccr/auto_merge`
-(`merge_method=merge`; no branch deletion). `cargo xwin clippy` works there.
+**Cloud sessions:** auto mode may refuse `git commit`: ask the user, never work around it. PRs via `gh api .../pulls`, auto-merge
+via `PUT .../pulls/{n}/ccr/auto_merge` (`merge_method=merge`); branch deletion is blocked (the user deletes). Push does not set
+the upstream (narrow fetch refspec): set `branch.<b>.remote/merge` by hand for the stop hook. `cargo xwin clippy` works.
 
 **On the Mac (no game, no WSL):** `git fetch origin && git switch develop && git pull --ff-only`; deploy, `ui-test` and in-game
 tests wait for the Windows PC; check `source ~/.cargo/env` and a first `cargo test` there; snapshots via the PR's Windows CI.
@@ -28,22 +28,22 @@ tests wait for the Windows PC; check `source ~/.cargo/env` and a first `cargo te
 secondary sources only (CURIA blocked in cloud): still pending, no hearing, DPF in force. The user chose memo first:
 **favorites grilling in progress on `feature/memo-favorites`** — decided M188–M191 (Q399–Q406, Q409–Q413); open Q407,
 Q408, Q414–Q419 (trailkit-memo.md "Open questions"; Q407/Q408 carry the user's follow-up questions). Then R87 mockup.
-Core-mandatory plan (R109) goes to develop separately on `chore/core-mandatory-plan`.
+Core-mandatory plan R109 merged (PR #130); R110–R112 and the frontend topics went to develop on their own PR.
 
 **Open, in this order:**
 1. **In-game tests 1–16** ([`in-game-tests.md`](in-game-tests.md)) whenever the user is at the PC; deploy `develop` first.
    **Continue the favorites grilling** (Q407, Q408, Q414–Q419), then mockup (R87), then implementation.
+   **Wishes of 2026-11-14 to grill** (ROADMAP R109–R112 and "Open"): core required (R109) with a lock screen in every addon
+   (R110), core setup guide (R111), only-tokens rule and audit (R112), repo layout with the React frontend, frontend
+   technology, one theme source for addons and frontend.
 2. **Remaining wishes of 2026-11-13:** memo struck-through checked items, then the second window. event:
    filters ("used in notes", a meta train order: research trains, timing, a source with licence/GDPR first), favorite events.
    All addons: more languages without growing the DLLs (BACKLOG BL15; reworks the `get` tables kept whole in Q392).
-3. **Last, once the rest is done:** a grilling round on whether the chat translation addon (BACKLOG BL16) is feasible, research first.
-4. Then the queue below (theme character grilling, B23–B25) and the review items, one at a time.
+3. Last: chat translation addon feasibility (BL16, research first); then the queue below and the review items, one at a time.
 
-**Decided, not scheduled:** Q340 – daily backups with restore (M11, M31's "Restore from backup") stay in M28's order after settings
-and export/import. Q329 – `cargo bloat` breakdown at the next release preparation (release DLL 2.51 MiB on 2026-11-13).
+**Decided, not scheduled:** Q340 backups with restore after settings and export/import (M28); Q329 `cargo bloat` at release prep.
 
-**Lessons (keep doing):** measure before fixing; remove probes by editing, not `git checkout <file>`; mockups first (R87);
-CI runs only on PRs, so a snapshot check needs a (draft) PR.
+**Lessons:** measure before fixing; remove probes by editing; mockups first (R87); snapshot checks need a (draft) PR.
 
 **Deferred by the user (2026-11-12): one theme character for addons and the coming React website.** No code yet. Mockups:
 https://claude.ai/artifact/SFFrXawiqYD6HouhdihGdv (latest: Papier A–D). Wanted: GW2-reminiscent, own character, dark, very subtle
@@ -53,9 +53,7 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M192+, R110+, B26+, questions from 420**. Deferred: GW2 build/Nexus version in `session_start` (C12).
-
-- **Housekeeping (Q211/Q240):** the user deletes approved old local branches by hand (`chore/*`, merged PR branches).
+Next ids: **M192+, R113+, B26+, questions from 420**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
 1. **Storage failures:** done (memo M180, 2026-11-10).

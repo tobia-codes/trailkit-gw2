@@ -67,6 +67,13 @@ small and the backend load stays minimal.
 - Exact cross-addon protocol (service table vs. events vs. shared files).
 - Item data: full mirror on disk (~tens of MB) vs. lazy per-id fetch?
 - None currently (round 13 settled C6–C13).
+- **Core required by every addon (ROADMAP R109, 2026-11-14), to grill:** (1) what an addon shows when core is missing,
+  outdated or disabled (guided hint like E3 for every addon?) and how Nexus' addon dependencies help; (2) whether memo's
+  first beta (R13) still ships before core or waits for it, and the new phase order (R8); (3) what moves into core first:
+  language (core setting vs. following Nexus' language; how addons learn about a change), text and icon fonts (one font
+  registry in core; icon glyph sets of all addons in one subset; what happens on a version mismatch), theme (Dark/Light,
+  tokens), shared texts; (4) memo M26 ("without core all notes are global") and other standalone fallbacks; (5) the
+  cross-addon protocol above, which this makes the backbone; (6) measured DLL size before and after (R72, Q329).
 
 ## Decisions
 
