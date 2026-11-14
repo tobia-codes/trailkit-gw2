@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-14 (session 37, cloud; PR #127 merged). Current state and
+Last updated: 2026-11-14 (session 38, cloud; PR #129 merged). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -14,35 +14,36 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 **First, ask the user: can you test in game now?** Pending checks with where/how/expected: [`in-game-tests.md`](in-game-tests.md)
 (user request 2026-11-13: keep it current until each item is confirmed; ask every session).
 
-**Sessions 36–37:** R77 splits done. PR #125 (R108, Q379–Q387) and PR [#127](https://github.com/tobia-codes/trailkit-gw2/pull/127)
-(Q388–Q398, merged `485e927`, all CI green incl. Windows snapshots): theme `layout.rs`/`typography.rs` (`…Layout` types),
-`IconPlacement`, `main_window/closing.rs`, `draw_note_markers`, `draw_title_input`, test modules, `tests/component-states/`,
-snapshot tests named `…_states_match_snapshots`. Merged before in-game test 16 at the user's request. User to-dos: delete remote
-branches `chore/file-length-splits`, `chore/remaining-length-splits`, `chore/handoff-session-37`. A failed in-game test becomes a
-`bugfix/` branch.
+**Sessions 36–37:** R77 splits done (PRs #125, #127; Q379–Q398); merged before in-game test 16 at the user's request.
+A failed in-game test becomes a `bugfix/` branch.
 
-**Cloud sessions:** auto mode may refuse `git commit`; then ask the user and never work around it. `gh pr create` fails (GraphQL
-blocked): create PRs with `gh api repos/{owner}/{repo}/pulls`, arm auto-merge with `PUT .../pulls/{n}/ccr/auto_merge`
-(`merge_method=merge`; no branch deletion). `cargo xwin clippy` works there.
+**Cloud sessions:** auto mode may refuse `git commit`: ask the user, never work around it. PRs via `gh api .../pulls`, auto-merge
+via `PUT .../pulls/{n}/ccr/auto_merge` (`merge_method=merge`); branch deletion is blocked (the user deletes). Push does not set
+the upstream (narrow fetch refspec): set `branch.<b>.remote/merge` by hand for the stop hook. `cargo xwin clippy` works.
 
 **On the Mac (no game, no WSL):** `git fetch origin && git switch develop && git pull --ff-only`; deploy, `ui-test` and in-game
 tests wait for the Windows PC; check `source ~/.cargo/env` and a first `cargo test` there; snapshots via the PR's Windows CI.
 
+**Session 38 (2026-11-14, cloud):** PR #129 merged (German empty-trash fixture, test only). C-703/25 P checked via
+secondary sources only (CURIA blocked in cloud): still pending, no hearing, DPF in force. The user chose memo first:
+**favorites grilling in progress on `feature/memo-favorites`** — decided M188–M191 (Q399–Q406, Q409–Q413); open Q407,
+Q408, Q414–Q419 (trailkit-memo.md "Open questions"; Q407/Q408 carry the user's follow-up questions). Then R87 mockup.
+Core-mandatory plan R109 merged (PR #130); R110–R112 and the frontend topics went to develop on their own PR.
+
 **Open, in this order:**
-1. **In-game tests 1–16** ([`in-game-tests.md`](in-game-tests.md)); deploy current `develop` first (Setup 1). Side finding:
-   `min-de-dialog-*` fixtures build English confirmation text (test only); fix only if the user agrees.
-2. **Wishes of 2026-11-13 (grilling; plan requirements), next up:** first the recurring C-703/25 P check (planning). event:
+1. **In-game tests 1–16** ([`in-game-tests.md`](in-game-tests.md)) whenever the user is at the PC; deploy `develop` first.
+   **Continue the favorites grilling** (Q407, Q408, Q414–Q419), then mockup (R87), then implementation.
+   **Wishes of 2026-11-14 to grill** (ROADMAP R109–R112 and "Open"): core required (R109) with a lock screen in every addon
+   (R110), core setup guide (R111), only-tokens rule and audit (R112), repo layout with the React frontend, frontend
+   technology, one theme source for addons and frontend.
+2. **Remaining wishes of 2026-11-13:** memo struck-through checked items, then the second window. event:
    filters ("used in notes", a meta train order: research trains, timing, a source with licence/GDPR first), favorite events.
-   memo: struck-through checked items, a simple daily/weekly window, favorites. All addons: more languages without growing the
-   DLLs (BACKLOG BL15; it also reworks the `get` tables kept whole in Q392).
-3. **Last, once the rest is done:** a grilling round on whether the chat translation addon (BACKLOG BL16) is feasible, research first.
-4. Then the queue below (theme character grilling, B23–B25) and the review items, one at a time.
+   All addons: more languages without growing the DLLs (BACKLOG BL15; reworks the `get` tables kept whole in Q392).
+3. Last: chat translation addon feasibility (BL16, research first); then the queue below and the review items, one at a time.
 
-**Decided, not scheduled:** Q340 – daily backups with restore (M11, M31's "Restore from backup") stay in M28's order after settings
-and export/import. Q329 – `cargo bloat` breakdown at the next release preparation (release DLL 2.51 MiB on 2026-11-13).
+**Decided, not scheduled:** Q340 backups with restore after settings and export/import (M28); Q329 `cargo bloat` at release prep.
 
-**Lessons (keep doing):** measure before fixing (a log probe proved the flicker in one round); remove probes by editing, not
-`git checkout <file>`; mockups first (R87). Session 36: CI runs only on PRs, so a snapshot check needs a (draft) PR.
+**Lessons:** measure before fixing; remove probes by editing; mockups first (R87); snapshot checks need a (draft) PR.
 
 **Deferred by the user (2026-11-12): one theme character for addons and the coming React website.** No code yet. Mockups:
 https://claude.ai/artifact/SFFrXawiqYD6HouhdihGdv (latest: Papier A–D). Wanted: GW2-reminiscent, own character, dark, very subtle
@@ -52,9 +53,7 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M188+, R109+, B26+, questions from 399**. Deferred: GW2 build/Nexus version in `session_start` (C12).
-
-- **Housekeeping (Q211/Q240):** the user deletes approved old local branches by hand (`chore/*`, merged PR branches).
+Next ids: **M192+, R113+, B26+, questions from 420**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
 1. **Storage failures:** done (memo M180, 2026-11-10).
@@ -86,8 +85,8 @@ Next ids: **M188+, R109+, B26+, questions from 399**. Deferred: GW2 build/Nexus 
 
 Triggers/consequences: [agent reference](../agent-reference.md#recurring-checks).
 - **Wiki:** Nov 6 review got HTTP 403; public recovery/login status not confirmed; keep Wayback.
-- **C-703/25 P:** Nov 11 CURIA check: still pending (case in progress); issues #11/#20 closed. Order of June 4, 2026 (ECLI:EU:C:2026:465).
-  Previous “sources only from 2025” note was stale. Recheck when triggered; source:
+- **C-703/25 P:** Nov 14 check via secondary sources only (CURIA unreachable from cloud): still pending, no hearing, DPF in
+  force. Order of June 4, 2026 (ECLI:EU:C:2026:465). Recheck on CURIA when triggered:
   https://juris.curia.europa.eu/juris/liste.jsf?language=en&num=C-703%2F25
 - **WvW reset snapshots (checked 2026-11-07):** both Nov 6 EU (ran 22:12 UTC, +4.8 h) and Nov 7 NA (07:16 UTC,
   +5.9 h) assets hold the **post-reset** matches; CI was green. Confirms review item 3. GemExchange fails daily since ≤ Nov 10 (HTTP 400, guess: gem > 1 gold).
