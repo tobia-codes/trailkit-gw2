@@ -8,7 +8,7 @@ use super::*;
 const HELP_BUTTON: [f32; 2] = [MINIMUM_WINDOW[0] - 100.0, 25.0];
 
 #[test]
-fn every_help_button_state() {
+fn help_button_states_match_snapshots() {
     let document = sample_document();
     let away = [MINIMUM_WINDOW[0] / 2.0, MINIMUM_WINDOW[1] - 4.0];
     for (name, theme, language, help_open, mouse) in [
