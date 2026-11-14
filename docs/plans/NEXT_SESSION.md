@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-14 (session 36, PR #125 merged). Current state and
+Last updated: 2026-11-14 (session 36, PR #125 merged; next session on the Mac). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -14,12 +14,15 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 **First, ask the user: can you test in game now?** Pending checks with where/how/expected: [`in-game-tests.md`](in-game-tests.md)
 (user request 2026-11-13: keep it current until each item is confirmed; ask every session).
 
-**Session 35:** PR [#124](https://github.com/tobia-codes/trailkit-gw2/pull/124) (R105–R107, M187) merged before the in-game
-test (user's choice). A failed in-game test becomes a `bugfix/` branch from `develop`.
+**Session 36 (2026-11-13/14):** PR [#125](https://github.com/tobia-codes/trailkit-gw2/pull/125) merged into `develop`
+(`7c66067`): R108 (names say what it is and does), R77 splits Q379–Q384, Q387; in-game tests 12–15 added. User to-do: delete
+the remote branch `chore/file-length-splits` (cloud sessions may not). A failed in-game test becomes a `bugfix/` branch.
 
-**Session 36 (2026-11-13).** No in-game test possible. Branch `chore/file-length-splits`: R108 (names say what it is and
-does), the R77 splits Q379–Q384, Q387 (dropdown, markdown view, editor view, note list); no hint left in those files. Host +
-Windows clippy and `cargo test` pass; CI green incl. snapshots; merged with the user's OK (2026-11-14); in-game tests 12–15 added.
+**Continuing on the Mac (user, 2026-11-14):** `git fetch origin && git switch develop && git pull --ff-only`. The Mac has no
+game and no WSL: in-game tests, `cargo xtask deploy` and `cargo xtask ui-test` (Windows test binaries) wait for the Windows
+PC; whether host clippy/tests and `cargo xwin` work on macOS is unverified, so check `source ~/.cargo/env` and a first
+`cargo test` before relying on them, and leave snapshot checks to the PR's Windows CI. Mac-friendly work: item 2 (grilling,
+then code) and item 3 (grilling, plans). Ask the in-game question anyway; the answer is likely "not now".
 
 **Open, in this order:**
 1. **In-game tests 1–15** ([`in-game-tests.md`](in-game-tests.md)). Side finding: `min-de-dialog-*` fixtures build English
@@ -37,9 +40,8 @@ Windows clippy and `cargo test` pass; CI green incl. snapshots; merged with the 
 **Decided, not scheduled:** Q340 – daily backups with restore (M11, M31's "Restore from backup") stay in M28's order after settings
 and export/import. Q329 – `cargo bloat` breakdown at the next release preparation (release DLL 2.51 MiB on 2026-11-13).
 
-**Lessons from session 34 (keep doing):** measure before fixing (a one-off log probe proved the flicker in one round). Nexus draws
-alerts as yellow text without background at the top centre; an addon window covers them. `git checkout <file>` to drop a probe also
-drops every other edit in that file: remove probes by editing. Mockups first (R87) paid off again.
+**Lessons (keep doing):** measure before fixing (a log probe proved the flicker in one round); remove probes by editing, not
+`git checkout <file>`; mockups first (R87). Session 36: CI runs only on PRs, so a snapshot check needs a (draft) PR.
 
 **Deferred by the user (2026-11-12): one theme character for addons and the coming React website.** No code yet. Mockups:
 https://claude.ai/artifact/SFFrXawiqYD6HouhdihGdv (latest: Papier A–D). Wanted: GW2-reminiscent, own character, dark, very subtle
