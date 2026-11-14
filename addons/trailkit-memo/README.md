@@ -29,7 +29,8 @@ never depends on another slice; what several need lives in `shared`.
 | Path | Content |
 |------|---------|
 | `src/lib.rs` | crate root; `all_texts()` collects the texts of the app and every slice for the font atlas |
-| `src/main_window.rs` | main window: state, drawing entry point, closing, drafts on unload, due resets (Windows only) |
+| `src/main_window.rs` | main window: state, drawing entry point, due resets (Windows only) |
+| `src/main_window/closing.rs` | closing with unsaved changes: close request and approval, drafts kept on unload, the card about notes with drafts |
 | `src/main_window/actions.rs` | `WindowAction` and applying it: unsaved-edit guard, then tree, editor and view actions |
 | `src/main_window/search.rs` | search cache (index + results), Ctrl+F, Escape in the search field |
 | `src/main_window/text_scale.rs` | text size: Ctrl+mouse wheel, Ctrl+0, delayed apply, percentage tooltip |
@@ -41,7 +42,7 @@ never depends on another slice; what several need lives in `shared`.
 | `src/main_window/trash_pane.rs` | drawing the trash column, the read-only trash preview and the undo toast |
 | `src/main_window/layout.rs` | two panes, empty state |
 | `src/main_window/window_menu.rs` | the window menu: panel over the full height with a backdrop, its rows |
-| `src/main_window/tests.rs` | interaction tests of the main window; `tests/trash.rs` deleting, trash and undo; `tests/save_errors.rs` save errors; `tests/states.rs` one snapshot per state (`tests/states/`, e.g. the minimum width) |
+| `src/main_window/tests.rs` | interaction tests of the main window; `tests/note_list.rs` context menu, dragging, groups; `tests/search.rs` search; `tests/trash.rs` deleting, trash and undo; `tests/save_errors.rs` save errors; `tests/states.rs` one snapshot per state (`tests/states/`, e.g. the minimum width) |
 | `src/addon.rs` | Nexus export, load/unload, quick access, render, restart of a dead storage worker (Windows only) |
 | `src/addon/storage.rs` | starts the storage worker, hands the loaded notes to the window, restarts a dead worker (Windows only) |
 | `src/addon/logging.rs` | Starts and stops the log, forwards texts to `Nexus.log` (Windows only) |

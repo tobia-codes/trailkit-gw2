@@ -5,9 +5,9 @@
 use trailkit_ui::{
     color::Color,
     theme::{
-        AccentColors, BorderTokens, ButtonMetrics, ChipCategoryColors, ChipColors, CoinColors,
-        EventColors, ListMetrics, MenuMetrics, PaneMetrics, Radii, ResetColors, ShadowTokens,
-        Spacing, StatusColors, SurfaceColors, TextColors, Theme, Typography,
+        AccentColors, BorderTokens, ButtonLayout, ChipCategoryColors, ChipColors, CoinColors,
+        EventColors, ListLayout, MenuLayout, PaneLayout, Radii, ResetColors, ShadowTokens, Spacing,
+        StatusColors, SurfaceColors, TextColors, Theme, Typography,
     },
 };
 
@@ -387,22 +387,22 @@ fn spacing_group(scale: Spacing) -> TokenGroup {
     }
 }
 
-/// The metrics of lists, panes and buttons.
+/// The layout of lists, panes, buttons and menus.
 fn layout_group(
-    list: ListMetrics,
-    pane: PaneMetrics,
-    button: ButtonMetrics,
-    menu: MenuMetrics,
+    list: ListLayout,
+    pane: PaneLayout,
+    button: ButtonLayout,
+    menu: MenuLayout,
 ) -> TokenGroup {
-    let ListMetrics {
+    let ListLayout {
         item_spacing,
         indent,
         selection_bar_width,
         selection_bar_inset,
     } = list;
-    let PaneMetrics { padding, gap } = pane;
-    let ButtonMetrics { min_width } = button;
-    let MenuMetrics {
+    let PaneLayout { padding, gap } = pane;
+    let ButtonLayout { min_width } = button;
+    let MenuLayout {
         padding: menu_padding,
         row_padding_x,
         row_padding_y,

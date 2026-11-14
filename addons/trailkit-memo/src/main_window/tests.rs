@@ -1,7 +1,9 @@
 //! Snapshot tests of the memo main window (memo plan M65), run with
 //! `cargo xtask ui-test` (`--update` rewrites `tests/snapshots/`).
 
+mod note_list;
 mod save_errors;
+mod search;
 mod states;
 mod title_bar_help;
 mod trash;
@@ -441,89 +443,6 @@ fn kind_dropdown_lists_the_kinds_and_changes_the_note() {
     assert_eq!(kind, Some(Some(ResetPeriod::Daily)));
 }
 
-#[test]
-fn right_click_on_an_empty_list_spot_creates_a_root_note() {
-    let document = sample_document();
-    let root_count = document.root.len();
-    let ui_state = selected_first_with_search(&document);
-    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
-    let size = [640.0, 360.0];
-    let mut harness = UiHarness::new(size);
-    let empty_spot = [100.0, 300.0];
-    let input = |position: [f32; 2], left: bool, right: bool| FrameInput {
-        mouse_position: position,
-        left_button_down: left,
-        right_button_down: right,
-        ..FrameInput::default()
-    };
-    let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
-    harness.settle(2, &input(empty_spot, false, false), &mut draw_dark);
-    harness.frame(&input(empty_spot, false, true), &mut draw_dark);
-    let image = harness.settle(2, &input(empty_spot, false, false), &mut draw_dark);
-    assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-list-context-menu", &image);
-    let new_note_item = [empty_spot[0] + 30.0, empty_spot[1] + 14.0];
-    harness.frame(&input(new_note_item, false, false), &mut draw_dark);
-    harness.frame(&input(new_note_item, true, false), &mut draw_dark);
-    harness.settle(2, &input(new_note_item, false, false), &mut draw_dark);
-    assert_eq!(memo.document.root.len(), root_count + 1);
-    assert!(matches!(memo.document.root.last(), Some(Node::Note(_))));
-}
-
-#[test]
-fn reset_type_submenu_opens_beside_the_context_menu() {
-    let document = sample_document();
-    let ui_state = selected_first_with_search(&document);
-    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
-    let size = [640.0, 360.0];
-    let mut harness = UiHarness::new(size);
-    let row = [100.0, 145.0];
-    let input = |position: [f32; 2], right: bool| FrameInput {
-        mouse_position: position,
-        right_button_down: right,
-        ..FrameInput::default()
-    };
-    let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
-    harness.settle(2, &input(row, false), &mut draw_dark);
-    harness.frame(&input(row, true), &mut draw_dark);
-    harness.frame(&input(row, false), &mut draw_dark);
-    let rename_item = [row[0] + 30.0, row[1] + 14.0];
-    let image = harness.settle(3, &input(rename_item, false), &mut draw_dark);
-    assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-menu-item-hover", &image);
-    let reset_type_item = [row[0] + 30.0, row[1] + 38.0];
-    let image = harness.settle(6, &input(reset_type_item, false), &mut draw_dark);
-    assert_snapshot(
-        env!("CARGO_MANIFEST_DIR"),
-        "memo-reset-type-submenu",
-        &image,
-    );
-}
-
-/// Presses the left button at `from`, drags to `to` in a few frames and
-/// returns the image of the last frame while the button is still down.
-fn drag_rows(
-    harness: &mut UiHarness,
-    from: [f32; 2],
-    to: [f32; 2],
-    draw: &mut impl FnMut(&Ui),
-) -> trailkit_ui_testing::raster::Image {
-    let input = |position: [f32; 2], down: bool| FrameInput {
-        mouse_position: position,
-        left_button_down: down,
-        ..FrameInput::default()
-    };
-    harness.settle(2, &input(from, false), &mut *draw);
-    harness.frame(&input(from, true), &mut *draw);
-    for step in 1..=4_u8 {
-        let fraction = f32::from(step) / 4.0;
-        let position = [
-            from[0] + (to[0] - from[0]) * fraction,
-            from[1] + (to[1] - from[1]) * fraction,
-        ];
-        harness.frame(&input(position, true), &mut *draw);
-    }
-    harness.settle(3, &input(to, true), &mut *draw)
-}
-
 /// The titles on the root level and in the first group, e.g.
 /// `Shopping list, Dailies, Raids[Weekly clears]`.
 fn outline(memo: &MemoWindow) -> String {
@@ -545,74 +464,6 @@ fn outline(memo: &MemoWindow) -> String {
         })
         .collect::<Vec<_>>()
         .join(", ")
-}
-
-#[test]
-fn dragging_a_note_into_an_expanded_group_moves_it_to_the_line() {
-    let document = sample_document();
-    let ui_state = selected_first_with_search(&document);
-    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
-    let size = [640.0, 360.0];
-    let mut harness = UiHarness::new(size);
-    {
-        let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
-        // Lower half of the expanded "Raids" row = first place inside (M107).
-        let image = drag_rows(&mut harness, [100.0, 145.0], [100.0, 216.0], &mut draw_dark);
-        assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-drag-into-group", &image);
-        let release = FrameInput {
-            mouse_position: [100.0, 216.0],
-            ..FrameInput::default()
-        };
-        harness.settle(2, &release, &mut draw_dark);
-    }
-    assert_eq!(
-        outline(&memo),
-        "Dailies, Raids[Shopping list, Weekly clears]"
-    );
-}
-
-#[test]
-fn a_group_cannot_be_dropped_into_itself() {
-    let document = sample_document();
-    let ui_state = selected_first_with_search(&document);
-    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
-    let size = [640.0, 360.0];
-    let mut harness = UiHarness::new(size);
-    {
-        let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
-        // "Raids" over its own child: ban icon, no line (M109).
-        let image = drag_rows(&mut harness, [100.0, 209.0], [100.0, 244.0], &mut draw_dark);
-        assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-drag-impossible", &image);
-        let release = FrameInput {
-            mouse_position: [100.0, 244.0],
-            ..FrameInput::default()
-        };
-        harness.settle(2, &release, &mut draw_dark);
-    }
-    assert_eq!(
-        outline(&memo),
-        "Shopping list, Dailies, Raids[Weekly clears]"
-    );
-}
-
-/// "Go to note" reveals a note in a collapsed group: the group expands (and
-/// is saved so), the note is selected and shown (M185).
-#[test]
-fn revealing_a_note_expands_its_group_and_selects_it() {
-    let mut document = sample_document();
-    for node in &mut document.root {
-        if let Node::Group(group) = node {
-            group.expanded = false;
-        }
-    }
-    let Some(NodeId::Note(weekly)) = weekly_note(&document) else {
-        panic!("the sample has a weekly note in a group");
-    };
-    let (mut window, _worker, _directory) = memo_window(document, UiState::default());
-    window.apply(&WindowAction::RevealNote(weekly), Language::English);
-    assert_eq!(expanded_flags(&window.document), vec![true]);
-    assert_eq!(window.ui_state.selected, Some(NodeId::Note(weekly)));
-    assert_eq!(window.ui_state.shown_note, Some(weekly));
 }
 
 /// The id of the weekly note inside the "Raids" group of
@@ -637,108 +488,6 @@ fn expanded_flags(document: &NotesDocument) -> Vec<bool> {
             Node::Note(_) => None,
         })
         .collect()
-}
-
-/// Focuses the search with Ctrl+F, types `query` and lets the window
-/// settle; returns the last image.
-fn search_for(
-    memo: &mut MemoWindow,
-    size: [f32; 2],
-    query: &str,
-) -> trailkit_ui_testing::raster::Image {
-    let mut harness = UiHarness::new(size);
-    let mut draw_frame = |harness: &mut UiHarness, input: &FrameInput| {
-        harness.frame(input, |ui| draw(ui, memo, size, ThemeKind::Dark))
-    };
-    draw_frame(&mut harness, &FrameInput::default());
-    draw_frame(
-        &mut harness,
-        &FrameInput {
-            control: true,
-            keys: vec![0x46],
-            ..FrameInput::default()
-        },
-    );
-    draw_frame(&mut harness, &FrameInput::default());
-    draw_frame(
-        &mut harness,
-        &FrameInput {
-            characters: query.to_owned(),
-            ..FrameInput::default()
-        },
-    );
-    // Rest the mouse on the closing `x`: its hover square must sit
-    // centered on it (M128).
-    let over_clear = FrameInput {
-        mouse_position: [185.0, 70.0],
-        ..FrameInput::default()
-    };
-    let mut image = draw_frame(&mut harness, &over_clear);
-    for _ in 0..3 {
-        image = draw_frame(&mut harness, &over_clear);
-    }
-    image
-}
-
-#[test]
-fn search_filters_the_list_and_marks_the_hits() {
-    let document = sample_document();
-    let ui_state = UiState {
-        selected: weekly_note(&document),
-        ..UiState::default()
-    };
-    let saved_expanded = expanded_flags(&document);
-    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
-    // "clears" matches the title, "spirit" the content: the row shows one
-    // content hit, the group counts one matching note (M119, M121, M122).
-    let image = search_for(&mut memo, [640.0, 360.0], "clears SPIRIT");
-    assert_eq!(memo.search_field.text, "clears SPIRIT");
-    assert!(memo.search_takes_escape());
-    assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-search-hits", &image);
-
-    // Escape (sent by Nexus as hiding the window) clears the search, and
-    // the saved expand state of the group is untouched (M124).
-    memo.clear_search_by_escape();
-    assert!(memo.search_field.text.is_empty());
-    assert_eq!(
-        expanded_flags(&memo.document),
-        saved_expanded,
-        "the saved expand state is untouched"
-    );
-}
-
-#[test]
-fn search_without_hits_offers_to_clear_it() {
-    let (mut memo, _worker, _directory) = memo_window(sample_document(), UiState::default());
-    let image = search_for(&mut memo, [640.0, 360.0], "zzz");
-    assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-search-empty", &image);
-}
-
-#[test]
-fn only_the_tree_scrolls_below_the_fixed_list_header() {
-    let mut document = sample_document();
-    for number in 1..=20 {
-        document.root.push(Node::Note(note(
-            &format!("Note {number}"),
-            "",
-            NoteKind::Normal,
-        )));
-    }
-    let ui_state = selected_first_with_search(&document);
-    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
-    let size = [640.0, 360.0];
-    let mut harness = UiHarness::new(size);
-    let over_list = |mouse_wheel| FrameInput {
-        mouse_position: [100.0, 250.0],
-        mouse_wheel,
-        ..FrameInput::default()
-    };
-    let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
-    harness.settle(2, &over_list(0.0), &mut draw_dark);
-    harness.frame(&over_list(-5.0), &mut draw_dark);
-    // Search field and buttons stay at the top (M129).
-    let image = harness.settle(3, &over_list(0.0), &mut draw_dark);
-    assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-list-scrolled", &image);
 }
 
 #[test]
@@ -788,19 +537,6 @@ fn editing_leaves_the_compact_note_view() {
 }
 
 #[test]
-fn search_field_stays_shown() {
-    let document = sample_document();
-    let ui_state = selected_first_with_search(&document);
-    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
-    assert_window(
-        &mut memo,
-        [640.0, 360.0],
-        ThemeKind::Dark,
-        "memo-search-shown",
-    );
-}
-
-#[test]
 fn title_bar_toggle_opens_and_closes_the_window_menu() {
     let document = sample_document();
     let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
@@ -819,19 +555,6 @@ fn escape_closes_the_window_menu_before_the_window() {
     assert!(!memo.request_close(), "the menu closes first (M166)");
     assert!(!memo.window_menu_open);
     assert!(memo.request_close(), "then the window closes");
-}
-
-#[test]
-fn hiding_the_search_field_clears_the_search() {
-    let document = sample_document();
-    let (mut memo, _worker, _directory) =
-        memo_window(document.clone(), selected_first_with_search(&document));
-    memo.search_field.text = "ecto".to_owned();
-    memo.apply(&WindowAction::HideSearch, Language::English);
-    assert!(!memo.ui_state.search_visible);
-    assert!(memo.search_field.text.is_empty(), "no hidden filter (M138)");
-    memo.apply(&WindowAction::ShowSearch, Language::English);
-    assert!(memo.ui_state.search_visible);
 }
 
 #[test]
@@ -900,30 +623,6 @@ fn leaving_the_editor_from_the_menu_asks_about_unsaved_changes() {
 }
 
 #[test]
-fn ctrl_f_does_nothing_in_the_editor() {
-    let document = sample_document();
-    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
-    memo.apply(&WindowAction::StartEditing, Language::English);
-    let size = [640.0, 360.0];
-    let mut harness = UiHarness::new(size);
-    let mut draw_frame = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
-    harness.step(&FrameInput::default(), &mut draw_frame);
-    harness.step(
-        &FrameInput {
-            control: true,
-            keys: vec![0x46],
-            ..FrameInput::default()
-        },
-        &mut draw_frame,
-    );
-    assert!(
-        memo.editor.is_some(),
-        "a shortcut must not end an edit (M167)"
-    );
-    assert!(!memo.ui_state.search_visible);
-}
-
-#[test]
 fn the_snapshots_use_the_minimum_window_width() {
     let mut measured = 0.0;
     let mut harness = UiHarness::new(MINIMUM_WINDOW);
@@ -934,184 +633,5 @@ fn the_snapshots_use_the_minimum_window_width() {
         (measured - MINIMUM_WINDOW[0]).abs() <= 24.0,
         "{measured} is far from {}",
         MINIMUM_WINDOW[0]
-    );
-}
-
-/// The first group of `document`.
-fn first_group(document: &NotesDocument) -> Option<GroupId> {
-    document.root.iter().find_map(|node| match node {
-        Node::Group(group) => Some(group.id),
-        Node::Note(_) => None,
-    })
-}
-
-#[test]
-fn clicking_a_group_toggles_it_and_keeps_the_shown_note() {
-    let document = sample_document();
-    let Some(group) = first_group(&document) else {
-        panic!("the sample has a group");
-    };
-    let shown = first_note(&document);
-    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
-    let is_expanded = |memo: &MemoWindow| memo.document.group(group).is_some_and(|g| g.expanded);
-    let before = is_expanded(&memo);
-    memo.apply(&WindowAction::ClickGroup(group), Language::English);
-    assert_eq!(is_expanded(&memo), !before, "the click toggles (M172)");
-    assert_eq!(memo.ui_state.selected, Some(NodeId::Group(group)));
-    assert_eq!(
-        memo.selected_note().map(|note| NodeId::Note(note.id)),
-        shown,
-        "the note stays (M173)"
-    );
-    memo.apply(&WindowAction::ClickGroup(group), Language::English);
-    assert_eq!(is_expanded(&memo), before);
-}
-
-#[test]
-fn clicking_a_group_during_a_search_changes_only_the_search() {
-    let document = sample_document();
-    let Some(group) = first_group(&document) else {
-        panic!("the sample has a group");
-    };
-    let (mut memo, _worker, _directory) =
-        memo_window(document.clone(), selected_first_with_search(&document));
-    memo.search_field.text = "clears".to_owned();
-    memo.update_search();
-    let saved = memo.document.group(group).is_some_and(|g| g.expanded);
-    memo.apply(&WindowAction::ClickGroup(group), Language::English);
-    assert!(memo.collapsed_in_search.contains(&group));
-    assert_eq!(
-        memo.document.group(group).is_some_and(|g| g.expanded),
-        saved,
-        "the saved state stays (M124)"
-    );
-}
-
-#[test]
-fn the_shown_note_ticks_its_tasks_while_a_group_is_selected() {
-    let document = sample_document();
-    let Some(group) = first_group(&document) else {
-        panic!("the sample has a group");
-    };
-    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
-    memo.apply(&WindowAction::ClickGroup(group), Language::English);
-    memo.apply(&WindowAction::StartEditing, Language::English);
-    assert!(memo.editor.is_some(), "Edit acts on the shown note");
-}
-
-#[test]
-fn the_search_key_toggles_the_search_except_in_the_editor() {
-    let document = sample_document();
-    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
-    memo.window_menu_open = true;
-    memo.toggle_search_by_key();
-    assert!(
-        memo.ui_state.search_visible,
-        "the caught key shows it (M174)"
-    );
-    assert!(!memo.window_menu_open, "and closes the menu above it");
-    memo.search_field.text = "ecto".to_owned();
-    memo.toggle_search_by_key();
-    assert!(!memo.ui_state.search_visible, "again closes it (M176)");
-    assert!(memo.search_field.text.is_empty(), "no hidden filter (M138)");
-    memo.apply(&WindowAction::OpenTrash, Language::English);
-    memo.ui_state.search_visible = true;
-    memo.toggle_search_by_key();
-    assert!(memo.ui_state.search_visible, "the trash makes way for it");
-    assert!(!memo.trash.visible);
-    memo.apply(&WindowAction::HideSearch, Language::English);
-    memo.apply(&WindowAction::StartEditing, Language::English);
-    memo.toggle_search_by_key();
-    assert!(
-        !memo.ui_state.search_visible,
-        "a key must not end an edit (M167)"
-    );
-    assert!(!memo.takes_search_key(), "and the game keeps it there");
-}
-
-#[test]
-fn the_search_x_clears_the_text_and_then_closes_the_field() {
-    let document = sample_document();
-    let (mut memo, _worker, _directory) =
-        memo_window(document.clone(), selected_first_with_search(&document));
-    memo.search_field.text = "ecto".to_owned();
-    let size = [640.0, 360.0];
-    let mut harness = UiHarness::new(size);
-    let end_of_field = [185.0, 68.0];
-    let mut click_x = |memo: &mut MemoWindow| {
-        for down in [false, false, true, false, false] {
-            let input = FrameInput {
-                mouse_position: end_of_field,
-                left_button_down: down,
-                ..FrameInput::default()
-            };
-            harness.step(&input, |ui| draw(ui, memo, size, ThemeKind::Dark));
-        }
-    };
-    click_x(&mut memo);
-    assert!(memo.search_field.text.is_empty(), "text first (M176)");
-    assert!(memo.ui_state.search_visible, "the field stays");
-    click_x(&mut memo);
-    assert!(!memo.ui_state.search_visible, "the empty field closes");
-}
-
-#[test]
-fn the_delete_key_belongs_to_a_focused_list_only() {
-    let document = sample_document();
-    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
-    let size = [640.0, 360.0];
-    let mut harness = UiHarness::new(size);
-    let at = |position: [f32; 2], down: bool| FrameInput {
-        mouse_position: position,
-        left_button_down: down,
-        ..FrameInput::default()
-    };
-    let mut draw_frame = |memo: &mut MemoWindow, input: &FrameInput| {
-        harness.step(input, |ui| draw(ui, memo, size, ThemeKind::Dark));
-    };
-    let list_row = [100.0, 138.0];
-    for input in [
-        at(list_row, false),
-        at(list_row, true),
-        at(list_row, false),
-        at(list_row, false),
-    ] {
-        draw_frame(&mut memo, &input);
-    }
-    assert!(
-        memo.takes_delete_key(),
-        "a click in the list gives it the key (M175)"
-    );
-    let note_text = [420.0, 300.0];
-    for input in [
-        at(note_text, false),
-        at(note_text, true),
-        at(note_text, false),
-        at(note_text, false),
-    ] {
-        draw_frame(&mut memo, &input);
-    }
-    assert!(
-        !memo.takes_delete_key(),
-        "a click in the note takes it away"
-    );
-    memo.delete_selected_by_key(Language::English);
-    assert!(
-        memo.document.trash.is_empty(),
-        "reading a note cannot delete it"
-    );
-    for input in [
-        at(list_row, false),
-        at(list_row, true),
-        at(list_row, false),
-        at(list_row, false),
-    ] {
-        draw_frame(&mut memo, &input);
-    }
-    memo.delete_selected_by_key(Language::English);
-    assert_eq!(
-        memo.document.trash.len(),
-        1,
-        "the caught key deletes (M133)"
     );
 }

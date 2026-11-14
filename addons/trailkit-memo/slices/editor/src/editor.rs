@@ -318,16 +318,16 @@ impl Editor {
         clicked
     }
 
-    /// Draws the title input and the markdown body filling the rest of the
-    /// pane, with the preview beside it when visible (M51–M53, M60, M72).
-    pub fn draw(
+    /// Draws the title input as a level 1 heading. It takes the focus for
+    /// "Rename" with the title selected (M161) and keeps the typed title
+    /// when Escape leaves it. Read-only while a dialog is open.
+    fn draw_title_input(
         &mut self,
         ui: &Ui,
         language: Language,
         theme: &Theme,
-        input: EditorInput<'_>,
-    ) -> EditorOutput {
-        let mut output = EditorOutput::default();
+        is_dialog_open: bool,
+    ) {
         // ImGui reverts an input to its content at activation when Escape is
         // pressed; keep the typed text instead (only copied on that frame).
         let escape_pressed = ui.is_key_pressed(Key::Escape);
@@ -341,7 +341,7 @@ impl Editor {
             }
             ui.input_text("##title", &mut self.session.title)
                 .hint(EditorText::TitleHint.get(language))
-                .read_only(input.is_dialog_open)
+                .read_only(is_dialog_open)
                 // Only for "Rename"; a click into the title places the cursor.
                 .auto_select_all(self.title_focus_pending)
                 .build();
@@ -355,6 +355,19 @@ impl Editor {
         {
             self.session.title = title;
         }
+    }
+
+    /// Draws the title input and the markdown body filling the rest of the
+    /// pane, with the preview beside it when visible (M51–M53, M60, M72).
+    pub fn draw(
+        &mut self,
+        ui: &Ui,
+        language: Language,
+        theme: &Theme,
+        input: EditorInput<'_>,
+    ) -> EditorOutput {
+        let mut output = EditorOutput::default();
+        self.draw_title_input(ui, language, theme, input.is_dialog_open);
 
         if input.is_dialog_open {
             self.body.unfocus();

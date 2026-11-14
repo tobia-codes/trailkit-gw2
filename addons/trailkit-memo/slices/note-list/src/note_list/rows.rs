@@ -246,6 +246,42 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut RowContext<'_, '_>) {
 
     // Notes have no arrow: the title starts where a group's arrow does.
     let title_x = row_start[0] + context.frame_padding[0];
+    let title_end = draw_note_markers(ui, note, row_start, is_row_hovered, context);
+    ui.same_line_with_spacing(0.0, 0.0);
+    ui.set_cursor_screen_pos([title_x, row_start[1]]);
+    if is_renaming {
+        draw_rename_input(ui, row_start, [title_x, title_end], context);
+        return;
+    }
+    let label = truncate_to_width(ui, &note.title, title_end - title_x);
+    if let Some(search) = context.search {
+        draw_title_hits(
+            ui,
+            context.theme,
+            search.query,
+            &label,
+            [title_x, row_start[1] + context.frame_padding[1]],
+        );
+    }
+    ui.text(&label);
+    // Interaction belongs to the whole row (the tree node item).
+    if is_row_hovered {
+        handle_hovered_row(ui, node, &note.title, &label, context);
+    }
+    context_menu::draw_context_menu(ui, node, Some(note), context);
+}
+
+/// Draws the markers at the right edge of a note row, right to left: its
+/// badge, the mark for unsaved changes kept as a draft (M185) and the number
+/// of search hits in its content (M122), each with its tooltip while the row
+/// is hovered. Returns the screen x where the title must end.
+fn draw_note_markers(
+    ui: &Ui,
+    note: &Note,
+    row_start: [f32; 2],
+    is_row_hovered: bool,
+    context: &mut RowContext<'_, '_>,
+) -> f32 {
     let content_end = row_content_end(ui, context);
     let mut title_end = content_end;
     if let Some(badge) = (context.extras.badge)(note) {
@@ -291,28 +327,7 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut RowContext<'_, '_>) {
         }
         title_end = count_x - context.theme.spacing.small;
     }
-    ui.same_line_with_spacing(0.0, 0.0);
-    ui.set_cursor_screen_pos([title_x, row_start[1]]);
-    if is_renaming {
-        draw_rename_input(ui, row_start, [title_x, title_end], context);
-        return;
-    }
-    let label = truncate_to_width(ui, &note.title, title_end - title_x);
-    if let Some(search) = context.search {
-        draw_title_hits(
-            ui,
-            context.theme,
-            search.query,
-            &label,
-            [title_x, row_start[1] + context.frame_padding[1]],
-        );
-    }
-    ui.text(&label);
-    // Interaction belongs to the whole row (the tree node item).
-    if is_row_hovered {
-        handle_hovered_row(ui, node, &note.title, &label, context);
-    }
-    context_menu::draw_context_menu(ui, node, Some(note), context);
+    title_end
 }
 
 /// Handles a hovered row: selection, rename on double-click, context menu,

@@ -205,3 +205,23 @@ mockup. Deploy `develop` once PR #125 is merged (Setup 1).
   collapsed group opens after a moment, the title floats next to the cursor
   (red with a ban icon over its own child), the list scrolls near the edges.
   (c) no drag; the tooltip says to clear the search to move.
+
+## Remaining length splits, branch `chore/remaining-length-splits` (R77, Q388–Q396)
+
+Code was only moved and renamed: nothing may look or behave differently.
+Snapshot tests cover the drawing; this covers keys and unloading. No design
+change, so no mockup. Deploy `develop` once the PR is merged (Setup 1).
+
+### 16 · Note title while editing, closing with unsaved changes
+
+- **Get there:** (a) select a note › `⋯` › **Rename**; (b) type a few
+  letters into the title, press **Escape**; (c) click **Save**, then
+  **Edit**, type a letter in the text and close the window with its `x`;
+  (d) **Edit**, type a letter, reload memo (Setup 5) without saving.
+- **Look at:** the title input, the dialogs and the note list.
+- **Before and now (unchanged):** (a) the title input has the focus with
+  the whole title selected; (b) Escape leaves the title but keeps the typed
+  letters; (c) "Unsaved changes" asks before the window closes ("Keep
+  editing" keeps it open); (d) after the reload the note shows the yellow
+  draft card (test 7) and its row in the list a draft mark with a tooltip.
+  Click "Discard" to clean up.

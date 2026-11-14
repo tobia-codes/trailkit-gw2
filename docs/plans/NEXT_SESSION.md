@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-14 (session 36, PR #125 merged; next session on the Mac). Current state and
+Last updated: 2026-11-14 (session 37, cloud: remaining R77 splits on `chore/remaining-length-splits`). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -14,23 +14,24 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 **First, ask the user: can you test in game now?** Pending checks with where/how/expected: [`in-game-tests.md`](in-game-tests.md)
 (user request 2026-11-13: keep it current until each item is confirmed; ask every session).
 
-**Session 36 (2026-11-13/14):** PR [#125](https://github.com/tobia-codes/trailkit-gw2/pull/125) merged into `develop`
-(`7c66067`): R108 (names say what it is and does), R77 splits Q379–Q384, Q387; in-game tests 12–15 added. User to-do: delete
-the remote branch `chore/file-length-splits` (cloud sessions may not). A failed in-game test becomes a `bugfix/` branch.
+**Session 36:** PR #125 merged (R108, Q379–Q387). User to-do: delete remote `chore/file-length-splits`. A failed in-game test
+becomes a `bugfix/` branch.
 
-**Continuing on the Mac (user, 2026-11-14):** `git fetch origin && git switch develop && git pull --ff-only`. The Mac has no
-game and no WSL: in-game tests, `cargo xtask deploy` and `cargo xtask ui-test` (Windows test binaries) wait for the Windows
-PC; whether host clippy/tests and `cargo xwin` work on macOS is unverified, so check `source ~/.cargo/env` and a first
-`cargo test` before relying on them, and leave snapshot checks to the PR's Windows CI. Mac-friendly work: item 2 (grilling,
-then code) and item 3 (grilling, plans). Ask the in-game question anyway; the answer is likely "not now".
+**Session 37 (2026-11-14, cloud):** user could not test in game. Q388–Q398 decided (R77 row) and implemented on
+`chore/remaining-length-splits`: theme `layout.rs`/`typography.rs` with `…Layout` types, `IconPlacement`, `main_window/closing.rs`,
+`draw_note_markers`, `draw_title_input`, test modules `note_list`/`search`, `tests/component-states/` (`notifications`, `title_bar`),
+snapshot tests renamed `…_states_match_snapshots`; in-game test 16. fmt, host/Windows clippy, `cargo test`, check-names pass;
+snapshots left to the Windows CI. User OK 2026-11-14: PR into `develop` with auto-merge, before in-game test 16; check that it
+merged and CI passed (fix failures on the branch, never bypass).
+
+**On the Mac (no game, no WSL):** `git fetch origin`, then the work branch above or `develop`; deploy, `ui-test` and in-game
+tests wait for the Windows PC; check `source ~/.cargo/env` and a first `cargo test` there; snapshots via the PR's Windows CI.
 
 **Open, in this order:**
-1. **In-game tests 1–15** ([`in-game-tests.md`](in-game-tests.md)). Side finding: `min-de-dialog-*` fixtures build English
+1. **In-game tests 1–16** ([`in-game-tests.md`](in-game-tests.md)). Side finding: `min-de-dialog-*` fixtures build English
    confirmation text (test only); fix only if the user agrees.
-2. **Remaining length hints:** grill the rest by concern, never split unasked: `theme.rs` (429),
-   `rows.rs` `draw_note_row` (91), `main_window.rs` (428), `actions.rs` (451, Q134), `help_text.rs::get` (98, a table; Q92 said
-   no for `Text::get`), `i18n.rs::get` (88), `component_states.rs` (1127), `main_window/tests.rs` (1010), `editor.rs::draw`
-   (101), `token_groups.rs` (490, Q141 keeps it).
+2. **Remaining length splits:** done on `chore/remaining-length-splits` (session 37); remaining hints are settled exceptions
+   (`actions.rs` Q134, `token_groups.rs` Q141, both `get` tables Q392). Next: in-game test 16.
 3. **Wishes of 2026-11-13 (grilling; plan requirements):** event: filters ("used in notes", a meta train order: research trains,
    timing, a source with licence/GDPR first), favorite events. memo: struck-through checked items, a simple daily/weekly window,
    favorites. All addons: more languages without growing the DLLs (BACKLOG BL15).
@@ -51,10 +52,9 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M188+, R109+, B26+, questions from 386**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M188+, R109+, B26+, questions from 399**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 
 - **Housekeeping (Q211/Q240):** the user deletes approved old local branches by hand (`chore/*`, merged PR branches).
-
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
 1. **Storage failures:** done (memo M180, 2026-11-10).

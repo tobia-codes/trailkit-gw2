@@ -246,7 +246,7 @@ fn chip_text(_text: ChipText) -> &'static str {
 }
 
 #[test]
-fn every_help_window_state_at_the_minimum_width() {
+fn help_window_states_match_snapshots_at_the_minimum_width() {
     // The window asks for a tiny width, so ImGui widens it to the minimum
     // of 60 characters; the image is a little wider than that.
     let size = [IMAGE_WIDTH, HEIGHT];
