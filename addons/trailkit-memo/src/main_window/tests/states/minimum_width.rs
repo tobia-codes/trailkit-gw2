@@ -178,7 +178,9 @@ fn german_at_the_minimum_width() {
         ("trash-nothing-selected", trash_entries),
         ("trash-selected", trash_entry_chosen),
         ("dialog-unsaved", unsaved_dialog),
-        ("dialog-empty-trash", empty_trash_dialog),
+        ("dialog-empty-trash", || {
+            empty_trash_dialog_in(Language::German)
+        }),
         ("problem-recovered", || {
             with_problem(NotesProblem::Recovered("notes.corrupt.json".to_owned()))
         }),

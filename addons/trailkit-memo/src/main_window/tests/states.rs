@@ -335,13 +335,18 @@ fn delete_for_good_dialog() -> Fixture {
     fixture
 }
 
-/// The question before emptying the trash.
+/// The question before emptying the trash, in English.
 fn empty_trash_dialog() -> Fixture {
+    empty_trash_dialog_in(Language::English)
+}
+
+/// The question before emptying the trash; its texts are formatted in
+/// `language` when it opens, so German snapshots must open it in German.
+fn empty_trash_dialog_in(language: Language) -> Fixture {
     let mut fixture = trash_view(document_with_trash([0, 25]), false);
-    fixture.0.apply(
-        &WindowAction::Trash(TrashAction::EmptyTrash),
-        Language::English,
-    );
+    fixture
+        .0
+        .apply(&WindowAction::Trash(TrashAction::EmptyTrash), language);
     fixture
 }
 
