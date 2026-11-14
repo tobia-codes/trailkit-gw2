@@ -25,7 +25,6 @@ use trailkit_ui::{
     pane::draw_pane,
     separator::draw_compact_separator,
     splitter::draw_vertical_splitter,
-    status_card::{CardDetail, CardStatus, StatusCard, draw_status_card},
     status_line::{Status, draw_status_line},
     style_scope::StyleScope,
     text::{TextStyle, draw_icon, draw_text, draw_text_wrapped, draw_truncated_text},
@@ -34,13 +33,15 @@ use trailkit_ui::{
         TitleBarState, TitleBarTexts, TitleBarToggle, TogglePlacement,
         draw_window as draw_title_bar,
     },
-    toast::{Toast, ToastAction, ToastExtras, ToastTone, draw_toast, draw_toast_with_extras},
     tooltip::draw_tooltip,
 };
 use trailkit_ui_testing::{
     harness::{FrameInput, UiHarness},
     snapshot::assert_snapshot,
 };
+
+mod notifications;
+mod title_bar;
 
 /// Both themes with the suffix of their snapshot names.
 const THEMES: [(ThemeKind, &str); 2] = [(ThemeKind::Dark, "dark"), (ThemeKind::Light, "light")];
@@ -116,7 +117,7 @@ const BUTTONS: [(&str, DrawButton); 8] = [
 ];
 
 #[test]
-fn every_button_at_rest_hovered_and_pressed() {
+fn button_kinds_match_snapshots() {
     let size = [220.0, 90.0];
     let over_button = [20.0, 22.0];
     let mut harness = UiHarness::new(size);
@@ -183,7 +184,7 @@ const BUTTON_STATES: [(&str, DrawButton); 4] = [
 ];
 
 #[test]
-fn every_button_state_at_rest_hovered_and_pressed() {
+fn button_states_match_snapshots() {
     // Wide enough for the reason tooltip of a disabled button.
     let size = [360.0, 90.0];
     let over_button = [20.0, 22.0];
@@ -259,7 +260,7 @@ fn draw_sample_menu(ui: &Ui, theme: &Theme, opened: &Cell<bool>) {
 }
 
 #[test]
-fn every_menu_entry_at_rest_and_hovered() {
+fn menu_entry_states_match_snapshots() {
     let size = [340.0, 240.0];
     let opening = [12.0, 12.0];
     let row = |offset: f32| [opening[0] + 40.0, opening[1] + offset];
@@ -305,7 +306,7 @@ fn every_menu_entry_at_rest_and_hovered() {
 }
 
 #[test]
-fn every_dropdown_state() {
+fn dropdown_states_match_snapshots() {
     let size = [260.0, 170.0];
     let field = [60.0, 26.0];
     let away = [240.0, 160.0];
@@ -353,354 +354,7 @@ fn every_dropdown_state() {
 }
 
 #[test]
-fn every_toast_state() {
-    let size = [360.0, 120.0];
-    let over_action = [247.0, 71.0];
-    for (kind, theme_name) in THEMES {
-        let theme = kind.theme();
-        let mut toast = Toast::new("Deleted “Shopping list”".to_owned());
-        let mut harness = UiHarness::new(size);
-        let mut draw = |ui: &Ui| {
-            in_window(ui, &theme, size, || {
-                draw_toast(
-                    ui,
-                    &theme,
-                    &mut toast,
-                    &[ToastAction {
-                        label: "Undo",
-                        tooltip: None,
-                        state: ButtonState::Ready,
-                    }],
-                );
-            });
-        };
-        let names = |state| ("toast", state, theme_name);
-        assert_state(
-            &mut harness,
-            names("rest"),
-            &mouse([4.0, 4.0], false),
-            &mut draw,
-        );
-        assert_state(
-            &mut harness,
-            names("hover"),
-            &mouse(over_action, false),
-            &mut draw,
-        );
-        assert_state(
-            &mut harness,
-            names("pressed"),
-            &mouse(over_action, true),
-            &mut draw,
-        );
-    }
-}
-
-#[test]
-fn toast_with_two_actions_in_every_width() {
-    let actions = [
-        ToastAction {
-            label: "Undo",
-            tooltip: None,
-            state: ButtonState::Ready,
-        },
-        ToastAction {
-            label: "Open trash",
-            tooltip: None,
-            state: ButtonState::Ready,
-        },
-    ];
-    // Wide enough for one row, for the buttons in a row below the message
-    // and only for one button per row (M159).
-    for (state, size) in [
-        ("two-actions", [420.0, 140.0]),
-        ("two-actions-below", [250.0, 140.0]),
-        ("two-actions-stacked", [150.0, 180.0]),
-    ] {
-        for (kind, theme_name) in THEMES {
-            let theme = kind.theme();
-            let mut toast = Toast::new("Moved to the trash".to_owned());
-            let mut harness = UiHarness::new(size);
-            let mut draw = |ui: &Ui| {
-                in_window(ui, &theme, size, || {
-                    draw_toast(ui, &theme, &mut toast, &actions);
-                });
-            };
-            assert_state(
-                &mut harness,
-                ("toast", state, theme_name),
-                &mouse([4.0, 4.0], false),
-                &mut draw,
-            );
-        }
-    }
-}
-
-/// One state of an error or success toast (memo M180).
-struct ToneState {
-    /// The snapshot state name.
-    name: &'static str,
-    /// The image size; narrow sizes move the action below the message.
-    size: [f32; 2],
-    /// The toast's tone and message.
-    tone: ToastTone,
-    /// The message.
-    message: &'static str,
-    /// The action, if any, and whether it runs.
-    action: Option<(&'static str, bool)>,
-    /// Counter, spinner and close button.
-    extras: ToastExtras<'static>,
-    /// Where the mouse is.
-    mouse: [f32; 2],
-}
-
-#[test]
-fn every_error_and_success_toast_state() {
-    let close = Some("Close");
-    let wide = [420.0, 120.0];
-    let states = [
-        ToneState {
-            name: "error-retrying",
-            size: wide,
-            tone: ToastTone::Error,
-            message: "Saving failed",
-            action: None,
-            extras: ToastExtras {
-                counter: Some("2/3"),
-                spinner: true,
-                close_tooltip: close,
-            },
-            mouse: [4.0, 4.0],
-        },
-        ToneState {
-            name: "error-gave-up",
-            size: wide,
-            tone: ToastTone::Error,
-            message: "Saving failed",
-            action: Some(("Try again", false)),
-            extras: ToastExtras {
-                close_tooltip: close,
-                ..ToastExtras::default()
-            },
-            mouse: [4.0, 4.0],
-        },
-        ToneState {
-            name: "error-close-hover",
-            size: wide,
-            tone: ToastTone::Error,
-            message: "Saving failed",
-            action: Some(("Try again", false)),
-            extras: ToastExtras {
-                close_tooltip: close,
-                ..ToastExtras::default()
-            },
-            mouse: [301.0, 71.0],
-        },
-        ToneState {
-            name: "error-saving",
-            size: wide,
-            tone: ToastTone::Error,
-            message: "Saving failed",
-            action: Some(("Saving…", true)),
-            extras: ToastExtras {
-                close_tooltip: close,
-                ..ToastExtras::default()
-            },
-            mouse: [4.0, 4.0],
-        },
-        ToneState {
-            name: "error-narrow",
-            size: [320.0, 140.0],
-            tone: ToastTone::Error,
-            message: "Speichern fehlgeschlagen",
-            action: Some(("Erneut versuchen", false)),
-            extras: ToastExtras {
-                close_tooltip: Some("Schließen"),
-                ..ToastExtras::default()
-            },
-            mouse: [4.0, 4.0],
-        },
-        ToneState {
-            name: "success",
-            size: wide,
-            tone: ToastTone::Success,
-            message: "Changes saved",
-            action: None,
-            extras: ToastExtras::default(),
-            mouse: [4.0, 4.0],
-        },
-    ];
-    for state in states {
-        for (kind, theme_name) in THEMES {
-            let theme = kind.theme();
-            let mut toast = Toast::with_tone(state.message.to_owned(), state.tone);
-            let actions: Vec<ToastAction<'_>> = state
-                .action
-                .map(|(label, busy)| ToastAction {
-                    label,
-                    tooltip: None,
-                    state: if busy {
-                        ButtonState::Busy
-                    } else {
-                        ButtonState::Ready
-                    },
-                })
-                .into_iter()
-                .collect();
-            let mut harness = UiHarness::new(state.size);
-            let mut draw = |ui: &Ui| {
-                in_window(ui, &theme, state.size, || {
-                    draw_toast_with_extras(ui, &theme, &mut toast, &actions, state.extras);
-                });
-            };
-            assert_state(
-                &mut harness,
-                ("toast", state.name, theme_name),
-                &mouse(state.mouse, false),
-                &mut draw,
-            );
-        }
-    }
-}
-
-#[test]
-fn every_title_bar_state() {
-    let size = [320.0, 120.0];
-    let toggles = [
-        TitleBarToggle {
-            icon: Icon::SEARCH,
-            tooltip: "Tools",
-            active: false,
-            placement: TogglePlacement::Leading,
-        },
-        TitleBarToggle {
-            icon: Icon::X,
-            tooltip: "Note list",
-            active: true,
-            placement: TogglePlacement::Leading,
-        },
-    ];
-    let texts = TitleBarTexts {
-        title: "Notes",
-        collapse: "Collapse",
-        expand: "Expand",
-        close: "Close",
-    };
-    for (kind, theme_name) in THEMES {
-        let theme = kind.theme();
-        let mut state = TitleBarState::default();
-        let mut open = true;
-        let mut harness = UiHarness::new(size);
-        let mut draw = |ui: &Ui| {
-            let _style = StyleScope::push_with_cursor_extent(ui, &theme, None);
-            let _clicked = draw_title_bar(
-                ui,
-                &theme,
-                Window::new("Notes###title")
-                    .position([0.0, 0.0], Condition::Always)
-                    .size(size, Condition::Always),
-                texts,
-                &toggles,
-                &mut state,
-                &mut open,
-                || {},
-            );
-        };
-        let names = |state| ("title-bar", state, theme_name);
-        let collapse = [size[0] - 64.0, 25.0];
-        assert_state(
-            &mut harness,
-            names("rest"),
-            &mouse([160.0, 100.0], false),
-            &mut draw,
-        );
-        for (state_name, position) in [
-            ("hover-toggle-off", [28.0, 25.0]),
-            ("hover-toggle-on", [68.0, 25.0]),
-            ("hover-collapse", collapse),
-            ("hover-close", [size[0] - 28.0, 25.0]),
-        ] {
-            assert_state(
-                &mut harness,
-                names(state_name),
-                &mouse(position, false),
-                &mut draw,
-            );
-        }
-        harness.settle(1, &mouse(collapse, false), &mut draw);
-        harness.settle(1, &mouse(collapse, true), &mut draw);
-        harness.settle(1, &mouse(collapse, false), &mut draw);
-        assert_state(
-            &mut harness,
-            names("collapsed"),
-            &mouse([160.0, 100.0], false),
-            &mut draw,
-        );
-    }
-}
-
-/// The help `?` at the right end of the title row (memo Q171), next to a
-/// leading toggle, at rest, hovered, and active while the help is open.
-#[test]
-fn every_trailing_title_bar_toggle_state() {
-    let size = [320.0, 120.0];
-    let texts = TitleBarTexts {
-        title: "Notes",
-        collapse: "Collapse",
-        expand: "Expand",
-        close: "Close",
-    };
-    for (kind, theme_name) in THEMES {
-        let theme = kind.theme();
-        for (state_name, help_open, position) in [
-            ("rest", false, [160.0, 100.0]),
-            ("hover", false, [size[0] - 100.0, 25.0]),
-            ("active", true, [160.0, 100.0]),
-        ] {
-            let toggles = [
-                TitleBarToggle {
-                    icon: Icon::MENU,
-                    tooltip: "Menu",
-                    active: false,
-                    placement: TogglePlacement::Leading,
-                },
-                TitleBarToggle {
-                    icon: Icon::CIRCLE_HELP,
-                    tooltip: "Help",
-                    active: help_open,
-                    placement: TogglePlacement::Trailing,
-                },
-            ];
-            let mut state = TitleBarState::default();
-            let mut open = true;
-            let mut harness = UiHarness::new(size);
-            let mut draw = |ui: &Ui| {
-                let _style = StyleScope::push_with_cursor_extent(ui, &theme, None);
-                let _clicked = draw_title_bar(
-                    ui,
-                    &theme,
-                    Window::new("Notes###title")
-                        .position([0.0, 0.0], Condition::Always)
-                        .size(size, Condition::Always),
-                    texts,
-                    &toggles,
-                    &mut state,
-                    &mut open,
-                    || {},
-                );
-            };
-            assert_state(
-                &mut harness,
-                ("title-bar-help", state_name, theme_name),
-                &mouse(position, false),
-                &mut draw,
-            );
-        }
-    }
-}
-
-#[test]
-fn every_splitter_state() {
+fn splitter_states_match_snapshots() {
     let size = [260.0, 120.0];
     let over_splitter = [116.0, 60.0];
     for (kind, theme_name) in THEMES {
@@ -741,7 +395,7 @@ fn every_splitter_state() {
 /// Every status in the Body style, and a long text wrapped in the Small
 /// style with its lines hanging under the text (R96).
 #[test]
-fn every_status_line_state() {
+fn status_line_states_match_snapshots() {
     let long = "The log could not be saved because the Downloads folder is not writable.";
     for (kind, theme_name) in THEMES {
         let theme = kind.theme();
@@ -781,7 +435,7 @@ fn every_status_line_state() {
 /// The list row: a plain row, a selected one, a group with count and detail
 /// line, a shortened title and an urgent detail, at rest and hovered.
 #[test]
-fn every_list_row_state() {
+fn list_row_states_match_snapshots() {
     let size = [240.0, 190.0];
     for (kind, theme_name) in THEMES {
         let theme = kind.theme();
@@ -845,7 +499,7 @@ fn every_list_row_state() {
 /// A sentence in every text style: heading sizes, body, emphasis, secondary
 /// and small text (R96).
 #[test]
-fn every_text_style() {
+fn text_styles_match_snapshots() {
     let size = [280.0, 250.0];
     for (kind, theme_name) in THEMES {
         let theme = kind.theme();
@@ -945,69 +599,6 @@ fn icons_in_text_colors() {
     }
 }
 
-/// The status card in both statuses (M184): `danger` with a detail line,
-/// a button and the close button, at rest and with the close button
-/// hovered; `warning` with a secondary detail and two buttons that wrap into
-/// two rows in a narrow window.
-#[test]
-fn every_status_card_state() {
-    // Tall enough for no scrollbar; the hover sits on the close button.
-    let size = [260.0, 300.0];
-    let close_hover = [232.0, 28.0];
-    for (kind, theme_name) in THEMES {
-        let theme = kind.theme();
-        let mut harness = UiHarness::new(size);
-        let buttons = [Button::new("Open folder")];
-        let wide_buttons = [
-            Button::new("Restore unsaved changes").kind(ButtonKind::Primary),
-            Button::new("Discard"),
-        ];
-        let mut draw = |ui: &Ui| {
-            in_window(ui, &theme, size, || {
-                draw_status_card(
-                    ui,
-                    &theme,
-                    &StatusCard {
-                        status: CardStatus::Danger,
-                        text: "Your notes could not be loaded. The damaged file was kept as:",
-                        detail: Some(CardDetail {
-                            text: "backups/notes.corrupt.json",
-                            style: TextStyle::Body,
-                        }),
-                        buttons: &buttons,
-                        close_tooltip: Some("Close"),
-                    },
-                );
-                draw_status_card(
-                    ui,
-                    &theme,
-                    &StatusCard {
-                        status: CardStatus::Warning,
-                        text: "Unsaved changes from 11/01/2026, 08:00",
-                        detail: Some(CardDetail {
-                            text: "The note was changed since.",
-                            style: TextStyle::Secondary,
-                        }),
-                        buttons: &wide_buttons,
-                        close_tooltip: None,
-                    },
-                );
-            });
-        };
-        for (state, input) in [
-            ("rest", mouse([250.0, 295.0], false)),
-            ("close-hovered", mouse(close_hover, false)),
-        ] {
-            assert_state(
-                &mut harness,
-                ("status-card", state, theme_name),
-                &input,
-                &mut draw,
-            );
-        }
-    }
-}
-
 /// A tooltip shown while the caller holds the window's draw list, as the
 /// editor does over a chat-link chip: imgui-rs allows one `DrawListMut` at a
 /// time, so a tooltip must not take a second one (it crashed the game).
@@ -1092,53 +683,10 @@ fn a_right_click_outside_takes_the_focus() {
     assert!(!focused.get(), "a right click outside takes the focus");
 }
 
-/// The card's close button works while another `x` icon button of the same
-/// window was drawn first, as the title bar's is: both take the icon as
-/// ImGui id, so the card needs its own id scope (M185, the `x` did nothing in
-/// game).
-#[test]
-fn the_status_card_closes_next_to_another_close_button() {
-    let theme = ThemeKind::Dark.theme();
-    let size = [260.0, 300.0];
-    let close_center = [232.0, 28.0];
-    let closed = Cell::new(false);
-    let buttons = [Button::new("Open folder")];
-    let mut harness = UiHarness::new(size);
-    for down in [false, true, false, false] {
-        let _image = harness.frame(&mouse(close_center, down), |ui: &Ui| {
-            in_window(ui, &theme, size, || {
-                let start = ui.cursor_screen_pos();
-                // Another `x` first, out of the way at the bottom.
-                ui.set_cursor_screen_pos([start[0], size[1] - 40.0]);
-                let _title_close = draw_icon_button(ui, &theme, Icon::X, "Close");
-                ui.set_cursor_screen_pos(start);
-                let outcome = draw_status_card(
-                    ui,
-                    &theme,
-                    &StatusCard {
-                        status: CardStatus::Danger,
-                        text: "Your notes could not be loaded. The damaged file was kept as:",
-                        detail: Some(CardDetail {
-                            text: "backups/notes.corrupt.json",
-                            style: TextStyle::Body,
-                        }),
-                        buttons: &buttons,
-                        close_tooltip: Some("Close"),
-                    },
-                );
-                if outcome.closed {
-                    closed.set(true);
-                }
-            });
-        });
-    }
-    assert!(closed.get(), "a click on the card's x closes it");
-}
-
 /// The empty state in every variant: title only with two buttons, icon with
 /// title and hint, one button, and the buttons stacked in a narrow pane (Q283: one layout).
 #[test]
-fn every_empty_state() {
+fn empty_states_match_snapshots() {
     type Variant = (&'static str, [f32; 2], fn() -> EmptyState<'static>);
     let variants: [Variant; 4] = [
         ("buttons", [320.0, 200.0], || EmptyState {
