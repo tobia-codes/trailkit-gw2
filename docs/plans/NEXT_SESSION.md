@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-13 (session 36, `chore/file-length-splits` as draft PR). Current state and
+Last updated: 2026-11-14 (session 36, PR #125 merged). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -19,12 +19,12 @@ test (user's choice). A failed in-game test becomes a `bugfix/` branch from `dev
 
 **Session 36 (2026-11-13).** No in-game test possible. Branch `chore/file-length-splits`: R108 (names say what it is and
 does), the R77 splits Q379–Q384, Q387 (dropdown, markdown view, editor view, note list); no hint left in those files. Host +
-Windows clippy and `cargo test` pass; draft PR (Q389, no auto-merge) runs the Windows CI snapshot check; merge only after the user's OK.
+Windows clippy and `cargo test` pass; CI green incl. snapshots; merged with the user's OK (2026-11-14); in-game tests 12–15 added.
 
 **Open, in this order:**
-1. **In-game tests 1–11** ([`in-game-tests.md`](in-game-tests.md)). Side finding: `min-de-dialog-*` fixtures build English
+1. **In-game tests 1–15** ([`in-game-tests.md`](in-game-tests.md)). Side finding: `min-de-dialog-*` fixtures build English
    confirmation text (test only); fix only if the user agrees.
-2. **Merge `chore/file-length-splits`** once CI and the user agree, then grill the rest by concern, never split unasked: `theme.rs` (429),
+2. **Remaining length hints:** grill the rest by concern, never split unasked: `theme.rs` (429),
    `rows.rs` `draw_note_row` (91), `main_window.rs` (428), `actions.rs` (451, Q134), `help_text.rs::get` (98, a table; Q92 said
    no for `Text::get`), `i18n.rs::get` (88), `component_states.rs` (1127), `main_window/tests.rs` (1010), `editor.rs::draw`
    (101), `token_groups.rs` (490, Q141 keeps it).

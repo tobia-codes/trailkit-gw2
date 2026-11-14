@@ -148,3 +148,60 @@ the brass "Save" button but red. Approved design for all tests below:
 - **Now:** memo stops and opens the help on "Report a problem"; after the
   reload the typed text is back as a **draft** (yellow card, test 7); the
   log contains **`draft=kept`**. Then deploy a normal build again (Setup 1).
+
+## File-length splits, PR #125 (R77, R108)
+
+Code was only moved into new modules: nothing may look or behave
+differently. Snapshot tests passed in CI; these checks cover what snapshots
+cannot (keyboard, mouse, clipboard, dragging). No design change, so no
+mockup. Deploy `develop` once PR #125 is merged (Setup 1).
+
+### 12 · Kind dropdown next to the note title
+
+- **Get there:** select a note; the box right of its title (*Normal*,
+  *Daily reset*, *Weekly reset*).
+- **Look at:** hover it, click it, pick another kind, open it again.
+- **Before and now (unchanged):** filled box with frame and chevron, tooltip
+  on hover; the open list sits below it with the chosen kind highlighted
+  and check-marked; the frame shows the focus color while open; a daily or
+  weekly note tints frame, text and chevron. Set the kind back afterwards.
+
+### 13 · Markdown view: text, links and chat-link chips
+
+- **Get there:** select a note › Edit › type
+  `**bold** a long sentence that must wrap at the window edge, [link](https://example.com) and `
+  followed by a waypoint code (in game: map › Shift+click a waypoint, copy
+  the `[&…]` code from the chat) › Save. Then type a word of the note into the search field.
+- **Look at:** the note view; make the window narrow and wide again.
+- **Before and now (unchanged):** words wrap at the readable width or the
+  window edge; the link is underlined, shows its target as tooltip and opens
+  the browser; the chip shows a copper place icon, a hand cursor and a
+  tooltip, and a click copies the code (paste it in the game chat to check);
+  search hits get a gold background, a matching chip a gold frame.
+
+### 14 · Editor: typing, shortcuts and selection
+
+- **Get there:** select the note of test 13 › Edit.
+- **Look at:** type, Backspace, Delete, Enter; arrows with and without Ctrl
+  and Shift; Home/End, Ctrl+Home/End, PageUp/PageDown; Ctrl+A, Ctrl+C,
+  Ctrl+X, Ctrl+V, Ctrl+Z, Ctrl+Y; select across the chip and across a line
+  break with the mouse (drag and double-click); Ctrl+Enter.
+- **Before and now (unchanged):** every key does what its name says; the
+  selection is a translucent gold band, a selected line break adds a small
+  extra width, a selected chip gets the same band over it; the cursor
+  blinks; Ctrl+Enter saves. While editing, the game gets no key presses
+  (WASD does not move the character).
+
+### 15 · Note list: rename and drag & drop
+
+- **Get there:** the note list with a group and notes (Setup 3).
+- **Look at:** (a) double-click a group title, rename it, Enter; double-click
+  a note title, press Escape. (b) drag a note into a collapsed group, rest on
+  it, drop; drag a group onto its own child; drag near the list's top and
+  bottom edge. (c) type a search, then try to drag a row.
+- **Before and now (unchanged):** (a) a framed input over the title, Enter
+  saves, Escape cancels, the group does not toggle on the double-click.
+  (b) the dragged row fades, a gold line or group frame shows the drop, the
+  collapsed group opens after a moment, the title floats next to the cursor
+  (red with a ban icon over its own child), the list scrolls near the edges.
+  (c) no drag; the tooltip says to clear the search to move.
