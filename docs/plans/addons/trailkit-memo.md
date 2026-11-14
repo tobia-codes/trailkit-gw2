@@ -45,7 +45,8 @@ references with autocompletion and status.
 - **Checked checkboxes strike through** the text after them.
 - **A second, very simple window** next to the main window that shows, for
   example, the daily and weekly notes.
-- **Favorite notes**: mark notes as favorites and filter by them.
+- **Favorite notes**: mark notes as favorites and filter by them. *Grilling started
+  2026-11-14: M188–M191; open questions below (Q407, Q408, Q414–Q419).*
 
 ## Technical design (proposal)
 
@@ -62,6 +63,28 @@ references with autocompletion and status.
 - Export format: versioned JSON with `schema_version`.
 
 ## Open questions
+
+**Favorites and list filter (grilling round 2, 2026-11-14; continue here before any mockup):**
+- **Q407 – Filter button, icon only?** The user asks whether the button needs a label. Recommendation: icon-only
+  (Lucide `list-filter`, tooltip "Filter"), placed after New note/New group in the same row (M128). It keeps the row
+  on one line longer and carries the badge (M190) well; New note/New group keep their labels.
+- **Q408 – Sorting in the same menu?** The user asks for sorting by creation date (ascending/descending). Recommendation:
+  the filter menu gets a "Sort" section with radio entries: Manual (default, today's drag order, M24), Newest first,
+  Oldest first (by `created_at`); maybe also Title A–Z and Last changed (Q416). Sorting only changes the view, never the
+  stored order (M24).
+- **Q416 – Sort options:** only the two creation-date orders, or also title A–Z and last changed (`updated_at`)?
+- **Q417 – Sort scope:** notes are sorted within each group; groups keep their manual order and stay above/below notes
+  as today? Recommendation: yes.
+- **Q418 – Sort and drag & drop:** any sort other than Manual turns drag & drop off like a filter (M191), tooltip
+  "Switch to manual order to move"? Recommendation: yes.
+- **Q419 – Badge and sort:** the badge counts active filters only, not a non-manual sort; the sort is saved in
+  `ui_state.json` like the filter (M189)? Recommendation: yes to both.
+- **Q414 – Data model diagram:** a Mermaid class diagram in `addons/trailkit-memo/docs/data-model.md` (rendered by
+  GitHub, reviewable in diffs): every stored file (`notes.json` with groups, notes and trash, drafts, `ui_state.json`),
+  fields, `schema_version` and a version history; linked from memo's README; updated in the same PR as every model
+  change. Recommendation: yes.
+- **Q415 – Standing rule:** every addon with stored data keeps such a `docs/data-model.md` (agent reference and
+  `CONTRIBUTING.md`, like help rule 6). Recommendation: yes.
 
 *Answered yes on 2026-11-09: Q151, Q164, Q165, Q166 (amended), Q168 (amended), Q169, Q170, Q171; mockup V4 approved (R87). Kept here until M180 and R89 are implemented.*
 
@@ -281,6 +304,10 @@ references with autocompletion and status.
 | M185 | **Notes with unsaved changes are findable** (user decisions Q341–Q349, Q351, Q352, Q354, 2026-11-13; visual OK per R87 on https://claude.ai/artifact/HsyHJuAPYLzxXtjXUW2kbQ v4; extends M54, M184): every note with a draft carries `triangle-alert` in `warning` at the end of its list row, before badges and counts (Q341, Q341a, Q351), with the tooltip "Unsaved changes"; a collapsed group containing such a note carries it too. A `warning` status card above the panes (below a storage problem card, Q346) says "1 note has unsaved changes. It is marked with the same sign in the list." (plural: "N notes have … They are …") with the regular button "Go to note" (Q344). The button selects and shows the next marked note after the shown one in list order, wrapping around; on the way it expands collapsed groups, scrolls the list to the row, ends a search that hides the note and asks the unsaved-changes question of M54 first (Q345). The card has the close `x`, which hides it until the next game start (the marks stay); it disappears by itself when no draft is left. While the only marked note is the one shown, the card stays and only loses its button (Q354, replaces Q347's hiding: the count stays visible). Notes in the trash do not count. At the minimum width the mark keeps its place even if the title shrinks to nothing (Q352: the icons matter more). Storage problems B and C keep no `x` (Q348). The draft card inside the note keeps Discard/Restore in that order (Q349, R103). |
 | M186 | **Every click outside takes the focus** (user request 2026-11-13, after the in-game test: only a left click outside the window took the focus, a right click did not): a right or middle click that hits no ImGui window (e.g. into the game) takes the focus from a trailkit window, like ImGui's own left click; a click inside keeps it. Lives in the shared `title_bar::draw_window`, so every trailkit window behaves alike. Nexus does not report clicks into the game world to ImGui, so the addon's `WndProc` counts right and middle button presses (`title_bar::record_mouse_button_press`, passed on to the game) and every window handles each press once. |
 | M187 | **Button cleanup and red delete actions** (user decisions Q372–Q374, 2026-11-13; ROADMAP R103, R105; visual OK per R87 on https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr v2/v3; amends M145, M146, M180, M42): "Empty" in the trash and the icon-only "Delete permanently" are filled `danger` buttons (were regular buttons with a `danger` label or icon); the delete questions keep their `danger` confirm button; "Delete" in the note menu and the list's context menu has a `danger` label and icon; "Try again" on the save error toast is a regular button; the empty state shows "New group" left of the brass "Create your first note"; "Discard" in the unsaved-changes and save-failed dialogs and on the draft hint is a filled `danger` button (Q375, R106). |
+| M188 | **Favorite notes** (user decisions Q399, Q400, Q401, Q404, Q406, 2026-11-14; first of the three wishes of 2026-11-13, then struck-through checked items, then the second window): only notes can be favorites, not groups. Marked with "Add to favorites"/"Remove from favorites" in the note list's context menu **and** a star button in the note toolbar. A favorite shows a small star in `text.secondary` in its row, right of the title before the search hit count, display only (not a button). A note keeps its favorite state through trash and restore; toggling it is not an undo step. No keyboard shortcut for now (Q413; noted in ROADMAP "Open"). Look per R87 mockup | 2026-11-14 |
+| M189 | **Favorites in `notes.json`** (user decision Q405, 2026-11-14): every note gets `favorite: bool`; `schema_version` is raised with a migration that sets `false` (an older memo refuses the newer file instead of silently dropping favorites on save) | 2026-11-14 |
+| M190 | **List filter** (user decisions Q402, Q403, Q409, Q410, Q412, 2026-11-14; extensible for later filters): a filter button in the list header opens a menu with check entries, for now only "Only favorites", then a separator and "Reset filters" (disabled while none is active); the menu stays open while ticking and closes on a click outside. While at least one filter is active, a small brass badge at the button's top right shows their number; the search does not count as a filter. The filter shows a filtered tree like the search (M121): matching notes with their groups above, expanded; search and filters combine (both must match). The filters are **saved permanently** in `ui_state.json` (users work on one achievement for a long time). No match: "No notes for the active filters" with a "Reset filters" button, plus "Clear search" when a search is active too (like M126). The trash has its own list and ignores the filter. Button placement and label: Q407; sorting: Q408 | 2026-11-14 |
+| M191 | **While a filter is active** (user decision Q411, 2026-11-14; like the search, M125): drag & drop is off (tooltip "Reset the filters to move"); the open note always stays visible, so a new note or one just removed from the favorites does not vanish and the filter is not reset; a group's count is its matching notes | 2026-11-14 |
 | M50 | Groups are recognizable by a **bold** title (bold text font) and the number of notes they contain (nested groups included), right-aligned in `text.secondary`; no own background (`lay-hierarchy`). Drag & drop stays in step 5 (M28 order unchanged) | 2026-11-01 |
 | M49 | Replaces the badge column of M45/M47: note titles start flush left (where a group's arrow starts), reset badges and any later row icons sit right-aligned at the row's right edge; the title is shortened with "…" before them. Groups keep the expand arrow on the left, so group titles start one arrow width further right | 2026-11-01 |
 | M48 | *Superseded by M166, M168.* Replaces the single-pane "tree → note → back" of M21/M40: the note pane has its own toolbar row with a flat menu button (Lucide `menu`, tooltip) on the left (step 3 adds the edit/view toggle on the right). Wide window: the button hides/shows the note list column (stored in `ui_state.json`). Narrow window: the note fills the window and the button opens the note list as a drawer (`lay-drawer`) over the dimmed note — instantly, no slide animation (`overlay-motion`); width = minimum pane width, at most 85 % of the window; closes on choosing a note, a click on the dimmed note or the menu button (repeated in the drawer's toolbar); stays open for groups, expand/collapse and rename; open automatically while no note is selected; Escape still closes the window. Drawer code starts in memo (rule 7) | 2026-11-01 |

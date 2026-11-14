@@ -169,6 +169,7 @@ trailkit-gw2/
 ## Open
 
 - ~~Nexus update provider in a monorepo~~ → settled in R49.
+- memo: a keyboard shortcut to toggle a note's favorite state (Q413, 2026-11-14: none for now, later).
 
 ## Plans
 
