@@ -26,7 +26,7 @@ const ICON_SCALE: f32 = 0.85;
 /// drawn at [`ICON_SCALE`] of the text size and centered on the capital
 /// letters (memo plan M80, M81).
 #[derive(Debug, Clone, Copy)]
-struct IconMetrics {
+struct IconPlacement {
     /// Factor from the icon font's own size to the drawn size.
     scale: f32,
     /// Distance from the line top to the top of the drawn icon.
@@ -37,7 +37,7 @@ struct IconMetrics {
 /// all icons on one grid, so the full square stands for every icon (centering
 /// each glyph by its own shape would shift flat icons off the line).
 /// Measured: a 16 px "H" is 9 px tall, the icon square 15 px.
-fn icon_metrics(ui: &Ui) -> IconMetrics {
+fn icon_placement(ui: &Ui) -> IconPlacement {
     let capital = glyph_bounds('H');
     let square = {
         let _icons = FontScope::push(ui, FontRole::Icons);
@@ -48,9 +48,9 @@ fn icon_metrics(ui: &Ui) -> IconMetrics {
             let scale = ICON_SCALE;
             let offset =
                 (capital_top + capital_bottom) / 2.0 - (square_top + square_bottom) / 2.0 * scale;
-            IconMetrics { scale, offset }
+            IconPlacement { scale, offset }
         }
-        _ => IconMetrics {
+        _ => IconPlacement {
             scale: 1.0,
             offset: 0.0,
         },
@@ -170,7 +170,7 @@ fn for_each_piece(
 }
 
 /// The width of a piece in the current font.
-fn piece_width(ui: &Ui, piece: &Piece<'_>, theme: &Theme, icons: IconMetrics) -> f32 {
+fn piece_width(ui: &Ui, piece: &Piece<'_>, theme: &Theme, icons: IconPlacement) -> f32 {
     match piece {
         Piece::Icon(icon, _) => {
             let _icons = FontScope::push(ui, FontRole::Icons);
@@ -231,7 +231,7 @@ fn padding(theme: &Theme) -> f32 {
 /// The width `chip` takes in the current font, padding included.
 #[must_use]
 pub fn chip_width(ui: &Ui, chip: &ChatLinkChip, theme: &Theme, context: ChipContext<'_>) -> f32 {
-    let icons = icon_metrics(ui);
+    let icons = icon_placement(ui);
     let mut width = 2.0 * padding(theme);
     for_each_piece(chip, theme, context, |piece| {
         width += piece_width(ui, &piece, theme, icons);
@@ -275,7 +275,7 @@ pub fn draw_chip(
             .thickness(theme.border.width.max(1.0))
             .build();
     }
-    let icons = icon_metrics(ui);
+    let icons = icon_placement(ui);
     let icon_size = {
         let _icons = FontScope::push(ui, FontRole::Icons);
         ui.current_font_size() * icons.scale
