@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-14 (session 37, cloud: remaining R77 splits on `chore/remaining-length-splits`). Current state and
+Last updated: 2026-11-14 (session 37, cloud; PR #127 merged). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -14,29 +14,29 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 **First, ask the user: can you test in game now?** Pending checks with where/how/expected: [`in-game-tests.md`](in-game-tests.md)
 (user request 2026-11-13: keep it current until each item is confirmed; ask every session).
 
-**Session 36:** PR #125 merged (R108, Q379–Q387). User to-do: delete remote `chore/file-length-splits`. A failed in-game test
-becomes a `bugfix/` branch.
+**Sessions 36–37:** R77 splits done. PR #125 (R108, Q379–Q387) and PR [#127](https://github.com/tobia-codes/trailkit-gw2/pull/127)
+(Q388–Q398, merged `485e927`, all CI green incl. Windows snapshots): theme `layout.rs`/`typography.rs` (`…Layout` types),
+`IconPlacement`, `main_window/closing.rs`, `draw_note_markers`, `draw_title_input`, test modules, `tests/component-states/`,
+snapshot tests named `…_states_match_snapshots`. Merged before in-game test 16 at the user's request. User to-dos: delete remote
+branches `chore/file-length-splits`, `chore/remaining-length-splits`, `chore/handoff-session-37`. A failed in-game test becomes a
+`bugfix/` branch.
 
-**Session 37 (2026-11-14, cloud):** user could not test in game. Q388–Q398 decided (R77 row) and implemented on
-`chore/remaining-length-splits`: theme `layout.rs`/`typography.rs` with `…Layout` types, `IconPlacement`, `main_window/closing.rs`,
-`draw_note_markers`, `draw_title_input`, test modules `note_list`/`search`, `tests/component-states/` (`notifications`, `title_bar`),
-snapshot tests renamed `…_states_match_snapshots`; in-game test 16. fmt, host/Windows clippy, `cargo test`, check-names pass;
-snapshots left to the Windows CI. User OK 2026-11-14: PR into `develop` with auto-merge, before in-game test 16; check that it
-merged and CI passed (fix failures on the branch, never bypass).
+**Cloud sessions:** auto mode may refuse `git commit`; then ask the user and never work around it. `gh pr create` fails (GraphQL
+blocked): create PRs with `gh api repos/{owner}/{repo}/pulls`, arm auto-merge with `PUT .../pulls/{n}/ccr/auto_merge`
+(`merge_method=merge`; no branch deletion). `cargo xwin clippy` works there.
 
-**On the Mac (no game, no WSL):** `git fetch origin`, then the work branch above or `develop`; deploy, `ui-test` and in-game
+**On the Mac (no game, no WSL):** `git fetch origin && git switch develop && git pull --ff-only`; deploy, `ui-test` and in-game
 tests wait for the Windows PC; check `source ~/.cargo/env` and a first `cargo test` there; snapshots via the PR's Windows CI.
 
 **Open, in this order:**
-1. **In-game tests 1–16** ([`in-game-tests.md`](in-game-tests.md)). Side finding: `min-de-dialog-*` fixtures build English
-   confirmation text (test only); fix only if the user agrees.
-2. **Remaining length splits:** done on `chore/remaining-length-splits` (session 37); remaining hints are settled exceptions
-   (`actions.rs` Q134, `token_groups.rs` Q141, both `get` tables Q392). Next: in-game test 16.
-3. **Wishes of 2026-11-13 (grilling; plan requirements):** event: filters ("used in notes", a meta train order: research trains,
-   timing, a source with licence/GDPR first), favorite events. memo: struck-through checked items, a simple daily/weekly window,
-   favorites. All addons: more languages without growing the DLLs (BACKLOG BL15).
-4. **Last, once the rest is done:** a grilling round on whether the chat translation addon (BACKLOG BL16) is feasible, research first.
-5. Then the queue below (theme character grilling, B23–B25) and the review items, one at a time.
+1. **In-game tests 1–16** ([`in-game-tests.md`](in-game-tests.md)); deploy current `develop` first (Setup 1). Side finding:
+   `min-de-dialog-*` fixtures build English confirmation text (test only); fix only if the user agrees.
+2. **Wishes of 2026-11-13 (grilling; plan requirements), next up:** first the recurring C-703/25 P check (planning). event:
+   filters ("used in notes", a meta train order: research trains, timing, a source with licence/GDPR first), favorite events.
+   memo: struck-through checked items, a simple daily/weekly window, favorites. All addons: more languages without growing the
+   DLLs (BACKLOG BL15; it also reworks the `get` tables kept whole in Q392).
+3. **Last, once the rest is done:** a grilling round on whether the chat translation addon (BACKLOG BL16) is feasible, research first.
+4. Then the queue below (theme character grilling, B23–B25) and the review items, one at a time.
 
 **Decided, not scheduled:** Q340 – daily backups with restore (M11, M31's "Restore from backup") stay in M28's order after settings
 and export/import. Q329 – `cargo bloat` breakdown at the next release preparation (release DLL 2.51 MiB on 2026-11-13).
