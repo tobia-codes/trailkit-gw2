@@ -32,10 +32,10 @@ Core-mandatory plan R109 merged (PR #130); R110–R112 and the frontend topics w
 
 **Open, in this order:**
 1. **In-game tests 1–16** ([`in-game-tests.md`](in-game-tests.md)) whenever the user is at the PC; deploy `develop` first.
-   **Session 39 (2026-11-15):** wishes of 2026-11-14 settled as ROADMAP R114–R121 (Q420–Q433; memo M192) on
+   **Session 39 (2026-11-15):** wishes of 2026-11-14 settled as ROADMAP R114–R123 (Q420–Q435; memo M192) on
    `chore/plan-wishes-2026-11-14`. **Next:** the frontend/backend round (R121: stack, SSR, deployment, accounts without
-   email, sync, admin roles, forum, REST API, price history) and the core wishes (layout editor, hint about new addons;
-   ROADMAP "Open"). **Then** continue the favorites grilling on `feature/memo-favorites` (Q407, Q408, Q416–Q419),
+   email, sync, admin roles, forum, REST API, price history). Core wishes settled: layout editor R122,
+   hint about new addons R123. **Then** continue the favorites grilling on `feature/memo-favorites` (Q407, Q408, Q416–Q419),
    mockup (R87), implementation. The `rust/` move (R116) and the token generator (R118) come after the favorites work.
 2. **Remaining wishes of 2026-11-13:** memo struck-through checked items, then the second window. event:
    filters ("used in notes", a meta train order: research trains, timing, a source with licence/GDPR first), favorite events.
@@ -54,7 +54,7 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M193+, R122+, B26+, questions from 434**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M193+, R124+, B26+, questions from 436**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
 1. **Storage failures:** done (memo M180, 2026-11-10).

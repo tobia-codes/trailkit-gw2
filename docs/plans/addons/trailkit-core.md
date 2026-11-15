@@ -71,8 +71,8 @@ small and the backend load stays minimal.
   core v1 scope R114 (memo M26 dropped), language follows Nexus R115 (C2's shared language file is no longer needed),
   setup guide R120. **Still to grill:** (1) fonts: one font registry in core, icon glyph sets of all addons in one
   subset, behaviour on a version mismatch; how Nexus' addon dependencies help; (2) the lean protocol for v1 (C6/C7)
-  and how addons get the theme from core; (3) measured DLL size before and after (R72, Q329); (4) the layout editor
-  and the hint about new addons (ROADMAP "Open", wishes of 2026-11-15).
+  and how addons get the theme from core; (3) measured DLL size before and after (R72, Q329); layout editor (R122)
+  and hint about new addons (R123) are settled on 2026-11-15.
 
 ## Decisions
 

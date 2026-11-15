@@ -132,6 +132,8 @@ push/merge authorization. Detailed agent references are loaded on demand (R88).
 | R119 | **Lock screen** (user decision Q430, 2026-11-15; details of R110): when core is missing, disabled or too old (C7), an addon shows a card instead of its content: one sentence why it is locked and where to find trailkit-core in the Nexus addon library; stored data stays untouched. Applies to every addon (E3 already did for event). Appearance via an R87 proposal | 2026-11-15 |
 | R120 | **Setup guide steps** (user decision Q431, 2026-11-15; details of R111): (1) choose the theme (Dark/Light) for all addons, (2) a short introduction of the trailkit addons showing which are installed, (3) confirm the data downloads (C11). Shown once at the first start, reopenable from core's settings. Appearance via an R87 proposal | 2026-11-15 |
 | R121 | **Frontend and backend scope** (user wishes 2026-11-15 to Q429; details to grill in their own rounds, see "Open"): the **frontend** presents the addons, is **mobile first**, has **login and registration without an email address** so users edit in the web the data they see in game, an **admin area** with user roles (granted per account in the backend), and a **forum** for problems and feature requests without a GitHub account. The **backend** offers a REST API for events, prices, items and whatever the frontend needs; addons store data locally and refresh it on a regular cycle; it polls prices from the GW2 API regularly to show price history. Frontend stack incl. server-side rendering and a real deployment (not static Pages; affects R52) get their own round (Q424) | 2026-11-15 |
+| R122 | **Layout editor in core** (user decision Q434, 2026-11-15): core gets an "arrange windows" mode. Every addon registers its windows through the core protocol (id, localized name, minimum size); core shows every window of the loaded addons at once as a labelled, empty frame at its current position; the user moves and resizes them; "Apply" sends the new geometry to the addons, which store it; also "Cancel" and "Reset to default". Uses the protocol, never foreign ImGui window names. The window registration is part of the core v1 protocol; the editor itself comes after the first release. Appearance via an R87 proposal | 2026-11-15 |
+| R123 | **Hint about new addons** (user decision Q435, 2026-11-15): the data core already downloads includes a list of all trailkit addons (no extra request, no extra data); core compares it with the installed addons and shows a quiet hint for a new one: a dot on core's entry and a card "New: trailkit-xyz" with a short description and the way to the Nexus addon library, dismissible per addon; never a toast. The same list feeds step 2 of the setup guide (R120). Appearance via an R87 proposal | 2026-11-15 |
 
 ## Proposed repository layout
 
@@ -196,11 +198,7 @@ trailkit-gw2/
   (sign-up, password recovery without email, sessions), syncing addon data with the backend (which data leaves the
   PC, opt-in, PRIVACY R99), admin roles, forum (moderation, reporting, DSA duties as a host), mobile first, REST API
   and the price history poller (backend.md), where addons get their data from (backend vs. served files, D19);
-  (2) **layout editor in core**: core shows every window of every trailkit addon at once as a labelled placeholder
-  without content so users can move and resize them (needs the windows registered through the cross-addon
-  protocol C6, which then applies the new position and size); (3) **hint about new addons**: how users learn in game
-  that a new trailkit addon exists (e.g. core compares a published addon list with the installed addons and shows a
-  quiet notice; toasts only when necessary).
+  (2) the layout editor (R122) and the hint about new addons (R123) are settled.
 
 ## Plans
 
