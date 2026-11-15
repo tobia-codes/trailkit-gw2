@@ -124,7 +124,18 @@ push/merge authorization. Detailed agent references are loaded on demand (R88).
 | R112 | **One design, only tokens, everywhere** (user decision 2026-11-14; restates and tightens the trailkit-ui rule "Only tokens" for every addon and shared component): no color, pixel spacing, border radius, border width or any other value that should look the same everywhere is set by hand in code; it comes from a theme token. Where a token is missing, the theme is extended (spacing, radius, …) instead of writing a number. An audit of the existing addon and `trailkit-ui` code against this rule is to grill and plan (which literals exist, which become tokens, which are real exceptions such as layout math) | 2026-11-14 |
 | R113 | **Data model diagrams with Mermaid** (user decision 2026-11-14, accepts Q414/Q415 of the memo favorites round): every addon or service with stored data documents its data model as a **Mermaid** class diagram in `docs/data-model.md` inside the project (GitHub renders it; text, so it is reviewed in diffs): every stored file, its fields, `schema_version` and a short version history; linked from the project's README and updated in the same PR as every model change (like help, rule 6). First: memo (`notes.json` with groups, notes and trash, drafts, `ui_state.json`). The rule goes into the agent reference and `CONTRIBUTING.md` when the first diagram is written | 2026-11-14 |
 
+| R114 | **One joint first release** (user decisions Q420, Q429, 2026-11-15; supersedes the memo-first parts of R8 and R13): trailkit-core v1, trailkit-memo, trailkit-event, the backend and the frontend are released **together**; memo ships no standalone beta. Build order: core v1 → memo on core → event → backend → frontend; everything is tested internally until then. Memo M26 ("without core all notes are global") is dropped: without core every addon shows the lock screen (R110, R119). Core v1 scope (Q421): language handling (R109, R115), text and icon fonts, theme (Dark/Light, tokens), setup guide (R111, R120), the lock mechanism and a lean cross-addon protocol (C6 service table with the C7 version check); data sets, API key and prices (C1–C15) come with event. The scope of backend and frontend is grilled in their own round (R121) | 2026-11-15 |
+| R115 | **Language stays with Nexus** (user decision Q422, 2026-11-15; amends R109): neither core nor any addon stores its own language; every addon follows Nexus' language as memo does today, and an unsupported Nexus language (e.g. French) falls back to English (`Language::resolve`, already tested). The setup guide therefore has no language step | 2026-11-15 |
+| R116 | **Repository layout: `rust/` and `apps/`** (user decisions Q423, Q427, 2026-11-15; supersedes the paths of R2 and R35 and R90's "`crates/` stays flat"): one Cargo workspace in **`rust/`** (`Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`, `clippy.toml`, `deny.toml`, `.cargo/`, `xtask/`, `addons/`, `services/`, `tools/trailkit-datagen/`); the frontend lives in **`apps/web/`**; the root keeps only language-neutral things (`docs/`, `data/`, `.changeset/`, pnpm files, README, licences, PRIVACY, AGENTS/CLAUDE, `tools/bruno-gw2-api/`). **A crate lives where it is used:** used by one addon → inside that addon; by several addons → `rust/addons/crates/` (today `trailkit-ui`, `trailkit-ui-testing`, `trailkit-storage`, `trailkit-log`); by several services → `rust/services/crates/`; by addons **and** services or tools → only then flat in `rust/crates/`, moved in the same PR as the second use (rule 7). Before the move: verify rust-analyzer in VS Code, CI, git hooks, `cargo xtask deploy` and `ui-test` from `rust/`; report problems before moving. The move is its own `chore/` PR after the memo favorites work | 2026-11-15 |
+| R117 | **Changesets per product** (user decision Q432, 2026-11-15; extends R16, R37): one `.changeset/` and one config for the whole repo, but every product has its own version, changelog and tags (`trailkit-memo@x.y.z`): each addon, `apps/web` (real `package.json`) and `services/trailkit-api` (placeholder `package.json` like memo; settles the versioning part of B10). `pnpm-workspace.yaml` covers the addons, `apps/*` and the services, not `rust/addons/crates`. Shared crates have no version; a change there gets a changeset entry for every affected product. The R16 pre-release exception now applies to **every** product until the joint first release (R114): one consolidated changeset per product at release preparation | 2026-11-15 |
+| R118 | **One token source for addons and web** (user decisions Q425, Q428, Q433, Q426, 2026-11-15; implements R112): one TOML token file is the only source; `cargo xtask tokens` generates the Rust theme values, CSS variables and the docs, and CI checks that generated files are current. Sections: **`[shared]`** colors in Dark/Light (surface, text, accent, status, border colors, shadow color and the GW2 colors event, coin, reset, chip), radii, border widths, font family and the text roles (§7.1 names and meaning); **`[addon]`** spacing, list/pane/button/menu layouts, font sizes relative to `FontUI`, line height, popup shadow offset; **`[web]`** spacing, breakpoints, font sizes in `rem`, line height, shadow shape, motion, content width (values in the frontend round). `[shared]` values are unitless design pixels: Rust gets pixels, CSS gets radii in `rem` (value / 16) and border widths in `px`. The web may add and override in `[web]` but never invents colors outside the file. **All tokens live in `src/theme/`** of `trailkit-ui`: `theme.rs` keeps only `Theme`, `ThemeKind` and the submodules; `theme/colors.rs` (color types), `theme/layout.rs`, `theme/typography.rs` and the generated values file; `color.rs` (`Color`, contrast) stays in `src/`. Done together with the generator, public paths unchanged. **Audit (Q426):** first an inventory of the literals in `trailkit-ui` and memo, per file sorted into "becomes a token", "layout math", "real exception", reviewed by the user; then one PR per crate, visible changes with an R87 proposal first; a `check-tokens` lint is decided after the inventory | 2026-11-15 |
+| R119 | **Lock screen** (user decision Q430, 2026-11-15; details of R110): when core is missing, disabled or too old (C7), an addon shows a card instead of its content: one sentence why it is locked and where to find trailkit-core in the Nexus addon library; stored data stays untouched. Applies to every addon (E3 already did for event). Appearance via an R87 proposal | 2026-11-15 |
+| R120 | **Setup guide steps** (user decision Q431, 2026-11-15; details of R111): (1) choose the theme (Dark/Light) for all addons, (2) a short introduction of the trailkit addons showing which are installed, (3) confirm the data downloads (C11). Shown once at the first start, reopenable from core's settings. Appearance via an R87 proposal | 2026-11-15 |
+| R121 | **Frontend and backend scope** (user wishes 2026-11-15 to Q429; details to grill in their own rounds, see "Open"): the **frontend** presents the addons, is **mobile first**, has **login and registration without an email address** so users edit in the web the data they see in game, an **admin area** with user roles (granted per account in the backend), and a **forum** for problems and feature requests without a GitHub account. The **backend** offers a REST API for events, prices, items and whatever the frontend needs; addons store data locally and refresh it on a regular cycle; it polls prices from the GW2 API regularly to show price history. Frontend stack incl. server-side rendering and a real deployment (not static Pages; affects R52) get their own round (Q424) | 2026-11-15 |
+
 ## Proposed repository layout
+
+> Superseded in its paths by R116 (`rust/` workspace, `apps/web/`, crates where they are used); updated with the move.
 
 ```
 trailkit-gw2/
@@ -147,6 +158,9 @@ trailkit-gw2/
 ```
 
 ## Phases
+
+> R114 replaces the memo-first order below: core v1 → memo on core → event → backend → frontend, one joint
+> first release. The list is rewritten after the frontend and backend rounds (R121).
 
 0. **Foundation** — toolchain, workspace, lints, CI (Windows build), a
    minimal "hello" addon to validate build → deploy → hot reload in game,
@@ -174,14 +188,19 @@ trailkit-gw2/
 ## Open
 
 - ~~Nexus update provider in a monorepo~~ → settled in R49.
-- **To grill (user wish 2026-11-14):** (1) **repository layout with the React frontend**: today the Rust workspace
-  fills the root (`Cargo.toml`, `xtask/`, …), which the user dislikes because the frontend knows nothing about Rust;
-  where Rust and JS live (e.g. `rust/` vs. root, `apps/` of R35, `package.json`/pnpm at root), what that means for
-  R2, R35, R90, CI, `xtask` paths and Nexus build scripts; (2) **frontend technology** (React per R45; build tool,
-  routing, hosting on `gw2.trailkit.de` R52, GDPR rule 10), together with the deferred theme character (handoff);
-  (3) **one theme for addons and frontend without duplicated code**: today the token values live in Rust
-  (`crates/trailkit-ui` `theme.rs`, docs via `cargo xtask tokens`); options such as a neutral token source
-  (JSON/TOML) that generates the Rust theme and CSS variables, or Rust as source exporting CSS.
+- **Wishes of 2026-11-14:** repository layout (R116), one theme source (R118), lock screen (R119) and setup
+  guide (R120) are settled; the **frontend technology** (React per R45; build tool, routing, server-side rendering,
+  real deployment instead of static Pages R52, GDPR rule 10, together with the deferred theme character) is grilled
+  in its own round with the frontend scope (R121).
+- **To grill (user wishes 2026-11-15):** (1) **frontend and backend scope** (R121): accounts without email
+  (sign-up, password recovery without email, sessions), syncing addon data with the backend (which data leaves the
+  PC, opt-in, PRIVACY R99), admin roles, forum (moderation, reporting, DSA duties as a host), mobile first, REST API
+  and the price history poller (backend.md), where addons get their data from (backend vs. served files, D19);
+  (2) **layout editor in core**: core shows every window of every trailkit addon at once as a labelled placeholder
+  without content so users can move and resize them (needs the windows registered through the cross-addon
+  protocol C6, which then applies the new position and size); (3) **hint about new addons**: how users learn in game
+  that a new trailkit addon exists (e.g. core compares a published addon list with the installed addons and shows a
+  quiet notice; toasts only when necessary).
 
 ## Plans
 
