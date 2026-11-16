@@ -126,12 +126,12 @@ pub struct TextColors {
 }
 
 /// OKLab lightness step from a colored button's fill to its hover fill
-/// (R107): 8 % darker in both themes.
-pub const HOVER_DARKENING: f32 = 0.08;
+/// (R107, Q446): 4 % darker in both themes.
+pub const HOVER_DARKENING: f32 = 0.04;
 
 /// OKLab lightness step from a colored button's fill to its pressed fill
-/// (R107): 12 % darker in both themes.
-pub const PRESSED_DARKENING: f32 = 0.12;
+/// (R107, Q446): 6 % darker in both themes.
+pub const PRESSED_DARKENING: f32 = 0.06;
 
 /// Accent colors: violet (R124, before brass), spent only on the primary
 /// action, focus and selection (R71).
@@ -295,8 +295,8 @@ impl Theme {
         },
         accent: AccentColors {
             base: Color::from_rgb_hex(0x542C96),
-            hover: Color::from_rgb_hex(0x400F7D),
-            active: Color::from_rgb_hex(0x360070),
+            hover: Color::from_rgb_hex(0x4A1F89),
+            active: Color::from_rgb_hex(0x451783),
             text: Color::from_rgb_hex(0xB48AE6),
             // 48 %: as visible on `bg.panel` as the approved mockup's hits.
             highlight: Color::from_rgb_hex(0x542C96).with_alpha(0.48),
@@ -306,8 +306,8 @@ impl Theme {
             warning: Color::from_rgb_hex(0xE9B44C),
             danger: Color::from_rgb_hex(0xF08A84),
             danger_fill: Color::from_rgb_hex(0xB83A33),
-            danger_fill_hover: Color::from_rgb_hex(0x9D1D1B),
-            danger_fill_active: Color::from_rgb_hex(0x8F070E),
+            danger_fill_hover: Color::from_rgb_hex(0xAA2C27),
+            danger_fill_active: Color::from_rgb_hex(0xA32521),
             // 20 % `danger.fill` over `bg.popup` (#1A2029).
             danger_subtle: Color::from_rgb_hex(0x3A252B),
             // 16 % `warning` over `bg.popup` (#1A2029); 18 % would leave
@@ -388,8 +388,8 @@ impl Theme {
         },
         accent: AccentColors {
             base: Color::from_rgb_hex(0x542C96),
-            hover: Color::from_rgb_hex(0x400F7D),
-            active: Color::from_rgb_hex(0x360070),
+            hover: Color::from_rgb_hex(0x4A1F89),
+            active: Color::from_rgb_hex(0x451783),
             text: Color::from_rgb_hex(0x6A3BAA),
             // 16 %: as visible as the approved mockup; above 17 % `text.link`
             // on a hit falls below 4.5:1.
@@ -400,8 +400,8 @@ impl Theme {
             warning: Color::from_rgb_hex(0x8A5A00),
             danger: Color::from_rgb_hex(0xB3261E),
             danger_fill: Color::from_rgb_hex(0xB3261E),
-            danger_fill_hover: Color::from_rgb_hex(0x970000),
-            danger_fill_active: Color::from_rgb_hex(0x890000),
+            danger_fill_hover: Color::from_rgb_hex(0xA5130F),
+            danger_fill_active: Color::from_rgb_hex(0x9E0506),
             // 10 % `danger` over `bg.popup` (#FFFFFF).
             danger_subtle: Color::from_rgb_hex(0xF7E9E8),
             // 10 % `warning` over `bg.popup` (#FFFFFF).

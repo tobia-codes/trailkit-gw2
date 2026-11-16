@@ -164,12 +164,12 @@ fn accent_group(colors: AccentColors) -> TokenGroup {
             color(
                 "accent.hover",
                 hover,
-                "Hovered primary button (8 % darker, R107)",
+                "Hovered primary button (4 % darker, R107)",
             ),
             color(
                 "accent.active",
                 active,
-                "Pressed primary button (12 % darker, R107)",
+                "Pressed primary button (6 % darker, R107)",
             ),
             color("accent.text", text, "Accent as text, icon or line"),
             color("accent.highlight", highlight, "Behind search hits"),
@@ -208,12 +208,12 @@ fn status_group(colors: StatusColors) -> TokenGroup {
             color(
                 "danger.fill_hover",
                 danger_fill_hover,
-                "Hovered delete button (8 % darker, R107)",
+                "Hovered delete button (4 % darker, R107)",
             ),
             color(
                 "danger.fill_active",
                 danger_fill_active,
-                "Pressed delete button (12 % darker, R107)",
+                "Pressed delete button (6 % darker, R107)",
             ),
             color(
                 "danger.subtle",

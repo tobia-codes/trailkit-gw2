@@ -34,8 +34,8 @@ use which token is binding in [`tokens.md`](tokens.md).
 | Token | Dark | Light | Purpose |
 | --- | --- | --- | --- |
 | `accent` | #542C96 | #542C96 | Fill of the primary button, selection bar |
-| `accent.hover` | #400F7D | #400F7D | Hovered primary button (8 % darker, R107) |
-| `accent.active` | #360070 | #360070 | Pressed primary button (12 % darker, R107) |
+| `accent.hover` | #4A1F89 | #4A1F89 | Hovered primary button (4 % darker, R107) |
+| `accent.active` | #451783 | #451783 | Pressed primary button (6 % darker, R107) |
 | `accent.text` | #B48AE6 | #6A3BAA | Accent as text, icon or line |
 | `accent.highlight` | #542C96 at 48 % | #542C96 at 16 % | Behind search hits |
 
@@ -47,8 +47,8 @@ use which token is binding in [`tokens.md`](tokens.md).
 | `warning` | #E9B44C | #8A5A00 | Warnings, invalid chat links |
 | `danger` | #F08A84 | #B3261E | Red text and icons: delete menu entries, error icons |
 | `danger.fill` | #B83A33 | #B3261E | Fill of delete buttons, frame of error toasts and cards |
-| `danger.fill_hover` | #9D1D1B | #970000 | Hovered delete button (8 % darker, R107) |
-| `danger.fill_active` | #8F070E | #890000 | Pressed delete button (12 % darker, R107) |
+| `danger.fill_hover` | #AA2C27 | #A5130F | Hovered delete button (4 % darker, R107) |
+| `danger.fill_active` | #A32521 | #9E0506 | Pressed delete button (6 % darker, R107) |
 | `danger.subtle` | #3A252B | #F7E9E8 | Fill of an error toast or a danger status card |
 | `warning.subtle` | #3B382F | #F3EEE5 | Fill of a warning status card |
 | `info` | #7AB0F0 | #1F5DB0 | Information |

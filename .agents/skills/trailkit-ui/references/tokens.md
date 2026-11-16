@@ -183,8 +183,8 @@ Rules:
   hover and pressed are steps of the gray scale `bg.hover` → `bg.active` →
   `bg.pressed`; each step stands out more from its ground.
 - **Colored filled buttons** (accent, red, any new color): hover is the rest
-  fill darkened by `HOVER_DARKENING` (8 % OKLab lightness), pressed by
-  `PRESSED_DARKENING` (12 %), in both themes, hue kept. Store the results as
+  fill darkened by `HOVER_DARKENING` (4 % OKLab lightness), pressed by
+  `PRESSED_DARKENING` (6 %; Q446, before 8 % and 12 %), in both themes, hue kept. Store the results as
   hex tokens next to the rest color; `button_state_fills_follow_the_darkening_rule`
   checks them against `Color::darkened`, and the label keeps ≥ 4.5:1 in every
   state. A color that cannot meet both gets a documented exception, never a
