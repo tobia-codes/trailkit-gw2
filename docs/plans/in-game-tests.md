@@ -62,11 +62,11 @@ the brass "Save" button but red. Approved design for all tests below:
 
 - **Design:** [mockup, section `menu-delete`](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr#menu-delete)
 - **Get there:** right-click a note in the list; then right-click the group.
-  Then select the group's note › **Edit** › right-click the group.
+  (The disabled state while editing cannot be reached: the editor hides the
+  list, M167; snapshots cover it.)
 - **Look at:** the entry **"Delete"**.
 - **Before:** white text and icon.
-- **Now:** **red** text and icon. While editing the group's note it is
-  **grey** with a reason tooltip (as before). Leave the editor with Cancel.
+- **Now:** **red** text and icon.
 
 ### 6 · "Discard" in "Unsaved changes"
 
