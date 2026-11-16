@@ -54,11 +54,11 @@ Components never use raw colors or numbers; they read **semantic tokens** from
 the active `Theme` (crate `rust/addons/crates/trailkit-ui`). Every token with its value in
 both themes and its purpose is listed in
 [`references/token-values.md`](references/token-values.md), generated from
-`theme.rs` by `cargo xtask tokens` (R84); when to use which is binding in
+the token files in `design/tokens/` by `cargo xtask tokens` (R84, R118); when to use which is binding in
 [`references/tokens.md`](references/tokens.md).
 
 - **Built-in themes:** `Dark` (default) and `Light`. Both are full token sets.
-  Values: `rust/addons/crates/trailkit-ui/src/theme.rs` (palette R71, supersedes R51:
+  Values: `design/tokens/*.toml`, generated into `rust/addons/crates/trailkit-ui/src/theme/values.rs` (palette R71, supersedes R51:
   ink-tinted dark and parchment-warm light surfaces, violet accent R124). The
   "Trailkit" design system in Claude Design is no longer a reference (R84). The themes are
   called just "Dark" and "Light", in code and in the UI. Unit tests enforce

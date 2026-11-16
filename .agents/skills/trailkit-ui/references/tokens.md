@@ -2,9 +2,12 @@
 
 Binding rules for every agent (Claude Code, Codex) and every human who touches
 addon UI. The token set is listed in `SKILL.md` §2; the values live only in
-`rust/addons/crates/trailkit-ui/src/theme.rs` (palette ROADMAP R71). The visual reference
-is the "Trailkit" design system in the user's Claude Design account; when it
-and `theme.rs` disagree, `theme.rs` wins and the difference is a bug to report.
+the token files [`design/tokens/`](../../../../design/tokens/) (ROADMAP R118), one
+file per token family; `cargo xtask tokens` generates
+`rust/addons/crates/trailkit-ui/src/theme/values.rs` and
+[`token-values.md`](token-values.md) from them. The visual reference is the
+"Trailkit" design system in the user's Claude Design account; when it and the
+token files disagree, the token files win and the difference is a bug to report.
 
 ## 1. Where colors and sizes come from
 
@@ -12,7 +15,7 @@ and `theme.rs` disagree, `theme.rs` wins and the difference is a bug to report.
   from the active `Theme`. No hex values, no `[f32; 4]` literals, no
   `ImColor32::from_rgb`, no magic pixel numbers in addon or component code.
   The only literal colors in the workspace are the token values in
-  `theme.rs` (and `Color::TRANSPARENT`).
+  `design/tokens/` (generated into `theme/values.rs`) and `Color::TRANSPARENT`.
 - **Derived colors are rare and documented.** `with_alpha` on a token is
   allowed for overlays and selections (text selection, chip fill of invalid
   links); write a comment saying why. Never mix two tokens into a new color.
@@ -70,22 +73,24 @@ editor's formatting buttons that light up for the formatting at the cursor
 
 ## 4. Chat-link chips
 
-`ChatLinkKind::category()` assigns every link kind to one of four groups;
+`ChatLinkKind::category()` assigns every link kind to one of five groups;
 `theme.chip.for_category()` returns its `text` and `background`.
 
 | Category | Kinds | Color |
 | --- | --- | --- |
-| `Place` | map point, WvW objective | copper |
-| `Character` | skill, trait, build | blue |
-| `Item` | item, recipe, skin, outfit, coins | jade |
-| `Progress` | achievement, NPC text, player | violet |
+| `map_point` | map point (waypoint, point of interest, vista) | blue, like waypoints in the game (R126) |
+| `wvw_objective` | WvW objective | blue like map points for now; own tokens to restyle it alone (Q459) |
+| `character` | skill, trait, build | copper |
+| `item` | item, recipe, skin, outfit, coins | jade |
+| `progress` | achievement, NPC text, player | rosé |
 
 - Icon and kind label use the category `text` color, the id (`#825`) uses
   `text.secondary`, coin amounts `text.primary` with `coin.*` dots.
 - Invalid links (unknown type and damaged code alike) are a **warning**:
   neutral fill, `warning` frame, icon and label.
-- A new link kind joins an existing category. A fifth category needs a
-  decision first.
+- A new link kind joins an existing category. A new category needs a
+  decision first (splitting map points into waypoint, point of interest and
+  vista waits for map data, BACKLOG).
 
 ## 5. Shape and edges
 
@@ -193,20 +198,23 @@ Rules:
 ## 8. Changing or adding a token
 
 1. Decide it first (grill-me) and record it in `docs/plans/ROADMAP.md`.
-2. Add it to `theme.rs` with a value for **both** themes and a doc comment
-   naming its token id (`chip.place`, `radius.md`, …).
+2. Add it to the token file of its family in `design/tokens/` with its
+   `name` (`chip.map_point.text`, `radius.md`, …), a fixed value for **both** themes
+   (colors) or one value with its `unit`, and its `purpose`; values are never
+   derived (Q454). Run `cargo xtask tokens`, then add the field with a doc
+   comment to its type in `trailkit-ui/src/theme/` (the crate does not compile
+   until the token file and the type agree).
 3. Text tokens join `text_meets_contrast_minimum_in_every_theme` (≥ 4.5:1 on
    every surface); text on a new fill gets its own contrast test. Graphics
    and focus rings need ≥ 3:1 against their ground.
-4. Document it in `rust/xtask/src/token_docs/token_groups.rs` (the crate does not compile until
-   you do), run `cargo xtask tokens` to update
-   [`token-values.md`](token-values.md), and add any rule for it here.
+4. [`token-values.md`](token-values.md) is regenerated with it; add any rule
+   for it here. A test fails while a generated file is out of date.
 5. Run `cargo xtask ui-test`; review changed snapshots before accepting them
    with `--update`.
 
 ## 9. Review checklist for tokens
 
-- [ ] No literal colors or sizes outside `theme.rs`
+- [ ] No literal colors or sizes outside `design/tokens/`
 - [ ] `accent` only as a fill; `accent.text` for accent text, icons, lines
 - [ ] At most one primary (accent) button per view
 - [ ] Selected rows use the selection bar, not a colored fill

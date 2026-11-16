@@ -1,0 +1,101 @@
+# Colors of the Dark and Light themes (ROADMAP R118 `[shared]`). The only
+# source of these values: `cargo xtask tokens` generates the Rust theme and
+# the token reference from it. Values are fixed, never derived (Q454).
+# A color is "#RRGGBB", "#RRGGBBAA" or { hex = "#RRGGBB", alpha = 0.5 }.
+
+[shared.surface]
+title = "Surfaces"
+window = { name = "bg.window", dark = "#0F1318", light = "#EFEDE8", purpose = "Window frame, gaps between panes" }
+panel = { name = "bg.panel", dark = "#151A21", light = "#FAF9F6", purpose = "Panes and other content regions" }
+input = { name = "bg.input", dark = "#0C1015", light = "#FFFFFF", purpose = "Input fields" }
+hover = { name = "bg.hover", dark = "#1D232C", light = "#F0EEE9", purpose = "Hovered rows and inputs, fill of regular buttons" }
+active = { name = "bg.active", dark = "#232A35", light = "#E7E3DB", purpose = "Selected and pressed list rows, hovered regular buttons" }
+pressed = { name = "bg.pressed", dark = "#323B49", light = "#DDD8CE", purpose = "Pressed regular buttons, dropdowns and menu rows" }
+popup = { name = "bg.popup", dark = "#1A2029", light = "#FFFFFF", purpose = "Popups, tooltips, menus" }
+popup_hover = { name = "bg.popup_hover", dark = "#2A323E", light = "#E7E3DB", purpose = "Hovered rows inside popups" }
+modal_overlay = { name = "overlay.modal", dark = "#05070AB8", light = "#14100873", purpose = "Dimming behind dialogs and drawers" }
+
+[shared.text]
+title = "Text"
+primary = { name = "text.primary", dark = "#E9ECF1", light = "#1B1E23", purpose = "Body text, headings" }
+secondary = { name = "text.secondary", dark = "#9AA4B2", light = "#555C66", purpose = "Counts, hints, placeholders" }
+disabled = { name = "text.disabled", dark = "#5E6876", light = "#9AA0A8", purpose = "Disabled controls, decorative marks" }
+link = { name = "text.link", dark = "#8DB8F0", light = "#1F5DB0", purpose = "Links" }
+on_accent = { name = "text.on_accent", dark = "#FFFFFF", light = "#FFFFFF", purpose = "Text on an `accent` fill" }
+on_danger = { name = "text.on_danger", dark = "#E9ECF1", light = "#EFEDE8", purpose = "Label of a delete button on `danger.fill`" }
+
+[shared.accent]
+title = "Accent"
+base = { name = "accent", dark = "#542C96", light = "#542C96", purpose = "Fill of the primary button, selection bar" }
+# hover/active of colored fills: 4 % / 6 % darker in OKLab (R107, Q446); the theme
+# tests check them against `Color::darkened`.
+hover = { name = "accent.hover", dark = "#4A1F89", light = "#4A1F89", purpose = "Hovered primary button (4 % darker, R107)" }
+active = { name = "accent.active", dark = "#451783", light = "#451783", purpose = "Pressed primary button (6 % darker, R107)" }
+text = { name = "accent.text", dark = "#B48AE6", light = "#6A3BAA", purpose = "Accent as text, icon or line" }
+# highlight: Dark 48 % is as visible on `bg.panel` as the approved mockup's hits;
+# Light 16 %: above 17 % `text.link` on a hit falls below 4.5:1.
+highlight = { name = "accent.highlight", dark = { hex = "#542C96", alpha = 0.48 }, light = { hex = "#542C96", alpha = 0.16 }, purpose = "Behind search hits" }
+
+[shared.status]
+title = "Status"
+success = { name = "success", dark = "#5CC48A", light = "#176B3C", purpose = "Success" }
+warning = { name = "warning", dark = "#E9B44C", light = "#8A5A00", purpose = "Warnings, invalid chat links" }
+danger = { name = "danger", dark = "#F08A84", light = "#B3261E", purpose = "Red text and icons: delete menu entries, error icons" }
+danger_fill = { name = "danger.fill", dark = "#B83A33", light = "#B3261E", purpose = "Fill of delete buttons, frame of error toasts and cards" }
+danger_fill_hover = { name = "danger.fill_hover", dark = "#AA2C27", light = "#A5130F", purpose = "Hovered delete button (4 % darker, R107)" }
+danger_fill_active = { name = "danger.fill_active", dark = "#A32521", light = "#9E0506", purpose = "Pressed delete button (6 % darker, R107)" }
+# danger_subtle: `danger.fill` at 20 % (Dark) / 10 % (Light) over `bg.popup` (R125).
+danger_subtle = { name = "danger.subtle", dark = "#3A252B", light = "#F7E9E8", purpose = "Fill of an error toast or a danger status card" }
+# warning_subtle: `warning` at 16 % (Dark; 18 % would leave `text.secondary` below
+# 4.5:1) / 10 % (Light) over `bg.popup`.
+warning_subtle = { name = "warning.subtle", dark = "#3B382F", light = "#F3EEE5", purpose = "Fill of a warning status card" }
+info = { name = "info", dark = "#7AB0F0", light = "#1F5DB0", purpose = "Information" }
+
+[shared.border]
+title = "Borders"
+color = { name = "border", dark = "#2A323E", light = "#D6D1C7", purpose = "Frame of inputs and dropdowns" }
+focus = { name = "border.focus", dark = "#B48AE6", light = "#6A3BAA", purpose = "Focused element" }
+# subtle: about 6 % white over the dark and 8 % warm black over the light surfaces.
+subtle = { name = "border.subtle", dark = { hex = "#FFFFFF", alpha = 0.06 }, light = { hex = "#1E180C", alpha = 0.08 }, purpose = "Dividers, outline of windows, panes, popups, dialogs" }
+
+[shared.chip]
+title = "Chat-link chips"
+
+[shared.chip.map_point]
+text = { name = "chip.map_point.text", dark = "#8DB8F0", light = "#1F5DB0", purpose = "Map points: waypoints, points of interest, vistas" }
+background = { name = "chip.map_point.background", dark = "#232D3A", light = "#E5EEFA", purpose = "Map points: waypoints, points of interest, vistas" }
+
+# Same as map points for now; its own tokens so it can be restyled alone (Q459).
+[shared.chip.wvw_objective]
+text = { name = "chip.wvw_objective.text", dark = "#8DB8F0", light = "#1F5DB0", purpose = "WvW objectives" }
+background = { name = "chip.wvw_objective.background", dark = "#232D3A", light = "#E5EEFA", purpose = "WvW objectives" }
+
+[shared.chip.character]
+text = { name = "chip.character.text", dark = "#E89A6B", light = "#A2471A", purpose = "Skills, traits, builds" }
+background = { name = "chip.character.background", dark = "#2E292A", light = "#FBE9DF", purpose = "Skills, traits, builds" }
+
+[shared.chip.item]
+text = { name = "chip.item.text", dark = "#6CCDB3", light = "#0E6E58", purpose = "Items, recipes, skins, outfits, coins" }
+background = { name = "chip.item.background", dark = "#1F2E31", light = "#DDF2EB", purpose = "Items, recipes, skins, outfits, coins" }
+
+[shared.chip.progress]
+text = { name = "chip.progress.text", dark = "#E890B8", light = "#A3346B", purpose = "Achievements, NPC texts, players" }
+background = { name = "chip.progress.background", dark = "#302630", light = "#F9E6EF", purpose = "Achievements, NPC texts, players" }
+
+[shared.coin]
+title = "Coins"
+gold = { name = "coin.gold", dark = "#E8C14A", light = "#A67C00", purpose = "Gold amounts in chips" }
+silver = { name = "coin.silver", dark = "#C4C8CE", light = "#7A8088", purpose = "Silver amounts in chips" }
+copper = { name = "coin.copper", dark = "#C87F4A", light = "#9C5A2A", purpose = "Copper amounts in chips" }
+
+[shared.event]
+title = "Events"
+default = { name = "event.default", dark = "#8E98A6", light = "#5F6670", purpose = "Regular events (later addons)" }
+highlight = { name = "event.highlight", dark = "#E8B055", light = "#8A5A10", purpose = "Highlighted events (later addons)" }
+active = { name = "event.active", dark = "#5CC48A", light = "#176B3C", purpose = "Running events (later addons)" }
+upcoming = { name = "event.upcoming", dark = "#7AB0F0", light = "#1F5DB0", purpose = "Upcoming events (later addons)" }
+custom = { name = "event.custom", dark = "#B8A6F0", light = "#6141B5", purpose = "User-defined events (later addons)" }
+
+[shared.shadow]
+title = "Shadows"
+popup = { name = "shadow.popup", dark = { hex = "#000000", alpha = 0.55 }, light = { hex = "#1E180C", alpha = 0.18 }, purpose = "Shadow below tooltips" }

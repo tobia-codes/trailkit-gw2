@@ -33,13 +33,3 @@ impl Typography {
         ((self.line_height_for(font_size) - font_size) / 2.0).floor()
     }
 }
-
-/// Font sizes shared by both built-in themes.
-pub(super) const TYPOGRAPHY: Typography = Typography {
-    small: 0.85,
-    body: 1.0,
-    heading3: 1.15,
-    heading2: 1.3,
-    heading1: 1.5,
-    line_height: 1.5,
-};
