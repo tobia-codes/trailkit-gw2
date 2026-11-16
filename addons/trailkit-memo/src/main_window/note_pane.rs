@@ -245,7 +245,7 @@ impl MemoWindow {
         let trailing_size = if compact {
             [icon_button_width(ui, Icon::MINIMIZE_2), ui.frame_height()]
         } else {
-            kind_dropdown_size(ui, language)
+            kind_dropdown_size(ui, theme, language)
         };
         let input = NoteViewInput {
             note,

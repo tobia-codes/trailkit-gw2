@@ -59,9 +59,9 @@ pub fn kind_labels(language: Language) -> [&'static str; 3] {
 /// Width and height of the kind dropdown, for placing it before drawing.
 #[cfg(windows)]
 #[must_use]
-pub fn kind_dropdown_size(ui: &nexus::imgui::Ui, language: Language) -> [f32; 2] {
+pub fn kind_dropdown_size(ui: &nexus::imgui::Ui, theme: &Theme, language: Language) -> [f32; 2] {
     [
-        trailkit_ui::dropdown::dropdown_width(ui, &kind_labels(language)),
+        trailkit_ui::dropdown::dropdown_width(ui, theme, &kind_labels(language)),
         ui.frame_height(),
     ]
 }

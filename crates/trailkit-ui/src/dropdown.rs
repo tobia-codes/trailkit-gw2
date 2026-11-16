@@ -20,16 +20,17 @@ use crate::{
 };
 
 /// The width of a dropdown with `options`: the widest option plus padding,
-/// a gap and the chevron, e.g. to right-align it or to decide whether it
-/// fits next to something else.
+/// a `spacing.extra_large` gap and the chevron (roomy, not squeezed: memo
+/// Q444), e.g. to right-align it or to decide whether it fits next to
+/// something else.
 #[must_use]
-pub fn dropdown_width(ui: &Ui, options: &[&str]) -> f32 {
+pub fn dropdown_width(ui: &Ui, theme: &Theme, options: &[&str]) -> f32 {
     let style = ui.clone_style();
     let widest = options
         .iter()
         .map(|option| ui.calc_text_size(option)[0])
         .fold(0.0, f32::max);
-    widest + 2.0 * style.frame_padding[0] + style.item_spacing[0] + icon_width(ui)
+    widest + 2.0 * style.frame_padding[0] + theme.spacing.extra_large + icon_width(ui)
 }
 
 /// Draws a dropdown showing `options[selected]` and returns the index the
@@ -47,7 +48,7 @@ pub fn draw_dropdown(
     options: &[&str],
     selected: usize,
 ) -> Option<usize> {
-    let width = dropdown_width(ui, options);
+    let width = dropdown_width(ui, theme, options);
     let style = ui.clone_style();
     let _id = ui.push_id(id);
 
@@ -90,9 +91,11 @@ fn draw_option_list(
 ) -> (Option<usize>, bool) {
     let width = max[0] - min[0];
     // The rows need room for the widest option, a gap and the check mark
-    // inside the popup's own padding.
-    let list_width =
-        width.max(width - 2.0 * style.frame_padding[0] + 2.0 * style.window_padding[0]);
+    // inside the popup's own padding, plus the row padding the check mark
+    // keeps from the row's end like in every menu (M177).
+    let list_width = width
+        .max(width - 2.0 * style.frame_padding[0] + 2.0 * style.window_padding[0])
+        + theme.menu.row_padding_x;
     place_next_popup([min[0], max[1]], 0.0);
     // SAFETY: a plain ImGui call on the render thread inside a frame; it only
     // sets the minimum size of the next window (the popup).
@@ -134,7 +137,7 @@ fn draw_option_list(
                 draw_icon(
                     ui,
                     Icon::CHECK,
-                    row_max[0] - icon_width(ui),
+                    row_max[0] - theme.menu.row_padding_x - icon_width(ui),
                     [row_min[1], row_max[1]],
                     packed(theme.accent.text),
                 );
