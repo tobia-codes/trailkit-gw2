@@ -129,13 +129,11 @@ mockup. Deploy `develop` once PR #125 is merged (Setup 1).
 
 ### 15 · Note list: rename and drag & drop
 
-- **Open finding (2026-11-16):** the user saw (b)–(c) work, but a group kept the
-  gold rename frame after another note was selected, and Delete did nothing
-  meanwhile (M175 waits while a rename is open); both went away later. Steps
-  unknown. Suspicion, unproven: the rename input never became active, so it
-  never deactivates (`note_list/rename.rs`). Try: create a group, click
-  another note at once; double-click a title, click into the game; then
-  check the frame and Delete. If it repeats, a `bugfix/` branch.
+- **Finding (2026-11-16), fixed on `bugfix/memo-stuck-rename`:** a rename
+  outlived its input when the list was not drawn for a frame (window closed,
+  trash, editor); the gold frame stayed and Delete, double-click and the
+  context menu did nothing. The user confirmed the fix in game; (a)–(c)
+  passed. Remove this test once the bugfix is merged.
 - **Get there:** the note list with a group and notes (Setup 3).
 - **Look at:** (a) double-click a group title, rename it, Enter; double-click
   a note title, press Escape. (b) drag a note into a collapsed group, rest on
@@ -147,3 +145,20 @@ mockup. Deploy `develop` once PR #125 is merged (Setup 1).
   collapsed group opens after a moment, the title floats next to the cursor
   (red with a ban icon over its own child), the list scrolls near the edges.
   (c) no drag; the tooltip says to clear the search to move.
+
+## Audit of stuck UI states (2026-11-16)
+
+### 17 · Releasing the mouse over the game world
+
+No design change, so no mockup. Clicks into the game world never reach ImGui
+(nexus-addon-dev skill); unknown whether a mouse **release** there does. If
+not, ImGui thinks the button is still held.
+
+- **Get there:** (a) drag a note in the list and release the mouse **outside**
+  the memo window, over the game; (b) select a note › Edit › drag a text
+  selection out of the window and release over the game; (c) drag the
+  splitter between list and note out of the window and release over the game.
+- **Look at:** the window after moving the mouse back in, without clicking.
+- **Expected:** (a) the drag ended, nothing moved, no floating title;
+  (b) the selection stopped growing; (c) the splitter no longer follows the
+  mouse. If any keeps going until the next click, report it: a `bugfix/`.
