@@ -2049,6 +2049,7 @@ dependencies = [
  "anyhow",
  "resvg",
  "serde_json",
+ "tempfile",
  "toml_edit",
  "trailkit-ui",
 ]
