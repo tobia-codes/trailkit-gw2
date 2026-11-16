@@ -401,7 +401,10 @@ fn layout_group(
         selection_bar_inset,
     } = list;
     let PaneLayout { padding, gap } = pane;
-    let ButtonLayout { min_width } = button;
+    let ButtonLayout {
+        min_width,
+        dropdown_max_width,
+    } = button;
     let MenuLayout {
         padding: menu_padding,
         row_padding_x,
@@ -430,6 +433,11 @@ fn layout_group(
                 id: "button.min_width",
                 value: TokenValue::FontSizeFactor(min_width),
                 purpose: "Minimum width of a text button",
+            },
+            Token {
+                id: "button.dropdown_max_width",
+                value: TokenValue::FontSizeFactor(dropdown_max_width),
+                purpose: "Maximum width of a dropdown field",
             },
             pixels(
                 "menu.padding",

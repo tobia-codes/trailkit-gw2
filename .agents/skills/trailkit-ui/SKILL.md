@@ -154,7 +154,10 @@ Build once, use everywhere. Planned:
 - Dropdown (select box) — **exists**: `dropdown::draw_dropdown`, **one
   dropdown for every place** (R71): button height, filled like a button
   (`bg.hover`) with a `border` frame, chevron, popup list, check mark on the
-  chosen option; fixed width of the widest option (memo M87); never tinted (memo M193).
+  chosen option; width of the widest option (memo M87) with room before the
+  chevron (R127), at most `button.dropdown_max_width` and the room in its line;
+  long options end with "…" in the field and wrap on two lines in the list
+  (R128); never tinted (memo M193).
   No compact or other variants. Never ImGui's plain combo
 - Selection bar — **exists**: `selection_bar::draw_selection_bar`, called
   right after the selected row's tree node (R71), with the rounded row fill
