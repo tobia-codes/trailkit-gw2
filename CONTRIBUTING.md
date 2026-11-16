@@ -161,7 +161,7 @@ the player, so these rules are strict. The reference with the details:
 
 ## 6. UI rules
 
-All addons share one look: calm, flat, rounded, a brass accent used sparingly,
+All addons share one look: calm, flat, rounded, a violet accent used sparingly,
 Dark and Light themes. Read the [`trailkit-ui` skill](.agents/skills/trailkit-ui/SKILL.md)
 and [`current-design.md`](.agents/skills/trailkit-ui/references/current-design.md)
 before changing anything visible.

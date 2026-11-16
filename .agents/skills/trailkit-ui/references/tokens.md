@@ -26,24 +26,25 @@ and `theme.rs` disagree, `theme.rs` wins and the difference is a bug to report.
 | Window frame, gaps between panes | `bg.window` | text directly on it |
 | Content region | `bg.panel` via `pane::draw_pane` | a bare `ChildWindow` |
 | Text field, search | `bg.input` | |
-| Hovered row or ghost button | `bg.hover` | a brass hover |
+| Hovered row or ghost button | `bg.hover` | an accent hover |
 | Hovered row inside a popup | `bg.popup_hover` via `menu::draw_popup` | `bg.hover`, invisible on `bg.popup` |
-| Selected or pressed list row | `bg.active` + selection bar | a brass fill |
+| Selected or pressed list row | `bg.active` + selection bar | an accent fill |
 | Pressed regular button, dropdown, menu row | `bg.pressed` | the same color as its hover |
-| Hovered / pressed brass button | `accent.hover` / `accent.active` (R107) | a lighter brass, transparency |
-| Delete button: rest / hovered / pressed, label `bg.window` | `danger` / `danger.hover` / `danger.active` (R105, R107) | transparency, a `danger` label on a regular button |
+| Hovered / pressed primary button | `accent.hover` / `accent.active` (R107) | a lighter accent, transparency |
+| Delete button: rest / hovered / pressed, label `text.on_danger` | `danger.fill` / `danger.fill_hover` / `danger.fill_active` (R105, R107, R125) | `danger` as a fill, transparency, a `danger` label on a regular button |
 | Any text: headings, body, info, fine print | its text role (§7.1) via `TextStyle` | font or color pushed by hand |
 | Structure marks (bullets, tree chevrons, empty-state icon), disabled controls | `text.disabled` | `text.disabled` for readable text |
 | Primary button fill, selection bar | `accent` | `accent` as text or a thin line |
-| Brass text, icon or line (active toggle, check mark, drop line, focus) | `accent.text` | `accent` |
-| Text on a brass fill | `text.on_accent` | any other text color |
+| Accent text, icon or line (active toggle, check mark, drop line, focus) | `accent.text` | `accent` |
+| Text on an accent fill | `text.on_accent` | any other text color |
 | Status | `success`, `warning`, `danger`, `info`, always with an icon | color alone |
 | Chat-link chips | `chip.<category>` (§4) | `accent` |
-| Reset badges | `reset.daily`, `reset.weekly` | |
+| Row badges (reset kind, memo M193) | `text.secondary` icon | a color per kind |
 
-## 3. The brass budget
+## 3. The accent budget
 
-Brass (`accent`, `accent.text`, `accent.highlight`) marks exactly four things:
+The violet accent (R124; brass before it) — `accent`, `accent.text`,
+`accent.highlight` — marks exactly four things:
 
 1. **The primary action** of a view: one `draw_primary_button` per view
    (Save while editing, Edit while reading). Secondary actions use
@@ -54,10 +55,10 @@ Brass (`accent`, `accent.text`, `accent.highlight`) marks exactly four things:
 4. **Search hits** (R73, memo M122): `accent.highlight` behind matching
    text, an `accent.text` frame around a matching chip.
 
-Brass never fills large areas, never decorates, and never marks a category.
+The accent never fills large areas, never decorates, and never marks a category.
 If a design needs a fifth use, it needs a decision first (grill-me).
 
-**Toggles that keep a state are never brass (R79).** A button that switches
+**Toggles that keep a state never use the accent (R79).** A button that switches
 something on and off and stays that way (show tools, show the note list,
 show the search field, compact view, …) is drawn with
 `button::draw_icon_toggle`: while on it sits on `bg.active` with a
@@ -181,7 +182,7 @@ Rules:
 - **Neutral surfaces** (regular and icon buttons, menu and list rows): rest,
   hover and pressed are steps of the gray scale `bg.hover` → `bg.active` →
   `bg.pressed`; each step stands out more from its ground.
-- **Colored filled buttons** (brass, red, any new color): hover is the rest
+- **Colored filled buttons** (accent, red, any new color): hover is the rest
   fill darkened by `HOVER_DARKENING` (8 % OKLab lightness), pressed by
   `PRESSED_DARKENING` (12 %), in both themes, hue kept. Store the results as
   hex tokens next to the rest color; `button_state_fills_follow_the_darkening_rule`
@@ -206,8 +207,8 @@ Rules:
 ## 9. Review checklist for tokens
 
 - [ ] No literal colors or sizes outside `theme.rs`
-- [ ] `accent` only as a fill; `accent.text` for brass text, icons, lines
-- [ ] At most one primary (brass) button per view
+- [ ] `accent` only as a fill; `accent.text` for accent text, icons, lines
+- [ ] At most one primary (accent) button per view
 - [ ] Selected rows use the selection bar, not a colored fill
 - [ ] Chips use their category colors; invalid links are warnings
 - [ ] Radius matches the element, nothing is square, hover states included (§5, R81)

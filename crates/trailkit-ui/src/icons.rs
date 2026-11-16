@@ -25,6 +25,10 @@ impl Icon {
     pub const PANEL_LEFT: Self = Self('\u{e12a}');
     /// `arrow-left`: goes back to the previous view (memo M154).
     pub const ARROW_LEFT: Self = Self('\u{e048}');
+    /// `calendar-1`: a daily reset note (memo M193).
+    pub const CALENDAR_1: Self = Self('\u{e630}');
+    /// `calendar-days`: a weekly reset note (memo M193).
+    pub const CALENDAR_DAYS: Self = Self('\u{e2b9}');
     /// `square`: unchecked task.
     pub const SQUARE: Self = Self('\u{e167}');
     /// `square-check`: checked task (tick inside the box, M64).
@@ -122,7 +126,7 @@ impl Icon {
     /// (Q171, R100).
     pub const CIRCLE_HELP: Self = Self('\u{e082}');
     /// Every icon above; keep in sync when adding one.
-    pub const ALL: [Self; 52] = [
+    pub const ALL: [Self; 54] = [
         Self::FOLDER_INPUT,
         Self::MENU,
         Self::FILE_TEXT,
@@ -138,6 +142,8 @@ impl Icon {
         Self::FOLDER_PLUS,
         Self::PANEL_LEFT,
         Self::ARROW_LEFT,
+        Self::CALENDAR_1,
+        Self::CALENDAR_DAYS,
         Self::SQUARE,
         Self::SQUARE_CHECK,
         Self::TRIANGLE_ALERT,

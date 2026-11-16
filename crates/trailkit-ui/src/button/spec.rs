@@ -32,7 +32,7 @@ pub enum ButtonKind {
     /// "Cancel", also on a tinted toast or status card (R103).
     #[default]
     Regular,
-    /// The one primary (brass) button of a view (`lay-one-primary`).
+    /// The one primary (accent) button of a view (`lay-one-primary`).
     Primary,
     /// The `danger` fill of every delete button, e.g. "Empty trash" or the
     /// confirming button of a delete question (R105, memo M146).
@@ -340,10 +340,10 @@ impl ButtonColors {
                 bordered: false,
             },
             ButtonKind::DangerFill => Self {
-                fill: theme.status.danger,
-                hovered: theme.status.danger_hover,
-                pressed: theme.status.danger_active,
-                label: theme.surface.window,
+                fill: theme.status.danger_fill,
+                hovered: theme.status.danger_fill_hover,
+                pressed: theme.status.danger_fill_active,
+                label: theme.text.on_danger,
                 bordered: false,
             },
         };
@@ -352,7 +352,7 @@ impl ButtonColors {
             // Busy keeps its look; it is no ImGui button, so it has no hover
             // or pressed fill.
             ButtonState::Busy => ready,
-            // A disabled button never shines brass or red: the regular fill
+            // A disabled button never shines in the accent or red: the regular fill
             // with a `text.disabled` label.
             ButtonState::Disabled { .. } => Self {
                 label: theme.text.disabled,

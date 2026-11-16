@@ -83,7 +83,7 @@ impl DraftHint {
             style: TextStyle::Secondary,
         });
         // "Discard" is shared with the unsaved-changes question; it throws
-        // the draft away for good, so it is red (R106). The brass button
+        // the draft away for good, so it is red (R106). The primary button
         // last (R103, Q349).
         let buttons = [
             Button::new(Text::DiscardChanges.get(language)).kind(ButtonKind::DangerFill),

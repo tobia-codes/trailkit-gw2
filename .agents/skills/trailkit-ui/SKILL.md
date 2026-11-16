@@ -10,7 +10,7 @@ the **single source of truth** for UI/UX in this repo. The detailed rule set
 (game overlay, accessibility, interaction, forms, layout, navigation, states,
 charts) lives in [`references/ux-rules.md`](references/ux-rules.md) — read it
 before designing a new window or component and when reviewing UI. How to use
-the theme tokens (which token for what, the brass budget, chips, selection,
+the theme tokens (which token for what, the accent budget, chips, selection,
 adding a token) is binding in [`references/tokens.md`](references/tokens.md) —
 read it before touching any color, size or radius, and review every new or
 changed snapshot against it before handing a UI change over (§10, R82). Do not apply
@@ -29,7 +29,7 @@ Read only reference sections relevant to the task, rather than every linked file
 1. **Consistency over novelty** — same component, same look, same place, in
    every addon.
 2. **Calm, flat, always rounded (nothing is square, hover states included: R81)** — ink-tinted dark and parchment-warm
-   light surfaces with one brass accent spent sparingly (R71); radii 4 / 6 /
+   light surfaces with one violet accent spent sparingly (R71, R124); radii 4 / 6 /
    10 by element size; windows, panes, popups and dialogs get a faint 1 px
    `border.subtle` outline (memo M103); no highlight edges, no shadows —
    except tooltips: `border` outline, `radius.sm` and a hard 2 px
@@ -59,7 +59,7 @@ both themes and its purpose is listed in
 
 - **Built-in themes:** `Dark` (default) and `Light`. Both are full token sets.
   Values: `crates/trailkit-ui/src/theme.rs` (palette R71, supersedes R51:
-  ink-tinted dark and parchment-warm light surfaces, brass accent). The
+  ink-tinted dark and parchment-warm light surfaces, violet accent R124). The
   "Trailkit" design system in Claude Design is no longer a reference (R84). The themes are
   called just "Dark" and "Light", in code and in the UI. Unit tests enforce
   ≥ 4.5:1 for every text color on every surface and for chip text on its
@@ -114,10 +114,10 @@ Build once, use everywhere. Planned:
   the text in a normal text role, buttons at the left edge (R103: only
   primary, regular and delete) and an optional close `x` (`draw_icon_button`).
   `fits_status_card_line` lets a caller break a long text on purpose
-- Only two button styles (R103) plus delete (R105): brass primary and
+- Only two button styles (R103) plus delete (R105): accent primary and
   regular; every button that deletes, and every button that throws data
   away for good ("Discard", R106), is the `danger` fill
-  (`ButtonKind::DangerFill`) and takes the brass button's place in a row;
+  (`ButtonKind::DangerFill`, `danger.fill`, R125) and takes the primary button's place in a row;
   icon buttons like the close `x` look like every other one. A delete entry
   in a menu uses `MenuItemTone::Danger`. Hover and pressed fills follow one
   rule (R107, `tokens.md` §2 Button states)
@@ -154,9 +154,8 @@ Build once, use everywhere. Planned:
 - Dropdown (select box) — **exists**: `dropdown::draw_dropdown`, **one
   dropdown for every place** (R71): button height, filled like a button
   (`bg.hover`) with a `border` frame, chevron, popup list, check mark on the
-  chosen option; fixed width of the widest option (memo M87); an optional
-  `tint` colors frame, text, chevron and check mark (e.g. the reset kind,
-  M104). No compact or other variants. Never ImGui's plain combo
+  chosen option; fixed width of the widest option (memo M87); never tinted (memo M193).
+  No compact or other variants. Never ImGui's plain combo
 - Selection bar — **exists**: `selection_bar::draw_selection_bar`, called
   right after the selected row's tree node (R71), with the rounded row fill
   `draw_row_highlight`; the `_in` variants take the row rect for
@@ -188,7 +187,7 @@ move it into `crates/trailkit-ui` (see AGENTS.md "Code sharing").
   non-obvious options, changes apply live (no "Apply" button) except
   destructive/import actions.
 - Lists: consistent row height, hover highlight, selected state (`bg.active`
-  plus the brass selection bar, never a colored fill), context menu
+  plus the accent selection bar, never a colored fill), context menu
   on right-click with the same actions as visible buttons. Item names start
   flush left; per-item icons and badges sit right-aligned at the row end
   (the name is truncated before them); only structural controls such as a
@@ -204,16 +203,11 @@ move it into `crates/trailkit-ui` (see AGENTS.md "Code sharing").
   `GUI_RegisterCloseOnEscape`).
 - Text buttons: always `button::draw_button` / `draw_primary_button`, never
   `ui.button` with a text label (text fonts sit low in ImGui's centering,
-  memo M85). One `draw_primary_button` per view at most (brass budget,
+  memo M85). One `draw_primary_button` per view at most (accent budget,
   `references/tokens.md` §3).
-- A single glyph centered in a box (badge letters, later icons in boxes):
-  measure its *visible* ink with `glyph_metrics::glyph_visible_ink` (font
-  atlas pixels; the quad from `glyph_ink_box` is widened unevenly by
-  ImGui's oversampling). Horizontally draw it with `draw_glyph_at` at the
-  exact sub-pixel centre (`add_text` floors to whole pixels); vertically
-  give the box the parity whose centre matches the ink centre's fraction
-  (never round the ink size). Boxes of one kind keep one width so they line
-  up (memo M132; `badge_geometry` in the memo note-list slice).
+- A row marker (reset badge, unsaved mark): a Lucide icon at the row end,
+  centered on the title's capitals by its visible ink
+  (`glyph_metrics::icon_visible_box`), never a letter in a box (memo M193).
 - Tooltips: always `tooltip::draw_tooltip` or `draw_tooltip_with`, which center the
   text by its capitals (M171; clippy bans the ImGui calls); `StyleScope` moves them right of the real
   cursor (GW2's cursor is large, memo M84) — never position them by hand.

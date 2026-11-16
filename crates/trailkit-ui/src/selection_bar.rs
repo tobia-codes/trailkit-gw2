@@ -1,4 +1,4 @@
-//! The selection bar: the brass mark of the selected row in trees and lists
+//! The selection bar: the accent mark of the selected row in trees and lists
 //! (trailkit-ui skill §4, ROADMAP R71).
 //!
 //! [`draw_row_state`] shows a row's state: the rounded hover or selection

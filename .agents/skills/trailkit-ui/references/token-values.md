@@ -26,17 +26,18 @@ use which token is binding in [`tokens.md`](tokens.md).
 | `text.secondary` | #9AA4B2 | #555C66 | Counts, hints, placeholders |
 | `text.disabled` | #5E6876 | #9AA0A8 | Disabled controls, decorative marks |
 | `text.link` | #8DB8F0 | #1F5DB0 | Links |
-| `text.on_accent` | #17130A | #17130A | Text on an `accent` fill |
+| `text.on_accent` | #FFFFFF | #FFFFFF | Text on an `accent` fill |
+| `text.on_danger` | #E9ECF1 | #EFEDE8 | Label of a delete button on `danger.fill` |
 
 ## Accent
 
 | Token | Dark | Light | Purpose |
 | --- | --- | --- | --- |
-| `accent` | #E2A740 | #E2A740 | Fill of the primary button, selection bar |
-| `accent.hover` | #C88E1E | #C88E1E | Hovered primary button (8 % darker, R107) |
-| `accent.active` | #BB8200 | #BB8200 | Pressed primary button (12 % darker, R107) |
-| `accent.text` | #E8B055 | #8A5A10 | Brass as text, icon or line |
-| `accent.highlight` | #E2A740 at 24 % | #E2A740 at 42 % | Behind search hits |
+| `accent` | #8A55C8 | #8A55C8 | Fill of the primary button, selection bar |
+| `accent.hover` | #733CAE | #733CAE | Hovered primary button (8 % darker, R107) |
+| `accent.active` | #672FA0 | #672FA0 | Pressed primary button (12 % darker, R107) |
+| `accent.text` | #B48AE6 | #6A3BAA | Accent as text, icon or line |
+| `accent.highlight` | #8A55C8 at 24 % | #8A55C8 at 22 % | Behind search hits |
 
 ## Status
 
@@ -44,10 +45,11 @@ use which token is binding in [`tokens.md`](tokens.md).
 | --- | --- | --- | --- |
 | `success` | #5CC48A | #176B3C | Success |
 | `warning` | #E9B44C | #8A5A00 | Warnings, invalid chat links |
-| `danger` | #F08A84 | #B3261E | Destructive actions, fill of delete buttons |
-| `danger.hover` | #D4716C | #970000 | Hovered delete button (8 % darker, R107) |
-| `danger.active` | #C76561 | #890000 | Pressed delete button (12 % darker, R107) |
-| `danger.subtle` | #45353B | #F7E9E8 | Fill of an error toast or a danger status card |
+| `danger` | #F08A84 | #B3261E | Red text and icons: delete menu entries, error icons |
+| `danger.fill` | #B83A33 | #B3261E | Fill of delete buttons, frame of error toasts and cards |
+| `danger.fill_hover` | #9D1D1B | #970000 | Hovered delete button (8 % darker, R107) |
+| `danger.fill_active` | #8F070E | #890000 | Pressed delete button (12 % darker, R107) |
+| `danger.subtle` | #3A252B | #F7E9E8 | Fill of an error toast or a danger status card |
 | `warning.subtle` | #3B382F | #F3EEE5 | Fill of a warning status card |
 | `info` | #7AB0F0 | #1F5DB0 | Information |
 
@@ -56,29 +58,22 @@ use which token is binding in [`tokens.md`](tokens.md).
 | Token | Dark | Light | Purpose |
 | --- | --- | --- | --- |
 | `border` | #2A323E | #D6D1C7 | Frame of inputs and dropdowns |
-| `border.focus` | #E8B055 | #8A5A10 | Focused element |
+| `border.focus` | #B48AE6 | #6A3BAA | Focused element |
 | `border.subtle` | #FFFFFF at 6 % | #1E180C at 8 % | Dividers, outline of windows, panes, popups, dialogs |
 | `border.width` | 1 px | 1 px | Border thickness |
-
-## Reset kinds
-
-| Token | Dark | Light | Purpose |
-| --- | --- | --- | --- |
-| `reset.daily` | #E8B055 | #8A5A10 | Badge and dropdown of daily notes |
-| `reset.weekly` | #B8A6F0 | #6141B5 | Badge and dropdown of weekly notes |
 
 ## Chat-link chips
 
 | Token | Dark | Light | Purpose |
 | --- | --- | --- | --- |
-| `chip.place.text` | #E89A6B | #A2471A | Map points, WvW objectives |
-| `chip.place.background` | #2E292A | #FBE9DF | Map points, WvW objectives |
-| `chip.character.text` | #8DB8F0 | #1F5DB0 | Skills, traits, builds |
-| `chip.character.background` | #232D3A | #E5EEFA | Skills, traits, builds |
+| `chip.place.text` | #8DB8F0 | #1F5DB0 | Map points, WvW objectives |
+| `chip.place.background` | #232D3A | #E5EEFA | Map points, WvW objectives |
+| `chip.character.text` | #E89A6B | #A2471A | Skills, traits, builds |
+| `chip.character.background` | #2E292A | #FBE9DF | Skills, traits, builds |
 | `chip.item.text` | #6CCDB3 | #0E6E58 | Items, recipes, skins, outfits, coins |
 | `chip.item.background` | #1F2E31 | #DDF2EB | Items, recipes, skins, outfits, coins |
-| `chip.progress.text` | #B8A6F0 | #6141B5 | Achievements, NPC texts, players |
-| `chip.progress.background` | #2A2C3C | #EDE8FA | Achievements, NPC texts, players |
+| `chip.progress.text` | #E890B8 | #A3346B | Achievements, NPC texts, players |
+| `chip.progress.background` | #302630 | #F9E6EF | Achievements, NPC texts, players |
 
 ## Coins
 

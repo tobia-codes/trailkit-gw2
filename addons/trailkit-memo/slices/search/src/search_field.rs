@@ -1,6 +1,6 @@
 //! The search field above the note list (memo plan M118, M123, M128): a
 //! `bg.input` field a little taller than a button with a Lucide magnifier, a hint, an `x` that
-//! clears it and a brass frame while focused.
+//! clears it and an accent frame while focused.
 //!
 //! Lives in memo until a second addon needs a search field (AGENTS.md
 //! rule 7); the settings window will be the likely second user.

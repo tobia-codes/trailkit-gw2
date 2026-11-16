@@ -312,15 +312,13 @@ fn dropdown_states_match_snapshots() {
     let away = [240.0, 160.0];
     for (kind, theme_name) in THEMES {
         let theme = kind.theme();
-        for (name, tint) in [
-            ("dropdown", None),
-            ("dropdown-tinted", Some(theme.reset.daily)),
-        ] {
+        {
+            let name = "dropdown";
             let options = ["Normal", "Daily reset", "Weekly reset"];
             let mut harness = UiHarness::new(size);
             let mut draw = |ui: &Ui| {
                 in_window(ui, &theme, size, || {
-                    draw_dropdown(ui, &theme, tint, "kind", "Reset type", &options, 0);
+                    draw_dropdown(ui, &theme, "kind", "Reset type", &options, 0);
                 });
             };
             let names = |state| (name, state, theme_name);

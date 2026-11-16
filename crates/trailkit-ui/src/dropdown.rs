@@ -38,12 +38,10 @@ pub fn dropdown_width(ui: &Ui, options: &[&str]) -> f32 {
 /// options alone may not say what is chosen, `a11y-icon-tooltip`).
 ///
 /// There is one dropdown for every place (R71): button height, filled like a
-/// button (`bg.hover`) with a `border` frame. `tint` colors border, text,
-/// chevron and check mark, e.g. with the chosen reset kind (memo M104).
+/// button (`bg.hover`) with a `border` frame.
 pub fn draw_dropdown(
     ui: &Ui,
     theme: &Theme,
-    tint: Option<Color>,
     id: &str,
     tooltip: &str,
     options: &[&str],
@@ -60,7 +58,7 @@ pub fn draw_dropdown(
     if clicked {
         ui.open_popup(OPTION_LIST_ID);
     }
-    let (picked, is_open) = draw_option_list(ui, theme, &style, tint, options, selected, bounds);
+    let (picked, is_open) = draw_option_list(ui, theme, &style, options, selected, bounds);
     if is_hovered && !is_open {
         draw_tooltip(ui, theme, tooltip);
     }
@@ -68,7 +66,6 @@ pub fn draw_dropdown(
         ui,
         theme,
         &style,
-        tint,
         options.get(selected).copied(),
         bounds,
         is_open,
@@ -87,7 +84,6 @@ fn draw_option_list(
     ui: &Ui,
     theme: &Theme,
     style: &Style,
-    tint: Option<Color>,
     options: &[&str],
     selected: usize,
     [min, max]: [[f32; 2]; 2],
@@ -140,7 +136,7 @@ fn draw_option_list(
                     Icon::CHECK,
                     row_max[0] - icon_width(ui),
                     [row_min[1], row_max[1]],
-                    packed(tint.unwrap_or(theme.accent.text)),
+                    packed(theme.accent.text),
                 );
             }
         }
@@ -155,17 +151,16 @@ fn draw_selected_content(
     ui: &Ui,
     theme: &Theme,
     style: &Style,
-    tint: Option<Color>,
     label: Option<&str>,
     [min, max]: [[f32; 2]; 2],
     is_open: bool,
 ) {
     let frame_padding = style.frame_padding[0];
-    let border = tint.unwrap_or(if is_open {
+    let border = if is_open {
         theme.border.focus
     } else {
         theme.border.color
-    });
+    };
     draw_border(
         min,
         max,
@@ -178,7 +173,7 @@ fn draw_selected_content(
             label,
             min[0] + frame_padding,
             [min[1], max[1]],
-            packed(tint.unwrap_or(theme.text.primary)),
+            packed(theme.text.primary),
         );
     }
     draw_icon(
@@ -186,7 +181,7 @@ fn draw_selected_content(
         Icon::CHEVRON_DOWN,
         max[0] - frame_padding - icon_width(ui),
         [min[1], max[1]],
-        packed(tint.unwrap_or(theme.text.secondary)),
+        packed(theme.text.secondary),
     );
 }
 

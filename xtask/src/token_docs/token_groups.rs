@@ -6,7 +6,7 @@ use trailkit_ui::{
     color::Color,
     theme::{
         AccentColors, BorderTokens, ButtonLayout, ChipCategoryColors, ChipColors, CoinColors,
-        EventColors, ListLayout, MenuLayout, PaneLayout, Radii, ResetColors, ShadowTokens, Spacing,
+        EventColors, ListLayout, MenuLayout, PaneLayout, Radii, ShadowTokens, Spacing,
         StatusColors, SurfaceColors, TextColors, Theme, Typography,
     },
 };
@@ -125,6 +125,7 @@ fn text_group(colors: TextColors) -> TokenGroup {
         disabled,
         link,
         on_accent,
+        on_danger,
     } = colors;
     TokenGroup {
         title: "Text",
@@ -138,6 +139,11 @@ fn text_group(colors: TextColors) -> TokenGroup {
             ),
             color("text.link", link, "Links"),
             color("text.on_accent", on_accent, "Text on an `accent` fill"),
+            color(
+                "text.on_danger",
+                on_danger,
+                "Label of a delete button on `danger.fill`",
+            ),
         ],
     }
 }
@@ -165,7 +171,7 @@ fn accent_group(colors: AccentColors) -> TokenGroup {
                 active,
                 "Pressed primary button (12 % darker, R107)",
             ),
-            color("accent.text", text, "Brass as text, icon or line"),
+            color("accent.text", text, "Accent as text, icon or line"),
             color("accent.highlight", highlight, "Behind search hits"),
         ],
     }
@@ -177,8 +183,9 @@ fn status_group(colors: StatusColors) -> TokenGroup {
         success,
         warning,
         danger,
-        danger_hover,
-        danger_active,
+        danger_fill,
+        danger_fill_hover,
+        danger_fill_active,
         danger_subtle,
         warning_subtle,
         info,
@@ -191,16 +198,21 @@ fn status_group(colors: StatusColors) -> TokenGroup {
             color(
                 "danger",
                 danger,
-                "Destructive actions, fill of delete buttons",
+                "Red text and icons: delete menu entries, error icons",
             ),
             color(
-                "danger.hover",
-                danger_hover,
+                "danger.fill",
+                danger_fill,
+                "Fill of delete buttons, frame of error toasts and cards",
+            ),
+            color(
+                "danger.fill_hover",
+                danger_fill_hover,
                 "Hovered delete button (8 % darker, R107)",
             ),
             color(
-                "danger.active",
-                danger_active,
+                "danger.fill_active",
+                danger_fill_active,
                 "Pressed delete button (12 % darker, R107)",
             ),
             color(
@@ -256,18 +268,6 @@ fn shadow_group(tokens: ShadowTokens) -> TokenGroup {
                 popup_offset,
                 "How far it reaches below",
             ),
-        ],
-    }
-}
-
-/// The colors of the reset note kinds.
-fn reset_group(colors: ResetColors) -> TokenGroup {
-    let ResetColors { daily, weekly } = colors;
-    TokenGroup {
-        title: "Reset kinds",
-        tokens: vec![
-            color("reset.daily", daily, "Badge and dropdown of daily notes"),
-            color("reset.weekly", weekly, "Badge and dropdown of weekly notes"),
         ],
     }
 }
@@ -519,7 +519,6 @@ pub(super) fn token_groups(theme: Theme) -> Vec<TokenGroup> {
         border,
         event,
         coin,
-        reset,
         chip,
         spacing,
         list,
@@ -536,7 +535,6 @@ pub(super) fn token_groups(theme: Theme) -> Vec<TokenGroup> {
         accent_group(accent),
         status_group(status),
         border_group(border),
-        reset_group(reset),
         chip_group(chip),
         coin_group(coin),
         event_group(event),

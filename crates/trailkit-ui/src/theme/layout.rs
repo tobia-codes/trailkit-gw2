@@ -24,7 +24,7 @@ pub struct ListLayout {
     pub item_spacing: f32,
     /// `list.indent`: indentation per tree level.
     pub indent: f32,
-    /// `list.selection_bar_width`: width of the brass bar on the left edge
+    /// `list.selection_bar_width`: width of the accent bar on the left edge
     /// of the selected row (R71).
     pub selection_bar_width: f32,
     /// `list.selection_bar_inset`: gap between the bar and the top and
