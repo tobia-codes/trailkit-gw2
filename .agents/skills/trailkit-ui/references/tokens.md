@@ -73,22 +73,24 @@ editor's formatting buttons that light up for the formatting at the cursor
 
 ## 4. Chat-link chips
 
-`ChatLinkKind::category()` assigns every link kind to one of four groups;
+`ChatLinkKind::category()` assigns every link kind to one of five groups;
 `theme.chip.for_category()` returns its `text` and `background`.
 
 | Category | Kinds | Color |
 | --- | --- | --- |
-| `Place` | map point, WvW objective | copper |
-| `Character` | skill, trait, build | blue |
-| `Item` | item, recipe, skin, outfit, coins | jade |
-| `Progress` | achievement, NPC text, player | violet |
+| `map_point` | map point (waypoint, point of interest, vista) | blue, like waypoints in the game (R126) |
+| `wvw_objective` | WvW objective | blue like map points for now; own tokens to restyle it alone (Q459) |
+| `character` | skill, trait, build | copper |
+| `item` | item, recipe, skin, outfit, coins | jade |
+| `progress` | achievement, NPC text, player | rosé |
 
 - Icon and kind label use the category `text` color, the id (`#825`) uses
   `text.secondary`, coin amounts `text.primary` with `coin.*` dots.
 - Invalid links (unknown type and damaged code alike) are a **warning**:
   neutral fill, `warning` frame, icon and label.
-- A new link kind joins an existing category. A fifth category needs a
-  decision first.
+- A new link kind joins an existing category. A new category needs a
+  decision first (splitting map points into waypoint, point of interest and
+  vista waits for map data, BACKLOG).
 
 ## 5. Shape and edges
 
@@ -197,7 +199,7 @@ Rules:
 
 1. Decide it first (grill-me) and record it in `docs/plans/ROADMAP.md`.
 2. Add it to the token file of its family in `design/tokens/` with its
-   `name` (`chip.place`, `radius.md`, …), a fixed value for **both** themes
+   `name` (`chip.map_point.text`, `radius.md`, …), a fixed value for **both** themes
    (colors) or one value with its `unit`, and its `purpose`; values are never
    derived (Q454). Run `cargo xtask tokens`, then add the field with a doc
    comment to its type in `trailkit-ui/src/theme/` (the crate does not compile

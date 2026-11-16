@@ -126,17 +126,19 @@ pub struct ChipCategoryColors {
     pub background: Color,
 }
 
-/// The four chat-link chip categories (R71); `ChatLinkKind::category`
-/// assigns every link kind to one of them.
+/// The five chat-link chip categories (R71, R126, Q459);
+/// `ChatLinkKind::category` assigns every link kind to one of them.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ChipColors {
-    /// `chip.place`: map point, WvW objective (copper).
-    pub place: ChipCategoryColors,
-    /// `chip.character`: skill, trait, build (blue).
+    /// `chip.map_point`: waypoint, point of interest, vista (blue).
+    pub map_point: ChipCategoryColors,
+    /// `chip.wvw_objective`: WvW objective (blue like map points for now).
+    pub wvw_objective: ChipCategoryColors,
+    /// `chip.character`: skill, trait, build (copper).
     pub character: ChipCategoryColors,
     /// `chip.item`: item, recipe, skin, outfit, coins (jade).
     pub item: ChipCategoryColors,
-    /// `chip.progress`: achievement, NPC text, player (violet).
+    /// `chip.progress`: achievement, NPC text, player (rosé).
     pub progress: ChipCategoryColors,
 }
 
@@ -145,7 +147,8 @@ impl ChipColors {
     #[must_use]
     pub const fn for_category(&self, category: ChipCategory) -> ChipCategoryColors {
         match category {
-            ChipCategory::Place => self.place,
+            ChipCategory::MapPoint => self.map_point,
+            ChipCategory::WvwObjective => self.wvw_objective,
             ChipCategory::Character => self.character,
             ChipCategory::Item => self.item,
             ChipCategory::Progress => self.progress,

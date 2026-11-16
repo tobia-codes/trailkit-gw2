@@ -206,7 +206,8 @@ fn chip_text_meets_contrast_minimum_on_its_fill() {
         let theme = kind.theme();
         let chip = theme.chip;
         for (name, colors) in [
-            ("chip.place", chip.place),
+            ("chip.map_point", chip.map_point),
+            ("chip.wvw_objective", chip.wvw_objective),
             ("chip.character", chip.character),
             ("chip.item", chip.item),
             ("chip.progress", chip.progress),

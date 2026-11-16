@@ -61,7 +61,8 @@ impl ChatLinkKind {
     #[must_use]
     pub const fn category(self) -> ChipCategory {
         match self {
-            Self::MapPoint | Self::WvwObjective => ChipCategory::Place,
+            Self::MapPoint => ChipCategory::MapPoint,
+            Self::WvwObjective => ChipCategory::WvwObjective,
             Self::Skill | Self::Trait | Self::BuildTemplate => ChipCategory::Character,
             Self::Coins | Self::Item | Self::Recipe | Self::Skin | Self::Outfit => {
                 ChipCategory::Item
@@ -75,13 +76,16 @@ impl ChatLinkKind {
 /// one of them instead of adding a fifth color.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ChipCategory {
-    /// Places: map point, WvW objective (copper).
-    Place,
-    /// The character: skill, trait, build (blue).
+    /// Map points: waypoint, point of interest, vista; the link does not say
+    /// which (blue, R126, Q459).
+    MapPoint,
+    /// WvW objectives (blue like map points for now, Q459).
+    WvwObjective,
+    /// The character: skill, trait, build (copper).
     Character,
     /// Things you own: item, recipe, skin, outfit, coins (jade).
     Item,
-    /// Progress and text: achievement, NPC text, player (violet).
+    /// Progress and text: achievement, NPC text, player (rosé).
     Progress,
 }
 

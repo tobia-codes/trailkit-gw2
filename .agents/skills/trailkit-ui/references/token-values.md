@@ -78,8 +78,10 @@ Shared by the addons and the web.
 
 | Token | Dark | Light | Purpose |
 | --- | --- | --- | --- |
-| `chip.place.text` | #8DB8F0 | #1F5DB0 | Map points, WvW objectives |
-| `chip.place.background` | #232D3A | #E5EEFA | Map points, WvW objectives |
+| `chip.map_point.text` | #8DB8F0 | #1F5DB0 | Map points: waypoints, points of interest, vistas |
+| `chip.map_point.background` | #232D3A | #E5EEFA | Map points: waypoints, points of interest, vistas |
+| `chip.wvw_objective.text` | #8DB8F0 | #1F5DB0 | WvW objectives |
+| `chip.wvw_objective.background` | #232D3A | #E5EEFA | WvW objectives |
 | `chip.character.text` | #E89A6B | #A2471A | Skills, traits, builds |
 | `chip.character.background` | #2E292A | #FBE9DF | Skills, traits, builds |
 | `chip.item.text` | #6CCDB3 | #0E6E58 | Items, recipes, skins, outfits, coins |

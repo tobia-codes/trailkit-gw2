@@ -4,7 +4,7 @@
 //! later `[web]`. Below a section, a table is a token group: its key is the
 //! Rust field of `Theme` (`surface`, `menu`, …), `title` names it in the
 //! reference, and every other key is either a token (an inline table with a
-//! `name`) or a nested group (`chip.place`). A group may be continued in a
+//! `name`) or a nested group (`chip.map_point`). A group may be continued in a
 //! later file (`border` has its colors in `colors.toml`, its width in
 //! `border.toml`); its tokens are appended in file order.
 

@@ -61,9 +61,14 @@ subtle = { name = "border.subtle", dark = { hex = "#FFFFFF", alpha = 0.06 }, lig
 [shared.chip]
 title = "Chat-link chips"
 
-[shared.chip.place]
-text = { name = "chip.place.text", dark = "#8DB8F0", light = "#1F5DB0", purpose = "Map points, WvW objectives" }
-background = { name = "chip.place.background", dark = "#232D3A", light = "#E5EEFA", purpose = "Map points, WvW objectives" }
+[shared.chip.map_point]
+text = { name = "chip.map_point.text", dark = "#8DB8F0", light = "#1F5DB0", purpose = "Map points: waypoints, points of interest, vistas" }
+background = { name = "chip.map_point.background", dark = "#232D3A", light = "#E5EEFA", purpose = "Map points: waypoints, points of interest, vistas" }
+
+# Same as map points for now; its own tokens so it can be restyled alone (Q459).
+[shared.chip.wvw_objective]
+text = { name = "chip.wvw_objective.text", dark = "#8DB8F0", light = "#1F5DB0", purpose = "WvW objectives" }
+background = { name = "chip.wvw_objective.background", dark = "#232D3A", light = "#E5EEFA", purpose = "WvW objectives" }
 
 [shared.chip.character]
 text = { name = "chip.character.text", dark = "#E89A6B", light = "#A2471A", purpose = "Skills, traits, builds" }

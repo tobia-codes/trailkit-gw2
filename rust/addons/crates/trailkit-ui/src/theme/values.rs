@@ -60,7 +60,11 @@ impl Theme {
             popup_offset: 2.0,
         },
         chip: ChipColors {
-            place: ChipCategoryColors {
+            map_point: ChipCategoryColors {
+                text: Color::from_rgb_hex(0x8DB8F0),
+                background: Color::from_rgb_hex(0x232D3A),
+            },
+            wvw_objective: ChipCategoryColors {
                 text: Color::from_rgb_hex(0x8DB8F0),
                 background: Color::from_rgb_hex(0x232D3A),
             },
@@ -148,7 +152,11 @@ impl Theme {
             popup_offset: 2.0,
         },
         chip: ChipColors {
-            place: ChipCategoryColors {
+            map_point: ChipCategoryColors {
+                text: Color::from_rgb_hex(0x1F5DB0),
+                background: Color::from_rgb_hex(0xE5EEFA),
+            },
+            wvw_objective: ChipCategoryColors {
                 text: Color::from_rgb_hex(0x1F5DB0),
                 background: Color::from_rgb_hex(0xE5EEFA),
             },
