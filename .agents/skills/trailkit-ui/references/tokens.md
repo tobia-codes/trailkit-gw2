@@ -2,7 +2,7 @@
 
 Binding rules for every agent (Claude Code, Codex) and every human who touches
 addon UI. The token set is listed in `SKILL.md` §2; the values live only in
-`crates/trailkit-ui/src/theme.rs` (palette ROADMAP R71). The visual reference
+`rust/addons/crates/trailkit-ui/src/theme.rs` (palette ROADMAP R71). The visual reference
 is the "Trailkit" design system in the user's Claude Design account; when it
 and `theme.rs` disagree, `theme.rs` wins and the difference is a bug to report.
 
@@ -198,7 +198,7 @@ Rules:
 3. Text tokens join `text_meets_contrast_minimum_in_every_theme` (≥ 4.5:1 on
    every surface); text on a new fill gets its own contrast test. Graphics
    and focus rings need ≥ 3:1 against their ground.
-4. Document it in `xtask/src/token_docs/token_groups.rs` (the crate does not compile until
+4. Document it in `rust/xtask/src/token_docs/token_groups.rs` (the crate does not compile until
    you do), run `cargo xtask tokens` to update
    [`token-values.md`](token-values.md), and add any rule for it here.
 5. Run `cargo xtask ui-test`; review changed snapshots before accepting them
@@ -232,8 +232,8 @@ be in, in Dark **and** Light:
 
 Each state is covered once per element; the cross product of independent
 states is not needed. Shared components live in
-`crates/trailkit-ui/tests/component_states.rs` (`ui-<component>-<state>-<theme>`),
-addon views in `addons/<addon>/src/main_window/tests/states.rs`
+`rust/addons/crates/trailkit-ui/tests/component_states.rs` (`ui-<component>-<state>-<theme>`),
+addon views in `rust/addons/<addon>/src/main_window/tests/states.rs`
 (`<addon>-state-<name>-<theme>`), the minimum width in
 `tests/states/minimum_width.rs` (`min-*`, German `min-de-*`). A new element or
 state adds its snapshot in the same change.

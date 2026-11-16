@@ -14,11 +14,11 @@ Re-verify when bumping `NEXUS_API_VERSION` or `nexus-rs`.
 Practical template with directory tree, slice contract and a checklist
 for new addons: [`references/addon-structure.md`](references/addon-structure.md).
 
-- An addon = app crate (`addons/<addon>/`, builds the DLL, wires slices)
-  + slice crates (`addons/<addon>/slices/<slice>/`, crate
+- An addon = app crate (`rust/addons/<addon>/`, builds the DLL, wires slices)
+  + slice crates (`rust/addons/<addon>/slices/<slice>/`, crate
   `trailkit-<addon>-<slice>`) + `trailkit-<addon>-shared`.
 - A slice **never** depends on another slice; shared needs go to the
-  shared crate (addon-internal) or `crates/` (cross-addon). The app passes
+  shared crate (addon-internal) or `rust/addons/crates/` (cross-addon). The app passes
   neutral shared types between slices.
 - A slice owns its state, `draw` function, text enum and help section;
   removing a feature = removing its folder, dependency and wiring.
@@ -231,7 +231,7 @@ Project contract (to be finalized in `docs/plans/addons/trailkit-core.md`):
 - **Own settings window** per addon (opened from: the Nexus options button,
   the addon's main window menu, and optionally a keybind).
 - **Help page** per addon (window/tab "Help"), content in both languages,
-  generated from `addons/<name>/help/{en,de}.md`. Any change to user-visible
+  generated from `rust/addons/<name>/help/{en,de}.md`. Any change to user-visible
   behavior must update the help page in the same change.
   Write one paragraph or list item per source line: single line breaks are
   shown as line breaks (memo M63).
@@ -349,7 +349,7 @@ Project contract (to be finalized in `docs/plans/addons/trailkit-core.md`):
 - A file with an unknown *newer* `schema_version` is never overwritten: run
   read-only (or disabled) and tell the user to update the addon.
 - Saves are atomic (write temp file + rename) on the worker thread.
-- Use `crates/trailkit-storage` for all of the above — never hand-roll file
+- Use `rust/addons/crates/trailkit-storage` for all of the above — never hand-roll file
   persistence in an addon (memo plan M29).
 - Safety copies (migration copies, copies of unreadable files, backups) go
   into one `backups/` subfolder with a fixed cap per kind and automatic

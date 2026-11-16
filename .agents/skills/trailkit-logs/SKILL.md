@@ -6,7 +6,7 @@ description: Analyse a trailkit addon log a user sends (the day files `trailkit/
 # Analysing trailkit logs
 
 The binding format and the meaning of every event are in
-[`crates/trailkit-log/README.md`](../../../crates/trailkit-log/README.md)
+[`rust/addons/crates/trailkit-log/README.md`](../../../rust/addons/crates/trailkit-log/README.md)
 ("Log format"). Read its **Line** and **Events** sections first; this skill
 only adds the procedure. Decisions: ROADMAP R89, R92.
 

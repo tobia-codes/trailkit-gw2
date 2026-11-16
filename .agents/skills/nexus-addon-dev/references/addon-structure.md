@@ -1,7 +1,7 @@
 # Addon structure blueprint
 
 How a trailkit addon is laid out and wired (ROADMAP R76, questions 22–58;
-reference implementation: `addons/trailkit-memo`). Follow it for every new
+reference implementation: `rust/addons/trailkit-memo`). Follow it for every new
 addon so all addons look the same. The rules behind it are in the skill
 (§0); this page is the practical template.
 
@@ -43,7 +43,7 @@ addons/trailkit-<addon>/
 ```
 
 Register every new crate in the root `Cargo.toml` (`[workspace.dependencies]`
-path entry; members already glob `addons/*/shared` and `addons/*/slices/*`).
+path entry; members already glob `rust/addons/*/shared` and `rust/addons/*/slices/*`).
 
 ## 2. What goes where
 
@@ -51,13 +51,13 @@ path entry; members already glob `addons/*/shared` and `addons/*/slices/*`).
 |------|-------|
 | One user-facing feature (search, editor, note list, …) | its own slice |
 | Needed by two slices of the same addon | `shared` |
-| Needed by two addons | `crates/` (`trailkit-ui` for UI, `trailkit-model` for domain types, R75) |
+| Needed by two addons | `rust/addons/crates/` (`trailkit-ui` for UI, `trailkit-model` for domain types, R75) |
 | Wiring slices together, persisting, the window frame | the app |
 | ImGui-free logic (parsing, geometry, search, schedules) | non-`cfg(windows)` modules, so `cargo test` runs on Linux |
 | Drawing | `#[cfg(windows)]` modules; nexus/trailkit-ui under `[target.'cfg(windows)'.dependencies]` |
 
 Extract only on real reuse (AGENTS.md rule 7): a helper moves to `shared`
-or `crates/` when the second place needs it, and every copy is replaced in
+or `rust/addons/crates/` when the second place needs it, and every copy is replaced in
 the same change.
 
 ## 3. Slice contract

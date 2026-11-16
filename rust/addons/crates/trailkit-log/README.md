@@ -5,10 +5,10 @@ Every `log::` call of an addon and its crates becomes one line in
 `addons/trailkit/logs/<addon>/<addon>-<yyyymmdd>.log`; WARN and ERROR also
 reach `Nexus.log`.
 This README is the **binding description of the log format**; the skill
-[`trailkit-logs`](../../.agents/skills/trailkit-logs/SKILL.md) explains how to
+[`trailkit-logs`](../../../../.agents/skills/trailkit-logs/SKILL.md) explains how to
 analyse a log a user sends.
 
-> **Status:** used by `trailkit-memo`. Plan: [ROADMAP R92](../../docs/plans/ROADMAP.md).
+> **Status:** used by `trailkit-memo`. Plan: [ROADMAP R92](../../../../docs/plans/ROADMAP.md).
 
 | Module | Content |
 |--------|---------|
@@ -181,6 +181,6 @@ file in use by another process (antivirus, cloud sync), `112` disk full,
 
 ## Links
 
-- Decisions: [ROADMAP R89, R92](../../docs/plans/ROADMAP.md)
-- Analysing a log: [`trailkit-logs` skill](../../.agents/skills/trailkit-logs/SKILL.md)
+- Decisions: [ROADMAP R89, R92](../../../../docs/plans/ROADMAP.md)
+- Analysing a log: [`trailkit-logs` skill](../../../../.agents/skills/trailkit-logs/SKILL.md)
 - Upstream: [`log` key-values](https://docs.rs/log/latest/log/kv/index.html)

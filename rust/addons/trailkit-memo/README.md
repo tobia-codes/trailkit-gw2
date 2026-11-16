@@ -5,7 +5,7 @@ a tree of notes and groups, a Markdown editor with preview and chat-link chips,
 daily and weekly reset notes, search and a trash with undo.
 
 > **Status:** in development (ROADMAP phase 1), not released yet. Plan and
-> every decision: [`docs/plans/addons/trailkit-memo.md`](../../docs/plans/addons/trailkit-memo.md).
+> every decision: [`docs/plans/addons/trailkit-memo.md`](../../../docs/plans/addons/trailkit-memo.md).
 > What a user sees: the help page in [`help/en.md`](help/en.md).
 
 ## Slices
@@ -53,7 +53,7 @@ never depends on another slice; what several need lives in `shared`.
 ## Files
 
 Stored in `addons/trailkit/memo/` inside the Guild Wars 2 folder, through
-[`trailkit-storage`](../../crates/trailkit-storage/README.md):
+[`trailkit-storage`](../crates/trailkit-storage/README.md):
 
 | File | Content |
 |------|---------|
@@ -91,9 +91,9 @@ loading screens, cutscenes and character select and comes back afterwards.
 
 - New features become a new slice (or extend one); `src/` only wires slices
   together. A slice may depend on `shared` and `crates/`, never on another
-  slice. Blueprint: [`addon-structure.md`](../../.agents/skills/nexus-addon-dev/references/addon-structure.md).
+  slice. Blueprint: [`addon-structure.md`](../../../.agents/skills/nexus-addon-dev/references/addon-structure.md).
 - Nothing on the render thread reads or writes files: all documents go through
-  the storage worker in `shared` and [`trailkit-storage`](../../crates/trailkit-storage/README.md).
+  the storage worker in `shared` and [`trailkit-storage`](../crates/trailkit-storage/README.md).
 - Every text exists in English and German; every visible state has a snapshot
-  in Dark and Light. General rules: [`CONTRIBUTING.md`](../../CONTRIBUTING.md).
+  in Dark and Light. General rules: [`CONTRIBUTING.md`](../../../CONTRIBUTING.md).
 - Logs never contain note content (privacy).

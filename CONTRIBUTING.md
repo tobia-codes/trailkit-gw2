@@ -52,7 +52,7 @@ naming check, pre-push checks the branch name, Clippy and the tests.
 To try an addon in game you need Guild Wars 2 with
 [Raidcore Nexus](https://raidcore.gg/Nexus); `cargo xtask deploy <addon>`
 builds it and hot-reloads it into the running game
-([xtask](xtask/README.md#configuring-the-gw2-addons-folder)).
+([xtask](rust/xtask/README.md#configuring-the-gw2-addons-folder)).
 
 ## 3. How the repository is organised
 
@@ -61,19 +61,21 @@ start from [Find your way](README.md#find-your-way).
 
 | Folder | What lives there |
 |--------|------------------|
-| `addons/<addon>/` | One Nexus addon (a Windows DLL), split into slices |
-| `crates/` | Libraries shared by several projects, flat (R90) |
-| `services/` | Server-side programs (the deferred REST API) |
-| `tools/` | Developer tools: the daily data job and a [Bruno collection](tools/bruno-gw2-api/README.md) for trying the GW2 API by hand |
-| `xtask/` | Build and check commands: `cargo xtask <command>` |
+| `rust/addons/<addon>/` | One Nexus addon (a Windows DLL), split into slices |
+| `rust/` | The Cargo workspace; every `cargo` command runs here ([README](rust/README.md), R116) |
+| `rust/addons/crates/` | Libraries shared by several addons; a crate lives where it is used (R116) |
+| `rust/services/` | Server-side programs (the deferred REST API) |
+| `rust/tools/` | The daily data job ([`trailkit-datagen`](rust/tools/trailkit-datagen/README.md)) |
+| `tools/` | A [Bruno collection](tools/bruno-gw2-api/README.md) for trying the GW2 API by hand |
+| `rust/xtask/` | Build and check commands: `cargo xtask <command>` |
 | `data/` | Curated source data |
 | `docs/plans/` | Roadmap and decisions; each decision has an id (R…, M…, B…) |
 
 ### Addons are built from slices (R76)
 
-An addon is an **app crate** (`addons/<addon>/`, builds the DLL and wires
-everything), **slice crates** (`addons/<addon>/slices/<slice>/`, one feature
-each) and one **shared crate** (`addons/<addon>/shared/`).
+An addon is an **app crate** (`rust/addons/<addon>/`, builds the DLL and wires
+everything), **slice crates** (`rust/addons/<addon>/slices/<slice>/`, one feature
+each) and one **shared crate** (`rust/addons/<addon>/shared/`).
 
 - **A slice never depends on another slice.** When slice A needs something of
   slice B, the app hands it in as a neutral type from `shared` (a trait, a
@@ -90,10 +92,10 @@ each) and one **shared crate** (`addons/<addon>/shared/`).
 ### Share on the second real use (rule 7)
 
 Before you add a helper or a type, search the workspace. Code is extracted
-into `shared/` (within an addon) or `crates/` (across projects) only when a
+into `shared/` (within an addon) or `rust/addons/crates/` (across addons; R116 for services and tools) only when a
 **second** real user appears, and then all copies are replaced in the same
 change. Nothing is shared "in case we need it later". Shared UI always comes
-from [`crates/trailkit-ui`](crates/trailkit-ui/README.md).
+from [`rust/addons/crates/trailkit-ui`](rust/addons/crates/trailkit-ui/README.md).
 
 ## 4. Rust code rules
 
@@ -124,7 +126,7 @@ from [`crates/trailkit-ui`](crates/trailkit-ui/README.md).
   `unwrap()` and `expect()` are lint errors outside tests; a panic must never
   cross the FFI boundary into the game.
 - **Lints are errors.** Clippy runs with `-D warnings`; fix the cause.
-  [`clippy.toml`](clippy.toml) also bans a few methods and names the
+  [`clippy.toml`](rust/clippy.toml) also bans a few methods and names the
   replacement (e.g. tooltips go through `trailkit_ui::tooltip`).
 - **Performance beats DLL size** (R72), and dependencies are checked by
   `cargo deny` (licenses, advisories).
@@ -143,10 +145,10 @@ the player, so these rules are strict. The reference with the details:
   returns after one atomic load.
 - **Event and keybind callbacks** copy what they need, send it to a channel or
   flip an atomic, and return.
-- **All files go through [`trailkit-storage`](crates/trailkit-storage/README.md)**
+- **All files go through [`trailkit-storage`](rust/addons/crates/trailkit-storage/README.md)**
   (R22): versioned, crash-safe writes with safety copies. Never hand-roll
   file I/O.
-- **Log through [`trailkit-log`](crates/trailkit-log/README.md)** (R92): the
+- **Log through [`trailkit-log`](rust/addons/crates/trailkit-log/README.md)** (R92): the
   message is a snake_case event listed in its README, details are `key = value`
   pairs. Log file names, never paths, and never user content (GDPR); a test
   checks the event list.
@@ -154,7 +156,7 @@ the player, so these rules are strict. The reference with the details:
   enum per slice, never a string literal in UI code. A test checks that every
   text is translated.
 - **The help page stays current** (rule 6): a change to user-visible behavior
-  updates `addons/<addon>/help/en.md` and `de.md` in the same PR. Use only
+  updates `rust/addons/<addon>/help/en.md` and `de.md` in the same PR. Use only
   characters the bundled fonts contain (a test checks this).
 - **Nexus identifiers** (keybinds, textures, events …) are typed constants
   named `trailkit.<addon>.<kind>.<name>`, never inline strings.
@@ -233,7 +235,7 @@ Run these before you push (`source ~/.cargo/env` first if cargo is not found):
 | `cargo deny check` | Dependency licenses and advisories |
 
 Tests never call live services; tools use committed fixtures. Every command:
-[`xtask/README.md`](xtask/README.md).
+[`rust/xtask/README.md`](rust/xtask/README.md).
 
 ## 9. Git workflow and pull requests
 

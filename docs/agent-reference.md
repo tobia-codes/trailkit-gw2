@@ -67,8 +67,9 @@ has nothing to say is left out, slices stay short:
   `origin/develop`. After a merge the local `develop` is stale until pulled, and a
   branch from it silently drops what was just merged (it undid M170 once, seen only
   in game).
-- Run `source ~/.cargo/env` before cargo. Plain `grep` may fail in this shell;
-  use `command grep`.
+- Run `source ~/.cargo/env` before cargo, and run every cargo command in
+  `rust/`, the Cargo workspace (R116); `xtask.local.toml` stays in the
+  repository root. Plain `grep` may fail in this shell; use `command grep`.
 - Commands used daily:
   | Command | Purpose |
   |---------|---------|

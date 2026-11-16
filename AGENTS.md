@@ -18,7 +18,7 @@ Shared rules for Codex and Claude Code. `CLAUDE.md` imports this file;
 | Task | Read when needed |
 |------|------------------|
 | Unsettled decision | `.agents/skills/grilling/SKILL.md` |
-| Addon/runtime code in `addons/` or `crates/` | `.agents/skills/nexus-addon-dev/SKILL.md`; structure/threading/FFI sections relevant to the task |
+| Addon/runtime code in `rust/addons/` or `rust/addons/crates/` | `.agents/skills/nexus-addon-dev/SKILL.md`; structure/threading/FFI sections relevant to the task |
 | Addon UI | `.agents/skills/trailkit-ui/SKILL.md` and `references/current-design.md`; relevant token/UX rules |
 | Rust writing/review | `.agents/skills/rust-best-practices/SKILL.md`; specific chapters only when needed |
 | Detailed Rust rule | `.agents/skills/rust-skills/SKILL.md`; look up the specific rule |
@@ -64,10 +64,10 @@ Shared rules for Codex and Claude Code. `CLAUDE.md` imports this file;
 5. **English in files.** Code, identifiers, comments, docs, plans and commits
    are English; addon strings are localized en/de, never inline UI literals.
 6. **Help stays current.** User-visible behavior changes update
-   `addons/<name>/help/{en,de}.md` in the same change.
+   `rust/addons/<name>/help/{en,de}.md` in the same change.
 7. **Share on real reuse.** Search the workspace before adding a helper/type.
    Extract at the second real use, replacing all copies in the same change,
-   never speculatively. Shared UI comes from `crates/trailkit-ui`; addon text
+   never speculatively. Shared UI comes from `rust/addons/crates/trailkit-ui`; addon text
    uses the `TextStyle` roles of `tokens.md` §7.1, never hand-pushed styles.
 8. **Type everything.** Prefer typed/newtype IDs, enums, serde structs and
    checked `sqlx::query!`; untyped JSON belongs only at boundaries.
@@ -98,7 +98,7 @@ Before adding/renaming paths or identifiers, consult the binding
 
 ## Validation
 
-- Before cargo: `source ~/.cargo/env`. Rust changes: `cargo fmt --all`,
+- Before cargo: `source ~/.cargo/env`; run cargo in `rust/` (R116). Rust changes: `cargo fmt --all`,
   `cargo clippy --all-targets -- -D warnings`, `cargo test`.
 - Addon/Windows code also needs Windows clippy; UI changes need snapshot tests
   and visual review. Commands: [reference](docs/agent-reference.md#development-environment).

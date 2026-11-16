@@ -60,11 +60,11 @@ Next ids: **M194+, R129+, B26+, questions from 447**. Deferred: GW2 build/Nexus 
 
 1. **Storage failures:** done (memo M180, 2026-11-10).
 2. **Pre-push protection:** `.githooks/pre-push` checks protected destination refs only for deletions; normal pushes check the current
-   branch via `xtask/src/check_branch.rs`. Validate every destination ref; server-side protection was not inspected.
-3. **WvW snapshot validity:** `tools/trailkit-datagen/src/wvw.rs::write_reset_snapshot`
+   branch via `rust/xtask/src/check_branch.rs`. Validate every destination ref; server-side protection was not inspected.
+3. **WvW snapshot validity:** `rust/tools/trailkit-datagen/src/wvw.rs::write_reset_snapshot`
    saves current matches without checking the intended pre-reset time/match period.
    A delayed job can succeed with post-reset data. Check the actual Nov 6 EU run as well.
-4. **Search cache:** `addons/trailkit-memo/src/main_window/search.rs::update_search` calls `SearchQuery::parse` before checking the
+4. **Search cache:** `rust/addons/trailkit-memo/src/main_window/search.rs::update_search` calls `SearchQuery::parse` before checking the
    cache, allocating for unchanged queries every frame. Check unchanged inputs first; no benchmark was run.
 5. **Docs/skills accuracy:** READMEs done (R91). Still wrong: `nexus-addon-dev/references/addon-structure.md`
    says Cargo forbids sibling-slice dependencies (it only rejects cycles; the rule is enforced by review);

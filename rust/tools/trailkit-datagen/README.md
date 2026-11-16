@@ -3,7 +3,7 @@
 Command line tool that captures the daily Guild Wars 2 trading post **price
 archive** (phase 0b). Later it will also generate the static data files that
 trailkit-core downloads. Plan and decisions:
-[`docs/plans/data-pipeline.md`](../../docs/plans/data-pipeline.md).
+[`docs/plans/data-pipeline.md`](../../../docs/plans/data-pipeline.md).
 
 It only reads the public GW2 API (no API key) and writes into a local
 directory. It never talks to GitHub: the scheduled workflow creates the

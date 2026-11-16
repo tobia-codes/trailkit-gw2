@@ -4,7 +4,7 @@ The Trailkit REST API server. **Status: skeleton only** — the backend is
 deferred until a feature needs dynamic queries such as the price history
 (ROADMAP phase 6, backlog BL5). The binary builds and does nothing yet.
 
-Target design and decisions: [`docs/plans/backend.md`](../../docs/plans/backend.md).
+Target design and decisions: [`docs/plans/backend.md`](../../../docs/plans/backend.md).
 Layout decisions: ROADMAP R90.
 
 - Runs on Linux as a Docker image behind Caddy (B10, B19), never inside the

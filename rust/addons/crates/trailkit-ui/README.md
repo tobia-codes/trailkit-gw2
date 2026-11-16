@@ -3,7 +3,7 @@
 Shared design system for all trailkit Nexus addons: theme tokens (Dark and
 Light), fonts, icons and the ImGui components every addon draws with. Runs in
 the game (addons only). Rules, tokens and the current look: the
-[`trailkit-ui` skill](../../.agents/skills/trailkit-ui/SKILL.md).
+[`trailkit-ui` skill](../../../../.agents/skills/trailkit-ui/SKILL.md).
 
 > **Status:** used by `trailkit-memo`. Components move in here once a second
 > addon needs them (rule 7, ROADMAP R47); until then some patterns stay in
@@ -84,7 +84,7 @@ component has one in `tests/component-states/` (Dark and Light), see
 ## Rules
 
 - No raw colors or sizes: everything comes from `Theme` tokens. A new token is
-  a decision ([`tokens.md`](../../.agents/skills/trailkit-ui/references/tokens.md));
+  a decision ([`tokens.md`](../../../../.agents/skills/trailkit-ui/references/tokens.md));
   `cargo xtask tokens` regenerates the token reference and a test fails while
   it is out of date.
 - Drawing code runs on the render thread: no allocations in steady state, no blocking, no I/O.
