@@ -129,6 +129,13 @@ mockup. Deploy `develop` once PR #125 is merged (Setup 1).
 
 ### 15 · Note list: rename and drag & drop
 
+- **Open finding (2026-11-16):** the user saw (b)–(c) work, but a group kept the
+  gold rename frame after another note was selected, and Delete did nothing
+  meanwhile (M175 waits while a rename is open); both went away later. Steps
+  unknown. Suspicion, unproven: the rename input never became active, so it
+  never deactivates (`note_list/rename.rs`). Try: create a group, click
+  another note at once; double-click a title, click into the game; then
+  check the frame and Delete. If it repeats, a `bugfix/` branch.
 - **Get there:** the note list with a group and notes (Setup 3).
 - **Look at:** (a) double-click a group title, rename it, Enter; double-click
   a note title, press Escape. (b) drag a note into a collapsed group, rest on
