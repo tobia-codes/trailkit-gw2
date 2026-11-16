@@ -14,7 +14,6 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 **First, ask the user: can you test in game now?** Pending checks with where/how/expected: [`in-game-tests.md`](in-game-tests.md)
 (user request 2026-11-13: keep it current until each item is confirmed; ask every session).
 
-**Sessions 36–37:** R77 splits done (PRs #125, #127; Q379–Q398); merged before in-game test 16 at the user's request.
 A failed in-game test becomes a `bugfix/` branch.
 
 **Cloud sessions:** auto mode may refuse `git commit`: ask the user, never work around it. PRs via `gh api .../pulls`, auto-merge
