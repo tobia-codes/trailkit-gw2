@@ -8,16 +8,12 @@ use trailkit_ui::tooltip::draw_tooltip;
 use nexus::imgui::{
     Condition, MouseButton, StyleColor, StyleVar, TreeNode, TreeNodeFlags, TreeNodeToken, Ui,
 };
-use trailkit_memo_shared::{
-    note_tree::{Group, NodeId, Note, TreeNode as Node},
-    row_badge::RowBadge,
-};
+use trailkit_memo_shared::note_tree::{Group, NodeId, Note, TreeNode as Node};
 use trailkit_ui::{
+    color::Color,
     font_registry::FontScope,
     fonts::FontRole,
-    glyph_metrics::{
-        capital_middle, draw_glyph_at, glyph_ink_box, glyph_visible_ink, icon_visible_box,
-    },
+    glyph_metrics::{capital_middle, icon_visible_box},
     icons::Icon,
     selection_bar::{draw_row_state, hide_square_row_highlight},
     text_layout::{format_count, truncate_to_width},
@@ -31,10 +27,7 @@ use super::{
     drag_and_drop::DRAGGED_ROW_ALPHA,
     rename::{RenameStep, draw_rename_input},
 };
-use crate::{
-    badge_geometry::{center_matched_size, centered_pen},
-    tree_drag::{RowKind, RowRect},
-};
+use crate::tree_drag::{RowKind, RowRect};
 
 /// Draws `nodes` and, recursively, the children of expanded groups; during a
 /// search only the rows it shows (M118).
@@ -84,9 +77,10 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut RowContext<'_, '_>) {
     // (M185); an expanded one leaves that to the note rows.
     let has_unsaved_changes = context.extras.unsaved_changes;
     if !expanded && group.any_note(&|note| has_unsaved_changes.contains(note)) {
-        let (mark_start, is_hovered) = draw_unsaved_mark(
+        let (mark_start, is_hovered) = draw_row_icon(
             ui,
-            context.theme,
+            Icon::TRIANGLE_ALERT,
+            context.theme.status.warning,
             title_end,
             row_start[1] + context.frame_padding[1],
         );
@@ -285,8 +279,13 @@ fn draw_note_markers(
     let content_end = row_content_end(ui, context);
     let mut title_end = content_end;
     if let Some(badge) = (context.extras.badge)(note) {
-        let (badge_start, is_hovered) =
-            draw_row_badge(ui, badge, [content_end, row_start[1]], context.theme);
+        let (badge_start, is_hovered) = draw_row_icon(
+            ui,
+            badge.icon,
+            context.theme.text.secondary,
+            content_end,
+            row_start[1] + context.frame_padding[1],
+        );
         // The rectangle alone also matches below an open menu.
         if is_hovered && is_row_hovered {
             (context.extras.badge_tooltip)(ui, note);
@@ -295,9 +294,10 @@ fn draw_note_markers(
     }
     // Unsaved changes kept as a draft (M185).
     if context.extras.unsaved_changes.contains(note.id) {
-        let (mark_start, is_hovered) = draw_unsaved_mark(
+        let (mark_start, is_hovered) = draw_row_icon(
             ui,
-            context.theme,
+            Icon::TRIANGLE_ALERT,
+            context.theme.status.warning,
             title_end,
             row_start[1] + context.frame_padding[1],
         );
@@ -382,77 +382,23 @@ fn record_row(ui: &Ui, node: NodeId, kind: RowKind, left: f32, context: &mut Row
     });
 }
 
-/// Draws the unsaved-changes mark (M185): `triangle-alert` in `warning`
-/// ending at `end`, its middle on the middle of the title's capitals for a
-/// title drawn at `text_top`. Returns its left edge and whether the mouse is
-/// over it.
-fn draw_unsaved_mark(ui: &Ui, theme: &Theme, end: f32, text_top: f32) -> (f32, bool) {
+/// Draws a row marker icon in `color` ending at `end`, its middle on the
+/// middle of the title's capitals for a title drawn at `text_top`: the reset
+/// badge (M193) and the unsaved-changes mark (M185). Returns its left edge
+/// and whether the mouse is over it.
+fn draw_row_icon(ui: &Ui, icon: Icon, color: Color, end: f32, text_top: f32) -> (f32, bool) {
     let line_height = ui.text_line_height();
     let text_middle = capital_middle().unwrap_or(line_height / 2.0);
     let _icons = FontScope::push(ui, FontRole::Icons);
     let mut buffer = [0; 4];
-    let glyph = Icon::TRIANGLE_ALERT.as_str(&mut buffer);
+    let glyph = icon.as_str(&mut buffer);
     let width = ui.calc_text_size(glyph)[0];
-    let ink = icon_visible_box(Icon::TRIANGLE_ALERT.glyph(), ui.text_line_height());
+    let ink = icon_visible_box(icon.glyph(), ui.text_line_height());
     let left = (end - width).round();
     let top = (text_top + text_middle - f32::midpoint(ink[1], ink[3])).round();
-    window_draw_list(ui).add_text([left, top], theme.status.warning.to_array(), glyph);
+    window_draw_list(ui).add_text([left, top], color.to_array(), glyph);
     let is_hovered = ui.is_mouse_hovering_rect([left, top], [end, top + ui.text_line_height()]);
     (left, is_hovered)
-}
-
-/// Draws a row badge (M45, M49, M105): an outlined rounded box with a
-/// letter. The badge ends at `anchor[0]` and is vertically centered in the
-/// row starting at `anchor[1]` (one frame tall). Returns the badge's left
-/// edge and whether the mouse is over it.
-fn draw_row_badge(ui: &Ui, badge: RowBadge, anchor: [f32; 2], theme: &Theme) -> (f32, bool) {
-    let RowBadge { letter, color } = badge;
-    let line_height = ui.text_line_height();
-    let padding = theme.spacing.extra_small;
-    let room = ui.calc_text_size("W")[0] + 2.0 * padding;
-    // A bold letter, centered by its own ink box, not by its advance width
-    // or the line box (the text font sits low in it, M85, M105).
-    let _bold = FontScope::push(ui, FontRole::BodyBold);
-    let letter_size = ui.calc_text_size(letter);
-    let character = letter.chars().next();
-    let ink = character
-        .and_then(glyph_visible_ink)
-        .or_else(|| character.and_then(glyph_ink_box))
-        .unwrap_or([0.0, 0.0, letter_size[0], letter_size[1]]);
-    // Whole pixels, so the outline stays sharp. Every badge has the same
-    // width, so badges line up; the letter is placed to the sub-pixel below
-    // instead (M132). Capitals share their height, so the height takes the
-    // parity of the ink centre and the letter sits on whole pixels.
-    let width = room.round();
-    let height = center_matched_size(line_height, f32::midpoint(ink[1], ink[3]));
-    let start = [
-        (anchor[0] - width).round(),
-        (anchor[1] + ((ui.frame_height() - height) / 2.0).max(0.0)).round(),
-    ];
-    // Lucide style (`lay-icons`): round corners, stroke ≈ 2/24 of the size;
-    // a faint fill of the kind color makes it readable on dark panes (M105).
-    // Whole pixels, so the outline stays sharp instead of a soft band.
-    let stroke = (line_height / 12.0).round().max(1.0);
-    let max = [start[0] + width, start[1] + height];
-    let draw_list = window_draw_list(ui);
-    draw_list
-        .add_rect(start, max, color.with_alpha(0.16).to_array())
-        .rounding(line_height * 0.25)
-        .filled(true)
-        .build();
-    draw_list
-        .add_rect(start, max, color.to_array())
-        .rounding(line_height * 0.25)
-        .thickness(stroke)
-        .build();
-    let pen = [
-        start[0] + width / 2.0 - f32::midpoint(ink[0], ink[2]),
-        centered_pen(start[1], height, ink[1], ink[3]),
-    ];
-    if !character.is_some_and(|character| draw_glyph_at(character, pen, color.to_array())) {
-        draw_list.add_text([pen[0].round(), pen[1]], color.to_array(), letter);
-    }
-    (start[0], ui.is_mouse_hovering_rect(start, max))
 }
 
 /// Marks the search hits in a row title drawn at `position` with the
