@@ -1,5 +1,6 @@
 //! Tests of the note list: context menu, drag and drop, revealing a note,
-//! scrolling, clicking groups and the Delete key (memo M30–M50, M107, M144).
+//! scrolling, clicking groups, the Delete key and the rename input of new
+//! entries (memo M30–M50, M107, M144, M175).
 
 use super::*;
 
@@ -301,5 +302,159 @@ fn the_delete_key_belongs_to_a_focused_list_only() {
         memo.document.trash.len(),
         1,
         "the caught key deletes (M133)"
+    );
+}
+
+/// The titles of all notes and groups in `nodes`, depth first.
+fn titles(nodes: &[Node]) -> Vec<String> {
+    let mut found = Vec::new();
+    for node in nodes {
+        match node {
+            Node::Note(note) => found.push(note.title.clone()),
+            Node::Group(group) => {
+                found.push(group.title.clone());
+                found.extend(titles(&group.children));
+            }
+        }
+    }
+    found
+}
+
+#[test]
+fn a_note_created_after_a_delete_takes_typing_into_its_rename() {
+    let document = sample_document();
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    let size = [640.0, 360.0];
+    let mut harness = UiHarness::new(size);
+    let at = |position: [f32; 2], down: bool| FrameInput {
+        mouse_position: position,
+        left_button_down: down,
+        ..FrameInput::default()
+    };
+    let mut draw_frame = |memo: &mut MemoWindow, input: &FrameInput| {
+        harness.step(input, |ui| draw(ui, memo, size, ThemeKind::Dark));
+    };
+    let list_row = [100.0, 106.0];
+    for input in [at(list_row, false), at(list_row, true), at(list_row, false)] {
+        draw_frame(&mut memo, &input);
+    }
+    memo.delete_selected_by_key(Language::English);
+    draw_frame(&mut memo, &at(list_row, false));
+    let new_note_button = [62.0, 64.0];
+    for input in [
+        at(new_note_button, false),
+        at(new_note_button, true),
+        at(new_note_button, false),
+        at(new_note_button, false),
+        at(new_note_button, false),
+    ] {
+        draw_frame(&mut memo, &input);
+    }
+    let typing = FrameInput {
+        mouse_position: new_note_button,
+        characters: "Zed".to_owned(),
+        ..FrameInput::default()
+    };
+    draw_frame(&mut memo, &typing);
+    let enter = FrameInput {
+        mouse_position: new_note_button,
+        keys: vec![0x0D],
+        ..FrameInput::default()
+    };
+    draw_frame(&mut memo, &enter);
+    draw_frame(&mut memo, &at(new_note_button, false));
+    let all = titles(&memo.document.root);
+    assert!(
+        all.iter().any(|title| title.ends_with("Zed")),
+        "the rename input of the new note takes the typing (M43): {all:?}"
+    );
+}
+
+#[test]
+fn a_note_created_from_the_empty_spot_menu_takes_typing_into_its_rename() {
+    let document = sample_document();
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    let size = [640.0, 360.0];
+    let mut harness = UiHarness::new(size);
+    let input = |position: [f32; 2], left: bool, right: bool| FrameInput {
+        mouse_position: position,
+        left_button_down: left,
+        right_button_down: right,
+        ..FrameInput::default()
+    };
+    let mut draw_frame = |memo: &mut MemoWindow, input: &FrameInput| {
+        harness.step(input, |ui| draw(ui, memo, size, ThemeKind::Dark));
+    };
+    let list_row = [100.0, 106.0];
+    for frame in [
+        input(list_row, false, false),
+        input(list_row, true, false),
+        input(list_row, false, false),
+    ] {
+        draw_frame(&mut memo, &frame);
+    }
+    memo.delete_selected_by_key(Language::English);
+    let empty_spot = [100.0, 300.0];
+    let new_note_item = [empty_spot[0] + 30.0, empty_spot[1] + 14.0];
+    for frame in [
+        input(empty_spot, false, false),
+        input(empty_spot, false, true),
+        input(empty_spot, false, false),
+        input(empty_spot, false, false),
+        input(new_note_item, false, false),
+        input(new_note_item, true, false),
+        input(new_note_item, false, false),
+        input(new_note_item, false, false),
+        input(new_note_item, false, false),
+    ] {
+        draw_frame(&mut memo, &frame);
+    }
+    let typing = FrameInput {
+        mouse_position: new_note_item,
+        characters: "Zed".to_owned(),
+        ..FrameInput::default()
+    };
+    draw_frame(&mut memo, &typing);
+    let enter = FrameInput {
+        mouse_position: new_note_item,
+        keys: vec![0x0D],
+        ..FrameInput::default()
+    };
+    draw_frame(&mut memo, &enter);
+    draw_frame(&mut memo, &input(new_note_item, false, false));
+    let all = titles(&memo.document.root);
+    assert!(
+        all.iter().any(|title| title.ends_with("Zed")),
+        "the rename input of the new note takes the typing (M43): {all:?}"
+    );
+}
+
+#[test]
+fn a_rename_ends_on_a_click_elsewhere_after_the_list_was_not_drawn() {
+    let document = sample_document();
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    let size = [640.0, 360.0];
+    let mut harness = UiHarness::new(size);
+    let at = |position: [f32; 2], down: bool| FrameInput {
+        mouse_position: position,
+        left_button_down: down,
+        ..FrameInput::default()
+    };
+    let list_row = [100.0, 106.0];
+    let idle = at(list_row, false);
+    harness.settle(2, &idle, |ui| draw(ui, &mut memo, size, ThemeKind::Dark));
+    memo.apply(&WindowAction::NewNote(None), Language::English);
+    harness.settle(3, &idle, |ui| draw(ui, &mut memo, size, ThemeKind::Dark));
+    // The window is closed for a few frames (keybind or `x`), then opened.
+    for _ in 0..3 {
+        harness.step(&idle, |_ui| {});
+    }
+    harness.settle(3, &idle, |ui| draw(ui, &mut memo, size, ThemeKind::Dark));
+    for input in [at(list_row, true), at(list_row, false), at(list_row, false)] {
+        harness.step(&input, |ui| draw(ui, &mut memo, size, ThemeKind::Dark));
+    }
+    assert!(
+        memo.takes_delete_key(),
+        "a click on another row ends the rename, so Delete works again (M44, M175)"
     );
 }

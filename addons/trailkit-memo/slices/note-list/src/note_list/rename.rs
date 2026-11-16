@@ -2,7 +2,7 @@
 //! rename state, the steps requested while drawing and the input drawn over
 //! the row's title.
 
-use nexus::imgui::{Key, StyleVar, Ui};
+use nexus::imgui::{FocusedWidget, Key, StyleVar, Ui};
 use trailkit_memo_shared::note_tree::{NodeId, NotesDocument};
 use trailkit_ui::{draw_list::window_draw_list, style_scope::StyleScope};
 
@@ -15,8 +15,29 @@ pub(super) struct RenameState {
     pub(super) node: NodeId,
     /// The edited title.
     buffer: String,
-    /// Whether keyboard focus was already given to the input.
-    focused: bool,
+    /// How often the input asked for the keyboard focus without becoming
+    /// active yet; ImGui grants one request per frame, a later one wins.
+    focus_requests: u8,
+    /// Whether the input was active in the last frame it was drawn. ImGui
+    /// drops the active input silently when its window is not drawn for a
+    /// frame (closed window, trash, editor), without a deactivation event.
+    was_active: bool,
+}
+
+/// How many frames the input asks for the keyboard focus before the rename
+/// is given up as if the input had been left.
+const MAX_FOCUS_REQUESTS: u8 = 4;
+
+impl RenameState {
+    /// A rename of `node` starting with `title` in the input.
+    const fn new(node: NodeId, title: String) -> Self {
+        Self {
+            node,
+            buffer: title,
+            focus_requests: 0,
+            was_active: false,
+        }
+    }
 }
 
 /// A change of the rename state requested while drawing; applied after
@@ -33,11 +54,7 @@ impl NoteList {
     /// Puts `node` into rename mode with `title` in the input (a just
     /// created entry, M43).
     pub fn start_rename(&mut self, node: NodeId, title: String) {
-        self.rename = Some(RenameState {
-            node,
-            buffer: title,
-            focused: false,
-        });
+        self.rename = Some(RenameState::new(node, title));
     }
 
     /// Applies the rename changes requested while drawing, in order.
@@ -46,11 +63,7 @@ impl NoteList {
             match step {
                 RenameStep::Start(node) => {
                     if let Some(title) = node_title(document, node) {
-                        self.rename = Some(RenameState {
-                            node,
-                            buffer: title.to_owned(),
-                            focused: false,
-                        });
+                        self.rename = Some(RenameState::new(node, title.to_owned()));
                     }
                 }
                 RenameStep::End => self.rename = None,
@@ -95,9 +108,9 @@ pub(super) fn draw_rename_input(
     ]));
     let _background = StyleScope::transparent_frame(ui);
     ui.set_cursor_screen_pos([title_x - padding_x, row_start[1]]);
-    if !rename.focused {
+    if rename.focus_requests == 0 {
         ui.set_keyboard_focus_here();
-        rename.focused = true;
+        rename.focus_requests = 1;
     }
     ui.set_next_item_width((title_end - title_x + 2.0 * padding_x).max(1.0));
     let entered = ui
@@ -105,13 +118,25 @@ pub(super) fn draw_rename_input(
         .auto_select_all(true)
         .enter_returns_true(true)
         .build();
-    // Enter or leaving the input commits, Escape cancels.
+    let is_active = ui.is_item_active();
+    // Enter or leaving the input commits, Escape cancels. An input that lost
+    // its active state unseen, or never got the focus, counts as left: a
+    // rename must never outlive its input (it blocks Delete, M175).
     let commits = if entered {
         true
     } else if ui.is_item_deactivated() {
         !ui.is_key_pressed(Key::Escape)
-    } else {
+    } else if is_active {
+        rename.was_active = true;
         return;
+    } else if !rename.was_active && rename.focus_requests < MAX_FOCUS_REQUESTS {
+        // A request takes effect in the next frame; a later request of the
+        // same frame elsewhere replaces it, so ask again for this input.
+        ui.set_keyboard_focus_here_with_offset(FocusedWidget::Previous);
+        rename.focus_requests += 1;
+        return;
+    } else {
+        true
     };
     if commits {
         context
