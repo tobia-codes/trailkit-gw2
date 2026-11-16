@@ -55,12 +55,11 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M194+, R129+, B26+, BL18+, questions from 460**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M194+, R129+, B26+, BL18+, questions from 463**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
 1. **Storage failures:** done (memo M180, 2026-11-10).
-2. **Pre-push protection:** `.githooks/pre-push` checks protected destination refs only for deletions; normal pushes check the current
-   branch via `rust/xtask/src/check_branch.rs`. Validate every destination ref; server-side protection was not inspected.
+2. **Pre-push protection:** done (Q460–Q462, R48, 2026-11-16).
 3. **WvW snapshot validity:** `rust/tools/trailkit-datagen/src/wvw.rs::write_reset_snapshot`
    saves current matches without checking the intended pre-reset time/match period.
    A delayed job can succeed with post-reset data. Check the actual Nov 6 EU run as well.
