@@ -28,7 +28,7 @@ jobs:
         with:
           fetch-depth: 0
       # Docs-only PRs skip the Windows job: Markdown outside the embedded
-      # help pages (`addons/*/help/`) cannot change any build output.
+      # help pages (`rust/addons/*/help/`) cannot change any build output.
       - id: detect
         env:
           EVENT_NAME: ${{ github.event_name }}
@@ -40,7 +40,7 @@ jobs:
           fi
           changed=$(git diff --name-only "$BASE_SHA"...HEAD)
           code_files=$(printf '%s\n' "$changed" | grep -vE '^docs/|\.md$' || true)
-          help_files=$(printf '%s\n' "$changed" | grep -E '^addons/[^/]+/help/' || true)
+          help_files=$(printf '%s\n' "$changed" | grep -E '^rust/addons/[^/]+/help/' || true)
           code_files="$code_files$help_files"
           if [ -n "$code_files" ]; then
             echo "code=true" >> "$GITHUB_OUTPUT"
@@ -54,12 +54,18 @@ jobs:
     # A skipped job counts as passed for required status checks.
     if: needs.changes.outputs.code == 'true'
     runs-on: windows-latest
+    # The Cargo workspace lives in `rust/` (ROADMAP R116).
+    defaults:
+      run:
+        working-directory: rust
     steps:
       - uses: actions/checkout@v5
       # rustup is preinstalled; rust-toolchain.toml selects the pinned toolchain.
       - name: Install pinned toolchain
         run: rustup toolchain install # explicit: rustup auto-install is deprecated
       - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
       - name: Format
         run: cargo fmt --all -- --check
       - name: Clippy
@@ -78,6 +84,7 @@ jobs:
       - name: Collect changed snapshots (R97)
         if: failure() && steps.test.outcome == 'failure'
         shell: bash
+        working-directory: .
         run: |
           mkdir -p snapshot-updates
           git ls-files --modified --others --exclude-standard -- '*tests/snapshots/*.png' |
@@ -109,7 +116,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: addons-dll
-          path: target/release/*.dll
+          path: rust/target/release/*.dll
           if-no-files-found: error
 
   deny:
@@ -118,6 +125,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          manifest-path: rust/Cargo.toml
 
   branch-name:
     name: Branch name (R14)
@@ -129,4 +138,5 @@ jobs:
         env:
           HEAD_BRANCH: ${{ github.head_ref }}
           BASE_BRANCH: ${{ github.base_ref }}
+        working-directory: rust
         run: cargo xtask check-branch --head "$HEAD_BRANCH" --base "$BASE_BRANCH"
