@@ -103,6 +103,10 @@ repeat a completed check during the same session without new evidence.
   network requests, hosting, providers, logs, reports or the backend, compare
   `PRIVACY.md`/`PRIVACY.de.md` with the real data flows and update both in the
   same change. Before a release also confirm each US provider's DPF listing.
+- **Dependencies (R130):** weekly (next due date in `NEXT_SESSION.md`): in `rust/` run
+  `cargo update --dry-run --verbose` and `cargo audit`, and compare the pinned
+  nexus-rs commit with `git ls-remote https://github.com/zerthox/nexus-rs HEAD`.
+  Report outdated crates and advisories; update only after the user's OK.
 - **Scheduled jobs:** follow due reminders and archive checks in
   `NEXT_SESSION.md`. Report an unverified or blocked check explicitly.
 
