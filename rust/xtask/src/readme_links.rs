@@ -30,7 +30,7 @@ fn check() -> Result<()> {
         let Some(parent) = parent_readme(readme, &readmes) else {
             continue;
         };
-        let content = std::fs::read_to_string(workspace::root().join(&parent))?;
+        let content = std::fs::read_to_string(workspace::repository_root().join(&parent))?;
         if !links_to(&parent, &content, readme) {
             unlinked.push(format!("{readme} (expected a link in {parent})"));
         }

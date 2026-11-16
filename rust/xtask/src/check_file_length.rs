@@ -58,7 +58,7 @@ pub fn run(scope: Scope) -> Result<()> {
         Scope::Changed => changed_rust_files()?,
         Scope::All => git_paths(&["ls-files", "--cached", "--others", "--exclude-standard"])?,
     };
-    let root = workspace::root();
+    let root = workspace::repository_root();
     for path in paths.iter().filter(|path| path.ends_with(".rs")) {
         // Deleted or unreadable files have nothing to report.
         let Ok(source) = fs::read_to_string(root.join(path)) else {
@@ -93,7 +93,7 @@ fn changed_rust_files() -> Result<BTreeSet<String>> {
 /// Returns an error if `git` cannot be run or fails.
 fn git_paths(args: &[&str]) -> Result<BTreeSet<String>> {
     let output = Command::new("git")
-        .current_dir(workspace::root())
+        .current_dir(workspace::repository_root())
         .args(args)
         .output()
         .with_context(|| format!("failed to run `git {}`", args.join(" ")))?;

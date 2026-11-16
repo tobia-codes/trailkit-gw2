@@ -7,22 +7,33 @@ use std::{
 
 use anyhow::{Context, Result, bail};
 
-/// The repository root (parent of the `xtask` crate directory).
+/// The Cargo workspace root `rust/` (parent of the `xtask` crate directory,
+/// ROADMAP R116): `Cargo.toml`, `target/`, `addons/`, `services/`, `tools/`.
 #[must_use]
-pub fn root() -> PathBuf {
+pub fn workspace_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .map_or_else(|| PathBuf::from("."), Path::to_path_buf)
 }
 
+/// The repository root (parent of `rust/`): docs, data, skills, git hooks
+/// and the git-ignored `xtask.local.toml`.
+#[must_use]
+pub fn repository_root() -> PathBuf {
+    let workspace = workspace_root();
+    workspace
+        .parent()
+        .map_or_else(|| workspace.clone(), Path::to_path_buf)
+}
+
 /// Every path in the repository that git does not ignore: tracked files and
-/// new, not yet added ones. Relative to the root, separated by `/`.
+/// new, not yet added ones. Relative to the repository root, separated by `/`.
 ///
 /// # Errors
 /// Returns an error if `git` cannot be run or prints a non-UTF-8 path.
 pub fn repository_paths() -> Result<Vec<String>> {
     let output = Command::new("git")
-        .current_dir(root())
+        .current_dir(repository_root())
         .args([
             "ls-files",
             "--cached",
@@ -74,7 +85,7 @@ impl Addon {
     /// # Errors
     /// Returns an error if the `addons/` directory cannot be read.
     pub fn all() -> Result<Vec<Self>> {
-        let dir = root().join("addons");
+        let dir = workspace_root().join("addons");
         let mut addons = Vec::new();
         for entry in
             std::fs::read_dir(&dir).with_context(|| format!("reading {}", dir.display()))?
@@ -99,7 +110,7 @@ impl Addon {
     /// The addon directory `addons/<name>`.
     #[must_use]
     pub fn dir(&self) -> PathBuf {
-        root().join("addons").join(&self.name)
+        workspace_root().join("addons").join(&self.name)
     }
 
     /// File name of the DLL cargo builds (`-` replaced by `_`).

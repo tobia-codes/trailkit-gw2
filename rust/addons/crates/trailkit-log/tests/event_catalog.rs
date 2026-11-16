@@ -10,9 +10,10 @@ use std::{
 
 use trailkit_log::BUILT_IN_EVENTS;
 
-/// The workspace root, two levels above this crate.
+/// The workspace root `rust/`, three levels above this crate
+/// (`rust/addons/crates/trailkit-log`, ROADMAP R116).
 fn workspace_root() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..")
 }
 
 /// Every `.rs` file below `folder`, skipping build output and this crate's
@@ -101,10 +102,11 @@ fn is_event_name(text: &str) -> bool {
 #[test]
 fn every_logged_event_is_documented_and_every_documented_event_is_used() {
     let root = workspace_root();
-    let readme = fs::read_to_string(root.join("crates/trailkit-log/README.md")).unwrap_or_default();
+    let readme =
+        fs::read_to_string(root.join("addons/crates/trailkit-log/README.md")).unwrap_or_default();
     let mut files = Vec::new();
+    // The addons and their shared crates (`addons/crates/`).
     rust_files(&root.join("addons"), &mut files);
-    rust_files(&root.join("crates"), &mut files);
     assert!(files.len() > 20, "found only {} Rust files", files.len());
 
     let events_section = readme.split_once("### Events").map_or("", |(_, rest)| {

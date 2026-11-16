@@ -16,7 +16,7 @@ const HOOKS_DIRECTORY: &str = ".githooks";
 /// Returns an error if `git config` fails.
 pub fn run() -> Result<()> {
     let status = Command::new("git")
-        .current_dir(workspace::root())
+        .current_dir(workspace::repository_root())
         .args(["config", "core.hooksPath", HOOKS_DIRECTORY])
         .status()
         .context("failed to run `git config`")?;

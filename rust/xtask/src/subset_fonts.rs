@@ -96,7 +96,7 @@ const JOBS: [FontJob; 5] = [
 /// Returns an error if a font cannot be read, parsed, subset or written, or
 /// (in check mode) if a committed subset is out of date.
 pub fn run(mode: Mode) -> Result<()> {
-    let fonts = workspace::root().join("crates/trailkit-ui/assets/fonts");
+    let fonts = workspace::workspace_root().join("addons/crates/trailkit-ui/assets/fonts");
     let mut outdated = Vec::new();
     for job in &JOBS {
         let source = fonts.join(job.source);
@@ -369,7 +369,7 @@ fn outline_bounds(font: &[u8], start: usize) -> Result<Option<[i16; 4]>> {
 
 /// `path` relative to the repository root, for messages.
 fn relative(path: &Path) -> String {
-    path.strip_prefix(workspace::root())
+    path.strip_prefix(workspace::workspace_root())
         .map_or_else(|_| path.to_path_buf(), PathBuf::from)
         .display()
         .to_string()
@@ -381,7 +381,7 @@ mod tests {
 
     #[test]
     fn icon_glyph_boxes_are_tight() {
-        let fonts = workspace::root().join("crates/trailkit-ui/assets/fonts");
+        let fonts = workspace::workspace_root().join("addons/crates/trailkit-ui/assets/fonts");
         let source = std::fs::read(fonts.join("lucide/source/lucide.ttf"))
             .unwrap_or_else(|error| panic!("reading the Lucide source: {error}"));
         let mut font = subset_font(&source, &[Icon::X.glyph()])

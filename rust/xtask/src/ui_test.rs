@@ -82,7 +82,7 @@ pub fn run(mode: Mode) -> Result<()> {
 fn build() -> Result<Vec<TestBinary>> {
     let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
     let mut command = Command::new(cargo);
-    command.current_dir(workspace::root()).args([
+    command.current_dir(workspace::workspace_root()).args([
         "xwin",
         "test",
         "--no-run",

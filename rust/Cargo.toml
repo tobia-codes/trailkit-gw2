@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["addons/trailkit-memo", "addons/*/shared", "addons/*/slices/*", "crates/trailkit-log", "crates/trailkit-storage", "crates/trailkit-ui", "crates/trailkit-ui-testing", "services/*", "tools/trailkit-datagen", "xtask"]
+members = ["addons/trailkit-memo", "addons/*/shared", "addons/*/slices/*", "addons/crates/*", "services/*", "tools/trailkit-datagen", "xtask"]
 
 [workspace.package]
 edition = "2024"
@@ -11,10 +11,10 @@ authors = ["tobia-codes"]
 
 [workspace.dependencies]
 # Pinned to a fixed commit (ROADMAP R31); re-verify the nexus-addon-dev skill §1 when bumping.
-trailkit-ui = { path = "crates/trailkit-ui" }
-trailkit-storage = { path = "crates/trailkit-storage" }
-trailkit-log = { path = "crates/trailkit-log" }
-trailkit-ui-testing = { path = "crates/trailkit-ui-testing" }
+trailkit-ui = { path = "addons/crates/trailkit-ui" }
+trailkit-storage = { path = "addons/crates/trailkit-storage" }
+trailkit-log = { path = "addons/crates/trailkit-log" }
+trailkit-ui-testing = { path = "addons/crates/trailkit-ui-testing" }
 # Addon-internal crates (ROADMAP R76).
 trailkit-memo-shared = { path = "addons/trailkit-memo/shared" }
 trailkit-memo-drafts = { path = "addons/trailkit-memo/slices/drafts" }

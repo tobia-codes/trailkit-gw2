@@ -16,12 +16,12 @@ pub fn help_document(language: Language) -> &'static str {
         Language::English => (
             &ENGLISH,
             include_str!("../help/en.md"),
-            include_str!("../../../PRIVACY.md"),
+            include_str!("../../../../PRIVACY.md"),
         ),
         Language::German => (
             &GERMAN,
             include_str!("../help/de.md"),
-            include_str!("../../../PRIVACY.de.md"),
+            include_str!("../../../../PRIVACY.de.md"),
         ),
     };
     cell.get_or_init(|| with_privacy_topic(help, privacy))

@@ -56,7 +56,7 @@ pub fn run(addon_name: &str, profile: Profile, features: Option<&str>) -> Result
     let addons_dir_path = addons_dir()?;
     build(&addon, profile, features)?;
 
-    let built_dll = workspace::root()
+    let built_dll = workspace::workspace_root()
         .join("target")
         .join(TARGET)
         .join(profile.dir_name())
@@ -113,7 +113,7 @@ fn addons_dir() -> Result<PathBuf> {
 /// # Errors
 /// Returns an error if the file is missing, invalid, or lacks the key.
 fn read_local_config() -> Result<PathBuf> {
-    let path = workspace::root().join(LOCAL_CONFIG);
+    let path = workspace::repository_root().join(LOCAL_CONFIG);
     let text = fs::read_to_string(&path).with_context(|| {
         format!(
             "GW2 addons folder not configured: set {ENV_ADDONS_DIR} or create {LOCAL_CONFIG} \
@@ -143,7 +143,7 @@ fn parse_addons_dir(text: &str) -> Result<PathBuf> {
 fn build(addon: &Addon, profile: Profile, features: Option<&str>) -> Result<()> {
     let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
     let mut command = Command::new(cargo);
-    command.current_dir(workspace::root()).args([
+    command.current_dir(workspace::workspace_root()).args([
         "xwin",
         "build",
         "--package",

@@ -53,7 +53,7 @@ fn is_allowed(head: &str, base: Option<&str>) -> bool {
 /// Returns an error if `git` fails or `HEAD` is detached.
 fn current_branch() -> Result<String> {
     let output = Command::new("git")
-        .current_dir(workspace::root())
+        .current_dir(workspace::repository_root())
         .args(["symbolic-ref", "--short", "HEAD"])
         .output()
         .context("failed to run `git symbolic-ref`")?;
