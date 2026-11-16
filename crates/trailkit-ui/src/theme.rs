@@ -294,12 +294,12 @@ impl Theme {
             on_danger: Color::from_rgb_hex(0xE9ECF1),
         },
         accent: AccentColors {
-            base: Color::from_rgb_hex(0x6A45B0),
-            hover: Color::from_rgb_hex(0x542C96),
-            active: Color::from_rgb_hex(0x4A1F89),
+            base: Color::from_rgb_hex(0x542C96),
+            hover: Color::from_rgb_hex(0x400F7D),
+            active: Color::from_rgb_hex(0x360070),
             text: Color::from_rgb_hex(0xB48AE6),
-            // 32 %: as visible on `bg.panel` as the approved mockup's hits.
-            highlight: Color::from_rgb_hex(0x6A45B0).with_alpha(0.32),
+            // 48 %: as visible on `bg.panel` as the approved mockup's hits.
+            highlight: Color::from_rgb_hex(0x542C96).with_alpha(0.48),
         },
         status: StatusColors {
             success: Color::from_rgb_hex(0x5CC48A),
@@ -387,12 +387,13 @@ impl Theme {
             on_danger: Color::from_rgb_hex(0xEFEDE8),
         },
         accent: AccentColors {
-            base: Color::from_rgb_hex(0x6A45B0),
-            hover: Color::from_rgb_hex(0x542C96),
-            active: Color::from_rgb_hex(0x4A1F89),
+            base: Color::from_rgb_hex(0x542C96),
+            hover: Color::from_rgb_hex(0x400F7D),
+            active: Color::from_rgb_hex(0x360070),
             text: Color::from_rgb_hex(0x6A3BAA),
-            // 20 %: more would leave `text.link` below 4.5:1 on a hit.
-            highlight: Color::from_rgb_hex(0x6A45B0).with_alpha(0.2),
+            // 16 %: as visible as the approved mockup; above 17 % `text.link`
+            // on a hit falls below 4.5:1.
+            highlight: Color::from_rgb_hex(0x542C96).with_alpha(0.16),
         },
         status: StatusColors {
             success: Color::from_rgb_hex(0x176B3C),

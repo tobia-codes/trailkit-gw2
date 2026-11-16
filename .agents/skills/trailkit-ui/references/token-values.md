@@ -33,11 +33,11 @@ use which token is binding in [`tokens.md`](tokens.md).
 
 | Token | Dark | Light | Purpose |
 | --- | --- | --- | --- |
-| `accent` | #6A45B0 | #6A45B0 | Fill of the primary button, selection bar |
-| `accent.hover` | #542C96 | #542C96 | Hovered primary button (8 % darker, R107) |
-| `accent.active` | #4A1F89 | #4A1F89 | Pressed primary button (12 % darker, R107) |
+| `accent` | #542C96 | #542C96 | Fill of the primary button, selection bar |
+| `accent.hover` | #400F7D | #400F7D | Hovered primary button (8 % darker, R107) |
+| `accent.active` | #360070 | #360070 | Pressed primary button (12 % darker, R107) |
 | `accent.text` | #B48AE6 | #6A3BAA | Accent as text, icon or line |
-| `accent.highlight` | #6A45B0 at 32 % | #6A45B0 at 20 % | Behind search hits |
+| `accent.highlight` | #542C96 at 48 % | #542C96 at 16 % | Behind search hits |
 
 ## Status
 

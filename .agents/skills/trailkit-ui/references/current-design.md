@@ -98,7 +98,7 @@ Names follow `memo-state-<state>-<dark|light>.png` and
 ## Character of the design
 
 "Trailkit" (R71): ink-tinted dark and parchment-warm light surfaces, with Open Sans
-and Lucide icons. The violet accent `#6A45B0` (R124, before it brass) is rare and only marks the primary action, focus,
+and Lucide icons. The violet accent `#542C96` (R124, before it brass) is rare and only marks the primary action, focus,
 selection and search hits. Toggles are neutral (R79), nothing is square (R81), and
 there are no shadows or highlight edges, except the hard 2 px shadow below tooltips
 (Q327), which also have a `border` outline and small corners. Text follows fixed roles: headings and
