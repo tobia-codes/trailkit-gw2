@@ -58,15 +58,6 @@ the brass "Save" button but red. Approved design for all tests below:
 - **Before and now (unchanged):** **red filled** "Delete permanently" /
   "Delete", "Cancel" left of it. Escape cancels.
 
-### 4 · "Delete" in the note menu
-
-- **Design:** [mockup, section `menu-delete`](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr#menu-delete)
-- **Get there:** select a note › `⋯` right of "Edit".
-- **Look at:** the last entry **"Delete"**; hover it.
-- **Before:** white text and icon like the other entries.
-- **Now:** **red** text and trash icon; hover gives the normal grey row
-  highlight.
-
 ### 5 · "Delete" in the right-click menu
 
 - **Design:** [mockup, section `menu-delete`](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr#menu-delete)
