@@ -106,7 +106,7 @@ Wähle die Art einer Notiz im Feld neben ihrem Titel (*Normal*, *Täglicher Rese
 
 ### Wann Notizen zurückgesetzt werden
 
-- **Abzeichen** am rechten Ende einer Zeile: **T** kennzeichnet eine tägliche Notiz (Reset um 00:00 UTC), **W** eine wöchentliche (Reset montags um 07:30 UTC). Fahre mit der Maus darüber, um zu sehen, wie lange es bis zum nächsten Reset dauert.
+- **Kalender-Symbole** am rechten Ende einer Zeile: ein Kalender mit einer **1** kennzeichnet eine tägliche Notiz (Reset um 00:00 UTC), ein Kalender mit **Punkten** eine wöchentliche (Reset montags um 07:30 UTC). Fahre mit der Maus darüber, um zu sehen, wie lange es bis zum nächsten Reset dauert.
 - War das Spiel zum Reset geschlossen, setzt memo die Notiz beim nächsten Öffnen des Fensters zurück – einmal, egal wie viele Resets du verpasst hast.
 - Während du eine Notiz bearbeitest (oder es einen Entwurf gibt), wartet ihr Reset, bis du speicherst oder verwirfst; dein Text wird nie unter deinen Händen geändert.
 

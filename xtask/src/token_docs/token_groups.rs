@@ -6,7 +6,7 @@ use trailkit_ui::{
     color::Color,
     theme::{
         AccentColors, BorderTokens, ButtonLayout, ChipCategoryColors, ChipColors, CoinColors,
-        EventColors, ListLayout, MenuLayout, PaneLayout, Radii, ResetColors, ShadowTokens, Spacing,
+        EventColors, ListLayout, MenuLayout, PaneLayout, Radii, ShadowTokens, Spacing,
         StatusColors, SurfaceColors, TextColors, Theme, Typography,
     },
 };
@@ -125,6 +125,7 @@ fn text_group(colors: TextColors) -> TokenGroup {
         disabled,
         link,
         on_accent,
+        on_danger,
     } = colors;
     TokenGroup {
         title: "Text",
@@ -138,6 +139,11 @@ fn text_group(colors: TextColors) -> TokenGroup {
             ),
             color("text.link", link, "Links"),
             color("text.on_accent", on_accent, "Text on an `accent` fill"),
+            color(
+                "text.on_danger",
+                on_danger,
+                "Label of a delete button on `danger.fill`",
+            ),
         ],
     }
 }
@@ -158,14 +164,14 @@ fn accent_group(colors: AccentColors) -> TokenGroup {
             color(
                 "accent.hover",
                 hover,
-                "Hovered primary button (8 % darker, R107)",
+                "Hovered primary button (4 % darker, R107)",
             ),
             color(
                 "accent.active",
                 active,
-                "Pressed primary button (12 % darker, R107)",
+                "Pressed primary button (6 % darker, R107)",
             ),
-            color("accent.text", text, "Brass as text, icon or line"),
+            color("accent.text", text, "Accent as text, icon or line"),
             color("accent.highlight", highlight, "Behind search hits"),
         ],
     }
@@ -177,8 +183,9 @@ fn status_group(colors: StatusColors) -> TokenGroup {
         success,
         warning,
         danger,
-        danger_hover,
-        danger_active,
+        danger_fill,
+        danger_fill_hover,
+        danger_fill_active,
         danger_subtle,
         warning_subtle,
         info,
@@ -191,17 +198,22 @@ fn status_group(colors: StatusColors) -> TokenGroup {
             color(
                 "danger",
                 danger,
-                "Destructive actions, fill of delete buttons",
+                "Red text and icons: delete menu entries, error icons",
             ),
             color(
-                "danger.hover",
-                danger_hover,
-                "Hovered delete button (8 % darker, R107)",
+                "danger.fill",
+                danger_fill,
+                "Fill of delete buttons, frame of error toasts and cards",
             ),
             color(
-                "danger.active",
-                danger_active,
-                "Pressed delete button (12 % darker, R107)",
+                "danger.fill_hover",
+                danger_fill_hover,
+                "Hovered delete button (4 % darker, R107)",
+            ),
+            color(
+                "danger.fill_active",
+                danger_fill_active,
+                "Pressed delete button (6 % darker, R107)",
             ),
             color(
                 "danger.subtle",
@@ -256,18 +268,6 @@ fn shadow_group(tokens: ShadowTokens) -> TokenGroup {
                 popup_offset,
                 "How far it reaches below",
             ),
-        ],
-    }
-}
-
-/// The colors of the reset note kinds.
-fn reset_group(colors: ResetColors) -> TokenGroup {
-    let ResetColors { daily, weekly } = colors;
-    TokenGroup {
-        title: "Reset kinds",
-        tokens: vec![
-            color("reset.daily", daily, "Badge and dropdown of daily notes"),
-            color("reset.weekly", weekly, "Badge and dropdown of weekly notes"),
         ],
     }
 }
@@ -401,7 +401,10 @@ fn layout_group(
         selection_bar_inset,
     } = list;
     let PaneLayout { padding, gap } = pane;
-    let ButtonLayout { min_width } = button;
+    let ButtonLayout {
+        min_width,
+        dropdown_max_width,
+    } = button;
     let MenuLayout {
         padding: menu_padding,
         row_padding_x,
@@ -430,6 +433,11 @@ fn layout_group(
                 id: "button.min_width",
                 value: TokenValue::FontSizeFactor(min_width),
                 purpose: "Minimum width of a text button",
+            },
+            Token {
+                id: "button.dropdown_max_width",
+                value: TokenValue::FontSizeFactor(dropdown_max_width),
+                purpose: "Maximum width of a dropdown field",
             },
             pixels(
                 "menu.padding",
@@ -519,7 +527,6 @@ pub(super) fn token_groups(theme: Theme) -> Vec<TokenGroup> {
         border,
         event,
         coin,
-        reset,
         chip,
         spacing,
         list,
@@ -536,7 +543,6 @@ pub(super) fn token_groups(theme: Theme) -> Vec<TokenGroup> {
         accent_group(accent),
         status_group(status),
         border_group(border),
-        reset_group(reset),
         chip_group(chip),
         coin_group(coin),
         event_group(event),

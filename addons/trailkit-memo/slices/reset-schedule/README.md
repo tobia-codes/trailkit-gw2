@@ -10,7 +10,7 @@ else about resets lives here.
 |--------|---------|
 | `schedule` | reset times: daily 00:00 UTC, weekly Monday 07:30 UTC (`ResetTimes`), next check, minutes to the next reset |
 | `due_resets` | `apply_due_resets`: unticks the tasks of reset notes whose reset passed; edited notes wait (M88–M90) |
-| `note_kind` | kind options, reset colors, the row badge (`RowBadge`) with its tooltip, the kind dropdown (Windows only) |
+| `note_kind` | kind options, the row badge (`RowBadge`, a calendar icon, M193) with its tooltip, the kind dropdown (Windows only) |
 | `i18n` | the slice's texts (`ResetText`, en/de) and the reset countdown format |
 
 ## Build and test

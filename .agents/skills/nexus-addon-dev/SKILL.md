@@ -267,6 +267,12 @@ Project contract (to be finalized in `docs/plans/addons/trailkit-core.md`):
   unloads (~0.3 ms) and loads the new build, and later removes the `.old`
   file itself. Keybinds and state registered in `load` must therefore be
   fully reverted in `unload` (`revert_on_unload`).
+- Nexus v2026.11.8.830 rescans the addons folder only on the shell event
+  `SHCNE_UPDATEDIR` for the folder itself (ignores per-file events and
+  renames), then reloads addons whose MD5 changed. Windows sends it for a
+  burst of changes, so deploy creates and removes 30 small `.tmp` files after
+  the replace (`nudge_nexus`, verified 2026-11-16). Without that, a deploy is
+  only picked up by a manual unload/load in the Nexus addons window.
 - Crate layout: `crate-type = ["cdylib", "rlib"]`, `nexus` as a
   `[target.'cfg(windows)'.dependencies]` entry, Nexus glue in a
   `#[cfg(windows)] mod addon;` → logic modules are tested on Linux with

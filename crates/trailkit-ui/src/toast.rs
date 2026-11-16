@@ -165,7 +165,7 @@ impl ToastTone {
     const fn card_colors(self, theme: &Theme) -> (Color, Color) {
         match self {
             Self::Neutral | Self::Success => (theme.surface.popup, theme.border.color),
-            Self::Error => (theme.status.danger_subtle, theme.status.danger),
+            Self::Error => (theme.status.danger_subtle, theme.status.danger_fill),
         }
     }
 }

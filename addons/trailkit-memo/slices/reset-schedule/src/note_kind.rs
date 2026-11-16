@@ -1,6 +1,6 @@
-//! The note kind as the user sees it (M86, M95, M102, M104, M105): the kind
-//! options, the reset color, the row badge with its tooltip and the kind
-//! dropdown behind the note title.
+//! The note kind as the user sees it (M86, M95, M102, M193): the kind
+//! options, the row badge with its tooltip and the kind dropdown behind the
+//! note title.
 
 use jiff::Timestamp;
 use trailkit_memo_shared::{
@@ -8,7 +8,9 @@ use trailkit_memo_shared::{
     note_tree::{NoteKind, ResetPeriod},
     row_badge::RowBadge,
 };
-use trailkit_ui::{color::Color, theme::Theme};
+use trailkit_ui::icons::Icon;
+#[cfg(windows)]
+use trailkit_ui::theme::Theme;
 
 use crate::{
     i18n::{ResetText, reset_countdown},
@@ -22,28 +24,15 @@ pub const KIND_OPTIONS: [(Option<ResetPeriod>, ResetText); 3] = [
     (Some(ResetPeriod::Weekly), ResetText::KindWeekly),
 ];
 
-/// The color of a reset kind (M104): badge and kind dropdown share it.
+/// The row badge of a note (M45, M193): a calendar icon for reset notes,
+/// `None` for normal notes.
 #[must_use]
-pub const fn reset_color(theme: &Theme, period: ResetPeriod) -> Color {
-    match period {
-        ResetPeriod::Daily => theme.reset.daily,
-        ResetPeriod::Weekly => theme.reset.weekly,
-    }
-}
-
-/// The row badge of a note (M45, M105): a letter in the kind color for
-/// reset notes, `None` for normal notes.
-#[must_use]
-pub fn reset_badge(kind: NoteKind, language: Language, theme: &Theme) -> Option<RowBadge> {
-    let period = kind.period()?;
-    let letter = match period {
-        ResetPeriod::Daily => ResetText::DailyBadge,
-        ResetPeriod::Weekly => ResetText::WeeklyBadge,
+pub fn reset_badge(kind: NoteKind) -> Option<RowBadge> {
+    let icon = match kind.period()? {
+        ResetPeriod::Daily => Icon::CALENDAR_1,
+        ResetPeriod::Weekly => Icon::CALENDAR_DAYS,
     };
-    Some(RowBadge {
-        letter: letter.get(language),
-        color: reset_color(theme, period),
-    })
+    Some(RowBadge { icon })
 }
 
 /// The badge tooltip (M95): the kind and the countdown to its next reset.
@@ -70,15 +59,15 @@ pub fn kind_labels(language: Language) -> [&'static str; 3] {
 /// Width and height of the kind dropdown, for placing it before drawing.
 #[cfg(windows)]
 #[must_use]
-pub fn kind_dropdown_size(ui: &nexus::imgui::Ui, language: Language) -> [f32; 2] {
+pub fn kind_dropdown_size(ui: &nexus::imgui::Ui, theme: &Theme, language: Language) -> [f32; 2] {
     [
-        trailkit_ui::dropdown::dropdown_width(ui, &kind_labels(language)),
+        trailkit_ui::dropdown::dropdown_width(ui, theme, &kind_labels(language)),
         ui.frame_height(),
     ]
 }
 
 /// Draws the kind dropdown at the cursor (M102, the one shared dropdown
-/// since R71), tinted in the reset color. Returns the chosen period
+/// since R71; untinted since M193). Returns the chosen period
 /// (`Some(None)` = normal note) when the user picked a kind.
 #[cfg(windows)]
 pub fn draw_kind_dropdown(
@@ -87,7 +76,6 @@ pub fn draw_kind_dropdown(
     language: Language,
     kind: NoteKind,
 ) -> Option<Option<ResetPeriod>> {
-    let tint = kind.period().map(|period| reset_color(theme, period));
     let selected = KIND_OPTIONS
         .iter()
         .position(|(period, _)| *period == kind.period())
@@ -95,7 +83,6 @@ pub fn draw_kind_dropdown(
     let index = trailkit_ui::dropdown::draw_dropdown(
         ui,
         theme,
-        tint,
         "kind",
         ResetText::ResetType.get(language),
         &kind_labels(language),
@@ -110,17 +97,12 @@ mod tests {
 
     #[test]
     fn only_reset_notes_have_a_badge() {
-        let theme = Theme::default();
-        assert_eq!(
-            reset_badge(NoteKind::Normal, Language::English, &theme),
-            None
-        );
+        assert_eq!(reset_badge(NoteKind::Normal), None);
         let weekly = NoteKind::with_period(Some(ResetPeriod::Weekly), Timestamp::UNIX_EPOCH);
         assert_eq!(
-            reset_badge(weekly, Language::German, &theme),
+            reset_badge(weekly),
             Some(RowBadge {
-                letter: "W",
-                color: theme.reset.weekly
+                icon: Icon::CALENDAR_DAYS
             })
         );
     }

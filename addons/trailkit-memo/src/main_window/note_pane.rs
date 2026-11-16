@@ -119,7 +119,7 @@ impl MemoWindow {
                 draw_tooltip(ui, theme, Text::SaveTooltip.get(language));
             }
         } else if self.selected_note().is_some() {
-            // Editing is the main action of the reading view: the one brass
+            // Editing is the main action of the reading view: the one accent
             // button of the view (R71); the note's other actions wait in the
             // menu beside it (M160).
             let edit = Text::EditNote.get(language);
@@ -245,7 +245,7 @@ impl MemoWindow {
         let trailing_size = if compact {
             [icon_button_width(ui, Icon::MINIMIZE_2), ui.frame_height()]
         } else {
-            kind_dropdown_size(ui, language)
+            kind_dropdown_size(ui, theme, language)
         };
         let input = NoteViewInput {
             note,

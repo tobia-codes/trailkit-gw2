@@ -97,21 +97,20 @@ pub fn draw_danger_fill_button_with_size(
 }
 
 /// Draws an icon-only delete button (R105, memo M145, "Delete
-/// permanently"): the `danger` fill of [`draw_danger_button`] with the icon
-/// in the window color, also at rest. The tooltip keeps the regular text
-/// color.
+/// permanently"): the `danger.fill` of [`draw_danger_button`] with the icon
+/// in `text.on_danger`, also at rest (R125). The tooltip keeps the regular
+/// text color.
 pub fn draw_danger_icon_button(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str) -> bool {
-    let danger = theme.status.danger;
     draw_icon_button_with_fill(
         ui,
         theme,
         icon,
         tooltip,
         IconButtonFill {
-            resting: danger,
-            hovered: theme.status.danger_hover,
-            pressed: theme.status.danger_active,
-            icon: Some(theme.surface.window),
+            resting: theme.status.danger_fill,
+            hovered: theme.status.danger_fill_hover,
+            pressed: theme.status.danger_fill_active,
+            icon: Some(theme.text.on_danger),
         },
     )
 }
@@ -221,7 +220,7 @@ pub fn draw_icon_button_with_state(
 
 /// Like [`draw_icon_button`], but a toggle that keeps a state: while
 /// `active` it sits on `bg.active` with a `text.primary` icon, otherwise it
-/// looks like a plain icon button. Toggles never use the brass accent
+/// looks like a plain icon button. Toggles never use the accent
 /// (ROADMAP R79, tokens.md §3). The icon is centered by its visible ink, so
 /// it lines up with a label centered by its capitals (memo M170).
 pub fn draw_icon_toggle(ui: &Ui, theme: &Theme, icon: Icon, tooltip: &str, active: bool) -> bool {

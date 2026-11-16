@@ -285,7 +285,7 @@ impl Editor {
                 id += 1;
                 let _id = ui.push_id(id);
                 // Formatting at the cursor is a kept state, so neutral, not
-                // brass (R79).
+                // accent (R79).
                 let Some(command) = command else {
                     // Disabled: grey icon, no hover, the reason as tooltip (R93).
                     let reason = tooltip.get(language);

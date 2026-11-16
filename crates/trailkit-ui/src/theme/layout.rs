@@ -24,7 +24,7 @@ pub struct ListLayout {
     pub item_spacing: f32,
     /// `list.indent`: indentation per tree level.
     pub indent: f32,
-    /// `list.selection_bar_width`: width of the brass bar on the left edge
+    /// `list.selection_bar_width`: width of the accent bar on the left edge
     /// of the selected row (R71).
     pub selection_bar_width: f32,
     /// `list.selection_bar_inset`: gap between the bar and the top and
@@ -49,6 +49,10 @@ pub struct ButtonLayout {
     /// multiple of the current font size, so it scales with the text size
     /// (memo plan M131). Icon-only buttons stay square.
     pub min_width: f32,
+    /// `button.dropdown_max_width`: maximum width of a dropdown field, as a
+    /// multiple of the current font size; longer options are cut with "…"
+    /// in the field and wrap in the list (R128).
+    pub dropdown_max_width: f32,
 }
 
 impl ButtonLayout {
@@ -56,6 +60,12 @@ impl ButtonLayout {
     #[must_use]
     pub fn min_width_for(&self, font_size: f32) -> f32 {
         (font_size * self.min_width).round()
+    }
+
+    /// The maximum width of a dropdown field in pixels for `font_size`.
+    #[must_use]
+    pub fn dropdown_max_width_for(&self, font_size: f32) -> f32 {
+        (font_size * self.dropdown_max_width).round()
     }
 }
 
@@ -125,7 +135,10 @@ pub(super) const PANE_LAYOUT: PaneLayout = PaneLayout {
 };
 
 /// Button layout shared by both built-in themes.
-pub(super) const BUTTON_LAYOUT: ButtonLayout = ButtonLayout { min_width: 4.0 };
+pub(super) const BUTTON_LAYOUT: ButtonLayout = ButtonLayout {
+    min_width: 4.0,
+    dropdown_max_width: 16.0,
+};
 
 /// Menu layout shared by both built-in themes.
 pub(super) const MENU_LAYOUT: MenuLayout = MenuLayout {

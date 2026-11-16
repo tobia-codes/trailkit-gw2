@@ -63,7 +63,33 @@ pub fn run(addon_name: &str, profile: Profile, features: Option<&str>) -> Result
         .join(addon.built_dll_name());
     let deployed_dll = addons_dir_path.join(addon.shipped_dll_name());
     replace_file_atomically(&built_dll, &deployed_dll)?;
+    nudge_nexus(&addons_dir_path)?;
     println!("deployed {} → {}", addon.name(), deployed_dll.display());
+    Ok(())
+}
+
+/// How many short-lived files [`nudge_nexus`] creates and removes.
+const NUDGE_FILES: usize = 30;
+
+/// Makes Nexus look at the addons folder now, so it hot-reloads the new DLL.
+///
+/// Nexus (v2026.11.8.830) rescans the folder only on the shell event
+/// `SHCNE_UPDATEDIR` for the folder itself and ignores events about single
+/// files, renames included, so replacing the DLL alone is not noticed.
+/// Windows reports a burst of changes as one `SHCNE_UPDATEDIR`, so creating
+/// and removing a few small files right after the replace triggers the
+/// rescan; Nexus then compares MD5 hashes and reloads only changed addons.
+/// Verified in game on 2026-11-16 from WSL. The files end in `.tmp`, which
+/// Nexus never loads.
+///
+/// # Errors
+/// Returns an error if a file cannot be created or removed.
+fn nudge_nexus(addons_dir: &Path) -> Result<()> {
+    for index in 0..NUDGE_FILES {
+        let path = addons_dir.join(format!("trailkit-deploy-nudge-{index}.tmp"));
+        fs::write(&path, b"nudge").with_context(|| format!("creating {}", path.display()))?;
+        fs::remove_file(&path).with_context(|| format!("removing {}", path.display()))?;
+    }
     Ok(())
 }
 
@@ -188,5 +214,12 @@ mod tests {
     #[test]
     fn rejects_missing_key() {
         assert!(parse_addons_dir("other = 1").is_err());
+    }
+
+    #[test]
+    fn the_nudge_leaves_no_files_behind() {
+        let directory = tempfile::tempdir().unwrap();
+        nudge_nexus(directory.path()).unwrap();
+        assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 0);
     }
 }

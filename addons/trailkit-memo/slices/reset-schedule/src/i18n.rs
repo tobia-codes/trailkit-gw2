@@ -9,10 +9,6 @@ const COUNTDOWN_WORDS: &str = "Resets in Reset in d T h min";
 /// A translatable string of the reset-schedule slice.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ResetText {
-    /// Letter on the badge of daily reset notes.
-    DailyBadge,
-    /// Letter on the badge of weekly reset notes.
-    WeeklyBadge,
     /// Context menu submenu and dropdown tooltip for the note kind (M86).
     ResetType,
     /// Note kind option: no reset.
@@ -25,8 +21,6 @@ pub enum ResetText {
 
 impl LocalizedText for ResetText {
     const ALL: &'static [Self] = &[
-        Self::DailyBadge,
-        Self::WeeklyBadge,
         Self::ResetType,
         Self::KindNormal,
         Self::KindDaily,
@@ -40,9 +34,6 @@ impl LocalizedText for ResetText {
 
     fn get(self, language: Language) -> &'static str {
         match (self, language) {
-            (Self::DailyBadge, Language::English) => "D",
-            (Self::DailyBadge, Language::German) => "T",
-            (Self::WeeklyBadge, Language::English | Language::German) => "W",
             (Self::ResetType, Language::English) => "Reset type",
             (Self::ResetType, Language::German) => "Reset-Art",
             (Self::KindNormal, Language::English | Language::German) => "Normal",

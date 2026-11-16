@@ -229,7 +229,7 @@ pub enum Text {
     CompactNoteView,
     /// Tooltip of the button that ends the compact note view (M139).
     RegularNoteView,
-    /// Label of the primary edit button (M51; a brass text button, R71).
+    /// Label of the primary edit button (M51; an accent text button, R71).
     EditNote,
     /// Button committing an edit (M51).
     Save,

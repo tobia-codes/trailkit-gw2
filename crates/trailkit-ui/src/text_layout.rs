@@ -16,6 +16,32 @@ pub fn body_characters_width(ui: &Ui, characters: f32) -> f32 {
     ui.calc_text_size("n")[0] * characters
 }
 
+/// `text` laid out in at most two lines of `width` (R128): it wraps at the
+/// last space that fits, and the second line ends with "…" if the rest is
+/// still too long. A first word wider than `width` is cut on the first line.
+#[must_use]
+pub fn wrap_to_two_lines<'text>(
+    ui: &Ui,
+    text: &'text str,
+    width: f32,
+) -> (Cow<'text, str>, Option<Cow<'text, str>>) {
+    if ui.calc_text_size(text)[0] <= width {
+        return (Cow::Borrowed(text), None);
+    }
+    let split = text
+        .match_indices(' ')
+        .map(|(index, _)| index)
+        .take_while(|&index| ui.calc_text_size(&text[..index])[0] <= width)
+        .last();
+    match split {
+        Some(index) => (
+            Cow::Borrowed(&text[..index]),
+            Some(truncate_to_width(ui, text[index..].trim_start(), width)),
+        ),
+        None => (truncate_to_width(ui, text, width), None),
+    }
+}
+
 /// Draws `text` horizontally centered in a region of `width`. Too long text
 /// wraps at spaces with each line centered; a single word wider than `width`
 /// falls back to ImGui's left-aligned wrapping.

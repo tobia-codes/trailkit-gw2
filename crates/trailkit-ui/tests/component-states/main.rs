@@ -305,6 +305,43 @@ fn menu_entry_states_match_snapshots() {
     }
 }
 
+/// A dropdown whose chosen option is longer than its room (R128): the field
+/// stays within the window and cuts it with "…", the tooltip names it in
+/// full, and the open list wraps it on two lines before cutting.
+#[test]
+fn a_long_dropdown_option_is_cut_and_wrapped() {
+    // The window is 260 px wide; the frame leaves room right of it for the
+    // option list and the tooltip, which may reach beyond the window.
+    let size = [340.0, 230.0];
+    let window = [260.0, 230.0];
+    let field = [60.0, 26.0];
+    let away = [330.0, 220.0];
+    let options = [
+        "Normal",
+        "Daily reset",
+        "Weekly reset of a very long option that names a whole raid wing and more",
+    ];
+    for (kind, theme_name) in THEMES {
+        let theme = kind.theme();
+        let mut harness = UiHarness::new(size);
+        let mut draw = |ui: &Ui| {
+            in_window(ui, &theme, window, || {
+                draw_dropdown(ui, &theme, "kind", "Reset type", &options, 2);
+            });
+        };
+        let names = |state| ("dropdown-long", state, theme_name);
+        assert_state(
+            &mut harness,
+            names("hover"),
+            &mouse(field, false),
+            &mut draw,
+        );
+        harness.settle(1, &mouse(field, true), &mut draw);
+        harness.settle(1, &mouse(field, false), &mut draw);
+        assert_state(&mut harness, names("open"), &mouse(away, false), &mut draw);
+    }
+}
+
 #[test]
 fn dropdown_states_match_snapshots() {
     let size = [260.0, 170.0];
@@ -312,15 +349,13 @@ fn dropdown_states_match_snapshots() {
     let away = [240.0, 160.0];
     for (kind, theme_name) in THEMES {
         let theme = kind.theme();
-        for (name, tint) in [
-            ("dropdown", None),
-            ("dropdown-tinted", Some(theme.reset.daily)),
-        ] {
+        {
+            let name = "dropdown";
             let options = ["Normal", "Daily reset", "Weekly reset"];
             let mut harness = UiHarness::new(size);
             let mut draw = |ui: &Ui| {
                 in_window(ui, &theme, size, || {
-                    draw_dropdown(ui, &theme, tint, "kind", "Reset type", &options, 0);
+                    draw_dropdown(ui, &theme, "kind", "Reset type", &options, 0);
                 });
             };
             let names = |state| (name, state, theme_name);

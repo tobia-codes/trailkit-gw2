@@ -64,8 +64,6 @@ pub struct Theme {
     pub event: EventColors,
     /// Coin colors of chat-link chips (memo plan M75).
     pub coin: CoinColors,
-    /// Colors of the reset note kinds (`reset.*`, memo plan M104).
-    pub reset: ResetColors,
     /// Colors of the chat-link chip categories (`chip.*`, R71).
     pub chip: ChipColors,
     /// Spacing scale (`space.*`).
@@ -123,22 +121,24 @@ pub struct TextColors {
     pub link: Color,
     /// `text.on_accent`: text on accent-colored backgrounds.
     pub on_accent: Color,
+    /// `text.on_danger`: label of a delete button on `danger.fill` (R125).
+    pub on_danger: Color,
 }
 
 /// OKLab lightness step from a colored button's fill to its hover fill
-/// (R107): 8 % darker in both themes.
-pub const HOVER_DARKENING: f32 = 0.08;
+/// (R107, Q446): 4 % darker in both themes.
+pub const HOVER_DARKENING: f32 = 0.04;
 
 /// OKLab lightness step from a colored button's fill to its pressed fill
-/// (R107): 12 % darker in both themes.
-pub const PRESSED_DARKENING: f32 = 0.12;
+/// (R107, Q446): 6 % darker in both themes.
+pub const PRESSED_DARKENING: f32 = 0.06;
 
-/// Accent colors: brass, spent only on the primary action, focus and
-/// selection (R71).
+/// Accent colors: violet (R124, before brass), spent only on the primary
+/// action, focus and selection (R71).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct AccentColors {
-    /// `accent`: fill of the primary button and the selection bar. A fill
-    /// only: in the light theme it is too light for text or thin lines.
+    /// `accent`: fill of the primary button. A fill only: text and thin
+    /// lines use `accent.text`.
     pub base: Color,
     /// `accent.hover`: hovered primary button, `accent` darkened by
     /// [`HOVER_DARKENING`] (R107).
@@ -146,10 +146,10 @@ pub struct AccentColors {
     /// `accent.active`: pressed primary button, `accent` darkened by
     /// [`PRESSED_DARKENING`] (R107).
     pub active: Color,
-    /// `accent.text`: brass as text, icon or line on a surface (active
+    /// `accent.text`: the accent as text, icon or line on a surface (active
     /// toggles, check marks, drop line); ≥ 4.5:1 in both themes.
     pub text: Color,
-    /// `accent.highlight`: translucent brass behind search hits (memo M122);
+    /// `accent.highlight`: translucent accent behind search hits (memo M122);
     /// text on it keeps ≥ 4.5:1 over every surface.
     pub highlight: Color,
 }
@@ -161,17 +161,20 @@ pub struct StatusColors {
     pub success: Color,
     /// `warning`.
     pub warning: Color,
-    /// `danger`.
+    /// `danger`: red as text or icon on a surface (menu entry, toast icon).
     pub danger: Color,
-    /// `danger.hover`: hovered delete button, `danger` darkened by
-    /// [`HOVER_DARKENING`] (R105, R107).
-    pub danger_hover: Color,
-    /// `danger.active`: pressed delete button, `danger` darkened by
-    /// [`PRESSED_DARKENING`] (R105, R107).
-    pub danger_active: Color,
-    /// `danger.subtle`: `danger` tinted into `bg.popup` (20 % Dark, 10 %
-    /// Light), the fill of an error toast (memo M180, Q144 B) and of a
-    /// `danger` status card (memo M184).
+    /// `danger.fill`: fill of a delete button (R105, R125) and frame of an
+    /// error toast or `danger` status card; darker than `danger` in Dark.
+    pub danger_fill: Color,
+    /// `danger.fill_hover`: hovered delete button, `danger.fill` darkened by
+    /// [`HOVER_DARKENING`] (R107).
+    pub danger_fill_hover: Color,
+    /// `danger.fill_active`: pressed delete button, `danger.fill` darkened by
+    /// [`PRESSED_DARKENING`] (R107).
+    pub danger_fill_active: Color,
+    /// `danger.subtle`: `danger.fill` tinted into `bg.popup` (20 % Dark,
+    /// 10 % Light), the fill of an error toast (memo M180, Q144 B) and of a
+    /// `danger` status card (memo M184, R125).
     pub danger_subtle: Color,
     /// `warning.subtle`: `warning` tinted into `bg.popup` (16 % Dark, 10 %
     /// Light), the fill of a `warning` status card (memo M184).
@@ -192,17 +195,6 @@ pub struct BorderTokens {
     pub subtle: Color,
     /// `border.width`: border thickness in pixels.
     pub width: f32,
-}
-
-/// Colors of the reset note kinds: badge and kind chip share them (memo
-/// plan M104). Text colors, so they keep ≥ 4.5:1 contrast.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct ResetColors {
-    /// `reset.daily`: daily reset notes (gold, like the accent).
-    pub daily: Color,
-    /// `reset.weekly`: weekly reset notes (muted violet, apart from the
-    /// gold accent and the blue links).
-    pub weekly: Color,
 }
 
 /// Text and background color of one chat-link chip category.
@@ -280,7 +272,7 @@ pub struct EventColors {
 }
 
 impl Theme {
-    /// The built-in dark theme (default): ink-tinted surfaces, brass accent.
+    /// The built-in dark theme (default): ink-tinted surfaces, violet accent.
     pub const DARK: Self = Self {
         surface: SurfaceColors {
             window: Color::from_rgb_hex(0x0F1318),
@@ -298,24 +290,26 @@ impl Theme {
             secondary: Color::from_rgb_hex(0x9AA4B2),
             disabled: Color::from_rgb_hex(0x5E6876),
             link: Color::from_rgb_hex(0x8DB8F0),
-            on_accent: Color::from_rgb_hex(0x17130A),
+            on_accent: Color::from_rgb_hex(0xFFFFFF),
+            on_danger: Color::from_rgb_hex(0xE9ECF1),
         },
         accent: AccentColors {
-            base: Color::from_rgb_hex(0xE2A740),
-            hover: Color::from_rgb_hex(0xC88E1E),
-            active: Color::from_rgb_hex(0xBB8200),
-            text: Color::from_rgb_hex(0xE8B055),
-            highlight: Color::from_rgb_hex(0xE2A740).with_alpha(0.24),
+            base: Color::from_rgb_hex(0x542C96),
+            hover: Color::from_rgb_hex(0x4A1F89),
+            active: Color::from_rgb_hex(0x451783),
+            text: Color::from_rgb_hex(0xB48AE6),
+            // 48 %: as visible on `bg.panel` as the approved mockup's hits.
+            highlight: Color::from_rgb_hex(0x542C96).with_alpha(0.48),
         },
         status: StatusColors {
             success: Color::from_rgb_hex(0x5CC48A),
             warning: Color::from_rgb_hex(0xE9B44C),
             danger: Color::from_rgb_hex(0xF08A84),
-            danger_hover: Color::from_rgb_hex(0xD4716C),
-            danger_active: Color::from_rgb_hex(0xC76561),
-            // 20 % `danger` over `bg.popup` (#1A2029); 22 % would leave
-            // `text.secondary` below 4.5:1.
-            danger_subtle: Color::from_rgb_hex(0x45353B),
+            danger_fill: Color::from_rgb_hex(0xB83A33),
+            danger_fill_hover: Color::from_rgb_hex(0xAA2C27),
+            danger_fill_active: Color::from_rgb_hex(0xA32521),
+            // 20 % `danger.fill` over `bg.popup` (#1A2029).
+            danger_subtle: Color::from_rgb_hex(0x3A252B),
             // 16 % `warning` over `bg.popup` (#1A2029); 18 % would leave
             // `text.secondary` below 4.5:1.
             warning_subtle: Color::from_rgb_hex(0x3B382F),
@@ -323,7 +317,7 @@ impl Theme {
         },
         border: BorderTokens {
             color: Color::from_rgb_hex(0x2A323E),
-            focus: Color::from_rgb_hex(0xE8B055),
+            focus: Color::from_rgb_hex(0xB48AE6),
             // About 6 % white over the dark surfaces.
             subtle: Color::from_rgb_hex(0xFFFFFF).with_alpha(0.06),
             width: 1.0,
@@ -332,26 +326,22 @@ impl Theme {
             popup: Color::from_rgb_hex(0x000000).with_alpha(0.55),
             popup_offset: 2.0,
         },
-        reset: ResetColors {
-            daily: Color::from_rgb_hex(0xE8B055),
-            weekly: Color::from_rgb_hex(0xB8A6F0),
-        },
         chip: ChipColors {
             place: ChipCategoryColors {
-                text: Color::from_rgb_hex(0xE89A6B),
-                background: Color::from_rgb_hex(0x2E292A),
-            },
-            character: ChipCategoryColors {
                 text: Color::from_rgb_hex(0x8DB8F0),
                 background: Color::from_rgb_hex(0x232D3A),
+            },
+            character: ChipCategoryColors {
+                text: Color::from_rgb_hex(0xE89A6B),
+                background: Color::from_rgb_hex(0x2E292A),
             },
             item: ChipCategoryColors {
                 text: Color::from_rgb_hex(0x6CCDB3),
                 background: Color::from_rgb_hex(0x1F2E31),
             },
             progress: ChipCategoryColors {
-                text: Color::from_rgb_hex(0xB8A6F0),
-                background: Color::from_rgb_hex(0x2A2C3C),
+                text: Color::from_rgb_hex(0xE890B8),
+                background: Color::from_rgb_hex(0x302630),
             },
         },
         coin: CoinColors {
@@ -375,7 +365,7 @@ impl Theme {
         typography: TYPOGRAPHY,
     };
 
-    /// The built-in light theme: parchment-warm surfaces, brass accent.
+    /// The built-in light theme: parchment-warm surfaces, violet accent.
     pub const LIGHT: Self = Self {
         surface: SurfaceColors {
             window: Color::from_rgb_hex(0xEFEDE8),
@@ -393,21 +383,25 @@ impl Theme {
             secondary: Color::from_rgb_hex(0x555C66),
             disabled: Color::from_rgb_hex(0x9AA0A8),
             link: Color::from_rgb_hex(0x1F5DB0),
-            on_accent: Color::from_rgb_hex(0x17130A),
+            on_accent: Color::from_rgb_hex(0xFFFFFF),
+            on_danger: Color::from_rgb_hex(0xEFEDE8),
         },
         accent: AccentColors {
-            base: Color::from_rgb_hex(0xE2A740),
-            hover: Color::from_rgb_hex(0xC88E1E),
-            active: Color::from_rgb_hex(0xBB8200),
-            text: Color::from_rgb_hex(0x8A5A10),
-            highlight: Color::from_rgb_hex(0xE2A740).with_alpha(0.42),
+            base: Color::from_rgb_hex(0x542C96),
+            hover: Color::from_rgb_hex(0x4A1F89),
+            active: Color::from_rgb_hex(0x451783),
+            text: Color::from_rgb_hex(0x6A3BAA),
+            // 16 %: as visible as the approved mockup; above 17 % `text.link`
+            // on a hit falls below 4.5:1.
+            highlight: Color::from_rgb_hex(0x542C96).with_alpha(0.16),
         },
         status: StatusColors {
             success: Color::from_rgb_hex(0x176B3C),
             warning: Color::from_rgb_hex(0x8A5A00),
             danger: Color::from_rgb_hex(0xB3261E),
-            danger_hover: Color::from_rgb_hex(0x970000),
-            danger_active: Color::from_rgb_hex(0x890000),
+            danger_fill: Color::from_rgb_hex(0xB3261E),
+            danger_fill_hover: Color::from_rgb_hex(0xA5130F),
+            danger_fill_active: Color::from_rgb_hex(0x9E0506),
             // 10 % `danger` over `bg.popup` (#FFFFFF).
             danger_subtle: Color::from_rgb_hex(0xF7E9E8),
             // 10 % `warning` over `bg.popup` (#FFFFFF).
@@ -416,7 +410,7 @@ impl Theme {
         },
         border: BorderTokens {
             color: Color::from_rgb_hex(0xD6D1C7),
-            focus: Color::from_rgb_hex(0x8A5A10),
+            focus: Color::from_rgb_hex(0x6A3BAA),
             // About 8 % warm black over the light surfaces.
             subtle: Color::from_rgb_hex(0x1E180C).with_alpha(0.08),
             width: 1.0,
@@ -425,26 +419,22 @@ impl Theme {
             popup: Color::from_rgb_hex(0x1E180C).with_alpha(0.18),
             popup_offset: 2.0,
         },
-        reset: ResetColors {
-            daily: Color::from_rgb_hex(0x8A5A10),
-            weekly: Color::from_rgb_hex(0x6141B5),
-        },
         chip: ChipColors {
             place: ChipCategoryColors {
-                text: Color::from_rgb_hex(0xA2471A),
-                background: Color::from_rgb_hex(0xFBE9DF),
-            },
-            character: ChipCategoryColors {
                 text: Color::from_rgb_hex(0x1F5DB0),
                 background: Color::from_rgb_hex(0xE5EEFA),
+            },
+            character: ChipCategoryColors {
+                text: Color::from_rgb_hex(0xA2471A),
+                background: Color::from_rgb_hex(0xFBE9DF),
             },
             item: ChipCategoryColors {
                 text: Color::from_rgb_hex(0x0E6E58),
                 background: Color::from_rgb_hex(0xDDF2EB),
             },
             progress: ChipCategoryColors {
-                text: Color::from_rgb_hex(0x6141B5),
-                background: Color::from_rgb_hex(0xEDE8FA),
+                text: Color::from_rgb_hex(0xA3346B),
+                background: Color::from_rgb_hex(0xF9E6EF),
             },
         },
         coin: CoinColors {
@@ -514,8 +504,6 @@ mod tests {
                 ("warning", theme.status.warning),
                 ("danger", theme.status.danger),
                 ("info", theme.status.info),
-                ("reset.daily", theme.reset.daily),
-                ("reset.weekly", theme.reset.weekly),
             ];
             for (background_name, background) in backgrounds {
                 for (text_name, text) in texts {
@@ -539,16 +527,16 @@ mod tests {
                     accent,
                 );
             }
-            // A delete button's label is `bg.window` (R105).
+            // A delete button's label is `text.on_danger` (R125).
             for (danger_name, danger) in [
-                ("danger", theme.status.danger),
-                ("danger.hover", theme.status.danger_hover),
-                ("danger.active", theme.status.danger_active),
+                ("danger.fill", theme.status.danger_fill),
+                ("danger.fill_hover", theme.status.danger_fill_hover),
+                ("danger.fill_active", theme.status.danger_fill_active),
             ] {
                 assert_readable(
                     kind,
-                    &format!("bg.window on {danger_name}"),
-                    theme.surface.window,
+                    &format!("text.on_danger on {danger_name}"),
+                    theme.text.on_danger,
                     danger,
                 );
             }
@@ -576,15 +564,15 @@ mod tests {
                     PRESSED_DARKENING,
                 ),
                 (
-                    "danger.hover",
-                    theme.status.danger,
-                    theme.status.danger_hover,
+                    "danger.fill_hover",
+                    theme.status.danger_fill,
+                    theme.status.danger_fill_hover,
                     HOVER_DARKENING,
                 ),
                 (
-                    "danger.active",
-                    theme.status.danger,
-                    theme.status.danger_active,
+                    "danger.fill_active",
+                    theme.status.danger_fill,
+                    theme.status.danger_fill_active,
                     PRESSED_DARKENING,
                 ),
             ] {

@@ -45,7 +45,7 @@ impl CardStatus {
     const fn colors(self, theme: &Theme) -> (Color, Color) {
         match self {
             Self::Warning => (theme.status.warning_subtle, theme.status.warning),
-            Self::Danger => (theme.status.danger_subtle, theme.status.danger),
+            Self::Danger => (theme.status.danger_subtle, theme.status.danger_fill),
         }
     }
 }
@@ -68,8 +68,8 @@ pub struct StatusCard<'text> {
     pub text: &'text str,
     /// An optional line under it.
     pub detail: Option<CardDetail<'text>>,
-    /// The buttons in a row at the left edge, the brass one last; when the
-    /// row does not fit they stack, the brass one first (R103, Q349).
+    /// The buttons in a row at the left edge, the primary one last; when the
+    /// row does not fit they stack, the primary one first (R103, Q349).
     pub buttons: &'text [Button<'text>],
     /// The close button's tooltip, or `None` for a card that stays while its
     /// state lasts (Q336).
@@ -222,9 +222,9 @@ fn draw_detail(ui: &Ui, theme: &Theme, detail: CardDetail<'_>, text_left: f32, r
     ui.unindent_by(hang);
 }
 
-/// Draws `buttons` in one row from `left` in their order, the brass button
+/// Draws `buttons` in one row from `left` in their order, the primary button
 /// last (R103, Q349). When the row does not fit before `right`, they stack,
-/// the brass button first. Lowers `bottom` to the last button's bottom and
+/// the primary button first. Lowers `bottom` to the last button's bottom and
 /// returns the index of the clicked one.
 fn draw_buttons(
     ui: &Ui,
@@ -241,7 +241,7 @@ fn draw_buttons(
         - spacing[0];
     let stacked = row_width > right - left;
     let is_primary = |button: &Button<'_>| button.kind == ButtonKind::Primary;
-    // Stacked: the brass button first, then the others in their order.
+    // Stacked: the primary button first, then the others in their order.
     let order = buttons
         .iter()
         .enumerate()

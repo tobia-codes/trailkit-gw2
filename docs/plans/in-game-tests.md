@@ -28,6 +28,9 @@ before, how it must look now and links the approved design (R87 mockup).
 "Red filled" means a red button with the label in the window color, like
 the brass "Save" button but red. Approved design for all tests below:
 [button cleanup mockup](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr) (each test links its section).
+**Since R124/R125 (2026-11-16):** brass became violet and the Dark red fill is
+the darker `#B83A33` with a light label; read "brass" as violet and judge the
+red against the [red fill mockup](https://claude.ai/artifact/E6E3L6RTBxPsPBuCNW75VK) (A1).
 
 ### 1 · "Empty" in the trash
 
@@ -120,28 +123,21 @@ the brass "Save" button but red. Approved design for all tests below:
   reload the typed text is back as a **draft** (yellow card, test 7); the
   log contains **`draft=kept`**. Then deploy a normal build again (Setup 1).
 
-## File-length splits, PR #125 (R77, R108)
+## Violet accent and calendar icons, branch `feature/violet-accent` (R124–R126, M193)
 
-Code was only moved into new modules: nothing may look or behave
-differently. Snapshot tests passed in CI; these checks cover what snapshots
-cannot (keyboard, mouse, clipboard, dragging). No design change, so no
-mockup. Deploy `develop` once PR #125 is merged (Setup 1).
+### 18 · New colors and reset icons
 
-### 15 · Note list: rename and drag & drop
-
-- **Finding (2026-11-16), fixed on `bugfix/memo-stuck-rename`:** a rename
-  outlived its input when the list was not drawn for a frame (window closed,
-  trash, editor); the gold frame stayed and Delete, double-click and the
-  context menu did nothing. The user confirmed the fix in game; (a)–(c)
-  passed. Remove this test once the bugfix is merged.
-- **Get there:** the note list with a group and notes (Setup 3).
-- **Look at:** (a) double-click a group title, rename it, Enter; double-click
-  a note title, press Escape. (b) drag a note into a collapsed group, rest on
-  it, drop; drag a group onto its own child; drag near the list's top and
-  bottom edge. (c) type a search, then try to drag a row.
-- **Before and now (unchanged):** (a) a framed input over the title, Enter
-  saves, Escape cancels, the group does not toggle on the double-click.
-  (b) the dragged row fades, a gold line or group frame shows the drop, the
-  collapsed group opens after a moment, the title floats next to the cursor
-  (red with a ban icon over its own child), the list scrolls near the edges.
-  (c) no drag; the tooltip says to clear the search to move.
+- **Design:** [mockup v4](https://claude.ai/artifact/GgYDB2fh1Lg1w3sd5jEaM5) (V3 Amethyst, red A1, Lucide A, chips).
+- **Get there:** open memo in Dark, then in Light (Setup 4). Have one daily
+  and one weekly note (right-click a note › Reset type).
+- **Look at:** (a) **Edit** button, selection bar, check boxes, focus frame of
+  the search field and a rename, search hits; (b) the list rows of the daily
+  and weekly notes and the dropdown next to their title; (c) a chat-link chip
+  of a waypoint, a skill and an achievement; (d) a delete question and a red
+  "Discard" (test 6), hover and hold them.
+- **Before:** brass accent; letters D/T and W in gold/violet boxes; tinted
+  dropdown; copper waypoints, blue skills, violet achievements; salmon red.
+- **Now:** (a) violet with white label, darker on hover and hold; (b) grey
+  calendar icons (`1` daily, dots weekly) without box, tooltip with kind and
+  countdown, plain dropdown; (c) waypoint blue, skill copper, achievement
+  rosé; (d) deep red with light label, darker on hover and hold.

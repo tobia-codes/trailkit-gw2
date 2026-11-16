@@ -106,7 +106,7 @@ impl MemoWindow {
                 clear_search_to_move: SearchText::ClearSearchToMove.get(language),
             },
         });
-        let badge = |note: &Note| reset_badge(note.kind, language, theme);
+        let badge = |note: &Note| reset_badge(note.kind);
         // The same kind and countdown as the note toolbar (M95), formatted
         // only while the badge is hovered.
         let mut badge_tooltip = |ui: &Ui, note: &Note| {
