@@ -58,25 +58,6 @@ the brass "Save" button but red. Approved design for all tests below:
 - **Before and now (unchanged):** **red filled** "Delete permanently" /
   "Delete", "Cancel" left of it. Escape cancels.
 
-### 4 · "Delete" in the note menu
-
-- **Design:** [mockup, section `menu-delete`](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr#menu-delete)
-- **Get there:** select a note › `⋯` right of "Edit".
-- **Look at:** the last entry **"Delete"**; hover it.
-- **Before:** white text and icon like the other entries.
-- **Now:** **red** text and trash icon; hover gives the normal grey row
-  highlight.
-
-### 5 · "Delete" in the right-click menu
-
-- **Design:** [mockup, section `menu-delete`](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr#menu-delete)
-- **Get there:** right-click a note in the list; then right-click the group.
-  Then select the group's note › **Edit** › right-click the group.
-- **Look at:** the entry **"Delete"**.
-- **Before:** white text and icon.
-- **Now:** **red** text and icon. While editing the group's note it is
-  **grey** with a reason tooltip (as before). Leave the editor with Cancel.
-
 ### 6 · "Discard" in "Unsaved changes"
 
 - **Design:** [mockup, section `discard-dialogs`](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr#discard-dialogs)
@@ -112,16 +93,6 @@ the brass "Save" button but red. Approved design for all tests below:
   (b) **red filled** "Discard" left, brass "Save again" right.
 - **Clean up:** untick Read-only, click "Save again".
 
-### 9 · Buttons of the empty memo
-
-- **Design:** [mockup, section `empty-state`](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr#empty-state)
-- **Get there:** close the game, rename `<GW2>/addons/trailkit/memo/notes.json`
-  to `notes.json.bak`, start the game, open memo. Afterwards close the game
-  and rename it back.
-- **Look at:** the two buttons under "No notes yet".
-- **Before:** brass "Create your first note" **left**, "New group" right.
-- **Now:** "New group" **left**, brass "Create your first note" **right**.
-
 ### 10 · Hover and pressed colors of brass and red buttons (R107)
 
 - **Design:** [mockup, section `proposal`](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr#proposal)
@@ -156,44 +127,13 @@ differently. Snapshot tests passed in CI; these checks cover what snapshots
 cannot (keyboard, mouse, clipboard, dragging). No design change, so no
 mockup. Deploy `develop` once PR #125 is merged (Setup 1).
 
-### 12 · Kind dropdown next to the note title
-
-- **Get there:** select a note; the box right of its title (*Normal*,
-  *Daily reset*, *Weekly reset*).
-- **Look at:** hover it, click it, pick another kind, open it again.
-- **Before and now (unchanged):** filled box with frame and chevron, tooltip
-  on hover; the open list sits below it with the chosen kind highlighted
-  and check-marked; the frame shows the focus color while open; a daily or
-  weekly note tints frame, text and chevron. Set the kind back afterwards.
-
-### 13 · Markdown view: text, links and chat-link chips
-
-- **Get there:** select a note › Edit › type
-  `**bold** a long sentence that must wrap at the window edge, [link](https://example.com) and `
-  followed by a waypoint code (in game: map › Shift+click a waypoint, copy
-  the `[&…]` code from the chat) › Save. Then type a word of the note into the search field.
-- **Look at:** the note view; make the window narrow and wide again.
-- **Before and now (unchanged):** words wrap at the readable width or the
-  window edge; the link is underlined, shows its target as tooltip and opens
-  the browser; the chip shows a copper place icon, a hand cursor and a
-  tooltip, and a click copies the code (paste it in the game chat to check);
-  search hits get a gold background, a matching chip a gold frame.
-
-### 14 · Editor: typing, shortcuts and selection
-
-- **Get there:** select the note of test 13 › Edit.
-- **Look at:** type, Backspace, Delete, Enter; arrows with and without Ctrl
-  and Shift; Home/End, Ctrl+Home/End, PageUp/PageDown; Ctrl+A, Ctrl+C,
-  Ctrl+X, Ctrl+V, Ctrl+Z, Ctrl+Y; select across the chip and across a line
-  break with the mouse (drag and double-click); Ctrl+Enter.
-- **Before and now (unchanged):** every key does what its name says; the
-  selection is a translucent gold band, a selected line break adds a small
-  extra width, a selected chip gets the same band over it; the cursor
-  blinks; Ctrl+Enter saves. While editing, the game gets no key presses
-  (WASD does not move the character).
-
 ### 15 · Note list: rename and drag & drop
 
+- **Finding (2026-11-16), fixed on `bugfix/memo-stuck-rename`:** a rename
+  outlived its input when the list was not drawn for a frame (window closed,
+  trash, editor); the gold frame stayed and Delete, double-click and the
+  context menu did nothing. The user confirmed the fix in game; (a)–(c)
+  passed. Remove this test once the bugfix is merged.
 - **Get there:** the note list with a group and notes (Setup 3).
 - **Look at:** (a) double-click a group title, rename it, Enter; double-click
   a note title, press Escape. (b) drag a note into a collapsed group, rest on
@@ -205,23 +145,3 @@ mockup. Deploy `develop` once PR #125 is merged (Setup 1).
   collapsed group opens after a moment, the title floats next to the cursor
   (red with a ban icon over its own child), the list scrolls near the edges.
   (c) no drag; the tooltip says to clear the search to move.
-
-## Remaining length splits, branch `chore/remaining-length-splits` (R77, Q388–Q396)
-
-Code was only moved and renamed: nothing may look or behave differently.
-Snapshot tests cover the drawing; this covers keys and unloading. No design
-change, so no mockup. Deploy `develop` once the PR is merged (Setup 1).
-
-### 16 · Note title while editing, closing with unsaved changes
-
-- **Get there:** (a) select a note › `⋯` › **Rename**; (b) type a few
-  letters into the title, press **Escape**; (c) click **Save**, then
-  **Edit**, type a letter in the text and close the window with its `x`;
-  (d) **Edit**, type a letter, reload memo (Setup 5) without saving.
-- **Look at:** the title input, the dialogs and the note list.
-- **Before and now (unchanged):** (a) the title input has the focus with
-  the whole title selected; (b) Escape leaves the title but keeps the typed
-  letters; (c) "Unsaved changes" asks before the window closes ("Keep
-  editing" keeps it open); (d) after the reload the note shows the yellow
-  draft card (test 7) and its row in the list a draft mark with a tooltip.
-  Click "Discard" to clean up.

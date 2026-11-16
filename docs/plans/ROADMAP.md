@@ -199,6 +199,15 @@ trailkit-gw2/
   PC, opt-in, PRIVACY R99), admin roles, forum (moderation, reporting, DSA duties as a host), mobile first, REST API
   and the price history poller (backend.md), where addons get their data from (backend vs. served files, D19);
   (2) the layout editor (R122) and the hint about new addons (R123) are settled.
+- **Menu divider spacing (Q436, in-game test 2026-11-16):** the compact divider before "Delete" in the note
+  menus follows R83 (8 px to the letters), but the menu's row gap already exceeds that, so the row pitch grows by
+  only 1 px; in Dark the line is barely visible and the hovered "Delete" fill nearly touches it. The user expects
+  visible space above and below. Proposal: measure the compact gap to the neighbouring rows' hover fill instead of
+  the letters (about 6 px more per side, all menus with a divider). Needs an R87 mockup after the in-game tests.
+- **Dark `danger` fill too light (Q437, in-game test 2026-11-16):** in Dark the red buttons (R105, R106) are filled
+  with the text color `danger` `#F08A84`, a light salmon; the user finds it far too light. It matches the approved
+  mockup, so this is a new design decision: a darker fill token for Dark (label contrast, hover/pressed per R107),
+  red text on dark ground unchanged. Needs grilling and an R87 mockup; affects in-game tests 1–3, 6–8 and 10.
 
 ## Plans
 

@@ -176,7 +176,8 @@ Rules:
      `ItemAdd`). Use ImGui's own end-of-frame path instead (memo M186 marks a
      left click into the void).
    - Clicks into the game world never reach ImGui, left, right or middle; a
-     `WndProc` callback sees them (memo M186).
+     `WndProc` callback sees them (memo M186). A left-button **release** over
+     the game world does reach ImGui: drags end there (in-game test 2026-11-16).
    - A crash without a `panic` line is a C++ access violation: arcdps writes
      `addons/arcdps/arcdps_lastcrash.log` with the stack as DLL offsets;
      `llvm-symbolizer --obj=target/x86_64-pc-windows-msvc/debug/<addon>.dll
