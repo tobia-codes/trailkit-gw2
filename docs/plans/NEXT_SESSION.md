@@ -14,7 +14,8 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 **First, ask the user: can you test in game now?** Pending checks with where/how/expected: [`in-game-tests.md`](in-game-tests.md)
 (user request 2026-11-13: keep it current until each item is confirmed; ask every session). A failed test becomes a `bugfix/` branch.
 
-**On the phone** ("nehme next session auf dem handy auf"): no game, skip that question; grilling asks **one question per message**.
+**On the Mac or phone** ("nehme next session auf dem mac/handy auf"): no game, skip that question; every change that needs a
+game check gets its entry in [`in-game-tests.md`](in-game-tests.md) in the same commit (user request 2026-11-16). Phone: grilling asks **one question per message**.
 
 **Cloud sessions:** auto mode may refuse `git commit`: ask the user, never work around it. PRs via `gh api .../pulls`, auto-merge
 via `PUT .../pulls/{n}/ccr/auto_merge` (`merge_method=merge`); branch deletion is blocked (the user deletes). Push does not set

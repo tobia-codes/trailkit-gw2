@@ -7,6 +7,9 @@ change that needs an in-game check; remove an item only after the user
 confirms it, and note failures as bugs in the relevant plan. Every item
 says how to get there click by click, what to look at, how it looked
 before, how it must look now and links the approved design (R87 mockup).
+In a session on the Mac or the phone (no game there, user request
+2026-11-16), add the entry in the same commit as the change, so the test
+is ready when the user is back at the PC.
 
 ## Setup (once per test session)
 
