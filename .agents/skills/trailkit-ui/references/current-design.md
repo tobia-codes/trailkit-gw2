@@ -11,7 +11,7 @@ Use these in this order. The first one that answers the question wins.
 | Source | What it tells you |
 |--------|-------------------|
 | Snapshot PNGs | What each state really looks like, rendered by the addon's own code |
-| `rust/addons/crates/trailkit-ui/src/theme.rs` | The token values; [`token-values.md`](token-values.md) is generated from it |
+| [`design/tokens/`](../../../../design/tokens/) | The token values (R118); `theme/values.rs` and [`token-values.md`](token-values.md) are generated from them |
 | [`tokens.md`](tokens.md) | Which token to use when (binding), with the review checklist in §10 |
 | [`../SKILL.md`](../SKILL.md), [`ux-rules.md`](ux-rules.md) | Shared components and UX rules |
 | `docs/plans/addons/trailkit-memo.md` | Why memo looks the way it does (decisions M1 onwards) |

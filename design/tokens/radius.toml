@@ -1,0 +1,7 @@
+# Corner radii in design pixels (ROADMAP R118 `[shared]`: the web gets them in rem).
+
+[shared.radius]
+title = "Corner radii"
+small = { name = "radius.sm", value = 4.0, purpose = "Chips, badges, scrollbar grabs, tooltips" }
+medium = { name = "radius.md", value = 6.0, purpose = "Buttons, inputs, dropdowns, rows, menu items" }
+large = { name = "radius.lg", value = 10.0, purpose = "Windows, panes, popups, dialogs" }

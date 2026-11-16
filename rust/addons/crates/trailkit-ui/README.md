@@ -22,7 +22,7 @@ Latin up to Extended-B plus punctuation, the icon font only the icons in
 | Module | Content | Platform |
 |--------|---------|----------|
 | `color` | `Color` (RGBA) + WCAG contrast ratio | any |
-| `theme` | `Theme` tokens, built-in `Theme::DARK` (default) / `Theme::LIGHT`, `ThemeKind`; sizes in `theme/layout.rs` (`Spacing`, `Radii`, `ListLayout`, `PaneLayout`, `ButtonLayout`, `MenuLayout`), `Typography` in `theme/typography.rs` | any |
+| `theme` | `Theme` and `ThemeKind`; the token types in `theme/colors.rs` (color groups, R107 darkening steps), `theme/layout.rs` (`Spacing`, `Radii`, `ListLayout`, `PaneLayout`, `ButtonLayout`, `MenuLayout`) and `theme/typography.rs`; `Theme::DARK` (default) / `Theme::LIGHT` in the generated `theme/values.rs` (R118) | any |
 | `fonts` | shared font roles (body, bold, italic, headings, icons), embedded Open Sans + Lucide | any |
 | `icons` | Lucide icon glyphs used by trailkit (add new ones here) | any |
 | `text` | `TextStyle` — the text roles of `tokens.md` §7.1 (font and color, any platform); `draw_text`, `draw_text_wrapped`, `draw_truncated_text` ("…" plus full-text tooltip), `draw_icon`, `draw_icon_text` (icon in front of a text in any role, icon and capitals centered on each other, one line or wrapped; Q325), `TextStyle::push` only for measuring, centering and inputs (R96) | any / Windows |
@@ -85,8 +85,9 @@ component has one in `tests/component-states/` (Dark and Light), see
 
 - No raw colors or sizes: everything comes from `Theme` tokens. A new token is
   a decision ([`tokens.md`](../../../../.agents/skills/trailkit-ui/references/tokens.md));
-  `cargo xtask tokens` regenerates the token reference and a test fails while
-  it is out of date.
+  Values live in [`design/tokens/`](../../../../design/tokens/) (R118);
+  `cargo xtask tokens` generates `src/theme/values.rs` and the token reference,
+  and a test fails while either is out of date.
 - Drawing code runs on the render thread: no allocations in steady state, no blocking, no I/O.
 - Every component state gets a snapshot in Dark and Light in the same change.
 - Texts are passed in by the addon; this crate has no strings of its own.

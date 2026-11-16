@@ -28,6 +28,7 @@ Every project has its own README with purpose, build, usage and its rules.
 | Shared crates | [`rust/addons/crates/trailkit-ui`](rust/addons/crates/trailkit-ui/README.md) | Design system: theme tokens, fonts, icons and shared ImGui components |
 | Tools | [`rust/tools/trailkit-datagen`](rust/tools/trailkit-datagen/README.md) | Daily data job: trading post price archive and WvW snapshots |
 | | [`tools/bruno-gw2-api`](tools/bruno-gw2-api/README.md) | Bruno collection for trying the GW2 API v2 by hand (public and account endpoints) |
+| Design | [`design`](design/README.md) | Design tokens for addons and web: the only source of colors and sizes |
 | Data | [`data/events`](data/events/README.md) | Curated event schedules (source of truth) |
 | Docs | [`docs/plans`](docs/plans/README.md) | Roadmap, plans and every decision with its id |
 | | [`.agents/skills`](.agents/skills/README.md) | Detailed rules for addon code, UI and Rust (read by humans and coding agents) |

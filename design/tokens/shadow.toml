@@ -1,0 +1,6 @@
+# Shadow geometry (ROADMAP R118): the addons' hard popup shadow offset in
+# pixels; its color is in colors.toml. `[web]` gets its own shadow shape.
+
+[addon.shadow]
+title = "Shadows"
+popup_offset = { name = "shadow.popup.offset", value = 2.0, purpose = "How far it reaches below" }

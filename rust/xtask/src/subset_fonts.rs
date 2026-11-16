@@ -7,8 +7,10 @@
 //! `crates/trailkit-ui/assets/fonts/<font>/source/`; this command writes the
 //! subset next to them (the files `trailkit-ui` embeds). Text fonts keep Latin
 //! up to Extended-B plus general punctuation and arrows; the icon font keeps
-//! only the icons in `trailkit_ui::icons::Icon::ALL`. `--check` only verifies
-//! that the committed subsets match a fresh run.
+//! only the icons in `Icon::ALL`, read from the source of `icons.rs`, so xtask
+//! does not depend on `trailkit-ui` and can always regenerate its theme values
+//! (ROADMAP R118). `--check` only verifies that the committed subsets match a
+//! fresh run.
 
 use std::path::{Path, PathBuf};
 
@@ -21,7 +23,6 @@ use allsorts::{
     tag,
 };
 use anyhow::{Context, Result, anyhow, bail};
-use trailkit_ui::icons::Icon;
 
 use crate::workspace;
 
@@ -103,7 +104,7 @@ pub fn run(mode: Mode) -> Result<()> {
         let output = fonts.join(job.output);
         let data =
             std::fs::read(&source).with_context(|| format!("reading {}", source.display()))?;
-        let mut subset = subset_font(&data, &characters(job.characters))
+        let mut subset = subset_font(&data, &characters(job.characters)?)
             .with_context(|| format!("subsetting {}", source.display()))?;
         if job.characters == CharacterSet::Icons {
             fix_glyph_bounds(&mut subset)
@@ -132,14 +133,58 @@ pub fn run(mode: Mode) -> Result<()> {
 }
 
 /// The characters of a [`CharacterSet`].
-fn characters(set: CharacterSet) -> Vec<char> {
-    match set {
+///
+/// # Errors
+/// Returns an error if the icon list cannot be read.
+fn characters(set: CharacterSet) -> Result<Vec<char>> {
+    Ok(match set {
         CharacterSet::Text => TEXT_RANGES
             .iter()
             .flat_map(|(first, last)| (*first..=*last).filter_map(char::from_u32))
             .collect(),
-        CharacterSet::Icons => Icon::ALL.iter().map(|icon| icon.glyph()).collect(),
-    }
+        CharacterSet::Icons => icon_glyphs(&read_icons_source()?)?,
+    })
+}
+
+/// The source of `trailkit-ui`'s icon list.
+///
+/// # Errors
+/// Returns an error if the file cannot be read.
+fn read_icons_source() -> Result<String> {
+    let path = workspace::workspace_root().join("addons/crates/trailkit-ui/src/icons.rs");
+    std::fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))
+}
+
+/// The glyph of the icon constant `name` (`pub const X: Self = Self('\\u{e1b2}');`)
+/// in `source`, if it exists.
+fn icon_glyph(source: &str, name: &str) -> Option<char> {
+    let start = source.find(&format!("pub const {name}: Self = Self('\\u{{"))?;
+    let digits = &source[start..];
+    let open = digits.find("\\u{")? + 3;
+    let close = digits[open..].find('}')? + open;
+    char::from_u32(u32::from_str_radix(&digits[open..close], 16).ok()?)
+}
+
+/// The glyphs of every icon in `Icon::ALL` in `source`, in list order.
+///
+/// # Errors
+/// Returns an error if the list is missing or names an unknown icon.
+fn icon_glyphs(source: &str) -> Result<Vec<char>> {
+    let list_start = source
+        .find("pub const ALL:")
+        .context("icons.rs has no `Icon::ALL`")?;
+    let list = &source[list_start..];
+    let list = &list[..list.find("];").context("`Icon::ALL` is not closed")?];
+    list.split("Self::")
+        .skip(1)
+        .map(|entry| {
+            let name: String = entry
+                .chars()
+                .take_while(|character| character.is_ascii_alphanumeric() || *character == '_')
+                .collect();
+            icon_glyph(source, &name).with_context(|| format!("no glyph for icon `{name}`"))
+        })
+        .collect()
 }
 
 /// Returns `data` (a TrueType font) reduced to the glyphs of `characters`
@@ -384,8 +429,10 @@ mod tests {
         let fonts = workspace::workspace_root().join("addons/crates/trailkit-ui/assets/fonts");
         let source = std::fs::read(fonts.join("lucide/source/lucide.ttf"))
             .unwrap_or_else(|error| panic!("reading the Lucide source: {error}"));
-        let mut font = subset_font(&source, &[Icon::X.glyph()])
-            .unwrap_or_else(|error| panic!("subsetting: {error}"));
+        let icons = read_icons_source().unwrap_or_else(|error| panic!("{error}"));
+        let x = icon_glyph(&icons, "X").unwrap_or_else(|| panic!("no `x` icon"));
+        let mut font =
+            subset_font(&source, &[x]).unwrap_or_else(|error| panic!("subsetting: {error}"));
         fix_glyph_bounds(&mut font).unwrap_or_else(|error| panic!("fixing: {error}"));
         // Glyph 1 is the `x`; its header now matches its points.
         let tables = table_directory(&font).unwrap_or_else(|error| panic!("{error}"));
@@ -419,7 +466,7 @@ mod tests {
 
     #[test]
     fn text_set_covers_umlauts_and_typography() {
-        let set = characters(CharacterSet::Text);
+        let set = characters(CharacterSet::Text).unwrap_or_else(|error| panic!("{error}"));
         for character in ['A', 'ä', 'ß', 'Ő', '…', '„', '–', '→'] {
             assert!(set.contains(&character), "{character} missing");
         }
@@ -428,6 +475,26 @@ mod tests {
 
     #[test]
     fn icon_set_is_the_used_icons() {
-        assert_eq!(characters(CharacterSet::Icons).len(), Icon::ALL.len());
+        let source = read_icons_source().unwrap_or_else(|error| panic!("{error}"));
+        let glyphs = icon_glyphs(&source).unwrap_or_else(|error| panic!("{error}"));
+        let listed = source
+            .split("pub const ALL: [Self; ")
+            .nth(1)
+            .and_then(|rest| rest.split(']').next())
+            .and_then(|count| count.parse::<usize>().ok())
+            .unwrap_or_else(|| panic!("no length of `Icon::ALL`"));
+        assert_eq!(glyphs.len(), listed);
+        assert!(
+            glyphs
+                .iter()
+                .all(|glyph| ('\u{e000}'..='\u{f8ff}').contains(glyph))
+        );
+    }
+
+    #[test]
+    fn reads_an_icon_glyph_from_its_constant() {
+        let source = "    pub const X: Self = Self('\\u{e1b2}');\n";
+        assert_eq!(icon_glyph(source, "X"), Some('\u{e1b2}'));
+        assert_eq!(icon_glyph(source, "Y"), None);
     }
 }

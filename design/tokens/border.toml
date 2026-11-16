@@ -1,0 +1,6 @@
+# Border widths in design pixels (ROADMAP R118 `[shared]`); border colors are
+# in colors.toml.
+
+[shared.border]
+title = "Borders"
+width = { name = "border.width", value = 1.0, purpose = "Border thickness" }
