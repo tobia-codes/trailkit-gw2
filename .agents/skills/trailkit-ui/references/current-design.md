@@ -11,7 +11,7 @@ Use these in this order. The first one that answers the question wins.
 | Source | What it tells you |
 |--------|-------------------|
 | Snapshot PNGs | What each state really looks like, rendered by the addon's own code |
-| `crates/trailkit-ui/src/theme.rs` | The token values; [`token-values.md`](token-values.md) is generated from it |
+| `rust/addons/crates/trailkit-ui/src/theme.rs` | The token values; [`token-values.md`](token-values.md) is generated from it |
 | [`tokens.md`](tokens.md) | Which token to use when (binding), with the review checklist in §10 |
 | [`../SKILL.md`](../SKILL.md), [`ux-rules.md`](ux-rules.md) | Shared components and UX rules |
 | `docs/plans/addons/trailkit-memo.md` | Why memo looks the way it does (decisions M1 onwards) |
@@ -27,8 +27,8 @@ a pane highlight).
 
 The snapshots are committed, so no game and no build are needed to look at them:
 
-- Memo window: `addons/trailkit-memo/tests/snapshots/`
-- Shared components: `crates/trailkit-ui/tests/snapshots/`
+- Memo window: `rust/addons/trailkit-memo/tests/snapshots/`
+- Shared components: `rust/addons/crates/trailkit-ui/tests/snapshots/`
 
 Open the PNGs with your image tool. If you have none, ask the user to attach the
 files named below. To render them again, run `cargo xtask ui-test`; add `--update`
@@ -37,8 +37,8 @@ to rewrite them after an intended change. Failing comparisons land in
 
 Names follow `memo-state-<state>-<dark|light>.png` and
 `ui-<component>-<state>-<dark|light>.png`. States are defined in
-`addons/trailkit-memo/src/main_window/tests/states.rs` and
-`crates/trailkit-ui/tests/component_states.rs`.
+`rust/addons/trailkit-memo/src/main_window/tests/states.rs` and
+`rust/addons/crates/trailkit-ui/tests/component_states.rs`.
 
 ## The memo window
 

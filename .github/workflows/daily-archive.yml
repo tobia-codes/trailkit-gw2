@@ -62,10 +62,15 @@ jobs:
             echo "tag=archive-$(date -u +%Y-%m)"
           } >> "$GITHUB_OUTPUT"
 
+      # The Cargo workspace lives in `rust/` (ROADMAP R116).
       - name: Install pinned toolchain
+        working-directory: rust
         run: rustup toolchain install # explicit: rustup auto-install is deprecated
       - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
       - name: Build trailkit-datagen
+        working-directory: rust
         run: cargo build --release --locked -p trailkit-datagen
 
       - name: Ensure monthly release exists (D39)
@@ -92,17 +97,17 @@ jobs:
 
       - name: Capture archive
         if: steps.plan.outputs.mode == 'archive'
-        run: target/release/trailkit-datagen archive --out-dir "$OUT_DIR"
+        run: rust/target/release/trailkit-datagen archive --out-dir "$OUT_DIR"
 
       - name: Capture archive (catch-up, fails if gaps remain)
         if: steps.plan.outputs.mode == 'catch-up'
-        run: target/release/trailkit-datagen archive --out-dir "$OUT_DIR" --fail-if-incomplete
+        run: rust/target/release/trailkit-datagen archive --out-dir "$OUT_DIR" --fail-if-incomplete
 
       - name: Capture WvW reset snapshot
         if: startsWith(steps.plan.outputs.mode, 'wvw-')
         env:
           MODE: ${{ steps.plan.outputs.mode }}
-        run: target/release/trailkit-datagen wvw-snapshot --region "${MODE#wvw-}" --out-dir "$OUT_DIR"
+        run: rust/target/release/trailkit-datagen wvw-snapshot --region "${MODE#wvw-}" --out-dir "$OUT_DIR"
 
       # Runs even if the capture failed, so partial results and the manifest are kept.
       - name: Upload files

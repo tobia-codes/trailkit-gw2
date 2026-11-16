@@ -3,5 +3,7 @@
 set -e
 # Shells started by git may not have rustup on PATH.
 command -v cargo >/dev/null 2>&1 || . "$HOME/.cargo/env"
+# The Cargo workspace lives in `rust/` (ROADMAP R116).
+cd "$(git rev-parse --show-toplevel)/rust"
 cargo fmt --all -- --check
 cargo xtask check-names

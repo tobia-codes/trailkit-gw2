@@ -37,7 +37,7 @@ Core-mandatory plan R109 merged (PR #130); R110–R112 and the frontend topics w
    `chore/plan-wishes-2026-11-14`. **Next:** the frontend/backend round (R121: stack, SSR, deployment, accounts without
    email, sync, admin roles, forum, REST API, price history). Core wishes settled: layout editor R122,
    hint about new addons R123. **Then** continue the favorites grilling on `feature/memo-favorites` (Q407, Q408, Q416–Q419),
-   mockup (R87), implementation. The `rust/` move (R116) and the token generator (R118) come after the favorites work.
+   mockup (R87), implementation. The `rust/` move (R116) was pulled forward (Q447) onto `chore/rust-workspace-layout`; the token generator (R118) comes after the favorites work. Then review findings 2–6.
 2. **Remaining wishes of 2026-11-13:** memo struck-through checked items, then the second window. event:
    filters ("used in notes", a meta train order: research trains, timing, a source with licence/GDPR first), favorite events.
    All addons: more languages without growing the DLLs (BACKLOG BL15; reworks the `get` tables kept whole in Q392).
@@ -55,16 +55,16 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M194+, R129+, B26+, questions from 447**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M194+, R129+, B26+, questions from 450**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
 1. **Storage failures:** done (memo M180, 2026-11-10).
 2. **Pre-push protection:** `.githooks/pre-push` checks protected destination refs only for deletions; normal pushes check the current
-   branch via `xtask/src/check_branch.rs`. Validate every destination ref; server-side protection was not inspected.
-3. **WvW snapshot validity:** `tools/trailkit-datagen/src/wvw.rs::write_reset_snapshot`
+   branch via `rust/xtask/src/check_branch.rs`. Validate every destination ref; server-side protection was not inspected.
+3. **WvW snapshot validity:** `rust/tools/trailkit-datagen/src/wvw.rs::write_reset_snapshot`
    saves current matches without checking the intended pre-reset time/match period.
    A delayed job can succeed with post-reset data. Check the actual Nov 6 EU run as well.
-4. **Search cache:** `addons/trailkit-memo/src/main_window/search.rs::update_search` calls `SearchQuery::parse` before checking the
+4. **Search cache:** `rust/addons/trailkit-memo/src/main_window/search.rs::update_search` calls `SearchQuery::parse` before checking the
    cache, allocating for unchanged queries every frame. Check unchanged inputs first; no benchmark was run.
 5. **Docs/skills accuracy:** READMEs done (R91). Still wrong: `nexus-addon-dev/references/addon-structure.md`
    says Cargo forbids sibling-slice dependencies (it only rejects cycles; the rule is enforced by review);
