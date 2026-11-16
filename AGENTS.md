@@ -43,7 +43,8 @@ Shared rules for Codex and Claude Code. `CLAUDE.md` imports this file;
    needs approval. Historical R69 and tool allowlists grant no standing OK.
 2. **Decisions belong to the user.** For any decision not settled in plans or
    by the user (architecture, scope, libraries, naming, UX, data model, etc.),
-   use `grilling`: numbered rounds, a recommendation for each, wait for answers.
+   use `grilling`: numbered rounds, a recommendation for each, wait for answers
+   (on the phone: one question per message).
    Do not silently assume or reopen settled decisions. Record decisions in
    the relevant plan; do not ask the user for facts you can inspect yourself.
    **Visual approval first (R87).** Before every visible addon design change

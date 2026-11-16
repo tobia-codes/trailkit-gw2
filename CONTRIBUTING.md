@@ -47,7 +47,9 @@ Development happens in **WSL** (Linux). Addons are cross-compiled to Windows
 (`x86_64-pc-windows-msvc`) with `cargo-xwin` and copied into the game's addons
 folder. Follow the [setup in the README](README.md#setup-wsl), then enable the
 git hooks with `cargo xtask install-hooks`: pre-commit runs `cargo fmt` and the
-naming check, pre-push checks the branch name, Clippy and the tests.
+naming check; pre-push checks the name of every pushed branch, refuses
+`develop`, `main` and tags (a tag goes out only after the maintainer's OK, with
+`TRAILKIT_ALLOW_TAG_PUSH=1 git push …`), then runs Clippy and the tests.
 
 To try an addon in game you need Guild Wars 2 with
 [Raidcore Nexus](https://raidcore.gg/Nexus); `cargo xtask deploy <addon>`

@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-15 (session 39; wishes of 2026-11-14 grilled). Current state and
+Last updated: 2026-11-16 (session 40; violet accent, rust/ move, token source, pre-push hook). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -12,9 +12,9 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 ## ▶ Resume here
 
 **First, ask the user: can you test in game now?** Pending checks with where/how/expected: [`in-game-tests.md`](in-game-tests.md)
-(user request 2026-11-13: keep it current until each item is confirmed; ask every session).
+(user request 2026-11-13: keep it current until each item is confirmed; ask every session). A failed test becomes a `bugfix/` branch.
 
-A failed in-game test becomes a `bugfix/` branch.
+**On the phone** ("nehme next session auf dem handy auf"): no game, skip that question; grilling asks **one question per message**.
 
 **Cloud sessions:** auto mode may refuse `git commit`: ask the user, never work around it. PRs via `gh api .../pulls`, auto-merge
 via `PUT .../pulls/{n}/ccr/auto_merge` (`merge_method=merge`); branch deletion is blocked (the user deletes). Push does not set
@@ -37,7 +37,7 @@ Core-mandatory plan R109 merged (PR #130); R110–R112 and the frontend topics w
    `chore/plan-wishes-2026-11-14`. **Next:** the frontend/backend round (R121: stack, SSR, deployment, accounts without
    email, sync, admin roles, forum, REST API, price history). Core wishes settled: layout editor R122,
    hint about new addons R123. **Then** continue the favorites grilling on `feature/memo-favorites` (Q407, Q408, Q416–Q419),
-   mockup (R87), implementation. The `rust/` move (R116) was pulled forward (Q447) onto `chore/rust-workspace-layout`; the token source and generator (R118) is on `chore/token-source`. Then review findings 2–6.
+   mockup (R87), implementation. The `rust/` move (R116, #137) and the token source and generator (R118, #138) are merged. Review finding 2 done; **next: finding 3**.
 2. **Remaining wishes of 2026-11-13:** memo struck-through checked items, then the second window. event:
    filters ("used in notes", a meta train order: research trains, timing, a source with licence/GDPR first), favorite events.
    All addons: more languages without growing the DLLs (BACKLOG BL15; reworks the `get` tables kept whole in Q392).
@@ -55,12 +55,11 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M194+, R129+, B26+, BL18+, questions from 460**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M194+, R129+, B26+, BL18+, questions from 463**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
 1. **Storage failures:** done (memo M180, 2026-11-10).
-2. **Pre-push protection:** `.githooks/pre-push` checks protected destination refs only for deletions; normal pushes check the current
-   branch via `rust/xtask/src/check_branch.rs`. Validate every destination ref; server-side protection was not inspected.
+2. **Pre-push protection:** done (Q460–Q462, R48, 2026-11-16).
 3. **WvW snapshot validity:** `rust/tools/trailkit-datagen/src/wvw.rs::write_reset_snapshot`
    saves current matches without checking the intended pre-reset time/match period.
    A delayed job can succeed with post-reset data. Check the actual Nov 6 EU run as well.
