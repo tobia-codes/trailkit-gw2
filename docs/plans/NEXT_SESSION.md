@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-15 (session 39; wishes of 2026-11-14 grilled). Current state and
+Last updated: 2026-11-16 (session 40; violet accent, rust/ move, token source, pre-push hook). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -12,9 +12,9 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 ## ▶ Resume here
 
 **First, ask the user: can you test in game now?** Pending checks with where/how/expected: [`in-game-tests.md`](in-game-tests.md)
-(user request 2026-11-13: keep it current until each item is confirmed; ask every session).
+(user request 2026-11-13: keep it current until each item is confirmed; ask every session). A failed test becomes a `bugfix/` branch.
 
-A failed in-game test becomes a `bugfix/` branch.
+**On the phone** ("nehme next session auf dem handy auf"): no game, skip that question; grilling asks **one question per message**.
 
 **Cloud sessions:** auto mode may refuse `git commit`: ask the user, never work around it. PRs via `gh api .../pulls`, auto-merge
 via `PUT .../pulls/{n}/ccr/auto_merge` (`merge_method=merge`); branch deletion is blocked (the user deletes). Push does not set
@@ -37,7 +37,7 @@ Core-mandatory plan R109 merged (PR #130); R110–R112 and the frontend topics w
    `chore/plan-wishes-2026-11-14`. **Next:** the frontend/backend round (R121: stack, SSR, deployment, accounts without
    email, sync, admin roles, forum, REST API, price history). Core wishes settled: layout editor R122,
    hint about new addons R123. **Then** continue the favorites grilling on `feature/memo-favorites` (Q407, Q408, Q416–Q419),
-   mockup (R87), implementation. The `rust/` move (R116) was pulled forward (Q447) onto `chore/rust-workspace-layout`; the token source and generator (R118) is on `chore/token-source`. Then review findings 2–6.
+   mockup (R87), implementation. The `rust/` move (R116, #137) and the token source and generator (R118, #138) are merged. Review finding 2 done; **next: finding 3**.
 2. **Remaining wishes of 2026-11-13:** memo struck-through checked items, then the second window. event:
    filters ("used in notes", a meta train order: research trains, timing, a source with licence/GDPR first), favorite events.
    All addons: more languages without growing the DLLs (BACKLOG BL15; reworks the `get` tables kept whole in Q392).
