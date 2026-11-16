@@ -145,20 +145,3 @@ mockup. Deploy `develop` once PR #125 is merged (Setup 1).
   collapsed group opens after a moment, the title floats next to the cursor
   (red with a ban icon over its own child), the list scrolls near the edges.
   (c) no drag; the tooltip says to clear the search to move.
-
-## Audit of stuck UI states (2026-11-16)
-
-### 17 · Releasing the mouse over the game world
-
-No design change, so no mockup. Clicks into the game world never reach ImGui
-(nexus-addon-dev skill); unknown whether a mouse **release** there does. If
-not, ImGui thinks the button is still held.
-
-- **Get there:** (a) drag a note in the list and release the mouse **outside**
-  the memo window, over the game; (b) select a note › Edit › drag a text
-  selection out of the window and release over the game; (c) drag the
-  splitter between list and note out of the window and release over the game.
-- **Look at:** the window after moving the mouse back in, without clicking.
-- **Expected:** (a) the drag ended, nothing moved, no floating title;
-  (b) the selection stopped growing; (c) the splitter no longer follows the
-  mouse. If any keeps going until the next click, report it: a `bugfix/`.

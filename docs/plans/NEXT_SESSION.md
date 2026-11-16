@@ -31,8 +31,8 @@ Q408, Q414–Q419 (trailkit-memo.md "Open questions"; Q407/Q408 carry the user's
 Core-mandatory plan R109 merged (PR #130); R110–R112 and the frontend topics went to develop on their own PR.
 
 **Open, in this order:**
-1. **In-game tests 1–3, 6–8, 10, 11, 15, 17** ([`in-game-tests.md`](in-game-tests.md)) whenever the user is at the PC; deploy `develop` first.
-   **Session 40 (2026-11-16):** tests 4, 5, 9, 12–14, 16 OK; findings Q436 (menu divider spacing), Q437 (Dark red fill too light), ROADMAP "Open": R87 mockups after the tests. Stuck rename fixed on `bugfix/memo-stuck-rename` (user OK in game); stuck-state audit added test 17.
+1. **In-game tests 1–3, 6–8, 10, 11, 15** ([`in-game-tests.md`](in-game-tests.md)) whenever the user is at the PC; deploy `develop` first.
+   **Session 40 (2026-11-16):** tests 4, 5, 9, 12–14, 16 OK; findings Q436 (menu divider spacing), Q437 (Dark red fill too light), ROADMAP "Open": R87 mockups after the tests. Stuck rename fixed on `bugfix/memo-stuck-rename` (user OK in game); stuck-state audit: mouse release over the game reaches ImGui (test 17 OK).
    **Session 39 (2026-11-15):** wishes of 2026-11-14 settled as ROADMAP R114–R123 (Q420–Q435; memo M192) on
    `chore/plan-wishes-2026-11-14`. **Next:** the frontend/backend round (R121: stack, SSR, deployment, accounts without
    email, sync, admin roles, forum, REST API, price history). Core wishes settled: layout editor R122,
