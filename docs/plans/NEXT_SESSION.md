@@ -11,8 +11,8 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## ▶ Resume here
 
-**First, ask the user: can you test in game now?** Pending checks with where/how/expected: [`in-game-tests.md`](in-game-tests.md)
-(user request 2026-11-13: keep it current until each item is confirmed; ask every session). A failed test becomes a `bugfix/` branch.
+**First, if [`in-game-tests.md`](in-game-tests.md) lists tests, ask the user: can you test in game now?** Remove each item once
+the user confirms it (user requests 2026-11-13, 2026-11-16); an empty list means no question. A failed test becomes a `bugfix/` branch.
 
 **On the Mac or phone** ("…auf dem mac/handy auf"): no game, so skip that question and add every needed game check to
 [`in-game-tests.md`](in-game-tests.md) in the same commit (2026-11-16). Phone: grilling asks **one question per message**.

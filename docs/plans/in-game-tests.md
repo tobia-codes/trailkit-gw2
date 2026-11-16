@@ -1,10 +1,10 @@
 # In-game tests
 
 Pending checks the maintainer runs in Guild Wars 2, one at a time
-(user request 2026-11-13). **Agents:** at the start of every session ask
-whether the user can test in game now; keep this list current with every
-change that needs an in-game check; remove an item only after the user
-confirms it, and note failures as bugs in the relevant plan. Every item
+(user request 2026-11-13). **Agents:** at the start of every session,
+if this list has tests, ask whether the user can test in game now; keep this list current with every
+change that needs an in-game check; remove an item as soon as the user
+confirms it (and only then), and note failures as bugs in the relevant plan. Every item
 says how to get there click by click, what to look at, how it looked
 before, how it must look now and links the approved design (R87 mockup).
 In a session on the Mac or the phone (no game there, user request
