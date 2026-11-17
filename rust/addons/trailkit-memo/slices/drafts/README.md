@@ -10,6 +10,7 @@ writes it and the editor creates drafts.
 | Module | Content |
 |--------|---------|
 | `draft_hint` | `DraftHint` (caches the formatted time) and `DraftHintAction` (Windows only) |
+| `draft_overview` | the card above the panes about notes with unsaved changes: count, marked rows, "Go to note"; hidden until the next game start when closed (M185, Windows only) |
 | `i18n` | the slice's texts (`DraftText`, en/de); "Discard" stays in shared, the unsaved-changes question uses it too |
 
 ## Build and test

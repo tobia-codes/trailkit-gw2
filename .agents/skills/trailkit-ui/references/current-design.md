@@ -38,7 +38,7 @@ to rewrite them after an intended change. Failing comparisons land in
 Names follow `memo-state-<state>-<dark|light>.png` and
 `ui-<component>-<state>-<dark|light>.png`. States are defined in
 `rust/addons/trailkit-memo/src/main_window/tests/states.rs` and
-`rust/addons/crates/trailkit-ui/tests/component_states.rs`.
+`rust/addons/crates/trailkit-ui/tests/component-states/` (`main.rs` plus one file per component group).
 
 ## The memo window
 

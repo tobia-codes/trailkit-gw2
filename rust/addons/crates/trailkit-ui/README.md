@@ -60,6 +60,7 @@ Modules are grouped by concern (ROADMAP R134): `text`, `layout`, `controls`, `li
 | `lists::tree_arrow` | `draw_tree_arrow` — the Lucide chevron of an expandable tree row (R71) | Windows |
 | `feedback::toast` | one short message with optional actions at the bottom of the window; the timer pauses on hover (M142, `ix-toasts`); error tone without timer, with counter, spinner and close button, and a success tone (M180) | Windows |
 | `feedback::status_line` | `draw_status_line` — `draw_icon_text` with the status icon and a wrapping text in the status color (`Status`: Success, Warning, Danger, Info), Body in dialogs, Small in the log export (R96) | Windows |
+| `feedback::status_card` | `draw_status_card` — a status line on a tinted fill framed in the status color, optional detail line and buttons (M184, R103) | Windows |
 | `markdown` | markdown → blocks and styled spans; task toggling; `http(s)`-only links | any |
 | `markdown::markdown_view` | draws a parsed markdown document block by block; `inline_text` wraps words, links and chat-link chips and marks search hits; returns task/link clicks and copies chat-link chips | Windows |
 | `chat_link` | finds and decodes GW2 chat codes (`[&…]`) | any |
@@ -67,12 +68,13 @@ Modules are grouped by concern (ROADMAP R134): `text`, `layout`, `controls`, `li
 | `help::help_window` | `HelpWindow` — the help window of every addon: Help tab (topic list + topic as resizable pane columns) and Report a problem tab (export, status line, GitHub), each page with the page head; the addon passes texts, help markdown and the export state, carries out the returned `HelpAction` and saves the `HelpWindowState` (tab, topic, list width; R95, R100, R101) | Windows |
 | `help::help_topics` | `parse_help_topics`: the `##` topics of an addon's `help/<language>.md`, `subsection_counts` for the language parity test (R95) | any |
 | `drawing::style_scope` | `StyleScope` — RAII guard that pushes a theme onto the shared ImGui context and pops it on drop; `StyleScope::transparent_frame` for borderless inputs (no per-frame allocation) | Windows |
+| `drawing::draw_list` | `window_draw_list` — the current window's draw list without imgui-rs' one-at-a-time lock, which crashed the game (R104, Q355); `clippy.toml` bans the imgui-rs call | Windows |
 | `drawing::cursor_extent` | measures the mouse cursor (GW2 draws a large one) so `StyleScope` places tooltips right of it | Windows |
 
 ## Usage
 
 ```rust
-use trailkit_ui::{style_scope::StyleScope, theme::ThemeKind};
+use trailkit_ui::{drawing::style_scope::StyleScope, theme::ThemeKind};
 
 fn render(ui: &nexus::imgui::Ui) {
     let _theme = StyleScope::push(ui, &ThemeKind::default().theme());

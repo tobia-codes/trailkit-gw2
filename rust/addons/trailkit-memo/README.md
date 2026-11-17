@@ -36,6 +36,10 @@ this module rewritten.
 | Path | Content |
 |------|---------|
 | `src/lib.rs` | crate root; `all_texts()` collects the texts of the app and every slice for the font atlas |
+| `src/help_document.rs` | memo's help text: the topics of `help/<language>.md`, the last one completed with the privacy policy (R95, M181) |
+| `src/help_text.rs` | the texts of memo's help window in English and German (R100) |
+| `src/log_export.rs` | the problem page's steps that leave the help window: writing the log export and the GitHub issue form address (R95, R100) |
+| `src/options_tab.rs` | memo's tab in the Nexus options (R53; Windows only) |
 | `src/main_window.rs` | main window: state, drawing entry point, due resets (Windows only) |
 | `src/main_window/closing.rs` | closing with unsaved changes: close request and approval, drafts kept on unload, the card about notes with drafts |
 | `src/main_window/actions.rs` | `WindowAction` and applying it: unsaved-edit guard, then tree, editor and view actions |

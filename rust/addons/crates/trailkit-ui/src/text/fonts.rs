@@ -6,7 +6,8 @@
 //! body size follows Nexus' `FontUI` (which follows the GW2 interface size);
 //! the other sizes are the theme's `font.size.*` factors of it (R96). This
 //! module only describes the fonts and is platform-independent; registration
-//! lives in `font_registry` (Windows).
+//! with Nexus lives in `trailkit-nexus-bridge`, the font pointers and
+//! `FontScope` in `font_registry` (Windows).
 
 use crate::theme::Typography;
 

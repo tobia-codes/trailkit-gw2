@@ -241,7 +241,7 @@ be in, in Dark **and** Light:
 
 Each state is covered once per element; the cross product of independent
 states is not needed. Shared components live in
-`rust/addons/crates/trailkit-ui/tests/component_states.rs` (`ui-<component>-<state>-<theme>`),
+`rust/addons/crates/trailkit-ui/tests/component-states/` (`main.rs` plus one file per component group) (`ui-<component>-<state>-<theme>`),
 addon views in `rust/addons/<addon>/src/main_window/tests/states.rs`
 (`<addon>-state-<name>-<theme>`), the minimum width in
 `tests/states/minimum_width.rs` (`min-*`, German `min-de-*`). A new element or
