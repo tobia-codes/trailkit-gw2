@@ -91,7 +91,7 @@ Chat links from the game (`[&…]`, e.g. a waypoint or an item) show as chips wi
 
 ### Saving and drafts
 
-- **Save** (or **Ctrl+Enter** / **Ctrl+S**) saves your changes and closes the editor once they are on disk, **Cancel** throws them away — memo asks first if you changed something.
+- **Save** (or **Ctrl+S**) saves your changes and closes the editor once they are on disk, **Cancel** throws them away — memo asks first if you changed something.
 - If you choose another note, create one or close the window while you have unsaved changes, memo asks whether to save or discard them. (Set `"unsaved_changes": "save_automatically"` in `settings.json` to save without asking; a switch follows in the settings window.)
 - **Escape** closes the window; with unsaved changes memo asks first.
 - If the game or the addon closes while you are editing, your changes are kept as a draft. Such notes are marked with a yellow warning sign in the list (a collapsed group shows it too), and a hint above the list says how many there are; **Go to note** takes you to them one by one, and **x** hides the hint until the game restarts. In the note, choose **Restore** to continue or **Discard** to drop the changes. Drafts are deleted automatically after 30 days.
@@ -170,7 +170,7 @@ These are the keys memo uses, sorted by where they work.
 
 - **Ctrl+B** – bold
 - **Ctrl+I** – italic
-- **Ctrl+Enter** or **Ctrl+S** – save
+- **Ctrl+S** – save
 - **Ctrl+Z** – undo your typing
 - **Backspace** – next to a chat link chip: delete the whole chip
 

@@ -130,7 +130,7 @@ pub struct EditorInput<'a> {
 /// What the user did in the editor.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EditorAction {
-    /// Save the edit (Ctrl+S, Ctrl+Enter; M52, M93).
+    /// Save the edit ("Save", Ctrl+S; M52, M93, M194).
     Save,
     /// A click on a link or chip in the preview.
     Markdown(MarkdownAction),
@@ -408,9 +408,6 @@ impl Editor {
             .draw(ui, theme, "##body", [width, 0.0], input.chips);
         if response.changed {
             self.sync_body();
-        }
-        if response.submitted {
-            output.actions.push(EditorAction::Save);
         }
         if input.preview_visible {
             ui.same_line_with_spacing(0.0, 0.0);

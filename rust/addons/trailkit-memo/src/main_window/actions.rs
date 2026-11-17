@@ -68,7 +68,7 @@ pub(super) enum WindowAction {
     StartEditing,
     /// Start editing the selected note in its title, selected (M161).
     StartRenaming,
-    /// Commit the edit ("Save", Ctrl+Enter).
+    /// Commit the edit ("Save", Ctrl+S).
     FinishEditing,
     /// Leave the editor without saving; asks first if something changed.
     CancelEditing,

@@ -29,8 +29,6 @@ const BLINK_HALF_PERIOD: f64 = 0.6;
 pub struct EditorResponse {
     /// The text changed.
     pub changed: bool,
-    /// Ctrl+Enter was pressed (commit, M52).
-    pub submitted: bool,
 }
 
 /// Whether the mouse is over the editor's child window. The keyboard sink
