@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-16 (session 40; violet accent, rust/ move, token source, pre-push hook). Current state and
+Last updated: 2026-11-17 (session 42; R121 round done). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -23,11 +23,10 @@ the upstream (narrow fetch refspec): set `branch.<b>.remote/merge` by hand for t
 **On the Mac (no game, no WSL):** `git fetch origin && git switch develop && git pull --ff-only`; deploy, `ui-test` and in-game
 tests wait for the Windows PC; check `source ~/.cargo/env` and a first `cargo test` there; snapshots via the PR's Windows CI.
 
-**Session 38 (2026-11-14, cloud):** PR #129 merged (German empty-trash fixture, test only). C-703/25 P checked via
-secondary sources only (CURIA blocked in cloud): still pending, no hearing, DPF in force. The user chose memo first:
-**favorites grilling in progress on `feature/memo-favorites`** — decided M188–M191 (Q399–Q406, Q409–Q413); open Q407,
-Q408, Q414–Q419 (trailkit-memo.md "Open questions"; Q407/Q408 carry the user's follow-up questions). Then R87 mockup.
-Core-mandatory plan R109 merged (PR #130); R110–R112 and the frontend topics went to develop on their own PR.
+**Sessions 41–42 (2026-11-16/17):** R121 round done on `chore/plan-frontend-backend-scope`: B26–B44, R129–R132
+(Scaleway backups, 12-month prices at 5 min/1 h, Discord, `api.gw2.trailkit.de`, client keys, TanStack Start, prerendering).
+**Next:** merge OK for that branch; then the approved `cargo update` patch bumps and `cargo audit` in CI (Q484, R130) on a `chore/` branch.
+Favorites grilling (`feature/memo-favorites`, M188–M191 decided): open Q407, Q408, Q416–Q419 in trailkit-memo.md.
 
 **Open, in this order:**
 1. **In-game tests 1–3, 6–8, 10, 11, 18** ([`in-game-tests.md`](in-game-tests.md)) whenever the user is at the PC; deploy `develop` first.
@@ -55,7 +54,7 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M194+, R129+, B26+, BL18+, questions from 463**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M194+, R133+, B45+, BL18+, questions from 485**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
 1. **Storage failures:** done (memo M180, 2026-11-10).
@@ -85,6 +84,7 @@ Next ids: **M194+, R129+, B26+, BL18+, questions from 463**. Deferred: GW2 build
 ## Recurring checks and other open items
 
 Triggers/consequences: [agent reference](../agent-reference.md#recurring-checks).
+- **Dependencies (R130):** checked 2026-11-16 (about 20 patch updates, jiff 1.0 available, nexus-rs current; `cargo audit` not run). Next due 2026-11-23.
 - **Wiki:** Nov 6 review got HTTP 403; public recovery/login status not confirmed; keep Wayback.
 - **C-703/25 P:** Nov 15 check on CURIA: still pending, no hearing, no AG opinion, DPF in force. Order of June 4, 2026 (ECLI:EU:C:2026:465). Recheck on CURIA when triggered:
   https://juris.curia.europa.eu/juris/liste.jsf?language=en&num=C-703%2F25
