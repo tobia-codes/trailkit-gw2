@@ -1,6 +1,7 @@
 //! Color token types (trailkit-ui skill §2, ROADMAP R118): the colors of a
 //! theme grouped by role, and the darkening steps of colored buttons (R107).
-//! The values are generated into `values.rs` from `design/tokens/colors.toml`.
+//! The values are generated into `generated/colors.rs` from
+//! `design/tokens/colors.toml` (R133).
 
 use crate::{chat_link::ChipCategory, color::Color};
 

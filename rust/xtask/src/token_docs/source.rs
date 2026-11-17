@@ -68,6 +68,9 @@ pub(super) enum TokenValue {
 /// One token.
 #[derive(Debug, Clone, PartialEq)]
 pub(super) struct Token {
+    /// The token file it came from, e.g. `colors.toml`; its values go to
+    /// the generated module of the same name (ROADMAP R133).
+    pub(super) file: &'static str,
     /// The Rust field it fills, e.g. `danger_fill`.
     pub(super) field: String,
     /// Its documented name, e.g. `danger.fill`.
@@ -113,18 +116,25 @@ pub(super) fn read_groups(directory: &Path) -> Result<Vec<Group>> {
                 let Some(group_table) = item.as_table() else {
                     bail!("{file}: [{section}.{key}] must be a table");
                 };
-                collect_group(&mut groups, section, vec![key.to_owned()], group_table)
-                    .with_context(|| format!("{file}: [{section}.{key}]"))?;
+                collect_group(
+                    &mut groups,
+                    file,
+                    section,
+                    vec![key.to_owned()],
+                    group_table,
+                )
+                .with_context(|| format!("{file}: [{section}.{key}]"))?;
             }
         }
     }
     Ok(groups)
 }
 
-/// Adds the tokens of `table` at `path` to `groups` (continuing a group of
-/// an earlier file), then its nested groups.
+/// Adds the tokens of `table` at `path`, read from `file`, to `groups`
+/// (continuing a group of an earlier file), then its nested groups.
 fn collect_group(
     groups: &mut Vec<Group>,
+    file: &'static str,
     section: &str,
     path: Vec<String>,
     table: &Table,
@@ -137,7 +147,7 @@ fn collect_group(
             continue;
         }
         if let Some(inline) = item.as_inline_table() {
-            tokens.push(read_token(key, inline).with_context(|| format!("token `{key}`"))?);
+            tokens.push(read_token(file, key, inline).with_context(|| format!("token `{key}`"))?);
         } else if let Some(child) = item.as_table() {
             nested.push((key.to_owned(), child));
         } else {
@@ -161,13 +171,13 @@ fn collect_group(
     for (key, child) in nested {
         let mut child_path = path.clone();
         child_path.push(key);
-        collect_group(groups, section, child_path, child)?;
+        collect_group(groups, file, section, child_path, child)?;
     }
     Ok(())
 }
 
 /// Reads one token from its inline table.
-fn read_token(field: &str, table: &InlineTable) -> Result<Token> {
+fn read_token(file: &'static str, field: &str, table: &InlineTable) -> Result<Token> {
     let text = |key: &str| -> Result<String> {
         table
             .get(key)
@@ -194,6 +204,7 @@ fn read_token(field: &str, table: &InlineTable) -> Result<Token> {
         }
     };
     Ok(Token {
+        file,
         field: field.to_owned(),
         name: text("name")?,
         purpose: text("purpose")?,
@@ -255,16 +266,30 @@ mod tests {
     #[test]
     fn a_group_continues_in_a_later_file() {
         let mut groups = Vec::new();
-        for text in [
-            "[shared.border]\ntitle = \"Borders\"\ncolor = { name = \"border\", dark = \"#000000\", light = \"#FFFFFF\", purpose = \"p\" }\n",
-            "[shared.border]\nwidth = { name = \"border.width\", value = 1.0, purpose = \"p\" }\n",
+        for (file, text) in [
+            (
+                "colors.toml",
+                "[shared.border]\ntitle = \"Borders\"\ncolor = { name = \"border\", dark = \"#000000\", light = \"#FFFFFF\", purpose = \"p\" }\n",
+            ),
+            (
+                "border.toml",
+                "[shared.border]\nwidth = { name = \"border.width\", value = 1.0, purpose = \"p\" }\n",
+            ),
         ] {
             let document: DocumentMut = text.parse().unwrap();
             let table = document["shared"]["border"].as_table().unwrap();
-            collect_group(&mut groups, "shared", vec!["border".to_owned()], table).unwrap();
+            collect_group(
+                &mut groups,
+                file,
+                "shared",
+                vec!["border".to_owned()],
+                table,
+            )
+            .unwrap();
         }
         assert_eq!(groups.len(), 1);
         assert_eq!(groups[0].title.as_deref(), Some("Borders"));
         assert_eq!(groups[0].tokens.len(), 2);
+        assert_eq!(groups[0].tokens[1].file, "border.toml");
     }
 }

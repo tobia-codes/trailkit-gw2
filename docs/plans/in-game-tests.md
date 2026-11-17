@@ -144,3 +144,13 @@ red against the [red fill mockup](https://claude.ai/artifact/E6E3L6RTBxPsPBuCNW7
   calendar icons (`1` daily, dots weekly) without box, tooltip with kind and
   countdown, plain dropdown; (c) waypoint blue, skill copper, achievement
   rosé; (d) deep red with light label, darker on hover and hold.
+
+## Generated theme folder, branch `chore/generated-theme-folder` (R133)
+
+### 20 · Theme looks unchanged
+
+- **Design:** none (no visible change; the values were compared one to one).
+- **Get there:** deploy the branch (`cargo xtask deploy trailkit-memo`), open memo in Dark, then in Light (Setup 4).
+- **Look at:** window and pane backgrounds, borders of windows and popups, a tooltip and its shadow, the violet
+  **Edit** button, a red "Discard" button and chat-link chips.
+- **Before / now:** identical to `develop`; nothing may differ.
