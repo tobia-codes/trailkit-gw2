@@ -84,7 +84,7 @@ Next ids: **M194+, R133+, B45+, BL18+, questions from 485**. Deferred: GW2 build
 ## Recurring checks and other open items
 
 Triggers/consequences: [agent reference](../agent-reference.md#recurring-checks).
-- **Dependencies (R130):** checked 2026-11-16 (about 20 patch updates, jiff 1.0 available, nexus-rs current; `cargo audit` not run). Next due 2026-11-23.
+- **Dependencies (R130):** checked and updated 2026-11-17 (26 patch updates on `chore/dependency-patch-updates`, in-game test 19; jiff 1.0 open; nexus-rs current; `cargo audit`: no vulnerabilities, unmaintained `instant` and `paste` via nexus-rs). Next due 2026-11-24.
 - **Wiki:** Nov 6 review got HTTP 403; public recovery/login status not confirmed; keep Wayback.
 - **C-703/25 P:** Nov 15 check on CURIA: still pending, no hearing, no AG opinion, DPF in force. Order of June 4, 2026 (ECLI:EU:C:2026:465). Recheck on CURIA when triggered:
   https://juris.curia.europa.eu/juris/liste.jsf?language=en&num=C-703%2F25
