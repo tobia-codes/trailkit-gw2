@@ -173,6 +173,27 @@ red against the [red fill mockup](https://claude.ai/artifact/E6E3L6RTBxPsPBuCNW7
 - **Get there:** deploy the branch (`cargo xtask deploy trailkit-memo`), open memo (Setup 2).
 - **Look at:** fonts and icons load (title bar, list, buttons), a tooltip, the `⋯` menu, a toast (e.g. delete
   a note), the help window (menu › Help) with its topics, a chat-link chip and the Markdown preview of a note.
-- **Also (fonts moved to `trailkit-nexus-bridge`, Q496):** change the Nexus font size (Nexus options ›
-  Style › font size) with memo open: memo's text and icons grow and shrink with it, no `?` boxes appear.
+- **Also (fonts moved to `trailkit-nexus-bridge`, Q496):** with memo open, change the GW2 interface size
+  (GW2 options › Graphics › Interface Size) and the memo text size (Ctrl+mouse wheel over memo): memo's text
+  and icons grow and shrink with it, no `?` boxes appear. (Corrected 2026-11-17: memo follows Nexus' `FontUI`,
+  which follows the GW2 interface size, not the Nexus font size slider.)
 - **Before / now:** identical to `develop`; nothing may differ.
+
+## Escape and save shortcut, branch `bugfix/memo-escape-and-save-shortcut` (M194, M195)
+
+### 22 · Escape closes an open menu first
+
+- **Design:** none (behavior only).
+- **Get there:** open memo, select a note, click `⋯` (top right of the note); then press Escape. Repeat with
+  a right-click on a note in the list, with the reset type dropdown next to the title, and with the menu
+  button (top left of the title bar).
+- **Before:** Escape closed the whole memo window.
+- **Now:** the first Escape closes only the menu, memo stays open; a second Escape closes memo.
+
+### 23 · Only Ctrl+S saves
+
+- **Design:** tooltip text only: "Save changes (Ctrl+S)" / "Änderungen speichern (Strg+S)".
+- **Get there:** select a note › Edit › type a letter in the text; press Ctrl+Enter, then Ctrl+S. Hover "Save".
+- **Before:** Ctrl+Enter was named in the tooltip but did not save.
+- **Now:** Ctrl+Enter does nothing (no line break, no save); Ctrl+S saves and closes the editor; the tooltip
+  names only Ctrl+S. Help (menu › Help) names only Ctrl+S too.
