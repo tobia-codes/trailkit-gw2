@@ -43,7 +43,7 @@ Shared by the addons and the web.
 | `accent.hover` | #4A1F89 | #4A1F89 | Hovered primary button (4 % darker, R107) |
 | `accent.active` | #451783 | #451783 | Pressed primary button (6 % darker, R107) |
 | `accent.text` | #B48AE6 | #6A3BAA | Accent as text, icon or line |
-| `accent.highlight` | #542C96 at 48 % | #542C96 at 16 % | Behind search hits |
+| `accent.highlight` | #542C96 | #542C96 | Behind search hits, the hit in text.on_accent |
 
 ## Status
 

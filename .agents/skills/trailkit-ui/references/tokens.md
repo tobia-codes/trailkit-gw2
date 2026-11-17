@@ -56,8 +56,9 @@ The violet accent (R124; brass before it) — `accent`, `accent.text`,
 2. **Keyboard focus** (`border.focus`).
 3. **The current selection**: the selection bar, check marks, the drop
    line while dragging.
-4. **Search hits** (R73, memo M122): `accent.highlight` behind matching
-   text, an `accent.text` frame around a matching chip.
+4. **Search hits** (R73, memo M122, M197): opaque `accent.highlight` behind
+   matching text like a text marker, the hit drawn on it in
+   `text.on_accent`; an `accent.text` frame around a matching chip.
 
 The accent never fills large areas, never decorates, and never marks a category.
 If a design needs a fifth use, it needs a decision first (grill-me).

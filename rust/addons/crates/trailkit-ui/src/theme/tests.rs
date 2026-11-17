@@ -153,31 +153,22 @@ fn tinted_status_fills_meet_contrast_minimum() {
     }
 }
 
+/// Hits are drawn in `text.on_accent` on the opaque highlight, like a text
+/// marker (memo M197), in titles and in the note view alike.
 #[test]
 fn text_stays_readable_on_search_highlights() {
     for kind in ThemeKind::ALL {
         let theme = kind.theme();
-        for (surface_name, surface) in [
-            ("bg.panel", theme.surface.panel),
-            ("bg.hover", theme.surface.hover),
-            ("bg.active", theme.surface.active),
-        ] {
-            let highlight = theme.accent.highlight.over(surface);
-            // Titles (text.primary) sit on list rows; links only occur
-            // in the note view on bg.panel.
-            let link = (surface_name == "bg.panel").then_some(("text.link", theme.text.link));
-            for (text_name, text) in [("text.primary", theme.text.primary)]
-                .into_iter()
-                .chain(link)
-            {
-                assert_readable(
-                    kind,
-                    &format!("{text_name} on accent.highlight over {surface_name}"),
-                    text,
-                    highlight,
-                );
-            }
-        }
+        assert!(
+            theme.accent.highlight.alpha >= 1.0,
+            "{kind:?}: the highlight is opaque"
+        );
+        assert_readable(
+            kind,
+            "text.on_accent on accent.highlight",
+            theme.text.on_accent,
+            theme.accent.highlight,
+        );
     }
 }
 

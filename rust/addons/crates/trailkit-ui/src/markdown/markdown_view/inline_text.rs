@@ -15,6 +15,7 @@ use crate::{
     text::TextStyle,
     text::font_registry::FontScope,
     text::fonts::FontRole,
+    text::search_hits::mark_search_hits,
     theme::Theme,
 };
 
@@ -248,12 +249,14 @@ fn draw_word(
         let piece = fitting_prefix(ui, rest, available, cursor.x <= bounds.left);
         let piece_width = ui.calc_text_size(piece)[0];
         let position = [cursor.x, cursor.y];
-        if mark_hits(ui, piece, piece_offset, hits.ranges, position, theme) {
-            outcome.first_hit_y = outcome.first_hit_y.or(Some(cursor.y));
-        }
         ui.set_cursor_screen_pos(position);
         let clicked = draw_piece(ui, piece, span, theme);
         outcome.action = outcome.action.or(clicked);
+        let piece_hits = hits_in_piece(piece, piece_offset, hits.ranges);
+        if !piece_hits.is_empty() {
+            mark_search_hits(ui, theme, piece, piece_hits, position);
+            outcome.first_hit_y = outcome.first_hit_y.or(Some(cursor.y));
+        }
         cursor.x += piece_width;
         piece_offset += piece.len();
         rest = &rest[piece.len()..];
@@ -264,39 +267,15 @@ fn draw_word(
     outcome
 }
 
-/// Draws the `accent.highlight` background behind the parts of `piece`
-/// (starting at byte `offset` of its span and drawn at `origin`) covered by
-/// `ranges`. Returns whether anything was marked.
-fn mark_hits(
-    ui: &Ui,
-    piece: &str,
-    offset: usize,
-    ranges: &[Range<usize>],
-    origin: [f32; 2],
-    theme: &Theme,
-) -> bool {
+/// The parts of `ranges` (byte ranges in the span text) that fall into
+/// `piece`, which starts at byte `offset` of the span, relative to `piece`.
+fn hits_in_piece(piece: &str, offset: usize, ranges: &[Range<usize>]) -> Vec<Range<usize>> {
     let piece_end = offset + piece.len();
-    let mut marked = false;
-    for range in ranges {
-        if range.end <= offset || range.start >= piece_end {
-            continue;
-        }
-        let start = range.start.max(offset) - offset;
-        let end = range.end.min(piece_end) - offset;
-        let left = origin[0] + ui.calc_text_size(&piece[..start])[0];
-        let right = origin[0] + ui.calc_text_size(&piece[..end])[0];
-        window_draw_list(ui)
-            .add_rect(
-                [left, origin[1]],
-                [right, origin[1] + ui.text_line_height()],
-                theme.accent.highlight.to_array(),
-            )
-            .filled(true)
-            .rounding(theme.radius.small)
-            .build();
-        marked = true;
-    }
-    marked
+    ranges
+        .iter()
+        .filter(|range| range.end > offset && range.start < piece_end)
+        .map(|range| range.start.max(offset) - offset..range.end.min(piece_end) - offset)
+        .collect()
 }
 
 /// The longest prefix of `text` (whole characters) narrower than `available`;

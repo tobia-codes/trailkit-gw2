@@ -18,6 +18,8 @@ pub mod fonts;
 pub mod glyph_metrics;
 pub mod icons;
 #[cfg(windows)]
+pub mod search_hits;
+#[cfg(windows)]
 pub mod text_layout;
 pub mod text_search;
 
