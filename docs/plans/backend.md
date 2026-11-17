@@ -110,17 +110,19 @@ API" is not enforceable; we can only raise the bar and limit damage:
   migrations, deployment, monitoring, GDPR) and where shared strings such as the lock texts live
   (`trailkit-i18n`, ROADMAP layout) before the B23 server work starts.
 - **R121 round, open (session 41, 2026-11-16):**
-  - Q472: backup storage for B33: Scaleway Object Storage (France, per GB, real off-site; recommended), Hetzner
-    Storage Box (same provider, about 3–4 €) or OVH Object Storage. Check current prices before setup.
-  - Q473: price history retention **13 months** instead of 365 days (user wish, amends B1) and the poll tiers
-    (proposal: every 5 minutes for the last 7 days, hourly for 13 months, about 20–25 GB). Before deciding,
-    compare GW2BLTC, GW2Efficiency and DataWars2 resolution/retention: their hosts are blocked in the cloud.
-  - Q474: record why Nexus instead of an own overlay (in-process risk handled by Rust and R104; overlay loses
-    exclusive fullscreen, needs its own install, harder on Proton) and the rule that Nexus calls stay in the
-    addon's `addon/` module or core and UI goes through `trailkit-ui`, so an overlay port stays a few weeks.
-  - Still to grill: browser session length, user names, sync conflicts, admin roles, forum (moderation, DSA),
-    REST API scope, where addons get their data (D19), frontend stack and SSR (R45, R52).
-  - Also pending user OK: about 20 semver patch updates (`cargo update`), `cargo audit` in CI (R130).
+  - Q473 (partly settled 2026-11-17): retention stays **12 months** (B1 unchanged; the 13-month wish is withdrawn).
+    Open: resolution tiers (proposal: every 5 minutes for the last 7 days, hourly for 12 months). Measured
+    2026-11-17 (item 19721): DataWars2 serves daily values since 2012-10 and hourly values for about 8 days;
+    GW2BLTC 6-hour values since 2021-12, hourly for about 5 weeks, about 4-minute values for about 2 days;
+    GW2Efficiency has no public history endpoint found.
+  - Q480: forum or a Discord server at the start (cost, GDPR, B20, accounts without email).
+  - Q481 (scope accepted 2026-11-17): the user wants **no API use without a key**; how addons and the website
+    authenticate without an extractable secret and without open request floods is open.
+  - Q482 (accepted 2026-11-17): addons get their data from the own backend after the first backend release, GitHub
+    stays an archive, the switch goes through `meta.json`; the API URL contains `gw2` so more backends can follow.
+    Open: the exact host/path form (amends B23 `api.trailkit.de`).
+  - Q483: frontend stack: React Router vs TanStack Start (user question).
+  - Still to grill: forum moderation and DSA duties if an own forum stays (Q480).
 - **Price poll frequency (user idea 2026-11-16):** once the server runs, possibly poll prices more often than
   daily (B1, B5). Estimate for about 27,000 items with 1-year retention: daily about 1 GB, hourly 15–20 GB,
   every 5 minutes about 180 GB (needs downsampling or TimescaleDB compression). Backups stay small with
@@ -173,3 +175,8 @@ API" is not enforceable; we can only raise the bar and limit damage:
 | B31 | **Login window in the addon** (user decision Q468, 2026-11-16): the addon has its own login window (user name, password, 2FA code when enabled, B29) and derives the keys itself (B28). Pairing through the browser with a code stays possible later; the key model allows it. The window's design needs an R87 mockup | 2026-11-16 |
 | B32 | **Addon stays logged in** (user decision Q470, 2026-11-16): the addon keeps the private key and the session token in a file in its own folder, protected with Windows DPAPI (current Windows user only). "Stay logged in" is **on by default**; users on a shared PC can turn it off, then the key lives in memory only until the game closes. The addon only ever decrypts its own file, never other applications' data | 2026-11-16 |
 | B33 | **Backups from the first release** (user decision Q471, 2026-11-16; supersedes B21, which assumed only re-syncable public data): with accounts, encrypted notes and the forum, the database is backed up **nightly**, encrypted with a key only the owner holds, to EU storage (provider: Q472). Retention: 7 daily and 4 weekly copies; deleted accounts disappear from backups once retention runs out (about 5 weeks), stated in `PRIVACY.md`/`PRIVACY.de.md` (R99) | 2026-11-16 |
+| B34 | **Backup storage: Scaleway Object Storage** (user decision Q472, 2026-11-17; completes B33): France, billed per GB, a different provider than the Hetzner server, so backups survive a Hetzner outage or account block. Check current prices and sign the DPA (AVV) at setup; `PRIVACY.md`/`PRIVACY.de.md` name the provider (R99) | 2026-11-17 |
+| B35 | **Browser session length** (user decision Q476, 2026-11-17): 30 days sliding (each use extends it), cookie `HttpOnly`, `Secure`, `SameSite=Lax`; an option "Stay signed in on this device", without it the session ends with the browser; "Sign out all sessions" in the account settings. The addon keeps B32 | 2026-11-17 |
+| B36 | **User names** (user decision Q477, 2026-11-17): the user name is the login (no email); unique, 3–24 characters `a–z`, `0–9`, `_`, `-`; login ignores case, display keeps it; renaming at most every 30 days; reserved names such as `admin` or `trailkit` are blocked; no GW2 account name required | 2026-11-17 |
+| B37 | **Sync conflicts** (user decision Q478, 2026-11-17; with B26, B28): the server cannot merge ciphertext, so every note has a version number and the server accepts a change only on the current base version; on a conflict the client keeps both: the second copy becomes "Note (conflict device X)", nothing is lost. Favorites and settings: last write wins per field | 2026-11-17 |
+| B38 | **Roles** (user decision Q479, 2026-11-17): three fixed roles: **admin** (everything, grants roles), **moderator** (moderates the community area, blocks users) and **user**; admin and moderator need 2FA (B29); every admin/moderator action goes to an audit log; finer permissions only on real need | 2026-11-17 |
