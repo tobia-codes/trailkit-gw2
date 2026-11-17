@@ -85,19 +85,6 @@ red against the [red fill mockup](https://claude.ai/artifact/E6E3L6RTBxPsPBuCNW7
 - **Now:** **red filled** button left of brass "Restore". Narrow:
   "Restore" on top, red "Discard" below. Click "Discard" to clean up.
 
-### 8 · Save error: "Saving failed" dialog (toast part OK 2026-11-17)
-
-- **Design:** [mockup, section `error-toast`](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr#error-toast) and [discard dialogs](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr#discard-dialogs)
-- **Get there:** in Windows Explorer open `<GW2>/addons/trailkit/memo/`,
-  `notes.json` › Properties › tick **Read-only**. In game: select a note ›
-  Edit › type a letter › **Save** › click another note.
-  If nothing fails, read-only is not enough: report it.
-- **Look at:** the dialog "Saving failed" (it appears when you leave the
-  note while the save fails), button **"Discard"**.
-- **Before:** grey button.
-- **Now:** **red filled** "Discard" left, brass "Save again" right.
-- **Clean up:** untick Read-only, click "Save again".
-
 ### 10 · Hover and pressed colors of brass and red buttons (R107)
 
 - **Design:** [mockup, section `proposal`](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr#proposal)
