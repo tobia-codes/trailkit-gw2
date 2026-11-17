@@ -20,6 +20,11 @@ for new addons: [`references/addon-structure.md`](references/addon-structure.md)
 - A slice **never** depends on another slice; shared needs go to the
   shared crate (addon-internal) or `rust/addons/crates/` (cross-addon). The app passes
   neutral shared types between slices.
+- **Overlay portability (ROADMAP R132):** Nexus API calls (loader,
+  events, keybinds, quick access, textures, paths) stay in the app's
+  `addon/` module or in core; all UI goes through `trailkit-ui`. Slices
+  never call the Nexus API directly, so a port to an own overlay stays
+  a few weeks of work.
 - A slice owns its state, `draw` function, text enum and help section;
   removing a feature = removing its folder, dependency and wiring.
 - **Slice convention** (a convention, not a trait — inputs differ per
