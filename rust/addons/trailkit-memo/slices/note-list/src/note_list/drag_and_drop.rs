@@ -58,7 +58,8 @@ impl NoteList {
 
     /// Starts following a press on the row `pressed`, which may become a
     /// drag (M106). While searching, positions in the filtered list are
-    /// ambiguous: no drag starts, and dragging shows why (M125).
+    /// ambiguous: no drag starts, dragging shows why (M125), and
+    /// [`Self::finish_drag`] still selects the row on release.
     pub(super) fn start_press(
         &mut self,
         ui: &Ui,
@@ -67,12 +68,11 @@ impl NoteList {
         search: Option<&ListSearch<'_>>,
     ) {
         if let Some(search) = search {
-            if pressed.is_some() {
-                self.drag_blocked_by_search = true;
+            if let Some(node) = pressed {
+                self.search_press = Some((node, ui.io().mouse_pos));
             }
-            if !ui.is_mouse_down(MouseButton::Left) {
-                self.drag_blocked_by_search = false;
-            } else if self.drag_blocked_by_search
+            if self.search_press.is_some()
+                && ui.is_mouse_down(MouseButton::Left)
                 && ui.is_mouse_dragging_with_threshold(MouseButton::Left, DRAG_THRESHOLD)
             {
                 draw_tooltip(ui, theme, search.texts.clear_search_to_move);
@@ -107,8 +107,9 @@ impl NoteList {
         };
         let mouse = ui.io().mouse_pos;
         if !drag.is_dragging {
-            let moved = [mouse[0] - drag.pressed_at[0], mouse[1] - drag.pressed_at[1]];
-            if !ui.is_mouse_down(MouseButton::Left) || moved[0].hypot(moved[1]) < DRAG_THRESHOLD {
+            if !ui.is_mouse_down(MouseButton::Left)
+                || distance(mouse, drag.pressed_at) < DRAG_THRESHOLD
+            {
                 return;
             }
             drag.is_dragging = true;
@@ -154,8 +155,8 @@ impl NoteList {
     }
 
     /// Ends a press or drag on the list when the left button is released: a
-    /// press without drag selects the row, a drag moves the node to its drop
-    /// target (M106–M111). While dragging, the title floats next to the
+    /// press without drag selects the row, also while searching, a drag moves
+    /// the node to its drop target (M106–M111). While dragging, the title floats next to the
     /// cursor with a gold border, red with a ban icon over an impossible
     /// target (M109, M116). Call once per frame after the whole window, as
     /// the list may not be drawn (list hidden).
@@ -165,13 +166,17 @@ impl NoteList {
         theme: &Theme,
         document: &NotesDocument,
     ) -> Option<NoteListAction> {
+        if let Some((node, pressed_at)) = self.search_press
+            && !ui.is_mouse_down(MouseButton::Left)
+        {
+            self.search_press = None;
+            return (distance(ui.io().mouse_pos, pressed_at) < DRAG_THRESHOLD)
+                .then(|| click_action(node));
+        }
         let drag = self.drag.as_mut()?;
         if !ui.is_mouse_down(MouseButton::Left) {
             let action = if !drag.is_dragging {
-                Some(match drag.node {
-                    NodeId::Group(group) => NoteListAction::ClickGroup(group),
-                    NodeId::Note(_) => NoteListAction::Select(drag.node),
-                })
+                Some(click_action(drag.node))
             } else if drag.check == MoveCheck::Changes
                 && let Some(target) = drag.target
             {
@@ -261,4 +266,18 @@ fn scroll_near_edges(ui: &Ui, theme: &Theme) {
     };
     let step = depth.clamp(-1.0, 1.0) * DRAG_SCROLL_ROWS_PER_SECOND * band * ui.io().delta_time;
     ui.set_scroll_y((ui.scroll_y() + step).clamp(0.0, ui.scroll_max_y()));
+}
+
+/// What a click (press and release in place) on the row `node` does: a group
+/// toggles (M172), a note is selected.
+const fn click_action(node: NodeId) -> NoteListAction {
+    match node {
+        NodeId::Group(group) => NoteListAction::ClickGroup(group),
+        NodeId::Note(_) => NoteListAction::Select(node),
+    }
+}
+
+/// Distance between two screen positions in pixels.
+fn distance(from: [f32; 2], to: [f32; 2]) -> f32 {
+    (from[0] - to[0]).hypot(from[1] - to[1])
 }

@@ -183,3 +183,33 @@ fn the_search_x_clears_the_text_and_then_closes_the_field() {
     click_x(&mut memo);
     assert!(!memo.ui_state.search_visible, "the empty field closes");
 }
+
+#[test]
+fn a_click_on_a_row_selects_it_during_a_search() {
+    let document = sample_document();
+    let shopping = first_note(&document);
+    let ui_state = UiState {
+        selected: weekly_note(&document),
+        ..UiState::default()
+    };
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    let size = [640.0, 360.0];
+    // "Shopping" leaves the shopping list as the first row; the open weekly
+    // note stays visible below it.
+    search_for(&mut memo, size, "Shopping");
+    let row = [100.0, 145.0];
+    let input = |down: bool| FrameInput {
+        mouse_position: row,
+        left_button_down: down,
+        ..FrameInput::default()
+    };
+    let mut harness = UiHarness::new(size);
+    let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
+    harness.settle(2, &input(false), &mut draw_dark);
+    harness.step(&input(true), &mut draw_dark);
+    harness.settle(2, &input(false), &mut draw_dark);
+    assert_eq!(
+        memo.ui_state.selected, shopping,
+        "a press and release in place selects, even though dragging is blocked (M125)"
+    );
+}
