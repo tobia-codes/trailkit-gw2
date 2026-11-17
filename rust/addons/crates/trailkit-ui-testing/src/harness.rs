@@ -10,8 +10,8 @@ use std::sync::{Mutex, MutexGuard};
 
 use nexus::imgui::{ConfigFlags, Context, FontConfig, FontGlyphRanges, FontSource, Key, Ui, sys};
 use trailkit_ui::{
-    font_registry::install_font,
-    fonts::{FALLBACK_BODY_SIZE, FontRole},
+    text::font_registry::install_font,
+    text::fonts::{FALLBACK_BODY_SIZE, FontRole},
     theme::Theme,
 };
 

@@ -56,7 +56,7 @@ mod tests {
     #[test]
     fn every_character_is_in_the_subset_fonts() {
         use trailkit_memo_shared::i18n::Language;
-        use trailkit_ui::fonts::{
+        use trailkit_ui::text::fonts::{
             OPEN_SANS_BOLD, OPEN_SANS_BOLD_ITALIC, OPEN_SANS_ITALIC, OPEN_SANS_REGULAR, covers,
         };
         // UI strings plus the help with the privacy policy (same fonts).

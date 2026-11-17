@@ -5,10 +5,10 @@
 
 use jiff::Timestamp;
 use nexus::imgui::{ChildWindow, Ui};
-use trailkit_ui::tooltip::draw_tooltip_with;
+use trailkit_ui::controls::tooltip::draw_tooltip_with;
 use trailkit_ui::{
-    icons::Icon,
-    menu::{begin_submenu, draw_menu_item},
+    controls::menu::{begin_submenu, draw_menu_item},
+    text::icons::Icon,
     text::{TextStyle, draw_text},
     theme::Theme,
 };

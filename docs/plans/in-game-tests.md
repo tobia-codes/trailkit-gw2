@@ -144,3 +144,13 @@ red against the [red fill mockup](https://claude.ai/artifact/E6E3L6RTBxPsPBuCNW7
   calendar icons (`1` daily, dots weekly) without box, tooltip with kind and
   countdown, plain dropdown; (c) waypoint blue, skill copper, achievement
   rosé; (d) deep red with light label, darker on hover and hold.
+
+## trailkit-ui module groups, branch `chore/trailkit-ui-module-groups` (R134)
+
+### 21 · Memo unchanged after the move
+
+- **Design:** none (files moved, no code changed).
+- **Get there:** deploy the branch (`cargo xtask deploy trailkit-memo`), open memo (Setup 2).
+- **Look at:** fonts and icons load (title bar, list, buttons), a tooltip, the `⋯` menu, a toast (e.g. delete
+  a note), the help window (menu › Help) with its topics, a chat-link chip and the Markdown preview of a note.
+- **Before / now:** identical to `develop`; nothing may differ.

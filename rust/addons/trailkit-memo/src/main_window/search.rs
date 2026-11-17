@@ -2,7 +2,7 @@
 //! results (M119), Ctrl+F (M124, M127) and Escape in the field.
 
 use nexus::imgui::Ui;
-use trailkit_ui::text_search::SearchQuery;
+use trailkit_ui::text::text_search::SearchQuery;
 
 use trailkit_memo_search::note_search::{NoteSearchIndex, SearchResults};
 use trailkit_memo_shared::note_tree::NodeId;

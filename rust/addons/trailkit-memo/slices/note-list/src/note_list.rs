@@ -23,9 +23,9 @@ use trailkit_memo_shared::{
     row_badge::RowBadge,
 };
 use trailkit_ui::{
-    button::icon_button_width, font_registry::FontScope, fonts::FontRole, icons::Icon,
-    separator::draw_separator_above_rows, text_search::SearchQuery, theme::Theme,
-    tooltip::draw_tooltip,
+    controls::button::icon_button_width, controls::tooltip::draw_tooltip,
+    layout::separator::draw_separator_above_rows, text::font_registry::FontScope,
+    text::fonts::FontRole, text::icons::Icon, text::text_search::SearchQuery, theme::Theme,
 };
 
 use self::{
@@ -304,7 +304,7 @@ impl NoteList {
         {
             ui.open_popup("list_context");
         }
-        trailkit_ui::menu::draw_popup(ui, theme, "list_context", || {
+        trailkit_ui::controls::menu::draw_popup(ui, theme, "list_context", || {
             context_menu::draw_create_menu_items(
                 ui,
                 language,

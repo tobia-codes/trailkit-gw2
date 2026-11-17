@@ -4,9 +4,9 @@
 use nexus::imgui::Ui;
 use trailkit_memo_shared::i18n::{Language, LocalizedText};
 use trailkit_ui::{
-    button::{button_width, draw_button},
+    controls::button::{button_width, draw_button},
     text::TextStyle,
-    text_layout::{centered_text, indent_to_center},
+    text::text_layout::{centered_text, indent_to_center},
     theme::Theme,
 };
 

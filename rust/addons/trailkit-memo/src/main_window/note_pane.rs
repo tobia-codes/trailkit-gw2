@@ -4,18 +4,18 @@
 //! (M102) and the draft hint.
 
 use nexus::imgui::Ui;
-use trailkit_ui::tooltip::draw_tooltip;
+use trailkit_ui::controls::tooltip::draw_tooltip;
 use trailkit_ui::{
-    button::{
+    controls::button::{
         Button, ButtonKind, ButtonState, button_width, draw_button, draw_icon_button,
         draw_icon_toggle, draw_primary_button_with_icon, icon_button_width,
         icon_label_button_width,
     },
-    icons::Icon,
-    menu::place_next_popup,
-    separator::draw_separator,
+    controls::menu::place_next_popup,
+    layout::separator::draw_separator,
+    layout::toolbar::move_to_toolbar_end,
+    text::icons::Icon,
     theme::Theme,
-    toolbar::move_to_toolbar_end,
 };
 
 use trailkit_memo_drafts::draft_hint::DraftHintAction;
@@ -28,7 +28,7 @@ use trailkit_memo_shared::{
     note_tree::Note,
     save_text::SaveText,
 };
-use trailkit_ui::page::TitleTrailing;
+use trailkit_ui::layout::page::TitleTrailing;
 
 use super::{MemoWindow, WindowAction, note_list::draw_reset_type_submenu, shown_note_in};
 

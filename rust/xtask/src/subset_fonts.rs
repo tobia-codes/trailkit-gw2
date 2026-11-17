@@ -151,7 +151,7 @@ fn characters(set: CharacterSet) -> Result<Vec<char>> {
 /// # Errors
 /// Returns an error if the file cannot be read.
 fn read_icons_source() -> Result<String> {
-    let path = workspace::workspace_root().join("addons/crates/trailkit-ui/src/icons.rs");
+    let path = workspace::workspace_root().join("addons/crates/trailkit-ui/src/text/icons.rs");
     std::fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))
 }
 

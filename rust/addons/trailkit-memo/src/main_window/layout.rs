@@ -3,9 +3,9 @@
 
 use nexus::imgui::Ui;
 use trailkit_ui::{
-    empty_state::{self, EmptyState, EmptyStateAction, EmptyStateButtons},
-    icons::Icon,
-    pane_columns::{FillColumn, FixedColumn, PaneColumns, draw_resizable_pane_columns},
+    layout::empty_state::{self, EmptyState, EmptyStateAction, EmptyStateButtons},
+    layout::pane_columns::{FillColumn, FixedColumn, PaneColumns, draw_resizable_pane_columns},
+    text::icons::Icon,
     theme::Theme,
 };
 

@@ -25,16 +25,16 @@ use trailkit_memo_shared::i18n::{
     Language, LocalizedText as _, Text, chip_context, local_utc_offset,
 };
 use trailkit_ui::{
-    busy::BusyState,
-    button::ButtonState,
-    help_window::{
+    controls::busy::BusyState,
+    controls::button::ButtonState,
+    feedback::status_line::Status,
+    help::help_window::{
         HelpAction, HelpTab, HelpWindow, HelpWindowContent, HelpWindowState, HelpWindowTexts,
         ProblemNotice, ProblemPage,
     },
-    markdown_view::open_link,
-    status_line::Status,
+    layout::title_bar::{TitleBarTexts, TitleBarToggle},
+    markdown::markdown_view::open_link,
     theme::Theme,
-    title_bar::{TitleBarTexts, TitleBarToggle},
 };
 
 use crate::{

@@ -8,7 +8,7 @@ use trailkit_memo_shared::{
     note_tree::{NoteKind, ResetPeriod},
     row_badge::RowBadge,
 };
-use trailkit_ui::icons::Icon;
+use trailkit_ui::text::icons::Icon;
 #[cfg(windows)]
 use trailkit_ui::theme::Theme;
 
@@ -61,7 +61,7 @@ pub fn kind_labels(language: Language) -> [&'static str; 3] {
 #[must_use]
 pub fn kind_dropdown_size(ui: &nexus::imgui::Ui, theme: &Theme, language: Language) -> [f32; 2] {
     [
-        trailkit_ui::dropdown::dropdown_width(ui, theme, &kind_labels(language)),
+        trailkit_ui::controls::dropdown::dropdown_width(ui, theme, &kind_labels(language)),
         ui.frame_height(),
     ]
 }
@@ -80,7 +80,7 @@ pub fn draw_kind_dropdown(
         .iter()
         .position(|(period, _)| *period == kind.period())
         .unwrap_or(0);
-    let index = trailkit_ui::dropdown::draw_dropdown(
+    let index = trailkit_ui::controls::dropdown::draw_dropdown(
         ui,
         theme,
         "kind",

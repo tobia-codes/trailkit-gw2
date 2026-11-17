@@ -6,7 +6,7 @@
 use std::sync::Arc;
 
 use jiff::Timestamp;
-use trailkit_ui::busy::BusyState;
+use trailkit_ui::controls::busy::BusyState;
 
 use trailkit_memo_editor::note_editing::EditSession;
 use trailkit_memo_shared::{

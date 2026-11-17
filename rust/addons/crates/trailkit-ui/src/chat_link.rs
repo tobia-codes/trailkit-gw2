@@ -6,6 +6,9 @@
 //! are not part of a link: without trailkit-core a chip shows the type and
 //! the id. Platform independent; `chat_link_chip` (Windows only) draws it.
 
+#[cfg(windows)]
+pub mod chat_link_chip;
+
 use std::ops::Range;
 
 /// The kind of thing a chat link points to (for icons and labels).

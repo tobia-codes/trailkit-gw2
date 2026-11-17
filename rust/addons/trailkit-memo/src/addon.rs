@@ -52,9 +52,9 @@ use trailkit_storage::{
     TRAILKIT_DIRECTORY_NAME, TrailkitDirectory,
 };
 use trailkit_ui::{
-    font_registry::register_fonts,
+    layout::title_bar::{TitleBarState, record_mouse_button_press},
+    text::font_registry::register_fonts,
     theme::ThemeKind,
-    title_bar::{TitleBarState, record_mouse_button_press},
 };
 
 use crate::help_document::help_document;

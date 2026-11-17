@@ -9,18 +9,18 @@ use trailkit_memo_shared::{
     note_tree::{NodeId, TrashEntry, TreeNode},
 };
 use trailkit_ui::{
-    button::{
+    controls::button::{
         draw_danger_button, draw_danger_icon_button, draw_icon_button,
         draw_primary_button_with_icon, icon_button_width, icon_label_button_width,
     },
-    empty_state::{EmptyState, draw_empty_state},
-    icons::Icon,
-    list_row::{ListRow, ListRowDetail, draw_list_row},
-    menu::{MenuItemTone, draw_menu_item_with_icon, draw_popup},
-    separator::{draw_compact_separator, draw_separator, draw_separator_above_rows},
+    controls::menu::{MenuItemTone, draw_menu_item_with_icon, draw_popup},
+    layout::empty_state::{EmptyState, draw_empty_state},
+    layout::separator::{draw_compact_separator, draw_separator, draw_separator_above_rows},
+    layout::toolbar::move_to_toolbar_end,
+    lists::list_row::{ListRow, ListRowDetail, draw_list_row},
+    text::icons::Icon,
     text::{TextStyle, draw_text, draw_text_wrapped, draw_truncated_text},
     theme::Theme,
-    toolbar::move_to_toolbar_end,
 };
 
 use crate::{i18n::TrashText, labels};
@@ -78,7 +78,7 @@ pub fn draw_trash_header(
     draw_truncated_text(ui, theme, TextStyle::BodyStrong, title, title_room);
     if has_entries {
         let label = TrashText::EmptyTrash.get(language);
-        let button_width = trailkit_ui::button::button_width(ui, theme, label);
+        let button_width = trailkit_ui::controls::button::button_width(ui, theme, label);
         if title_width + theme.spacing.small + button_width <= title_room {
             ui.same_line();
             move_to_toolbar_end(ui, button_width);

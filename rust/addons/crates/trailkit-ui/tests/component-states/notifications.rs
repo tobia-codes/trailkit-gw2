@@ -2,8 +2,10 @@
 //! layout, and status cards (R82).
 
 use trailkit_ui::{
-    status_card::{CardDetail, CardStatus, StatusCard, draw_status_card},
-    toast::{Toast, ToastAction, ToastExtras, ToastTone, draw_toast, draw_toast_with_extras},
+    feedback::status_card::{CardDetail, CardStatus, StatusCard, draw_status_card},
+    feedback::toast::{
+        Toast, ToastAction, ToastExtras, ToastTone, draw_toast, draw_toast_with_extras,
+    },
 };
 
 use super::*;

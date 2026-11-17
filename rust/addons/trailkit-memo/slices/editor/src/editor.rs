@@ -11,18 +11,20 @@ use std::ops::Range;
 use nexus::imgui::{Key, Ui};
 use trailkit_memo_shared::i18n::{Language, LocalizedText};
 use trailkit_ui::{
-    button::{ButtonState, draw_icon_button_with_state, draw_icon_toggle, icon_button_width},
-    chat_link_chip::ChipContext,
+    chat_link::chat_link_chip::ChipContext,
+    controls::button::{
+        ButtonState, draw_icon_button_with_state, draw_icon_toggle, icon_button_width,
+    },
     editor::view::TextEditor,
-    icons::Icon,
+    layout::pane::draw_pane,
+    layout::splitter::draw_vertical_splitter,
+    layout::toolbar::begin_toolbar_group,
+    markdown::markdown_view::{MarkdownAction, SearchHighlight, draw_markdown},
     markdown::{self, MarkdownDocument},
-    markdown_view::{MarkdownAction, SearchHighlight, draw_markdown},
-    pane::draw_pane,
-    splitter::draw_vertical_splitter,
     text::TextStyle,
-    text_search::SearchQuery,
+    text::icons::Icon,
+    text::text_search::SearchQuery,
     theme::Theme,
-    toolbar::begin_toolbar_group,
 };
 
 use crate::{

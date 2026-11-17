@@ -4,6 +4,8 @@
 //! UI code. Moves into a shared `trailkit-i18n` crate once a second addon needs
 //! it (AGENTS.md rule 7).
 
+#[cfg(windows)]
+use trailkit_ui::chat_link::chat_link_chip::ChipContext;
 use trailkit_ui::chat_link::{CHIP_DETAIL_CHARACTERS, ChatLinkKind, ChipText, Profession};
 
 /// A user interface language supported by the addon.
@@ -108,12 +110,12 @@ pub fn assert_all_translated<T: LocalizedText>() {
 /// shared by note view and editor.
 #[cfg(windows)]
 #[must_use]
-pub fn chip_context(language: Language) -> trailkit_ui::chat_link_chip::ChipContext<'static> {
+pub fn chip_context(language: Language) -> ChipContext<'static> {
     let text: &'static dyn Fn(ChipText) -> &'static str = match language {
         Language::English => &|text| chip_text(text, Language::English),
         Language::German => &|text| chip_text(text, Language::German),
     };
-    trailkit_ui::chat_link_chip::ChipContext { text }
+    ChipContext { text }
 }
 
 /// The translation of a chat-link chip text (memo plan M75).

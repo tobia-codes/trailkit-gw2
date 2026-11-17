@@ -5,12 +5,12 @@
 use jiff::Timestamp;
 use nexus::imgui::{ChildWindow, Ui};
 use trailkit_ui::{
-    button::ButtonState,
-    markdown_view::{MarkdownAction, open_link},
-    separator::draw_separator,
+    controls::button::ButtonState,
+    feedback::toast::{ToastAction, draw_toast},
+    layout::separator::draw_separator,
+    markdown::markdown_view::{MarkdownAction, open_link},
     text::{TextStyle, draw_text_wrapped},
     theme::Theme,
-    toast::{ToastAction, draw_toast},
 };
 
 use trailkit_memo_note_view::note_view::{NoteViewAction, NoteViewInput, ReadOnly};

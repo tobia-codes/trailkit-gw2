@@ -6,11 +6,11 @@
 use nexus::imgui::{MouseButton, Ui, WindowHoveredFlags};
 use trailkit_memo_shared::note_tree::{GroupId, MoveCheck, NodeId, NotesDocument};
 use trailkit_ui::{
-    draw_list::window_draw_list,
-    icons::Icon,
+    controls::tooltip::{draw_tooltip, draw_tooltip_with_border},
+    drawing::draw_list::window_draw_list,
+    text::icons::Icon,
     text::{IconText, TextFlow, TextStyle, draw_icon_text, draw_text},
     theme::Theme,
-    tooltip::{draw_tooltip, draw_tooltip_with_border},
 };
 
 use super::{ListSearch, NoteList, NoteListAction, NoteListOutput, node_title};

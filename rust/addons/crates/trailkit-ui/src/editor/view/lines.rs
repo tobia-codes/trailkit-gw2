@@ -7,15 +7,15 @@ use nexus::imgui::Ui;
 
 use super::{BLINK_HALF_PERIOD, TextEditor, is_editor_hovered};
 use crate::{
+    chat_link::chat_link_chip::{ChipContext, chip_tooltip, chip_width, draw_chip},
     chat_link::{ChatLinkChip, ChipText},
-    chat_link_chip::{ChipContext, chip_tooltip, chip_width, draw_chip},
-    draw_list::{WindowDrawList, window_draw_list},
+    drawing::draw_list::{WindowDrawList, window_draw_list},
     editor::{
         highlight::SpanStyle,
         layout::{Layout, VisualLine},
     },
-    font_registry::FontScope,
-    fonts::FontRole,
+    text::font_registry::FontScope,
+    text::fonts::FontRole,
     theme::Theme,
 };
 

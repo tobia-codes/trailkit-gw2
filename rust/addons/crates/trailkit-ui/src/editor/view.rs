@@ -19,7 +19,7 @@ use nexus::imgui::{
 
 use self::{keyboard::typed_characters, lines::CachedLayout};
 use super::buffer::TextBuffer;
-use crate::{chat_link_chip::ChipContext, theme::Theme};
+use crate::{chat_link::chat_link_chip::ChipContext, theme::Theme};
 
 /// Half a cursor blink period in seconds (on, then off).
 const BLINK_HALF_PERIOD: f64 = 0.6;

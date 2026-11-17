@@ -54,7 +54,7 @@ fn with_privacy_topic(help: &str, privacy: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use trailkit_ui::help_topics::{parse_help_topics, subsection_counts};
+    use trailkit_ui::help::help_topics::{parse_help_topics, subsection_counts};
 
     use super::*;
 

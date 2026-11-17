@@ -16,10 +16,10 @@ use std::{
 
 use nexus::imgui::Ui;
 use trailkit_ui::{
-    busy::BusyState,
-    button::ButtonState,
+    controls::busy::BusyState,
+    controls::button::ButtonState,
+    feedback::toast::{Toast, ToastAction, ToastExtras, ToastTone, draw_toast_with_extras},
     theme::Theme,
-    toast::{Toast, ToastAction, ToastExtras, ToastTone, draw_toast_with_extras},
 };
 
 use trailkit_memo_shared::{

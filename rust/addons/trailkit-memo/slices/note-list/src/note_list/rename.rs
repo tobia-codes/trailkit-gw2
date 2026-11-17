@@ -4,7 +4,7 @@
 
 use nexus::imgui::{FocusedWidget, Key, StyleVar, Ui};
 use trailkit_memo_shared::note_tree::{NodeId, NotesDocument};
-use trailkit_ui::{draw_list::window_draw_list, style_scope::StyleScope};
+use trailkit_ui::{drawing::draw_list::window_draw_list, drawing::style_scope::StyleScope};
 
 use super::{NoteList, NoteListAction, RowContext, node_title};
 

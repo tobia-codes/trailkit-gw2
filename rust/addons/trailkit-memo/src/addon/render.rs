@@ -13,11 +13,11 @@ use trailkit_memo_shared::{
     settings::TextScale,
 };
 use trailkit_ui::{
-    font_registry::{follow_body_size, font_size_of},
-    style_scope::StyleScope,
+    drawing::style_scope::StyleScope,
+    layout::title_bar::{TitleBarToggle, draw_window},
+    text::font_registry::{follow_body_size, font_size_of},
     text::{TextStyle, draw_text, draw_text_wrapped},
     theme::{Theme, ThemeKind, Typography},
-    title_bar::{TitleBarToggle, draw_window},
 };
 
 use super::{

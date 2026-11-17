@@ -7,10 +7,10 @@
 
 use nexus::imgui::{Condition, Ui, Window, WindowFlags};
 use trailkit_ui::{
+    chat_link::chat_link_chip::ChipContext,
     chat_link::{ChatLinkKind, ChipText},
-    chat_link_chip::ChipContext,
+    drawing::style_scope::StyleScope,
     editor::view::TextEditor,
-    style_scope::StyleScope,
     theme::ThemeKind,
 };
 use trailkit_ui_testing::{

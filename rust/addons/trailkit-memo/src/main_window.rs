@@ -23,15 +23,15 @@ use std::{collections::HashSet, path::PathBuf};
 use jiff::Timestamp;
 use nexus::imgui::{Ui, WindowFocusedFlags};
 use trailkit_ui::{
-    font_registry::FontScope,
-    fonts::FontRole,
-    help_window::{HelpTab, HelpWindowState},
-    icons::Icon,
-    pane::draw_pane,
-    text_layout::body_characters_width,
+    feedback::toast::Toast,
+    help::help_window::{HelpTab, HelpWindowState},
+    layout::pane::draw_pane,
+    layout::title_bar::{TitleBarTexts, TitleBarToggle, TogglePlacement},
+    text::font_registry::FontScope,
+    text::fonts::FontRole,
+    text::icons::Icon,
+    text::text_layout::body_characters_width,
     theme::Theme,
-    title_bar::{TitleBarTexts, TitleBarToggle, TogglePlacement},
-    toast::Toast,
 };
 
 use trailkit_memo_drafts::{draft_hint::DraftHint, draft_overview::DraftOverview};

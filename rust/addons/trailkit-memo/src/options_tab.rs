@@ -11,11 +11,11 @@ use nexus::imgui::Ui;
 
 use trailkit_memo_shared::i18n::{Language, LocalizedText as _, Text};
 use trailkit_ui::{
-    button::Button,
-    font_registry::FontScope,
-    fonts::FontRole,
-    icons::Icon,
-    pane::draw_pane,
+    controls::button::Button,
+    layout::pane::draw_pane,
+    text::font_registry::FontScope,
+    text::fonts::FontRole,
+    text::icons::Icon,
     text::{TextStyle, draw_text},
     theme::Theme,
 };
@@ -31,7 +31,7 @@ pub const VERSION_LINE: &str = concat!("trailkit-memo ", env!("CARGO_PKG_VERSION
 
 /// Draws memo's options tab with `version_line` below the title and
 /// returns whether "Open help" was clicked. The caller pushes the theme
-/// ([`trailkit_ui::style_scope::StyleScope`]).
+/// ([`trailkit_ui::drawing::style_scope::StyleScope`]).
 pub fn draw_options_tab(ui: &Ui, theme: &Theme, language: Language, version_line: &str) -> bool {
     let _body = FontScope::push(ui, FontRole::Body);
     let height = pane_height(ui, theme);
@@ -71,7 +71,7 @@ mod tests {
     //! run with `cargo xtask ui-test`.
 
     use nexus::imgui::{Condition, Window};
-    use trailkit_ui::{style_scope::StyleScope, theme::ThemeKind};
+    use trailkit_ui::{drawing::style_scope::StyleScope, theme::ThemeKind};
     use trailkit_ui_testing::{
         harness::{FrameInput, UiHarness},
         snapshot::assert_snapshot,

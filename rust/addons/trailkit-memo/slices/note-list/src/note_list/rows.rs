@@ -2,8 +2,8 @@
 //! badges and search hits, row interaction and the inline rename input.
 
 use std::borrow::Cow;
-use trailkit_ui::draw_list::window_draw_list;
-use trailkit_ui::tooltip::draw_tooltip;
+use trailkit_ui::controls::tooltip::draw_tooltip;
+use trailkit_ui::drawing::draw_list::window_draw_list;
 
 use nexus::imgui::{
     Condition, MouseButton, StyleColor, StyleVar, TreeNode, TreeNodeFlags, TreeNodeToken, Ui,
@@ -11,15 +11,15 @@ use nexus::imgui::{
 use trailkit_memo_shared::note_tree::{Group, NodeId, Note, TreeNode as Node};
 use trailkit_ui::{
     color::Color,
-    font_registry::FontScope,
-    fonts::FontRole,
-    glyph_metrics::{capital_middle, icon_visible_box},
-    icons::Icon,
-    selection_bar::{draw_row_state, hide_square_row_highlight},
-    text_layout::{format_count, truncate_to_width},
-    text_search::SearchQuery,
+    lists::selection_bar::{draw_row_state, hide_square_row_highlight},
+    lists::tree_arrow::draw_tree_arrow,
+    text::font_registry::FontScope,
+    text::fonts::FontRole,
+    text::glyph_metrics::{capital_middle, icon_visible_box},
+    text::icons::Icon,
+    text::text_layout::{format_count, truncate_to_width},
+    text::text_search::SearchQuery,
     theme::Theme,
-    tree_arrow::draw_tree_arrow,
 };
 
 use super::{

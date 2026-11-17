@@ -7,7 +7,7 @@
 
 use trailkit_memo_shared::{drafts::Draft, i18n::local_utc_offset, note_tree::TrashEntry};
 use trailkit_memo_trash::trash_view::TrashAction;
-use trailkit_ui::markdown_view::MarkdownAction;
+use trailkit_ui::markdown::markdown_view::MarkdownAction;
 
 use super::{trash::document_with_trash, *};
 

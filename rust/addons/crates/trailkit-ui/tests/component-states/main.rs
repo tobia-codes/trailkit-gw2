@@ -8,32 +8,34 @@
 #![cfg(windows)]
 
 use std::cell::Cell;
-use trailkit_ui::draw_list::window_draw_list;
+use trailkit_ui::drawing::draw_list::window_draw_list;
 
 use nexus::imgui::{Condition, Ui, Window, WindowFlags};
 use trailkit_ui::{
-    button::{
+    controls::button::{
         Button, ButtonKind, ButtonState, draw_button, draw_danger_button, draw_danger_icon_button,
         draw_icon_button, draw_icon_button_with_state, draw_icon_toggle, draw_primary_button,
         draw_primary_button_with_icon,
     },
-    dropdown::draw_dropdown,
-    empty_state::{EmptyState, EmptyStateButtons, draw_empty_state},
-    icons::Icon,
-    list_row::{ListRow, ListRowDetail, draw_list_row},
-    menu::{MenuItemTone, begin_submenu, draw_menu_item, draw_menu_item_with_icon, draw_popup},
-    pane::draw_pane,
-    separator::draw_compact_separator,
-    splitter::draw_vertical_splitter,
-    status_line::{Status, draw_status_line},
-    style_scope::StyleScope,
-    text::{TextStyle, draw_icon, draw_text, draw_text_wrapped, draw_truncated_text},
-    theme::{Theme, ThemeKind},
-    title_bar::{
+    controls::dropdown::draw_dropdown,
+    controls::menu::{
+        MenuItemTone, begin_submenu, draw_menu_item, draw_menu_item_with_icon, draw_popup,
+    },
+    controls::tooltip::draw_tooltip,
+    drawing::style_scope::StyleScope,
+    feedback::status_line::{Status, draw_status_line},
+    layout::empty_state::{EmptyState, EmptyStateButtons, draw_empty_state},
+    layout::pane::draw_pane,
+    layout::separator::draw_compact_separator,
+    layout::splitter::draw_vertical_splitter,
+    layout::title_bar::{
         TitleBarState, TitleBarTexts, TitleBarToggle, TogglePlacement,
         draw_window as draw_title_bar,
     },
-    tooltip::draw_tooltip,
+    lists::list_row::{ListRow, ListRowDetail, draw_list_row},
+    text::icons::Icon,
+    text::{TextStyle, draw_icon, draw_text, draw_text_wrapped, draw_truncated_text},
+    theme::{Theme, ThemeKind},
 };
 use trailkit_ui_testing::{
     harness::{FrameInput, UiHarness},

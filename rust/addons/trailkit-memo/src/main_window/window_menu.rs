@@ -3,15 +3,15 @@
 //! the ways to the notes, the search and the trash, and hides the note list.
 
 use nexus::imgui::{ChildWindow, MouseButton, StyleVar, Ui};
-use trailkit_ui::draw_list::window_draw_list;
+use trailkit_ui::drawing::draw_list::window_draw_list;
 use trailkit_ui::{
-    font_registry::FontScope,
-    fonts::FontRole,
-    glyph_metrics::{capital_middle, icon_visible_box},
-    icons::Icon,
-    pane::draw_pane,
-    selection_bar::draw_row_state,
-    separator::draw_compact_separator,
+    layout::pane::draw_pane,
+    layout::separator::draw_compact_separator,
+    lists::selection_bar::draw_row_state,
+    text::font_registry::FontScope,
+    text::fonts::FontRole,
+    text::glyph_metrics::{capital_middle, icon_visible_box},
+    text::icons::Icon,
     theme::Theme,
 };
 

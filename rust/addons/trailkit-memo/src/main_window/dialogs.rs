@@ -3,13 +3,13 @@
 //! (M134, M146) and storage problems.
 
 use nexus::imgui::{Condition, Key, MouseButton, StyleColor, StyleVar, Ui, Window, WindowFlags};
-use trailkit_ui::draw_list::window_draw_list;
+use trailkit_ui::drawing::draw_list::window_draw_list;
 use trailkit_ui::{
-    button::{Button, ButtonKind, ButtonState},
-    font_registry::FontScope,
-    fonts::FontRole,
-    status_card::{CardDetail, CardStatus, StatusCard, draw_status_card},
-    status_line::{Status, draw_status_line},
+    controls::button::{Button, ButtonKind, ButtonState},
+    feedback::status_card::{CardDetail, CardStatus, StatusCard, draw_status_card},
+    feedback::status_line::{Status, draw_status_line},
+    text::font_registry::FontScope,
+    text::fonts::FontRole,
     text::{TextStyle, draw_text_wrapped},
     theme::Theme,
 };

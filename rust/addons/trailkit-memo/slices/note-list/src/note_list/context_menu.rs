@@ -8,9 +8,11 @@ use trailkit_memo_shared::{
     note_tree::{GroupId, InsertionPoint, NodeId, Note, NoteId, NotesDocument, TreeNode as Node},
 };
 use trailkit_ui::{
-    icons::Icon,
-    menu::{MenuItemTone, begin_submenu, draw_menu_item, draw_menu_item_with_icon, draw_popup},
-    separator::draw_compact_separator,
+    controls::menu::{
+        MenuItemTone, begin_submenu, draw_menu_item, draw_menu_item_with_icon, draw_popup,
+    },
+    layout::separator::draw_compact_separator,
+    text::icons::Icon,
     theme::Theme,
 };
 
@@ -60,7 +62,7 @@ pub(super) fn draw_context_menu(
 }
 
 /// Draws the `⋯` menu of `note` if it is open (must run every frame, right
-/// after [`trailkit_ui::menu::place_next_popup`]): the same items as the row's
+/// after [`trailkit_ui::controls::menu::place_next_popup`]): the same items as the row's
 /// context menu (M160). Returns whether "Rename" was chosen, which the caller
 /// answers with the editor's title input (M161).
 pub fn draw_note_menu(ui: &Ui, popup_id: &str, note: &Note, mut menu: EntryMenu<'_>) -> bool {
