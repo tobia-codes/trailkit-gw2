@@ -145,6 +145,17 @@ red against the [red fill mockup](https://claude.ai/artifact/E6E3L6RTBxPsPBuCNW7
   countdown, plain dropdown; (c) waypoint blue, skill copper, achievement
   rosé; (d) deep red with light label, darker on hover and hold.
 
+## Dependency patch updates, branch `chore/dependency-patch-updates` (R130, Q484)
+
+### 19 · Memo still works after the updates
+
+- **Design:** none (no visible change).
+- **Get there:** deploy the branch (`cargo xtask deploy trailkit-memo`), start the game, open memo (Setup 2).
+- **Look at:** open a note, edit and save it, use the search, delete and restore a note from the trash,
+  set a daily reset on a note (dates and countdown use the updated `jiff`), then reload memo (Setup 5).
+- **Before:** everything worked.
+- **Now:** everything works the same; the note, the reset countdown and the trash entry survive the reload.
+
 ## Generated theme folder, branch `chore/generated-theme-folder` (R133)
 
 ### 20 · Theme looks unchanged
