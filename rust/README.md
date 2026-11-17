@@ -22,6 +22,13 @@ below this folder, the repository root keeps only language-neutral files.
 | `tools/` | [`trailkit-datagen`](tools/trailkit-datagen/README.md) | Daily data job: trading post price archive and WvW snapshots |
 | `xtask/` | [`xtask`](xtask/README.md) | Build and check commands: `cargo xtask <command>` |
 
+**Folder rule (R137):** a folder holds at most 10 loose `.rs` files (files
+without a folder of the same name; `lib.rs`, `main.rs` and `tests.rs` do not
+count); with more they are grouped into folders by concern. Generated Rust
+code lives in a `generated` module (R135). `cargo xtask check-file-length`
+hints at folders over the limit. Binding details:
+[naming conventions](../docs/agent-reference.md#naming-conventions).
+
 Workspace files: `Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`,
 `clippy.toml`, `deny.toml` and `.cargo/config.toml` (the `cargo xtask` alias).
 Build output goes to `target/` in this folder.

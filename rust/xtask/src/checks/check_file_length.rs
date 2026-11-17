@@ -1,6 +1,7 @@
 //! `cargo xtask check-file-length [--all]`: hints for coding agents that a
 //! Rust file or function has grown long enough to consider splitting it
-//! (ROADMAP R77).
+//! (ROADMAP R77), or that a folder holds so many loose Rust files that they
+//! should be grouped into folders by concern (ROADMAP R137).
 //!
 //! Advisory only: it prints one line per hint and nothing when all is fine,
 //! and it never fails, so it costs almost no tokens. By default it looks at
@@ -10,8 +11,12 @@
 //! Counted are code lines: no blank lines, no comments or doc comments
 //! (rule 4 makes docs mandatory, they must not count against a file) and no
 //! `#[cfg(test)]` blocks. Pure test files have their own, higher limit.
+//!
+//! A folder's loose files are its `.rs` files without a folder of the same
+//! name next to them; `lib.rs`, `main.rs`, `mod.rs` and `tests.rs` do not
+//! count (R137, Q499 b).
 
-use std::{collections::BTreeSet, fs, process::Command};
+use std::{collections::BTreeSet, fs, path::Path, process::Command};
 
 use anyhow::{Context, Result, bail};
 
@@ -25,6 +30,13 @@ const TEST_FILE_HINT_CODE_LINES: usize = 800;
 
 /// Code lines from which a function gets a hint.
 const FUNCTION_HINT_CODE_LINES: usize = 80;
+
+/// Loose Rust files a folder may hold before it gets a hint (R137).
+const FOLDER_HINT_LOOSE_FILES: usize = 10;
+
+/// File names that never count as loose files: crate roots, old-style module
+/// files and test modules.
+const NOT_LOOSE: [&str; 4] = ["lib.rs", "main.rs", "mod.rs", "tests.rs"];
 
 /// The branch whose merge base marks "changed on this branch".
 const BASE_BRANCH: &str = "develop";
@@ -59,7 +71,11 @@ pub fn run(scope: Scope) -> Result<()> {
         Scope::All => git_paths(&["ls-files", "--cached", "--others", "--exclude-standard"])?,
     };
     let root = workspace::repository_root();
+    let mut folders = BTreeSet::new();
     for path in paths.iter().filter(|path| path.ends_with(".rs")) {
+        if let Some(folder) = Path::new(path).parent() {
+            folders.insert(folder.to_path_buf());
+        }
         // Deleted or unreadable files have nothing to report.
         let Ok(source) = fs::read_to_string(root.join(path)) else {
             continue;
@@ -68,7 +84,41 @@ pub fn run(scope: Scope) -> Result<()> {
             println!("{hint}");
         }
     }
+    for folder in folders {
+        // Folders that vanished have nothing to report.
+        let Ok(entries) = fs::read_dir(root.join(&folder)) else {
+            continue;
+        };
+        let mut files = Vec::new();
+        let mut directories = BTreeSet::new();
+        for entry in entries.flatten() {
+            let name = entry.file_name().to_string_lossy().into_owned();
+            if entry.path().is_dir() {
+                directories.insert(name);
+            } else {
+                files.push(name);
+            }
+        }
+        let loose = loose_file_count(&files, &directories);
+        if loose > FOLDER_HINT_LOOSE_FILES {
+            println!(
+                "{}: {loose} loose Rust files (hint at {FOLDER_HINT_LOOSE_FILES}), group them by concern (R137)",
+                folder.display()
+            );
+        }
+    }
     Ok(())
+}
+
+/// How many of `files` are loose Rust files: `.rs` files without a folder of
+/// the same name in `directories`, crate roots and test modules excluded.
+fn loose_file_count(files: &[String], directories: &BTreeSet<String>) -> usize {
+    files
+        .iter()
+        .filter(|name| !NOT_LOOSE.contains(&name.as_str()))
+        .filter_map(|name| name.strip_suffix(".rs"))
+        .filter(|stem| !directories.contains(*stem))
+        .count()
 }
 
 /// The Rust files changed on this branch against [`BASE_BRANCH`], including
@@ -258,6 +308,22 @@ mod tests {
         assert_eq!(hints.len(), 1);
         assert!(hints[0].starts_with("src/example.rs:1: fn long:"));
         assert!(super::hints("src/example.rs", "fn short() {}\n").is_empty());
+    }
+
+    #[test]
+    fn loose_files_exclude_modules_with_folders_roots_and_tests() {
+        let files: Vec<String> = [
+            "lib.rs",
+            "tests.rs",
+            "a.rs",
+            "b.rs",
+            "theme.rs",
+            "notes.txt",
+        ]
+        .map(str::to_owned)
+        .to_vec();
+        let directories = BTreeSet::from(["theme".to_owned()]);
+        assert_eq!(loose_file_count(&files, &directories), 2);
     }
 
     #[test]

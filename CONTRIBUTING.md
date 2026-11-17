@@ -123,6 +123,12 @@ from [`rust/addons/crates/trailkit-ui`](rust/addons/crates/trailkit-ui/README.md
 - **Small files and functions.** `cargo xtask check-file-length` hints at
   files with ≥ 400 code lines and functions with ≥ 80 (R77). Split by concern,
   and mention a hint in the PR if you think the file should stay as it is.
+- **Small folders (R137).** A folder holds at most 10 loose `.rs` files
+  (files without a folder of the same name; `lib.rs`, `main.rs` and `tests.rs`
+  do not count). With more, group them into folders by concern, each a
+  `group.rs` + `group/` module, like `trailkit-ui` (`text`, `layout`,
+  `controls`, …) or `xtask` (`checks`, `generators`, `dev`).
+  `cargo xtask check-file-length` hints at such folders.
 - **Errors, not panics.** Return `Result` with context: libraries use typed
   errors (`thiserror`, e.g. `trailkit-storage`), tools use `anyhow`.
   `unwrap()` and `expect()` are lint errors outside tests; a panic must never
@@ -237,7 +243,7 @@ Run these before you push (`source ~/.cargo/env` first if cargo is not found):
 | `cargo test` | Unit tests, translations, generated docs up to date, README links |
 | `cargo xtask ui-test` | UI snapshots (Windows test binaries run through WSL, about 4 minutes) |
 | `cargo xtask check-names` | Paths follow the naming conventions |
-| `cargo xtask check-file-length` | Advisory size hints for changed files |
+| `cargo xtask check-file-length` | Advisory size hints for changed files, functions and folders |
 | `cargo deny check` | Dependency licenses and advisories |
 
 Tests never call live services; tools use committed fixtures. Every command:
