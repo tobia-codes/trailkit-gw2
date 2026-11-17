@@ -25,7 +25,7 @@ tests wait for the Windows PC; check `source ~/.cargo/env` and a first `cargo te
 
 **Session 42 (2026-11-17, PC):** R121 merged (#141). Unpushed, waiting for in-game tests 19–21 and merge OK:
 `chore/dependency-patch-updates` (test 19), `chore/trailkit-ui-module-groups` (tests 20, 21; holds `chore/generated-theme-folder`; R133–R137).
-**Next:** grouping of memo `main_window/` (11 loose files, R137; proposal Q500); then the favorites grilling.
+**Next:** merge OK for both branches; then the favorites grilling (`feature/memo-favorites`).
 Favorites grilling (`feature/memo-favorites`, M188–M191 decided): open Q407, Q408, Q416–Q419 in trailkit-memo.md.
 
 **Open, in this order:**

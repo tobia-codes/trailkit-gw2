@@ -30,13 +30,13 @@ use trailkit_memo_shared::{
 
 mod editor_commit;
 
-pub(super) use self::editor_commit::{EditorCommit, SaveFailedPrompt};
-use super::{MemoWindow, WindowToast, WindowToastKind, actions::WindowAction};
+pub(in crate::main_window) use self::editor_commit::{EditorCommit, SaveFailedPrompt};
+use crate::main_window::{MemoWindow, WindowToast, WindowToastKind, actions::WindowAction};
 
 /// Who asked the worker for a write that is still running; the worker
 /// answers in order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum WriteRequester {
+pub(in crate::main_window) enum WriteRequester {
     /// "Try again" in the toast.
     Toast,
     /// The editor's "Save" (or leaving with automatic saving).
@@ -47,19 +47,19 @@ pub(super) enum WriteRequester {
 
 /// What the window knows about saving (memo M180).
 #[derive(Debug)]
-pub(super) struct SaveStatus {
+pub(in crate::main_window) struct SaveStatus {
     /// Reports from the storage worker.
     reports: std::sync::mpsc::Receiver<SaveReport>,
     /// The latest state of the shown documents.
-    pub(super) health: SaveHealth,
+    pub(in crate::main_window) health: SaveHealth,
     /// Whether the worker has ended (it panicked, Q151).
     worker_stopped: bool,
     /// Whether the error toast was shown since everything was last saved.
-    pub(super) error_shown: bool,
+    pub(in crate::main_window) error_shown: bool,
     /// Whether the user closed the error toast (Q164).
-    pub(super) closed: bool,
+    pub(in crate::main_window) closed: bool,
     /// Writes asked for and not answered yet, oldest first.
-    pub(super) waiting: VecDeque<WriteRequester>,
+    pub(in crate::main_window) waiting: VecDeque<WriteRequester>,
     /// Whether the user asked to restart the stopped worker.
     restart_requested: bool,
     /// "Try again" in the toast: busy while its write (or the worker
@@ -71,7 +71,7 @@ pub(super) struct SaveStatus {
 
 impl SaveStatus {
     /// The status of a freshly loaded window reading `reports`.
-    pub(super) fn new(reports: std::sync::mpsc::Receiver<SaveReport>) -> Self {
+    pub(in crate::main_window) fn new(reports: std::sync::mpsc::Receiver<SaveReport>) -> Self {
         Self {
             reports,
             health: SaveHealth::Healthy,
@@ -91,7 +91,7 @@ impl SaveStatus {
     }
 
     /// Whether the toast's "Try again" runs.
-    pub(super) fn toast_write_running(&self) -> bool {
+    pub(in crate::main_window) fn toast_write_running(&self) -> bool {
         self.retry.is_busy()
     }
 
@@ -105,7 +105,7 @@ impl SaveStatus {
 
 impl MemoWindow {
     /// Reads the worker's reports and acts on them. Never blocks.
-    pub(super) fn poll_save_reports(&mut self, language: Language) {
+    pub(in crate::main_window) fn poll_save_reports(&mut self, language: Language) {
         loop {
             match self.save_status.reports.try_recv() {
                 Ok(SaveReport::Health(health)) => self.apply_save_health(health, language),
@@ -129,7 +129,11 @@ impl MemoWindow {
     }
 
     /// Takes a new state of the shown documents.
-    pub(super) fn apply_save_health(&mut self, health: SaveHealth, language: Language) {
+    pub(in crate::main_window) fn apply_save_health(
+        &mut self,
+        health: SaveHealth,
+        language: Language,
+    ) {
         let status = &mut self.save_status;
         status.health = health;
         match health {
@@ -198,7 +202,11 @@ impl MemoWindow {
     }
 
     /// Applies an answer of the error toast or the save-failed dialog.
-    pub(super) fn apply_save_action(&mut self, action: &WindowAction, language: Language) {
+    pub(in crate::main_window) fn apply_save_action(
+        &mut self,
+        action: &WindowAction,
+        language: Language,
+    ) {
         match action {
             WindowAction::RetrySave => {
                 if self.save_status.toast_write_running() {
@@ -235,7 +243,12 @@ impl MemoWindow {
 
     /// Draws the error toast if it is due and the slot is free: no regular
     /// toast and no dialog (Q146, Q154). Call it after the window's content.
-    pub(super) fn draw_save_toast(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+    pub(in crate::main_window) fn draw_save_toast(
+        &mut self,
+        ui: &Ui,
+        language: Language,
+        theme: &Theme,
+    ) {
         let status = &self.save_status;
         let dialog_open = self.leave_prompt.is_some()
             || self.confirmation.is_some()

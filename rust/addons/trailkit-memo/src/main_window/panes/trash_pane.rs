@@ -24,12 +24,17 @@ use trailkit_memo_trash::{
     trash_view::{draw_group_preview, draw_preview_toolbar, draw_trash_entries, draw_trash_header},
 };
 
-use super::{MemoWindow, WindowAction, WindowToastKind};
+use crate::main_window::{MemoWindow, WindowAction, WindowToastKind};
 
 impl MemoWindow {
     /// Draws the trash column in place of the note list (M136): header with
     /// "Empty" and the scrolling entries.
-    pub(super) fn draw_trash_column(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+    pub(in crate::main_window) fn draw_trash_column(
+        &mut self,
+        ui: &Ui,
+        language: Language,
+        theme: &Theme,
+    ) {
         let has_entries = !self.document.trash.is_empty();
         if let Some(action) = draw_trash_header(ui, language, theme, has_entries) {
             self.actions.push(WindowAction::Trash(action));
@@ -57,7 +62,12 @@ impl MemoWindow {
     /// Draws the selected trash entry read-only in the note pane (M145):
     /// toolbar with "Delete permanently" and "Restore", title, info
     /// line and the content.
-    pub(super) fn draw_trash_preview(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+    pub(in crate::main_window) fn draw_trash_preview(
+        &mut self,
+        ui: &Ui,
+        language: Language,
+        theme: &Theme,
+    ) {
         let now = Timestamp::now();
         let Some(entry) = self
             .trash
@@ -101,7 +111,12 @@ impl MemoWindow {
 
     /// Draws the toast at the bottom of the window; after a delete it offers
     /// "Undo" and "Open trash" (M142, M148, M158).
-    pub(super) fn draw_toast_message(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+    pub(in crate::main_window) fn draw_toast_message(
+        &mut self,
+        ui: &Ui,
+        language: Language,
+        theme: &Theme,
+    ) {
         let Some(toast) = &mut self.toast else {
             return;
         };

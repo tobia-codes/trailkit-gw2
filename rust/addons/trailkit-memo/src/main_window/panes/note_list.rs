@@ -30,7 +30,7 @@ use trailkit_memo_shared::{
     note_tree::Note,
 };
 
-use super::{MemoWindow, WindowAction};
+use crate::main_window::{MemoWindow, WindowAction};
 
 impl From<NoteListAction> for WindowAction {
     /// Maps an action of the note list to the window's own action.
@@ -54,7 +54,12 @@ impl From<NoteListAction> for WindowAction {
 impl MemoWindow {
     /// Draws the fixed header (search field while shown, M138; toolbar) and
     /// below it the scrolling tree (M129).
-    pub(super) fn draw_tree_pane(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+    pub(in crate::main_window) fn draw_tree_pane(
+        &mut self,
+        ui: &Ui,
+        language: Language,
+        theme: &Theme,
+    ) {
         // The trash takes the place of the notes (M136).
         if self.trash.visible {
             self.draw_trash_column(ui, language, theme);
@@ -153,7 +158,7 @@ impl MemoWindow {
 
 /// Draws the reset type submenu of `note` with its current kind checked (M86),
 /// used by the row's context menu and the note pane's `⋯` menu (M160).
-pub(super) fn draw_reset_type_submenu(
+pub(in crate::main_window) fn draw_reset_type_submenu(
     ui: &Ui,
     theme: &Theme,
     language: Language,

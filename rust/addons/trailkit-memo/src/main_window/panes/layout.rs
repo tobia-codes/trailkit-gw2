@@ -12,13 +12,20 @@ use trailkit_ui::{
 use trailkit_memo_shared::i18n::LocalizedText;
 use trailkit_memo_shared::i18n::{Language, Text};
 
-use super::{MINIMUM_PANE_CHARACTERS, MINIMUM_TREE_CHARACTERS, MemoWindow, WindowAction};
+use crate::main_window::{
+    MINIMUM_PANE_CHARACTERS, MINIMUM_TREE_CHARACTERS, MemoWindow, WindowAction,
+};
 
 impl MemoWindow {
     /// Draws tree and note as two panes with a draggable splitter in the gap
     /// between them (M21, the shared resizable pane columns of R101). The
     /// note list keeps a fixed width (M74); the drag ends with a save.
-    pub(super) fn draw_two_panes(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+    pub(in crate::main_window) fn draw_two_panes(
+        &mut self,
+        ui: &Ui,
+        language: Language,
+        theme: &Theme,
+    ) {
         let note_list = [FixedColumn {
             id: "tree",
             characters: self.ui_state.valid_note_list_characters(),
@@ -49,7 +56,7 @@ impl MemoWindow {
 
 /// Draws the empty state (M42, Q283 b): the `file-text` icon, "No notes
 /// yet", the primary "Create your first note" and "New group".
-pub(super) fn draw_empty_state(
+pub(in crate::main_window) fn draw_empty_state(
     ui: &Ui,
     language: Language,
     theme: &Theme,

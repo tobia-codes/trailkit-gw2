@@ -30,13 +30,20 @@ use trailkit_memo_shared::{
 };
 use trailkit_ui::layout::page::TitleTrailing;
 
-use super::{MemoWindow, WindowAction, note_list::draw_reset_type_submenu, shown_note_in};
+use crate::main_window::{
+    MemoWindow, WindowAction, panes::note_list::draw_reset_type_submenu, shown_note_in,
+};
 
 impl MemoWindow {
     /// Draws the note pane: the note toolbar, then the note in its own
     /// scroll region so the toolbar stays in place. The compact note view
     /// (M139) has no toolbar; its toggle sits behind the note title.
-    pub(super) fn draw_note_pane(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+    pub(in crate::main_window) fn draw_note_pane(
+        &mut self,
+        ui: &Ui,
+        language: Language,
+        theme: &Theme,
+    ) {
         if self.trash.visible {
             self.draw_trash_preview(ui, language, theme);
             return;
@@ -84,7 +91,12 @@ impl MemoWindow {
 
     /// Draws the right end of the note toolbar (M51): the edit button while
     /// viewing, "Cancel" and the primary "Save" while editing.
-    pub(super) fn draw_note_toolbar_end(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+    pub(in crate::main_window) fn draw_note_toolbar_end(
+        &mut self,
+        ui: &Ui,
+        language: Language,
+        theme: &Theme,
+    ) {
         let spacing = ui.clone_style().item_spacing[0];
         if self.editor.is_some() {
             let cancel = Text::Cancel.get(language);
@@ -175,7 +187,12 @@ impl MemoWindow {
     }
 
     /// Draws the editor slice below the toolbar and applies what it reports.
-    pub(super) fn draw_editor(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+    pub(in crate::main_window) fn draw_editor(
+        &mut self,
+        ui: &Ui,
+        language: Language,
+        theme: &Theme,
+    ) {
         let Some(editor) = self.editor.as_mut() else {
             return;
         };
@@ -206,7 +223,12 @@ impl MemoWindow {
     /// Draws the selected note through the note-view slice: the draft hint
     /// (drafts slice) above it and the kind dropdown (reset-schedule slice)
     /// behind its title.
-    pub(super) fn draw_note_body(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+    pub(in crate::main_window) fn draw_note_body(
+        &mut self,
+        ui: &Ui,
+        language: Language,
+        theme: &Theme,
+    ) {
         // Borrow only the document, so the view's state can change below.
         let note = shown_note_in(&self.document, self.ui_state.shown_note);
         if let Some(note) = note

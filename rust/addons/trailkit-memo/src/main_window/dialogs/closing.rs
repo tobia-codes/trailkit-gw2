@@ -9,7 +9,7 @@ use trailkit_ui::theme::Theme;
 use trailkit_memo_drafts::draft_overview::DraftOverviewAction;
 use trailkit_memo_shared::{i18n::Language, settings::UnsavedChanges};
 
-use super::{
+use crate::main_window::{
     MemoWindow,
     actions::{LeaveReason, WindowAction},
 };
@@ -93,7 +93,7 @@ impl MemoWindow {
 
     /// Lists the notes with a draft in list order (M185); notes in the trash
     /// do not count. Cheap without drafts, the usual case.
-    pub(super) fn collect_unsaved_notes(&mut self) {
+    pub(in crate::main_window) fn collect_unsaved_notes(&mut self) {
         self.unsaved_notes.clear();
         if self.drafts.drafts.is_empty() {
             return;
@@ -110,7 +110,12 @@ impl MemoWindow {
     /// a draft is left and it is not closed; while the only such note is the
     /// one shown, it has no "Go to note" (Q354). The button reveals the next
     /// such note after the shown one, wrapping around.
-    pub(super) fn draw_draft_overview(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+    pub(in crate::main_window) fn draw_draft_overview(
+        &mut self,
+        ui: &Ui,
+        language: Language,
+        theme: &Theme,
+    ) {
         let shown = self.ui_state.shown_note;
         let count = self.unsaved_notes.len();
         let can_go_to_note =

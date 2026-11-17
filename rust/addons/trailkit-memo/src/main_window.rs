@@ -6,16 +6,11 @@
 //! documents are handed to the storage worker.
 
 mod actions;
-mod closing;
 mod dialogs;
-mod layout;
-mod note_list;
-mod note_pane;
-mod save_status;
+mod panes;
 mod search;
 mod text_scale;
 mod trash;
-mod trash_pane;
 mod window_menu;
 
 use std::{collections::HashSet, path::PathBuf};
@@ -57,8 +52,8 @@ use crate::help_text::HelpText;
 
 use self::{
     actions::{LeaveReason, WindowAction},
-    layout::draw_empty_state,
-    save_status::{EditorCommit, SaveFailedPrompt, SaveStatus},
+    dialogs::save_status::{EditorCommit, SaveFailedPrompt, SaveStatus},
+    panes::layout::draw_empty_state,
     search::SearchCache,
     trash::{Confirmation, TrashState},
 };
