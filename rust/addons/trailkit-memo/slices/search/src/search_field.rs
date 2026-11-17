@@ -117,9 +117,7 @@ impl SearchField {
         width: f32,
     ) -> SearchFieldResponse {
         let start = ui.cursor_screen_pos();
-        // A little taller than a button (M128); the input inside keeps the
-        // regular frame height and sits centered.
-        let height = ui.frame_height() + theme.spacing.small;
+        let height = field_height(ui, theme);
         let input_y = start[1] + theme.spacing.small / 2.0;
         let end = [start[0] + width, start[1] + height];
         let padding = ui.clone_style().frame_padding;
@@ -269,6 +267,13 @@ impl SearchField {
         window_draw_list(ui).add_text(position, color.to_array(), Icon::X.as_str(&mut buffer));
         clicked
     }
+}
+
+/// The height of the field: a little taller than a button (M128); the input
+/// inside keeps the regular frame height and sits centered.
+#[must_use]
+pub fn field_height(ui: &Ui, theme: &Theme) -> f32 {
+    ui.frame_height() + theme.spacing.small
 }
 
 /// The ink boxes of the field's magnifier and `x` (M128). Both icons are

@@ -19,7 +19,7 @@ use trailkit_ui::{
     theme::Theme,
 };
 
-use crate::search_field::SearchField;
+use crate::search_field::{SearchField, field_height};
 
 /// Below this many average body characters the field takes the whole width
 /// and the count and buttons move to a second line.
@@ -105,7 +105,8 @@ pub fn draw_find_bar(
 
     let start = ui.cursor_screen_pos();
     let field_response = field.draw_without_end_button(ui, theme, texts.hint, field_width);
-    let field_height = ui.cursor_screen_pos()[1] - start[1];
+    // The field's own height; the cursor below it also holds the item spacing.
+    let field_height = field_height(ui, theme);
     let mut response = FindBarResponse {
         text_changed: field_response.text_changed,
         ..FindBarResponse::default()
@@ -151,7 +152,8 @@ pub fn draw_find_bar(
     ui.same_line_with_spacing(0.0, gap / 2.0);
     response.close = draw_icon_button(ui, theme, Icon::X, texts.close);
 
-    ui.set_cursor_screen_pos([start[0], row_top + field_height]);
+    let spacing = ui.clone_style().item_spacing[1];
+    ui.set_cursor_screen_pos([start[0], row_top + field_height + spacing]);
     draw_compact_separator(ui, theme);
     response
 }
