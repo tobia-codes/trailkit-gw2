@@ -110,19 +110,9 @@ API" is not enforceable; we can only raise the bar and limit damage:
   migrations, deployment, monitoring, GDPR) and where shared strings such as the lock texts live
   (`trailkit-i18n`, ROADMAP layout) before the B23 server work starts.
 - **R121 round, open (session 41, 2026-11-16):**
-  - Q473 (partly settled 2026-11-17): retention stays **12 months** (B1 unchanged; the 13-month wish is withdrawn).
-    Open: resolution tiers (proposal: every 5 minutes for the last 7 days, hourly for 12 months). Measured
-    2026-11-17 (item 19721): DataWars2 serves daily values since 2012-10 and hourly values for about 8 days;
-    GW2BLTC 6-hour values since 2021-12, hourly for about 5 weeks, about 4-minute values for about 2 days;
-    GW2Efficiency has no public history endpoint found.
-  - Q480: forum or a Discord server at the start (cost, GDPR, B20, accounts without email).
   - Q481 (scope accepted 2026-11-17): the user wants **no API use without a key**; how addons and the website
     authenticate without an extractable secret and without open request floods is open.
-  - Q482 (accepted 2026-11-17): addons get their data from the own backend after the first backend release, GitHub
-    stays an archive, the switch goes through `meta.json`; the API URL contains `gw2` so more backends can follow.
-    Open: the exact host/path form (amends B23 `api.trailkit.de`).
-  - Q483: frontend stack: React Router vs TanStack Start (user question).
-  - Still to grill: forum moderation and DSA duties if an own forum stays (Q480).
+  - Q483b: is SSR worth it, or static prerendering plus client rendering per route (user question 2026-11-17)?
 - **Price poll frequency (user idea 2026-11-16):** once the server runs, possibly poll prices more often than
   daily (B1, B5). Estimate for about 27,000 items with 1-year retention: daily about 1 GB, hourly 15–20 GB,
   every 5 minutes about 180 GB (needs downsampling or TimescaleDB compression). Backups stay small with
@@ -180,3 +170,7 @@ API" is not enforceable; we can only raise the bar and limit damage:
 | B36 | **User names** (user decision Q477, 2026-11-17): the user name is the login (no email); unique, 3–24 characters `a–z`, `0–9`, `_`, `-`; login ignores case, display keeps it; renaming at most every 30 days; reserved names such as `admin` or `trailkit` are blocked; no GW2 account name required | 2026-11-17 |
 | B37 | **Sync conflicts** (user decision Q478, 2026-11-17; with B26, B28): the server cannot merge ciphertext, so every note has a version number and the server accepts a change only on the current base version; on a conflict the client keeps both: the second copy becomes "Note (conflict device X)", nothing is lost. Favorites and settings: last write wins per field | 2026-11-17 |
 | B38 | **Roles** (user decision Q479, 2026-11-17): three fixed roles: **admin** (everything, grants roles), **moderator** (moderates the community area, blocks users) and **user**; admin and moderator need 2FA (B29); every admin/moderator action goes to an audit log; finer permissions only on real need | 2026-11-17 |
+| B39 | **Price history resolution** (user decision Q473, 2026-11-17; amends B1, retention stays 12 months): every **5 minutes for the last 7 days**, **hourly for 12 months**, older rows deleted; about 20 GB, downsampled automatically by the database. Measured on 2026-11-17 for comparison (item 19721): DataWars2 daily values since 2012-10 and hourly for about 8 days; GW2BLTC 6-hour values since 2021-12, hourly for about 5 weeks, about 4-minute values for about 2 days | 2026-11-17 |
+| B40 | **Discord instead of an own forum at the start** (user decision Q480, 2026-11-17; amends R121): a free Discord server (boosts are cosmetic only) for community, questions and wishes; the website only links to it (no widget or embed, so our pages send nothing to Discord); problem reports without an account stay the B25 form. Trade-offs accepted: Discord is a US provider, needs an account with email, is not searchable. The own forum goes to the backlog and is reassessed when the community grows; the moderator role (B38) then moderates Discord | 2026-11-17 |
+| B41 | **API host with the product name** (user decision Q482, 2026-11-17; amends B23 and D19): the API lives at **`api.gw2.trailkit.de/v1/`** (one subdomain per product line like R52, so every backend can run on its own server via DNS). After the first backend release the addons get their data from it; GitHub stays an archive; the switch goes through `meta.json` without an addon update | 2026-11-17 |
+| B42 | **Frontend framework: TanStack Start** (user decision Q483, 2026-11-17; R121): type-safe routes, params, search params and server functions (rule 8), TanStack Query built in, rendering chosen per route (Q483b); self-hosted as a Node container next to the Rust server, which stays the only source of truth | 2026-11-17 |
