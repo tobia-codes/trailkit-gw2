@@ -16,6 +16,7 @@ use crate::{
     },
     text::font_registry::FontScope,
     text::fonts::FontRole,
+    text::search_hits::HitMark,
     theme::Theme,
 };
 
@@ -137,6 +138,7 @@ impl TextEditor {
             line_height,
             editor_hovered: is_editor_hovered(ui),
             chips,
+            find_hits: &self.find_hits,
         };
         #[expect(clippy::cast_possible_truncation, reason = "only the parity matters")]
         let blink_on = ((ui.time() - self.blink_start) / BLINK_HALF_PERIOD) as i64 % 2 == 0;
@@ -151,6 +153,13 @@ impl TextEditor {
             let top = origin[1] + index as f32 * line_height;
             draw_line_selection(ui, draw_list, &line_context, line, [origin[0], top]);
             draw_line_text(
+                ui,
+                draw_list,
+                &line_context,
+                line,
+                [origin[0], top + leading],
+            );
+            draw_line_hits(
                 ui,
                 draw_list,
                 &line_context,
@@ -188,6 +197,8 @@ struct LineContext<'frame> {
     editor_hovered: bool,
     /// Texts of chat-link chips.
     chips: ChipContext<'frame>,
+    /// Hits of find in the note with their look (memo M198).
+    find_hits: &'frame [(Range<usize>, HitMark)],
 }
 
 /// Draws the selection highlight of `line` from `line_origin` (screen
@@ -269,6 +280,60 @@ fn draw_line_text(
                 if context.editor_hovered && ui.is_mouse_hovering_rect(min, max) {
                     chip_tooltip(ui, chip, context.theme, context.chips, false);
                 }
+            }
+        }
+    }
+}
+
+/// Marks the find hits on `line` over its drawn text (`text_origin` is the
+/// screen position of the line's text top), span by span so bold text keeps
+/// its font: a filled hit like a text marker with its text in
+/// `text.on_accent`, a framed hit and every chip with an `accent.text`
+/// frame (memo M198).
+fn draw_line_hits(
+    ui: &Ui,
+    draw_list: WindowDrawList<'_>,
+    context: &LineContext<'_>,
+    line: &VisualLine,
+    text_origin: [f32; 2],
+) {
+    let theme = context.theme;
+    let height = ui.text_line_height();
+    for (hit, mark) in context.find_hits {
+        if hit.end <= line.range.start || hit.start >= line.range.end {
+            continue;
+        }
+        let on_line = hit.start.max(line.range.start)..hit.end.min(line.range.end);
+        for span in context.layout.spans_in(on_line.clone()) {
+            let part = on_line.start.max(span.range.start)..on_line.end.min(span.range.end);
+            let Some(piece) = context
+                .text
+                .get(part.clone())
+                .filter(|piece| !piece.is_empty())
+            else {
+                continue;
+            };
+            let min = [text_origin[0] + line.x_of(part.start), text_origin[1]];
+            let max = [
+                text_origin[0] + line.x_of(part.end),
+                text_origin[1] + height,
+            ];
+            let filled = *mark == HitMark::Filled && span.style != SpanStyle::ChatLink;
+            if filled {
+                draw_list
+                    .add_rect(min, max, theme.accent.highlight.to_array())
+                    .filled(true)
+                    .rounding(theme.radius.small)
+                    .build();
+                let _bold = (span.style == SpanStyle::Strong)
+                    .then(|| FontScope::push(ui, FontRole::BodyBold));
+                draw_list.add_text(min, theme.text.on_accent.to_array(), piece);
+            } else {
+                draw_list
+                    .add_rect(min, max, theme.accent.text.to_array())
+                    .rounding(theme.radius.small)
+                    .thickness(theme.border.width)
+                    .build();
             }
         }
     }

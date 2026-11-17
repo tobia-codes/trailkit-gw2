@@ -146,6 +146,10 @@ fn draw_chat_link(
         && !highlight.query.hit_ranges(&chip.code).is_empty()
     {
         highlight.record_hit(ui, y);
+        // The current chip of find in a note gets a doubled frame (M198).
+        let (_, is_current) = highlight.next_mark();
+        highlight.count_hits(ui, 1, is_current.then_some(y));
+        let thickness = if is_current { 2.0 } else { 1.0 } * theme.border.width;
         window_draw_list(ui)
             .add_rect(
                 [x, y],
@@ -153,7 +157,7 @@ fn draw_chat_link(
                 theme.accent.text.to_array(),
             )
             .rounding(theme.radius.small)
-            .thickness(theme.border.width)
+            .thickness(thickness)
             .build();
     }
     if hovered {
@@ -185,6 +189,7 @@ fn draw_wrapped_text(
     }
     let mut action = None;
     let mut token_offset = 0;
+    let mut current_hit_y = None;
     for token in span.text.split_inclusive(' ') {
         let word = token.trim_end_matches(' ');
         let word_offset = token_offset;
@@ -194,6 +199,7 @@ fn draw_wrapped_text(
             let word_hits = WordHits {
                 ranges: hits,
                 offset: word_offset,
+                highlight: highlight.as_deref(),
             };
             let clicked = draw_word(ui, word, span, bounds, theme, cursor, word_hits);
             if let Some(first_hit) = clicked.first_hit_y
@@ -201,12 +207,16 @@ fn draw_wrapped_text(
             {
                 highlight.record_hit(ui, first_hit);
             }
+            current_hit_y = current_hit_y.or(clicked.current_hit_y);
             action = action.or(clicked.action);
         }
         let trailing_spaces = &token[word.len()..];
         if cursor.x > bounds.left {
             cursor.x += ui.calc_text_size(trailing_spaces)[0];
         }
+    }
+    if let Some(highlight) = highlight {
+        highlight.count_hits(ui, hits.len(), current_hit_y);
     }
     action
 }
@@ -218,6 +228,8 @@ struct WordHits<'ranges> {
     ranges: &'ranges [Range<usize>],
     /// Byte offset of the word in the span text.
     offset: usize,
+    /// The search, whose count still stands before the span's first hit.
+    highlight: Option<&'ranges SearchHighlight<'ranges>>,
 }
 
 /// What drawing one word produced.
@@ -227,6 +239,8 @@ struct WordOutcome {
     action: Option<MarkdownAction>,
     /// Screen y of the first marked piece, if any.
     first_hit_y: Option<f32>,
+    /// Screen y of the piece holding the start of the current hit, if any.
+    current_hit_y: Option<f32>,
 }
 
 /// Draws one word at the `cursor`, breaking it between characters if it is
@@ -252,10 +266,22 @@ fn draw_word(
         ui.set_cursor_screen_pos(position);
         let clicked = draw_piece(ui, piece, span, theme);
         outcome.action = outcome.action.or(clicked);
-        let piece_hits = hits_in_piece(piece, piece_offset, hits.ranges);
-        if !piece_hits.is_empty() {
-            mark_search_hits(ui, theme, piece, piece_hits, position);
-            outcome.first_hit_y = outcome.first_hit_y.or(Some(cursor.y));
+        if let Some(highlight) = hits.highlight {
+            let mut piece_hits = Vec::new();
+            for (index, range) in hits.ranges.iter().enumerate() {
+                let Some(local) = range_in_piece(range, piece_offset, piece.len()) else {
+                    continue;
+                };
+                let (mark, is_current) = highlight.mark_at(index);
+                if is_current && range.start >= piece_offset {
+                    outcome.current_hit_y = Some(cursor.y);
+                }
+                piece_hits.push((local, mark));
+            }
+            if !piece_hits.is_empty() {
+                mark_search_hits(ui, theme, piece, piece_hits, position);
+                outcome.first_hit_y = outcome.first_hit_y.or(Some(cursor.y));
+            }
         }
         cursor.x += piece_width;
         piece_offset += piece.len();
@@ -267,15 +293,13 @@ fn draw_word(
     outcome
 }
 
-/// The parts of `ranges` (byte ranges in the span text) that fall into
-/// `piece`, which starts at byte `offset` of the span, relative to `piece`.
-fn hits_in_piece(piece: &str, offset: usize, ranges: &[Range<usize>]) -> Vec<Range<usize>> {
-    let piece_end = offset + piece.len();
-    ranges
-        .iter()
-        .filter(|range| range.end > offset && range.start < piece_end)
-        .map(|range| range.start.max(offset) - offset..range.end.min(piece_end) - offset)
-        .collect()
+/// The part of `range` (bytes of the span text) inside the piece that
+/// starts at byte `offset` and is `length` bytes long, relative to the
+/// piece; `None` if they do not overlap.
+fn range_in_piece(range: &Range<usize>, offset: usize, length: usize) -> Option<Range<usize>> {
+    let end = offset + length;
+    (range.end > offset && range.start < end)
+        .then(|| range.start.max(offset) - offset..range.end.min(end) - offset)
 }
 
 /// The longest prefix of `text` (whole characters) narrower than `available`;

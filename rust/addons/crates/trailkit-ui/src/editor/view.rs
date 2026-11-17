@@ -19,7 +19,7 @@ use nexus::imgui::{
 
 use self::{keyboard::typed_characters, lines::CachedLayout};
 use super::buffer::TextBuffer;
-use crate::{chat_link::chat_link_chip::ChipContext, theme::Theme};
+use crate::{chat_link::chat_link_chip::ChipContext, text::search_hits::HitMark, theme::Theme};
 
 /// Half a cursor blink period in seconds (on, then off).
 const BLINK_HALF_PERIOD: f64 = 0.6;
@@ -68,6 +68,9 @@ pub struct TextEditor {
     sink_activation_pending: bool,
     /// Line height of the last drawn frame (for Page Up/Down).
     line_height: f32,
+    /// Hits of find in the note to mark, as byte ranges of the text with
+    /// their look (memo M198); empty without a find.
+    find_hits: Vec<(std::ops::Range<usize>, HitMark)>,
 }
 
 impl TextEditor {
@@ -87,6 +90,7 @@ impl TextEditor {
             sink_was_active: false,
             sink_activation_pending: true,
             line_height: 0.0,
+            find_hits: Vec::new(),
         }
     }
 
@@ -107,6 +111,17 @@ impl TextEditor {
     pub fn select(&mut self, range: std::ops::Range<usize>) {
         self.buffer.select(range.start, range.end);
         self.scroll_to_cursor = true;
+    }
+
+    /// Marks `hits` (byte ranges of the text with their look) from the next
+    /// frame on, replacing the earlier ones; empty clears them (find in the
+    /// note, memo M198). Ranges must lie on character boundaries.
+    pub fn set_find_hits(
+        &mut self,
+        hits: impl IntoIterator<Item = (std::ops::Range<usize>, HitMark)>,
+    ) {
+        self.find_hits.clear();
+        self.find_hits.extend(hits);
     }
 
     /// A number that changes whenever the text changes (for caches).

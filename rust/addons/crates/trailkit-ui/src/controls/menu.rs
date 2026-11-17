@@ -242,6 +242,39 @@ pub fn draw_menu_item_with_icon(
     tone: MenuItemTone,
     disabled_tooltip: Option<&str>,
 ) -> bool {
+    draw_icon_menu_item(ui, theme, icon, label, None, (tone, disabled_tooltip))
+}
+
+/// Draws an enabled menu item with a Lucide `icon` before `label` and its
+/// `shortcut` in `text.secondary` at the row's right end (memo M198); ImGui
+/// keeps room for the shortcut. Returns whether it was clicked.
+pub fn draw_menu_item_with_shortcut(
+    ui: &Ui,
+    theme: &Theme,
+    icon: Icon,
+    label: &str,
+    shortcut: &str,
+) -> bool {
+    draw_icon_menu_item(
+        ui,
+        theme,
+        icon,
+        label,
+        Some(shortcut),
+        (MenuItemTone::Regular, None),
+    )
+}
+
+/// Draws a menu item with `icon`, `label` and an optional `shortcut`; see
+/// [`draw_menu_item_with_icon`] for the tone and the disabled state.
+fn draw_icon_menu_item(
+    ui: &Ui,
+    theme: &Theme,
+    icon: Icon,
+    label: &str,
+    shortcut: Option<&str>,
+    (tone, disabled_tooltip): (MenuItemTone, Option<&str>),
+) -> bool {
     let enabled = disabled_tooltip.is_none();
     // ImGui draws the label at the cursor; the item rect is no substitute
     // because it reaches half the item spacing further up and left.
@@ -254,7 +287,11 @@ pub fn draw_menu_item_with_icon(
             ui.push_style_color(StyleColor::Text, [0.0; 4]),
             ui.push_style_color(StyleColor::TextDisabled, [0.0; 4]),
         ];
-        MenuItem::new(label).enabled(enabled).build(ui)
+        let item = MenuItem::new(label).enabled(enabled);
+        match shortcut {
+            Some(shortcut) => item.shortcut(shortcut).build(ui),
+            None => item.build(ui),
+        }
     };
     // ImGui reports the hover of a disabled item once the item has ended.
     if enabled {
@@ -272,6 +309,11 @@ pub fn draw_menu_item_with_icon(
     draw_icon_into(draw_list, ui, icon, origin[0], span, packed(color));
     let label_x = origin[0] + icon_width(ui) + theme.spacing.small;
     draw_menu_row_label([label_x, origin[1]], color, label);
+    if let Some(shortcut) = shortcut {
+        let right = ui.item_rect_max()[0] - theme.menu.row_padding_x;
+        let x = right - ui.calc_text_size(shortcut)[0];
+        draw_menu_row_label([x, origin[1]], theme.text.secondary, shortcut);
+    }
     if let Some(reason) = disabled_tooltip
         && ui.is_item_hovered_with_flags(ItemHoveredFlags::ALLOW_WHEN_DISABLED)
     {
