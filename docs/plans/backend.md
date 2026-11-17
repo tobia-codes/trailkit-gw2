@@ -86,7 +86,7 @@ Hosting alternatives (free tiers, to be verified at decision time):
 - **Config:** typed config struct via `figment` or `envy` (env vars).
 - **Errors:** `thiserror` in library code, `anyhow` only in `main`.
 
-## Security model (proposal, to grill)
+## Security model (proposal; superseded where B20, B43 differ)
 
 A secret shipped inside a public DLL **cannot stay secret** — anyone can read
 it from the binary or from the HTTP request. So "only my addons can call the
@@ -109,11 +109,8 @@ API" is not enforceable; we can only raise the bar and limit damage:
 - **Tech stack:** the proposed stack below is not grilled yet. Grill it (web framework, DB access,
   migrations, deployment, monitoring, GDPR) and where shared strings such as the lock texts live
   (`trailkit-i18n`, ROADMAP layout) before the B23 server work starts.
-- **R121 round, open (session 41, 2026-11-16):**
-- **Price poll frequency (user idea 2026-11-16):** once the server runs, possibly poll prices more often than
-  daily (B1, B5). Estimate for about 27,000 items with 1-year retention: daily about 1 GB, hourly 15–20 GB,
-  every 5 minutes about 180 GB (needs downsampling or TimescaleDB compression). Backups stay small with
-  incremental tools (`restic`/`pgBackRest`), since price rows are append-only. Decide when the server runs.
+- ~~R121 round (sessions 41–42)~~ → B26–B44, R132.
+- ~~Price poll frequency~~ → B39.
 - **In-game problem reports (B25), open points:**
   - Q288: where the flag lives: `/v1/meta` (the user's first idea) or the `/v1/addons/status` response,
     which every addon already shares through `update-status.json` (one request, B23 Q228).
