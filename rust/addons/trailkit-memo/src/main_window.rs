@@ -18,6 +18,7 @@ use std::{collections::HashSet, path::PathBuf};
 use jiff::Timestamp;
 use nexus::imgui::{Ui, WindowFocusedFlags};
 use trailkit_ui::{
+    controls::menu::popup_drawn_this_frame,
     feedback::toast::Toast,
     help::help_window::{HelpTab, HelpWindowState},
     layout::pane::draw_pane,
@@ -116,6 +117,9 @@ pub struct MemoWindow {
     note_view: NoteView,
     /// Whether the window menu is open (M166).
     window_menu_open: bool,
+    /// Whether a menu or dropdown popup was open in the last frame; Escape
+    /// closes it before the window.
+    popup_open: bool,
     /// Whether the note list claimed the Delete key in the last frame (M175).
     note_list_takes_delete_key: bool,
     /// Actions collected while drawing; reused every frame.
@@ -231,6 +235,7 @@ impl MemoWindow {
             note_list: NoteList::default(),
             note_view: NoteView::default(),
             window_menu_open: false,
+            popup_open: false,
             note_list_takes_delete_key: false,
             actions: Vec::new(),
             drafts,
@@ -298,6 +303,7 @@ impl MemoWindow {
         // Last, so it lies above the content and the menu (M148).
         self.draw_toast_message(ui, language, theme);
         self.draw_save_toast(ui, language, theme);
+        self.popup_open = popup_drawn_this_frame(ui);
         self.drop_failed_commit_on_edit();
 
         if let Some(action) = self.note_list.finish_drag(ui, theme, &self.document) {

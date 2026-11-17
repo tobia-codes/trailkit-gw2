@@ -41,7 +41,7 @@ impl MemoWindow {
     /// Whether Escape should clear the search instead of closing the window:
     /// the focused search field holds text (M124) and no menu lies above it.
     #[must_use]
-    pub fn search_takes_escape(&self) -> bool {
+    pub(in crate::main_window) fn search_takes_escape(&self) -> bool {
         !self.window_menu_open
             && self.search_field.is_active()
             && !self.search_field.text.is_empty()
@@ -70,7 +70,7 @@ impl MemoWindow {
 
     /// Clears the search after Escape (see [`Self::search_takes_escape`]);
     /// the field keeps the focus, so a second Escape closes the window.
-    pub fn clear_search_by_escape(&mut self) {
+    pub(in crate::main_window) fn clear_search_by_escape(&mut self) {
         self.search_field.clear(true);
     }
 
