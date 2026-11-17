@@ -24,8 +24,7 @@ the upstream (narrow fetch refspec): set `branch.<b>.remote/merge` by hand for t
 tests wait for the Windows PC; check `source ~/.cargo/env` and a first `cargo test` there; snapshots via the PR's Windows CI.
 
 **Session 42 (2026-11-17, PC):** R121 merged (#141). Unpushed, waiting for in-game tests 19–21 and merge OK:
-`chore/dependency-patch-updates` (test 19) and `chore/trailkit-ui-module-groups` (tests 20, 21; contains `chore/generated-theme-folder`):
-R133–R137 (generated folder, trailkit-ui groups, nexus_bridge + crate `trailkit-nexus-bridge`, max 10 loose files, xtask groups).
+`chore/dependency-patch-updates` (test 19), `chore/trailkit-ui-module-groups` (tests 20, 21; holds `chore/generated-theme-folder`; R133–R137).
 **Next:** grouping of memo `main_window/` (11 loose files, R137; proposal Q500); then the favorites grilling.
 Favorites grilling (`feature/memo-favorites`, M188–M191 decided): open Q407, Q408, Q416–Q419 in trailkit-memo.md.
 
