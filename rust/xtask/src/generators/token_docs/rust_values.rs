@@ -439,7 +439,7 @@ fn render_value(value: TokenValue, variant: Variant) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::token_docs::source::Unit;
+    use crate::generators::token_docs::source::Unit;
 
     /// A token of `file` with `field` and `value`.
     fn token(file: &'static str, field: &str, value: TokenValue) -> Token {
