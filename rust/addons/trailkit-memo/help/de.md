@@ -126,7 +126,7 @@ Blende das Feld **Suchen** über das Menü ein oder drücke **Strg+F** (nicht be
 - Gruppen mit Treffern klappen von selbst auf; ihre Zahl zeigt, wie viele Notizen passen. Passt der Name einer Gruppe, erscheint alles darin.
 - Treffer sind in den Titeln und in der geöffneten Notiz markiert; die Notiz springt zum ersten Treffer. Notizen, die nur über ihren Text passen, zeigen am Ende der Zeile die Zahl der Treffer.
 - Linktexte und Chat-Codes werden durchsucht, Linkadressen nicht. Ein Chip, dessen Code passt, bekommt einen Rahmen.
-- Die geöffnete Notiz bleibt immer in der Liste, auch wenn sie nach einer Änderung nicht mehr passt.
+- Die Liste zeigt nur Treffer. Die geöffnete Notiz bleibt rechts offen, auch wenn sie nicht passt; klicke einen Treffer an, um ihn zu öffnen.
 
 ## Papierkorb und Rückgängig
 

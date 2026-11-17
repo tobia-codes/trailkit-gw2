@@ -2,6 +2,7 @@
 //! keys (memo M122, M129, M138).
 
 use super::*;
+use trailkit_memo_shared::list_filter::ListFilter;
 
 /// Focuses the search with Ctrl+F, types `query` and lets the window
 /// settle; returns the last image.
@@ -212,4 +213,34 @@ fn a_click_on_a_row_selects_it_during_a_search() {
         memo.ui_state.selected, shopping,
         "a press and release in place selects, even though dragging is blocked (M125)"
     );
+}
+
+#[test]
+fn the_open_note_leaves_the_list_but_stays_shown_during_a_search() {
+    let document = sample_document();
+    let weekly = weekly_note(&document);
+    let ui_state = UiState {
+        selected: weekly,
+        search_visible: true,
+        ..UiState::default()
+    };
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    memo.search_field.text = "Shopping".to_owned();
+    memo.update_search();
+    let Some(search) = &memo.search.current else {
+        panic!("the search runs");
+    };
+    assert!(
+        weekly.is_some_and(|node| !search.results.is_visible(node)),
+        "the open note does not match, so the list hides it (M196)"
+    );
+    assert_eq!(memo.ui_state.selected, weekly, "but it stays open");
+    memo.note_list_takes_delete_key = true;
+    assert!(
+        !memo.takes_delete_key(),
+        "the Delete key cannot delete the hidden note"
+    );
+    memo.search_field.text.clear();
+    memo.update_search();
+    assert!(memo.takes_delete_key(), "it is back in the list");
 }

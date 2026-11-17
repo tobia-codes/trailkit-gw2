@@ -5,7 +5,6 @@ use nexus::imgui::Ui;
 use trailkit_ui::text::text_search::SearchQuery;
 
 use trailkit_memo_search::note_search::{NoteSearchIndex, SearchResults};
-use trailkit_memo_shared::note_tree::NodeId;
 
 use super::MemoWindow;
 
@@ -31,8 +30,6 @@ pub(super) struct CurrentSearch {
     pub(super) query: SearchQuery,
     /// The document revision the results belong to.
     pub(super) revision: u64,
-    /// The node kept visible (the open note, M125).
-    pub(super) keep_visible: Option<NodeId>,
     /// What the note list shows.
     pub(super) results: SearchResults,
 }
@@ -117,10 +114,8 @@ impl MemoWindow {
             return;
         };
         let revision = self.document_revision;
-        let keep_visible = self.ui_state.selected;
         if let Some(current) = &self.search.current
             && current.revision == revision
-            && current.keep_visible == keep_visible
             && current.text == self.search_field.text
         {
             return;
@@ -147,12 +142,11 @@ impl MemoWindow {
             self.collapsed_in_search.clear();
             self.note_view.jump_to_first_hit();
         }
-        let results = SearchResults::compute(&self.document, index, &query, keep_visible);
+        let results = SearchResults::compute(&self.document, index, &query);
         self.search.current = Some(CurrentSearch {
             text: self.search_field.text.clone(),
             query,
             revision,
-            keep_visible,
             results,
         });
     }

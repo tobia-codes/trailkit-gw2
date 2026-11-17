@@ -126,7 +126,7 @@ Show the **Search** field from the menu or press **Ctrl+F** (not while editing);
 - Groups with hits open by themselves; their number shows how many notes match. A group whose name matches shows everything inside.
 - Hits are marked in the titles and in the open note, which jumps to the first hit. Notes that match only through their text show the number of hits at the end of the row.
 - Link texts and chat-link codes are searched, link addresses are not. A chip whose code matches gets a frame.
-- The open note always stays in the list, even if it no longer matches after an edit.
+- The list shows only matches. The open note stays open on the right even when it does not match; click a match to open it.
 
 ## Trash and undo
 
