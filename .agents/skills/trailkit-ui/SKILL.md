@@ -58,7 +58,7 @@ the token files in `design/tokens/` by `cargo xtask tokens` (R84, R118); when to
 [`references/tokens.md`](references/tokens.md).
 
 - **Built-in themes:** `Dark` (default) and `Light`. Both are full token sets.
-  Values: `design/tokens/*.toml`, generated into `rust/addons/crates/trailkit-ui/src/theme/values.rs` (palette R71, supersedes R51:
+  Values: `design/tokens/*.toml`, generated into `rust/addons/crates/trailkit-ui/src/theme/generated.rs` and `theme/generated/<token file>.rs` (R133) (palette R71, supersedes R51:
   ink-tinted dark and parchment-warm light surfaces, violet accent R124). The
   "Trailkit" design system in Claude Design is no longer a reference (R84). The themes are
   called just "Dark" and "Light", in code and in the UI. Unit tests enforce
@@ -143,7 +143,7 @@ Build once, use everywhere. Planned:
 - Markdown renderer (read-only view) — **exists**: `markdown` (parser,
   any platform) + `markdown_view` (ImGui)
 - Shared fonts (Open Sans regular/bold/italic/bold italic, headings; M62) and
-  Lucide icons — **exist**: `fonts`, `font_registry` (`FontScope`), `icons`;
+  Lucide icons — **exist**: `text::fonts`, `text::font_registry` (`FontScope`; registered with Nexus by `trailkit-nexus-bridge`), `text::icons`;
   addon text uses the `TextStyle` roles of `references/tokens.md` §7.1 (R96)
 - Chat-link chip — **exists**: `chat_link` (find/decode `[&…]`, any
   platform) + `chat_link_chip` (pill in its category color: icon and kind in

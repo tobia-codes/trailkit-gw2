@@ -4,12 +4,12 @@
 //! window toggled by a keybind (unbound by default, memo plan M14) or the
 //! quick access icon (R55) and builds the DLL. What slices share lives in
 //! `trailkit-memo-shared`. Platform-independent logic stays testable on any
-//! host (R23); the Nexus glue in `addon` only compiles for Windows.
+//! host (R23); the Nexus bridge in `nexus_bridge` only compiles for Windows.
 
 #[cfg(windows)]
-mod addon;
-#[cfg(windows)]
 mod main_window;
+#[cfg(windows)]
+mod nexus_bridge;
 #[cfg(windows)]
 mod options_tab;
 
@@ -56,7 +56,7 @@ mod tests {
     #[test]
     fn every_character_is_in_the_subset_fonts() {
         use trailkit_memo_shared::i18n::Language;
-        use trailkit_ui::fonts::{
+        use trailkit_ui::text::fonts::{
             OPEN_SANS_BOLD, OPEN_SANS_BOLD_ITALIC, OPEN_SANS_ITALIC, OPEN_SANS_REGULAR, covers,
         };
         // UI strings plus the help with the privacy policy (same fonts).

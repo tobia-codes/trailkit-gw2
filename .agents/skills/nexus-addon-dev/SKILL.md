@@ -22,7 +22,8 @@ for new addons: [`references/addon-structure.md`](references/addon-structure.md)
   neutral shared types between slices.
 - **Overlay portability (ROADMAP R132):** Nexus API calls (loader,
   events, keybinds, quick access, textures, paths) stay in the app's
-  `addon/` module or in core; all UI goes through `trailkit-ui`. Slices
+  `nexus_bridge` module (`nexus_bridge.rs` + `nexus_bridge/`, R136), in the shared
+  crate `trailkit-nexus-bridge` (what several addons need, e.g. fonts) or in core; all UI goes through `trailkit-ui`. Slices
   never call the Nexus API directly, so a port to an own overlay stays
   a few weeks of work.
 - A slice owns its state, `draw` function, text enum and help section;
@@ -79,7 +80,7 @@ for new addons: [`references/addon-structure.md`](references/addon-structure.md)
   Latin, Latin-1, Latin Extended-A/B **plus every character of every
   registered localization text** — register icon glyphs and the addon's own
   UI strings as localization texts *before* adding fonts, or they render as
-  `?`. All trailkit addons use `trailkit_ui::font_registry` for this.
+  `?`. All trailkit addons use `trailkit_nexus_bridge::fonts::register_fonts` for this (Q496).
 - `NexusLinkData_t.IsGameplay` / `IsMoving` / `IsCameraMoving` tell you if the
   player is in gameplay (hide/skip work during loading screens & cutscenes).
   **Project rule (R56/R61):** windows are not drawn while `IsGameplay` is

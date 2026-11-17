@@ -2,7 +2,7 @@
 //! results (M119), Ctrl+F (M124, M127) and Escape in the field.
 
 use nexus::imgui::Ui;
-use trailkit_ui::text_search::SearchQuery;
+use trailkit_ui::text::text_search::SearchQuery;
 
 use trailkit_memo_search::note_search::{NoteSearchIndex, SearchResults};
 use trailkit_memo_shared::note_tree::NodeId;
@@ -74,7 +74,7 @@ impl MemoWindow {
         self.search_field.clear(true);
     }
 
-    /// Ctrl+F as ImGui sees it; in game `addon::catch_window_keys` gets it first
+    /// Ctrl+F as ImGui sees it; in game `nexus_bridge::catch_window_keys` gets it first
     /// while it belongs to the window (M174). It toggles the search
     /// field (M124, M138, M176). The search sits
     /// in the note list, which the editor hides, so it does nothing there

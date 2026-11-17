@@ -13,9 +13,9 @@ use std::time::Duration;
 use nexus::imgui::{Condition, Ui, Window};
 use trailkit_storage::DocumentStore;
 use trailkit_ui::{
-    style_scope::StyleScope,
+    drawing::style_scope::StyleScope,
+    layout::title_bar::{TitleBarState, draw_window},
     theme::ThemeKind,
-    title_bar::{TitleBarState, draw_window},
 };
 use trailkit_ui_testing::{
     harness::{FrameInput, UiHarness},

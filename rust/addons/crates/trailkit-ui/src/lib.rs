@@ -8,82 +8,26 @@
 //! - [`color`]: an RGBA color type with WCAG contrast helpers;
 //! - [`theme`]: the semantic theme tokens and the built-in `Dark` / `Light`
 //!   themes;
-//! - `pane` and `separator` (Windows only): padded content regions and a
-//!   separator that respects that padding (`lay-pane-padding`);
 //! - [`text`]: the text roles (`TextStyle`) through which addons draw
-//!   text and icons (R96); `empty_state` (Windows only) is the one
-//!   empty-state layout;
-//! - `style_scope` (Windows only): an RAII guard that applies a theme to the
-//!   shared ImGui context and restores the previous style on drop.
+//!   text and icons (R96), plus fonts, icons, text layout and search;
+//! - [`layout`], [`controls`], [`lists`], [`feedback`], [`help`]: the shared
+//!   components, grouped by concern (ROADMAP R134; mostly Windows only);
+//! - [`markdown`] and [`editor`]: the read-only markdown view and the text
+//!   editor;
+//! - [`drawing`]: low-level ImGui support such as the theme style scope.
 //!
 //! Shared components move in here only once a second addon needs them
 //! (AGENTS.md rule 7, ROADMAP R47).
 
-pub mod busy;
 pub mod chat_link;
 pub mod color;
+pub mod controls;
+pub mod drawing;
 pub mod editor;
-pub mod fonts;
-pub mod help_topics;
-pub mod icons;
+pub mod feedback;
+pub mod help;
+pub mod layout;
+pub mod lists;
 pub mod markdown;
 pub mod text;
-pub mod text_search;
 pub mod theme;
-
-#[cfg(windows)]
-pub mod button;
-#[cfg(windows)]
-pub mod chat_link_chip;
-#[cfg(windows)]
-pub mod cursor_extent;
-#[cfg(windows)]
-pub mod draw_list;
-#[cfg(windows)]
-pub mod dropdown;
-#[cfg(windows)]
-pub mod empty_state;
-#[cfg(windows)]
-pub mod font_registry;
-#[cfg(windows)]
-pub mod glyph_metrics;
-#[cfg(windows)]
-pub mod help_window;
-#[cfg(windows)]
-pub mod list_row;
-#[cfg(windows)]
-pub mod markdown_view;
-#[cfg(windows)]
-pub mod menu;
-#[cfg(windows)]
-pub mod page;
-#[cfg(windows)]
-pub mod pane;
-#[cfg(windows)]
-pub mod pane_columns;
-#[cfg(windows)]
-pub mod selection_bar;
-#[cfg(windows)]
-pub mod separator;
-#[cfg(windows)]
-pub mod spinner;
-#[cfg(windows)]
-pub mod splitter;
-#[cfg(windows)]
-pub mod status_card;
-#[cfg(windows)]
-pub mod status_line;
-#[cfg(windows)]
-pub mod style_scope;
-#[cfg(windows)]
-pub mod text_layout;
-#[cfg(windows)]
-pub mod title_bar;
-#[cfg(windows)]
-pub mod toast;
-#[cfg(windows)]
-pub mod toolbar;
-#[cfg(windows)]
-pub mod tooltip;
-#[cfg(windows)]
-pub mod tree_arrow;

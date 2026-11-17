@@ -17,9 +17,17 @@ below this folder, the repository root keeps only language-neutral files.
 | | [`trailkit-ui-testing`](addons/crates/trailkit-ui-testing/README.md) | Headless UI tests and snapshot comparison (dev-dependency only) |
 | | [`trailkit-storage`](addons/crates/trailkit-storage/README.md) | Versioned, crash-safe JSON files for everything an addon saves |
 | | [`trailkit-log`](addons/crates/trailkit-log/README.md) | One local log file per addon and the binding log format |
+| | [`trailkit-nexus-bridge`](addons/crates/trailkit-nexus-bridge/README.md) | The Nexus API helpers all addons share (fonts); the only shared crate that calls Nexus |
 | `services/` | [`trailkit-api`](services/trailkit-api/README.md) | REST API server, skeleton only (backend deferred) |
 | `tools/` | [`trailkit-datagen`](tools/trailkit-datagen/README.md) | Daily data job: trading post price archive and WvW snapshots |
 | `xtask/` | [`xtask`](xtask/README.md) | Build and check commands: `cargo xtask <command>` |
+
+**Folder rule (R137):** a folder holds at most 10 loose `.rs` files (files
+without a folder of the same name; `lib.rs`, `main.rs` and `tests.rs` do not
+count); with more they are grouped into folders by concern. Generated Rust
+code lives in a `generated` module (R135). `cargo xtask check-file-length`
+hints at folders over the limit. Binding details:
+[naming conventions](../docs/agent-reference.md#naming-conventions).
 
 Workspace files: `Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`,
 `clippy.toml`, `deny.toml` and `.cargo/config.toml` (the `cargo xtask` alias).

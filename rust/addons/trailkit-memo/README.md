@@ -26,26 +26,42 @@ never depends on another slice; what several need lives in `shared`.
 
 ## Contents of the app crate
 
+**Nexus stays in one place (ROADMAP R132, R136):** every call to the Nexus API
+(addon export, load/unload, keybinds, quick access, textures, render callbacks,
+crash guard, start of logging and storage) lives in `src/nexus_bridge.rs` and
+`src/nexus_bridge/`. The main window, the slices and `trailkit-ui` only draw with
+ImGui and know nothing of Nexus, so memo could move to another host with only
+this module rewritten.
+
 | Path | Content |
 |------|---------|
 | `src/lib.rs` | crate root; `all_texts()` collects the texts of the app and every slice for the font atlas |
+| `src/help_document.rs` | memo's help text: the topics of `help/<language>.md`, the last one completed with the privacy policy (R95, M181) |
+| `src/help_text.rs` | the texts of memo's help window in English and German (R100) |
+| `src/log_export.rs` | the problem page's steps that leave the help window: writing the log export and the GitHub issue form address (R95, R100) |
+| `src/options_tab.rs` | memo's tab in the Nexus options (R53; Windows only) |
 | `src/main_window.rs` | main window: state, drawing entry point, due resets (Windows only) |
-| `src/main_window/closing.rs` | closing with unsaved changes: close request and approval, drafts kept on unload, the card about notes with drafts |
+| `src/main_window/dialogs/closing.rs` | closing with unsaved changes: close request and approval, drafts kept on unload, the card about notes with drafts |
 | `src/main_window/actions.rs` | `WindowAction` and applying it: unsaved-edit guard, then tree, editor and view actions |
 | `src/main_window/search.rs` | search cache (index + results), Ctrl+F, Escape in the search field |
 | `src/main_window/text_scale.rs` | text size: Ctrl+mouse wheel, Ctrl+0, delayed apply, percentage tooltip |
-| `src/main_window/note_list.rs` | note list wiring: search field, menu button, hands search and reset extras to the note-list slice and maps its actions |
-| `src/main_window/note_pane.rs` | note pane: toolbar end (`⋯` menu, Edit / Cancel / Save); wires editor, note view, kind dropdown and draft hint |
-| `src/main_window/dialogs.rs` | dialog card (status line, busy button) and window, unsaved-changes, save-failed and delete questions, storage problems |
-| `src/main_window/save_status.rs` | save errors (M180): worker reports, error and success toast, restarting a dead worker; `save_status/editor_commit.rs` the editor's Save that waits for the disk and the save-failed dialog |
+| `src/main_window/panes/note_list.rs` | note list wiring: search field, menu button, hands search and reset extras to the note-list slice and maps its actions |
+| `src/main_window/panes/note_pane.rs` | note pane: toolbar end (`⋯` menu, Edit / Cancel / Save); wires editor, note view, kind dropdown and draft hint |
+| `src/main_window/dialogs.rs` | dialog card (status line, busy button) and window, unsaved-changes, save-failed and delete questions, storage problems; group of `dialogs/closing` and `dialogs/save_status` (R137, Q500) |
+| `src/main_window/dialogs/save_status.rs` | save errors (M180): worker reports, error and success toast, restarting a dead worker; `save_status/editor_commit.rs` the editor's Save that waits for the disk and the save-failed dialog |
 | `src/main_window/trash.rs` | deleting (questions, selection after it), trash view actions, Ctrl+Z / Ctrl+Y, hourly purge |
-| `src/main_window/trash_pane.rs` | drawing the trash column, the read-only trash preview and the undo toast |
-| `src/main_window/layout.rs` | two panes, empty state |
+| `src/main_window/panes/trash_pane.rs` | drawing the trash column, the read-only trash preview and the undo toast |
+| `src/main_window/panes/layout.rs` | two panes, empty state |
 | `src/main_window/window_menu.rs` | the window menu: panel over the full height with a backdrop, its rows |
+| `src/main_window/panes.rs` | the group of the visible areas: `layout`, `note_list`, `note_pane`, `trash_pane` (R137, Q500) |
 | `src/main_window/tests.rs` | interaction tests of the main window; `tests/note_list.rs` context menu, dragging, groups; `tests/search.rs` search; `tests/trash.rs` deleting, trash and undo; `tests/save_errors.rs` save errors; `tests/states.rs` one snapshot per state (`tests/states/`, e.g. the minimum width) |
-| `src/addon.rs` | Nexus export, load/unload, quick access, render, restart of a dead storage worker (Windows only) |
-| `src/addon/storage.rs` | starts the storage worker, hands the loaded notes to the window, restarts a dead worker (Windows only) |
-| `src/addon/logging.rs` | Starts and stops the log, forwards texts to `Nexus.log` (Windows only) |
+| `src/nexus_bridge.rs` | the Nexus bridge, the only Nexus API calls: export, load/unload, keybind, quick access, render callbacks (Windows only) |
+| `src/nexus_bridge/storage.rs` | starts the storage worker, hands the loaded notes to the window, restarts a dead worker (Windows only) |
+| `src/nexus_bridge/logging.rs` | Starts and stops the log, forwards texts to `Nexus.log` (Windows only) |
+| `src/nexus_bridge/render.rs` | the Nexus render callbacks: main window, help window and memo's tab in the Nexus options (Windows only) |
+| `src/nexus_bridge/guard.rs` | crash protection: every Nexus callback runs inside `guard`, a panic stops memo instead of the game (R104, Windows only) |
+| `src/nexus_bridge/help.rs` | memo's help window: texts, help pages, the problem page and its log export (Windows only) |
+| `src/nexus_bridge/fault_injection.rs` | test-only panic keybind for the in-game test of the crash protection (feature `fault-injection`) |
 | `assets/icons/quick-access.svg` | quick access icon source; the `.png` files next to it are generated by `cargo xtask build-icons` — edit the SVG, then rerun |
 | `help/{en,de}.md` | in-game help page source; updated with every user-visible change (rule 6) |
 | `package.json` | version placeholder for Changesets (R16) |

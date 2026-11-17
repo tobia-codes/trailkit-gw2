@@ -94,6 +94,8 @@ supported tool approvals and report blocks. Conventional Commits, never
 Readable names, standard Rust casing, no opaque abbreviations or catch-all
 names. Paths are `kebab-case`, Rust modules `snake_case`, crates `trailkit-*`,
 data keys `snake_case`, Nexus IDs typed `trailkit.<addon>.<kind>.<name>` constants.
+At most 10 loose `.rs` files per folder (R137): more are grouped into folders by
+concern; generated Rust code lives in a `generated` module (R135).
 Before adding/renaming paths or identifiers, consult the binding
 [full conventions](docs/agent-reference.md#naming-conventions), including exceptions.
 
@@ -103,8 +105,9 @@ Before adding/renaming paths or identifiers, consult the binding
   `cargo clippy --all-targets -- -D warnings`, `cargo test`.
 - Addon/Windows code also needs Windows clippy; UI changes need snapshot tests
   and visual review. Commands: [reference](docs/agent-reference.md#development-environment).
-- Changed Rust: `cargo xtask check-file-length` (R77). For hints on touched
-  files/functions, propose a split by concern via grilling; never split unasked.
+- Changed Rust: `cargo xtask check-file-length` (R77, R137). For hints on touched
+  files/functions/folders, propose a split or grouping by concern via grilling;
+  never split unasked.
 - Paths: `cargo xtask check-names`; tokens: `cargo xtask tokens`; added icons:
   `cargo xtask subset-fonts`. Generated token values are never edited by hand.
 

@@ -1476,6 +1476,7 @@ dependencies = [
  "trailkit-memo-search",
  "trailkit-memo-shared",
  "trailkit-memo-trash",
+ "trailkit-nexus-bridge",
  "trailkit-storage",
  "trailkit-ui",
  "trailkit-ui-testing",
@@ -1565,6 +1566,14 @@ dependencies = [
  "jiff",
  "nexus",
  "trailkit-memo-shared",
+ "trailkit-ui",
+]
+
+[[package]]
+name = "trailkit-nexus-bridge"
+version = "0.0.0"
+dependencies = [
+ "nexus",
  "trailkit-ui",
 ]
 

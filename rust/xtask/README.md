@@ -3,6 +3,13 @@
 Repository task runner ([cargo-xtask pattern](https://github.com/matklad/cargo-xtask)),
 invoked from the repo root as `cargo xtask <command>` (alias in `.cargo/config.toml`).
 
+## Structure
+
+The commands are grouped by kind (ROADMAP R137, Q497): `src/checks/` (check-branch,
+check-file-length, check-names, the README link test), `src/generators/` (build-icons,
+subset-fonts, sync-versions, tokens) and `src/dev/` (deploy, ui-test, install-hooks);
+`src/main.rs` parses the command line, `src/workspace.rs` finds paths and addons.
+
 ## Commands
 
 | Command | What it does |
@@ -13,9 +20,9 @@ invoked from the repo root as `cargo xtask <command>` (alias in `.cargo/config.t
 | `cargo xtask check-branch [--head B] [--base B]` | Verifies a branch name (R14); without options the current branch. Used by CI and the pre-push hook. |
 | `cargo xtask install-hooks` | Enables the versioned git hooks in `.githooks/` (pre-commit: fmt + names; pre-push: every pushed branch name, never `develop`/`main`, tags only with `TRAILKIT_ALLOW_TAG_PUSH=1`, then clippy + tests). |
 | `cargo xtask subset-fonts [--check]` | Cuts the fonts embedded by `trailkit-ui` down to what trailkit shows (M62): reads the originals from `crates/trailkit-ui/assets/fonts/<font>/source/`, writes the subsets next to them with `allsorts` (Unicode `cmap` kept). Text fonts: U+0020–007E, U+00A0–024F, U+2000–206F, U+2190–21FF; icon font: `Icon::ALL`. `--check` verifies the committed subsets. |
-| `cargo xtask tokens [--check]` | Generates `trailkit-ui/src/theme/values.rs` and `.agents/skills/trailkit-ui/references/token-values.md` from the token files in `design/tokens/` (ROADMAP R84, R118). A test fails in `cargo test` when either file is out of date. |
+| `cargo xtask tokens [--check]` | Generates `trailkit-ui/src/theme/generated.rs`, one module per token file in `theme/generated/` and `.agents/skills/trailkit-ui/references/token-values.md` from the token files in `design/tokens/` (ROADMAP R84, R118, R133); deletes modules no token file produces any more. A test fails in `cargo test` when a generated file is out of date or left over. |
 | `cargo xtask ui-test [--update]` | Builds the Windows test binaries of `trailkit-ui`, `trailkit-ui-testing` and `trailkit-memo` with `cargo xwin test --no-run` and runs them directly through WSL interop (cargo would try wine). Sets `TRAILKIT_SNAPSHOT_ROOT` per crate via `WSLENV` path translation; `--update` rewrites the snapshot references (M65). |
-| `cargo xtask check-file-length [--all]` | Advisory hints for agents: Rust files with ≥ 400 code lines (test files ≥ 800) and functions with ≥ 80 code lines, changed on the branch against `develop` (`--all`: every file). Counts code only (no blanks, comments, `#[cfg(test)]` blocks); prints nothing when all is fine and never fails (ROADMAP R77). |
+| `cargo xtask check-file-length [--all]` | Advisory hints for agents: Rust files with ≥ 400 code lines (test files ≥ 800) and functions with ≥ 80 code lines, and folders with more than 10 loose Rust files (R137), changed on the branch against `develop` (`--all`: every file). Counts code only (no blanks, comments, `#[cfg(test)]` blocks); prints nothing when all is fine and never fails (ROADMAP R77). |
 | `cargo xtask check-names` | Verifies every file/directory name against [the naming conventions](../../docs/agent-reference.md#naming-conventions). |
 | `cargo xtask sync-versions` | Copies each addon's `package.json` version (owned by Changesets) into its `Cargo.toml`. |
 | `cargo xtask sync-versions --check` | Only verifies the versions match (CI). |

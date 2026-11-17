@@ -7,16 +7,16 @@
 
 use nexus::imgui::{Condition, Ui, Window};
 use trailkit_ui::{
-    button::ButtonState,
     chat_link::ChipText,
-    chat_link_chip::ChipContext,
-    help_window::{
+    chat_link::chat_link_chip::ChipContext,
+    controls::button::ButtonState,
+    drawing::style_scope::StyleScope,
+    feedback::status_line::Status,
+    help::help_window::{
         HelpTab, HelpWindow, HelpWindowContent, HelpWindowTexts, ProblemNotice, ProblemPage,
     },
-    status_line::Status,
-    style_scope::StyleScope,
+    layout::title_bar::TitleBarTexts,
     theme::ThemeKind,
-    title_bar::TitleBarTexts,
 };
 use trailkit_ui_testing::{
     harness::{FrameInput, UiHarness},

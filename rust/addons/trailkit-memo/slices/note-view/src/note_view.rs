@@ -9,13 +9,13 @@ use trailkit_memo_shared::{
     note_tree::{Note, NoteId},
 };
 use trailkit_ui::{
-    chat_link_chip::ChipContext,
-    fonts::FontRole,
+    chat_link::chat_link_chip::ChipContext,
+    layout::page::{PageHead, TitleTrailing, draw_page},
+    markdown::markdown_view::{MarkdownAction, SearchHighlight, draw_markdown, first_line_font},
     markdown::{self, MarkdownDocument},
-    markdown_view::{MarkdownAction, SearchHighlight, draw_markdown, first_line_font},
-    page::{PageHead, TitleTrailing, draw_page},
+    text::fonts::FontRole,
+    text::text_search::SearchQuery,
     text::{TextStyle, draw_text_wrapped},
-    text_search::SearchQuery,
     theme::Theme,
 };
 

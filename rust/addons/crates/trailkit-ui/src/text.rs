@@ -12,16 +12,26 @@
 //! only, like all ImGui code (ROADMAP R39).
 
 #[cfg(windows)]
+pub mod font_registry;
+pub mod fonts;
+#[cfg(windows)]
+pub mod glyph_metrics;
+pub mod icons;
+#[cfg(windows)]
+pub mod text_layout;
+pub mod text_search;
+
+#[cfg(windows)]
 use nexus::imgui::{ColorStackToken, StyleColor, Ui};
 
-use crate::{color::Color, fonts::FontRole, theme::Theme};
+use crate::{color::Color, text::fonts::FontRole, theme::Theme};
 #[cfg(windows)]
 use crate::{
-    font_registry::FontScope,
-    glyph_metrics::{capital_middle, icon_visible_box},
-    icons::Icon,
-    text_layout::truncate_to_width,
-    tooltip::draw_tooltip,
+    controls::tooltip::draw_tooltip,
+    text::font_registry::FontScope,
+    text::glyph_metrics::{capital_middle, icon_visible_box},
+    text::icons::Icon,
+    text::text_layout::truncate_to_width,
 };
 
 /// A text role: font and color of one kind of text (`tokens.md` §7.1).
@@ -214,7 +224,7 @@ pub fn draw_icon_text(ui: &Ui, theme: &Theme, content: &IconText<'_>) -> f32 {
     let difference = (icon_middle - text_middle).round();
     ui.set_cursor_screen_pos([left, top + (-difference).max(0.0)]);
     draw_icon(ui, content.icon, content.icon_color);
-    ui.same_line_with_spacing(0.0, crate::button::icon_label_gap(theme));
+    ui.same_line_with_spacing(0.0, crate::controls::button::icon_label_gap(theme));
     let text_left = ui.cursor_screen_pos()[0];
     let text_top = top + difference.max(0.0);
     let _font = FontScope::push(ui, content.style.font());

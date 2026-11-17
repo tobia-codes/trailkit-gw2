@@ -205,7 +205,7 @@ fn the_toast_waits_for_the_second_failure_and_returns_after_closing() {
     assert!(!memo.save_status.error_shown);
     assert_eq!(
         memo.toast.as_ref().map(|toast| toast.toast.tone()),
-        Some(trailkit_ui::toast::ToastTone::Success)
+        Some(trailkit_ui::feedback::toast::ToastTone::Success)
     );
 }
 

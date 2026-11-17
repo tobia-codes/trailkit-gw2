@@ -11,7 +11,7 @@ Use these in this order. The first one that answers the question wins.
 | Source | What it tells you |
 |--------|-------------------|
 | Snapshot PNGs | What each state really looks like, rendered by the addon's own code |
-| [`design/tokens/`](../../../../design/tokens/) | The token values (R118); `theme/values.rs` and [`token-values.md`](token-values.md) are generated from them |
+| [`design/tokens/`](../../../../design/tokens/) | The token values (R118); `theme/generated.rs`, `theme/generated/` and [`token-values.md`](token-values.md) are generated from them |
 | [`tokens.md`](tokens.md) | Which token to use when (binding), with the review checklist in §10 |
 | [`../SKILL.md`](../SKILL.md), [`ux-rules.md`](ux-rules.md) | Shared components and UX rules |
 | `docs/plans/addons/trailkit-memo.md` | Why memo looks the way it does (decisions M1 onwards) |
@@ -38,7 +38,7 @@ to rewrite them after an intended change. Failing comparisons land in
 Names follow `memo-state-<state>-<dark|light>.png` and
 `ui-<component>-<state>-<dark|light>.png`. States are defined in
 `rust/addons/trailkit-memo/src/main_window/tests/states.rs` and
-`rust/addons/crates/trailkit-ui/tests/component_states.rs`.
+`rust/addons/crates/trailkit-ui/tests/component-states/` (`main.rs` plus one file per component group).
 
 ## The memo window
 

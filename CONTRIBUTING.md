@@ -117,19 +117,30 @@ from [`rust/addons/crates/trailkit-ui`](rust/addons/crates/trailkit-ui/README.md
   ImGui widget draws it (`draw_selected_content`, not `draw_button_content`).
   Rust files `snake_case.rs`, module folders as `foo.rs` + `foo/` (no
   `mod.rs`), other paths `kebab-case`, crates `trailkit-*`, data keys
-  `snake_case`. The binding table:
+  `snake_case`. Generated Rust code always lives in a `generated` module
+  (`generated.rs` + `generated/`, R135) and is never edited by hand. The binding table:
   [naming conventions](docs/agent-reference.md#naming-conventions), checked
   by `cargo xtask check-names`.
 - **Small files and functions.** `cargo xtask check-file-length` hints at
   files with ≥ 400 code lines and functions with ≥ 80 (R77). Split by concern,
   and mention a hint in the PR if you think the file should stay as it is.
+- **Small folders (R137).** A folder holds at most 10 loose `.rs` files
+  (files without a folder of the same name; `lib.rs`, `main.rs` and `tests.rs`
+  do not count). With more, group them into folders by concern, each a
+  `group.rs` + `group/` module, like `trailkit-ui` (`text`, `layout`,
+  `controls`, …) or `xtask` (`checks`, `generators`, `dev`).
+  `cargo xtask check-file-length` hints at such folders.
 - **Errors, not panics.** Return `Result` with context: libraries use typed
   errors (`thiserror`, e.g. `trailkit-storage`), tools use `anyhow`.
   `unwrap()` and `expect()` are lint errors outside tests; a panic must never
   cross the FFI boundary into the game.
 - **Lints are errors.** Clippy runs with `-D warnings`; fix the cause.
   [`clippy.toml`](rust/clippy.toml) also bans a few methods and names the
-  replacement (e.g. tooltips go through `trailkit_ui::tooltip`).
+  replacement (e.g. tooltips go through `trailkit_ui::controls::tooltip`).
+- **Nexus stays in one module** (R132, R136): only an addon's
+  `nexus_bridge` module and the shared `trailkit-nexus-bridge` crate call the
+  Nexus API; windows, slices and `trailkit-ui`
+  draw with ImGui and know nothing of Nexus.
 - **Performance beats DLL size** (R72), and dependencies are checked by
   `cargo deny` (licenses, advisories).
 
@@ -197,7 +208,7 @@ before changing anything visible.
   they recover. Default: retry automatically a few times, then an error toast
   with "Try again", as memo does for saving (M180). Buttons whose action runs
   show a spinner for at least 0.6 s and cannot be clicked twice
-  (`trailkit_ui::busy::BusyState`). A control that cannot be used now is
+  (`trailkit_ui::controls::busy::BusyState`). A control that cannot be used now is
   disabled and says why in its tooltip (`ButtonState::Disabled { reason }`).
 - **Accessibility**: text contrast ≥ 4.5:1 in both themes, meaning never by
   color alone, icons always with a tooltip, destructive actions ask first.
@@ -233,7 +244,7 @@ Run these before you push (`source ~/.cargo/env` first if cargo is not found):
 | `cargo test` | Unit tests, translations, generated docs up to date, README links |
 | `cargo xtask ui-test` | UI snapshots (Windows test binaries run through WSL, about 4 minutes) |
 | `cargo xtask check-names` | Paths follow the naming conventions |
-| `cargo xtask check-file-length` | Advisory size hints for changed files |
+| `cargo xtask check-file-length` | Advisory size hints for changed files, functions and folders |
 | `cargo deny check` | Dependency licenses and advisories |
 
 Tests never call live services; tools use committed fixtures. Every command:

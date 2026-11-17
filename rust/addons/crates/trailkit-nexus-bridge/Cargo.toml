@@ -1,0 +1,18 @@
+[package]
+name = "trailkit-nexus-bridge"
+version = "0.0.0"
+description = "Nexus API helpers shared by all trailkit addons: the only shared crate that calls Nexus"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+# The Nexus bindings only build for Windows (ROADMAP R39); on other targets the crate is empty.
+[target.'cfg(windows)'.dependencies]
+nexus.workspace = true
+trailkit-ui.workspace = true
+
+[lints]
+workspace = true

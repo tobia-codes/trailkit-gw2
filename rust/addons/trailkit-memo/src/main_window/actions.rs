@@ -9,7 +9,7 @@ use trailkit_memo_shared::list_filter::ListFilter;
 use trailkit_storage::BACKUPS_DIRECTORY_NAME;
 use trailkit_ui::{
     markdown,
-    markdown_view::{MarkdownAction, open_link},
+    markdown::markdown_view::{MarkdownAction, open_link},
 };
 
 use trailkit_memo_editor::{
@@ -28,7 +28,7 @@ use trailkit_memo_shared::{
 use trailkit_memo_trash::trash_view::TrashAction;
 
 use trailkit_memo_shared::i18n::chip_text;
-use trailkit_ui::{chat_link::ChipText, toast::Toast};
+use trailkit_ui::{chat_link::ChipText, feedback::toast::Toast};
 
 use super::{MemoWindow, WindowToast, WindowToastKind};
 

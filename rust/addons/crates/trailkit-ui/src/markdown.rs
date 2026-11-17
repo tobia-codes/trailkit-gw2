@@ -7,6 +7,9 @@
 //! per content change, never per frame; the Windows-only `markdown_view`
 //! draws the result.
 
+#[cfg(windows)]
+pub mod markdown_view;
+
 use pulldown_cmark::{Event, HeadingLevel, LinkType, Options, Parser, Tag, TagEnd};
 
 use crate::chat_link::{ChatLinkChip, find_chat_codes};

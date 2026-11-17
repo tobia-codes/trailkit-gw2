@@ -5,15 +5,17 @@
 //! active [`Theme`]. Sizes are in pixels at 100 % UI scaling.
 
 //!
-//! The token types live in the submodules; every value is generated into
-//! `values.rs` from `design/tokens/` by `cargo xtask tokens` (ROADMAP R118).
+//! The token types live in the submodules; every value is generated from
+//! `design/tokens/` by `cargo xtask tokens` into `generated.rs`, which
+//! assembles the themes from one module per token file in `generated/`
+//! (ROADMAP R118, R133).
 
 mod colors;
+mod generated;
 mod layout;
 #[cfg(test)]
 mod tests;
 mod typography;
-mod values;
 
 pub use colors::{
     AccentColors, BorderTokens, ChipCategoryColors, ChipColors, CoinColors, EventColors,

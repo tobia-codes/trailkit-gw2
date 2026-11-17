@@ -4,7 +4,8 @@ Binding rules for every agent (Claude Code, Codex) and every human who touches
 addon UI. The token set is listed in `SKILL.md` §2; the values live only in
 the token files [`design/tokens/`](../../../../design/tokens/) (ROADMAP R118), one
 file per token family; `cargo xtask tokens` generates
-`rust/addons/crates/trailkit-ui/src/theme/values.rs` and
+`rust/addons/crates/trailkit-ui/src/theme/generated.rs` (one module per token
+file in `theme/generated/`, R133) and
 [`token-values.md`](token-values.md) from them. The visual reference is the
 "Trailkit" design system in the user's Claude Design account; when it and the
 token files disagree, the token files win and the difference is a bug to report.
@@ -15,7 +16,7 @@ token files disagree, the token files win and the difference is a bug to report.
   from the active `Theme`. No hex values, no `[f32; 4]` literals, no
   `ImColor32::from_rgb`, no magic pixel numbers in addon or component code.
   The only literal colors in the workspace are the token values in
-  `design/tokens/` (generated into `theme/values.rs`) and `Color::TRANSPARENT`.
+  `design/tokens/` (generated into `theme/generated/`) and `Color::TRANSPARENT`.
 - **Derived colors are rare and documented.** `with_alpha` on a token is
   allowed for overlays and selections (text selection, chip fill of invalid
   links); write a comment saying why. Never mix two tokens into a new color.
@@ -240,7 +241,7 @@ be in, in Dark **and** Light:
 
 Each state is covered once per element; the cross product of independent
 states is not needed. Shared components live in
-`rust/addons/crates/trailkit-ui/tests/component_states.rs` (`ui-<component>-<state>-<theme>`),
+`rust/addons/crates/trailkit-ui/tests/component-states/` (`main.rs` plus one file per component group) (`ui-<component>-<state>-<theme>`),
 addon views in `rust/addons/<addon>/src/main_window/tests/states.rs`
 (`<addon>-state-<name>-<theme>`), the minimum width in
 `tests/states/minimum_width.rs` (`min-*`, German `min-de-*`). A new element or

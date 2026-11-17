@@ -11,8 +11,10 @@ use trailkit_memo_shared::{
     note_tree::NoteId,
 };
 use trailkit_ui::{
-    button::{Button, ButtonKind},
-    status_card::{CardDetail, CardStatus, StatusCard, draw_status_card, fits_status_card_line},
+    controls::button::{Button, ButtonKind},
+    feedback::status_card::{
+        CardDetail, CardStatus, StatusCard, draw_status_card, fits_status_card_line,
+    },
     text::TextStyle,
     theme::Theme,
 };

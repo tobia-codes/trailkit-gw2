@@ -2,7 +2,7 @@
 //! the wheel rests and shown as a percentage while it changes (M80).
 
 use nexus::imgui::{Ui, WindowHoveredFlags};
-use trailkit_ui::{theme::Theme, tooltip::draw_tooltip};
+use trailkit_ui::{controls::tooltip::draw_tooltip, theme::Theme};
 
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText, Text, label_with_percent},

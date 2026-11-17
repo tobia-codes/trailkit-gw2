@@ -7,7 +7,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use trailkit_ui::{markdown, text_search::SearchQuery};
+use trailkit_ui::{markdown, text::text_search::SearchQuery};
 
 use trailkit_memo_shared::list_filter::ListFilter;
 use trailkit_memo_shared::note_tree::{

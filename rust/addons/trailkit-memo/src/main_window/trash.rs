@@ -5,7 +5,7 @@
 
 use jiff::{SignedDuration, Timestamp};
 use nexus::imgui::Ui;
-use trailkit_ui::toast::Toast;
+use trailkit_ui::feedback::toast::Toast;
 
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText},

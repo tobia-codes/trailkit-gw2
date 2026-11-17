@@ -2,14 +2,17 @@
 //! dialog card, the unsaved-changes question (M70), the delete questions
 //! (M134, M146) and storage problems.
 
+pub(super) mod closing;
+pub(super) mod save_status;
+
 use nexus::imgui::{Condition, Key, MouseButton, StyleColor, StyleVar, Ui, Window, WindowFlags};
-use trailkit_ui::draw_list::window_draw_list;
+use trailkit_ui::drawing::draw_list::window_draw_list;
 use trailkit_ui::{
-    button::{Button, ButtonKind, ButtonState},
-    font_registry::FontScope,
-    fonts::FontRole,
-    status_card::{CardDetail, CardStatus, StatusCard, draw_status_card},
-    status_line::{Status, draw_status_line},
+    controls::button::{Button, ButtonKind, ButtonState},
+    feedback::status_card::{CardDetail, CardStatus, StatusCard, draw_status_card},
+    feedback::status_line::{Status, draw_status_line},
+    text::font_registry::FontScope,
+    text::fonts::FontRole,
     text::{TextStyle, draw_text_wrapped},
     theme::Theme,
 };
@@ -18,10 +21,8 @@ use trailkit_memo_shared::i18n::LocalizedText;
 use trailkit_memo_shared::i18n::{Language, Text};
 use trailkit_memo_shared::save_text::SaveText;
 
-use super::{
-    MemoWindow, NotesProblem, WindowAction, actions::AddonFolder, save_status::SaveFailedPrompt,
-    trash::Confirmation,
-};
+use self::save_status::SaveFailedPrompt;
+use super::{MemoWindow, NotesProblem, WindowAction, actions::AddonFolder, trash::Confirmation};
 
 impl MemoWindow {
     /// Draws the storage problem hint, if any, as a status card (M31,

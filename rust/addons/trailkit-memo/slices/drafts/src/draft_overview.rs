@@ -6,8 +6,8 @@
 use nexus::imgui::Ui;
 use trailkit_memo_shared::i18n::{Language, LocalizedText, Text};
 use trailkit_ui::{
-    button::Button,
-    status_card::{CardStatus, StatusCard, draw_status_card},
+    controls::button::Button,
+    feedback::status_card::{CardStatus, StatusCard, draw_status_card},
     theme::Theme,
 };
 

@@ -30,6 +30,8 @@ project-wide loaded words in a different sense: "input" is a text input field,
 | Rust functions, methods, variables, modules | `snake_case` | `load_notes`, `mod sync_versions` |
 | Rust constants, statics | `SCREAMING_SNAKE_CASE` | `KEYBIND_TOGGLE` |
 | Rust source files | `snake_case.rs`; module dirs as `foo.rs` + `foo/` (no `mod.rs`, lint `clippy::mod_module_files`) | `src/note_tree.rs` |
+| Folder size (R137) | at most 10 loose `.rs` files per folder (files without a folder of the same name; `lib.rs`, `main.rs`, `mod.rs`, `tests.rs` excluded); with more, group them by concern into `group.rs` + `group/` modules; `cargo xtask check-file-length` hints | `trailkit-ui/src/controls/`, `xtask/src/checks/` |
+| Generated Rust source (R135) | in a `generated` module of the module it belongs to: `generated.rs` + `generated/` (one file per source), every file headed by its generator and source, never edited by hand; the generator deletes files without a source and its `--check` (in `cargo test`) rejects them | `theme/generated.rs`, `theme/generated/colors.rs` |
 | Crates, packages, addon directories | `kebab-case`, prefix `trailkit-` | `trailkit-memo`, `trailkit-ui` |
 | All other directories and files (Rust module directories below `src/` are `snake_case` like their module) | `kebab-case`, lowercase extensions | `data-pipeline.md`, `plan-template.md` |
 | Fixed upper-case meta files | only these: `README.md`, `AGENTS.md`, `CLAUDE.md`, `LICENSE`, `CHANGELOG.md`, `CONTRIBUTING.md`, `PRIVACY.md`, `PRIVACY.de.md`, `SECURITY.md`, `ROADMAP.md`, `BACKLOG.md`, `NEXT_SESSION.md`, `SKILL.md` | |

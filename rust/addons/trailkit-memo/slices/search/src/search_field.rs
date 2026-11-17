@@ -6,11 +6,11 @@
 //! rule 7); the settings window will be the likely second user.
 
 use nexus::imgui::{StyleColor, StyleVar, Ui, WindowHoveredFlags};
-use trailkit_ui::draw_list::window_draw_list;
-use trailkit_ui::tooltip::draw_tooltip;
+use trailkit_ui::controls::tooltip::draw_tooltip;
+use trailkit_ui::drawing::draw_list::window_draw_list;
 use trailkit_ui::{
-    font_registry::FontScope, fonts::FontRole, glyph_metrics::glyph_ink_box, icons::Icon,
-    style_scope::StyleScope, theme::Theme,
+    drawing::style_scope::StyleScope, text::font_registry::FontScope, text::fonts::FontRole,
+    text::glyph_metrics::glyph_ink_box, text::icons::Icon, theme::Theme,
 };
 
 /// State of the search field that outlives a frame.

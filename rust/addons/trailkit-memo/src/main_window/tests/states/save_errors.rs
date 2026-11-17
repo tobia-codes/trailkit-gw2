@@ -3,10 +3,10 @@
 //! leaving after a failed save, also in German at the narrowest window.
 
 use trailkit_memo_shared::storage_worker::SaveHealth;
-use trailkit_ui::busy::BusyState;
+use trailkit_ui::controls::busy::BusyState;
 
 use super::*;
-use crate::main_window::save_status::SaveFailedPrompt;
+use crate::main_window::dialogs::save_status::SaveFailedPrompt;
 
 /// Marks the save as failing with `health` and the error toast as shown.
 fn failing(mut fixture: Fixture, health: SaveHealth) -> Fixture {
