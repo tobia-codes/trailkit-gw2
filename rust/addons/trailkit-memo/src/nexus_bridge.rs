@@ -49,13 +49,13 @@ use nexus::{
 };
 
 use trailkit_log::ErrorChain;
+use trailkit_nexus_bridge::fonts::register_fonts;
 use trailkit_storage::{
     AddonName, BACKUPS_DIRECTORY_NAME, DocumentStore, LoadOutcome, ReadOnlyReason,
     TRAILKIT_DIRECTORY_NAME, TrailkitDirectory,
 };
 use trailkit_ui::{
     layout::title_bar::{TitleBarState, record_mouse_button_press},
-    text::font_registry::register_fonts,
     theme::ThemeKind,
 };
 

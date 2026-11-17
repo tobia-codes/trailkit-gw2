@@ -1,99 +1,23 @@
-//! Registers the shared trailkit fonts with Nexus and gives access to them
-//! while drawing (Windows only; memo plan M35, M36).
-//!
-//! Facts this relies on (verified in Nexus' `FontManager.cpp`, 2026-11):
-//!
-//! - Nexus copies the font data and config, so the embedded bytes may be
-//!   passed directly.
-//! - A second registration of an existing identifier only adds a callback, so
-//!   all addons share one copy of each font.
-//! - The atlas only contains Basic Latin, Latin-1, Latin Extended-A/B and every
-//!   character of every registered localization text. Icons and typographic
-//!   punctuation are therefore registered as a localization text *before* the
-//!   fonts are added (adding a font rebuilds the atlas).
-//! - Callbacks receive the new `ImFont` pointer after every atlas rebuild.
+//! The shared trailkit fonts while drawing (Windows only; memo plan M35, M36):
+//! which `ImFont` each [`FontRole`] uses, and [`FontScope`] to draw with it.
+//! The fonts are registered with the host by the host's bridge (for Nexus:
+//! `trailkit-nexus-bridge`, Q496), which hands every delivered font to
+//! [`install_font`]; `trailkit-ui` itself never calls the Nexus API (R136).
 
 use std::{
     marker::PhantomData,
     ptr,
-    sync::atomic::{AtomicPtr, AtomicU32, Ordering},
+    sync::atomic::{AtomicPtr, Ordering},
 };
 
-use nexus::{
-    font::{add_font_from_memory, font_receive, resize_font},
-    imgui::{Ui, sys},
-    localization::set_translation,
-};
+use nexus::imgui::{Ui, sys};
 
-use crate::{
-    text::fonts::{FALLBACK_BODY_SIZE, FontRole},
-    text::icons::glyph_text,
-    theme::Typography,
-};
+use crate::text::fonts::FontRole;
 
-/// Localization key whose text makes Nexus put the shared glyphs into the atlas.
-const SHARED_GLYPHS_KEY: &str = "trailkit.shared.localization.glyphs";
-
-/// Typographic characters outside Latin-1 that trailkit texts use.
-const TYPOGRAPHIC_GLYPHS: &str = "•…–—„“”‘’›";
-
-/// Language codes the glyph texts are registered for. Nexus collects texts of
-/// every language, one is enough; English is always present.
-const GLYPH_LANGUAGE: &str = "en";
-
-/// The `ImFont` pointer Nexus last delivered for each [`FontRole`] (index =
+/// The `ImFont` pointer the host last delivered for each [`FontRole`] (index =
 /// position in [`FontRole::ALL`]); null until the font is ready.
 static FONT_POINTERS: [AtomicPtr<sys::ImFont>; FontRole::ALL.len()] =
     [const { AtomicPtr::new(ptr::null_mut()) }; FontRole::ALL.len()];
-
-/// Body size (as `f32` bits) the fonts were last registered or resized for.
-static REGISTERED_BODY_SIZE: AtomicU32 = AtomicU32::new(0);
-
-/// Registers the glyph texts and all shared fonts with Nexus.
-///
-/// `addon_glyph_key` and `addon_glyphs` register the addon's own UI strings
-/// (all languages concatenated) so their characters are in the atlas too,
-/// e.g. `("trailkit.memo.localization.glyphs", all_memo_texts)`. The sizes
-/// are `typography`'s factors of the body size (R96), usually those of the
-/// addon's active theme. Call once from the addon's `load`; registrations are
-/// reverted on unload.
-pub fn register_fonts(addon_glyph_key: &str, addon_glyphs: &str, typography: &Typography) {
-    let mut shared_glyphs = glyph_text();
-    shared_glyphs.push_str(TYPOGRAPHIC_GLYPHS);
-    set_translation(SHARED_GLYPHS_KEY, GLYPH_LANGUAGE, &shared_glyphs);
-    set_translation(addon_glyph_key, GLYPH_LANGUAGE, addon_glyphs);
-
-    let receive = font_receive!(|identifier, font| store_font(identifier, font));
-    REGISTERED_BODY_SIZE.store(FALLBACK_BODY_SIZE.to_bits(), Ordering::Relaxed);
-    for role in FontRole::ALL {
-        add_font_from_memory(
-            role.identifier(),
-            role.data(),
-            role.size_for(FALLBACK_BODY_SIZE, typography),
-            None,
-            receive,
-        )
-        .revert_on_unload();
-    }
-}
-
-/// Resizes the shared fonts if `body_size` (Nexus' current `FontUI` size)
-/// differs from the size they were built for, each role at its
-/// `typography` factor. Cheap when nothing changed; call it once per frame
-/// while a window is visible.
-pub fn follow_body_size(body_size: f32, typography: &Typography) {
-    if !(body_size.is_finite() && body_size >= 1.0) {
-        return;
-    }
-    let previous = f32::from_bits(REGISTERED_BODY_SIZE.load(Ordering::Relaxed));
-    if (previous - body_size).abs() < 0.5 {
-        return;
-    }
-    REGISTERED_BODY_SIZE.store(body_size.to_bits(), Ordering::Relaxed);
-    for role in FontRole::ALL {
-        resize_font(role.identifier(), role.size_for(body_size, typography));
-    }
-}
 
 /// Reads the size of an ImGui font, e.g. Nexus' `FontUI`; `None` if null.
 ///
@@ -107,8 +31,9 @@ pub unsafe fn font_size_of(font: *const sys::ImFont) -> Option<f32> {
     unsafe { font.as_ref() }.map(|font| font.FontSize)
 }
 
-/// Uses `font` for `role` without Nexus: for the headless test harness
-/// (`trailkit-ui-testing`, memo plan M65) or any host that builds its own
+/// Uses `font` for `role`: called by the host's bridge whenever the host
+/// delivers a font (`trailkit-nexus-bridge`), by the headless test harness
+/// (`trailkit-ui-testing`, memo plan M65) or by any host that builds its own
 /// font atlas. A null pointer makes [`FontScope`] fall back to the current
 /// font.
 ///
@@ -124,18 +49,6 @@ pub unsafe fn install_font(role: FontRole, font: *mut sys::ImFont) {
     {
         FONT_POINTERS[index].store(font, Ordering::Release);
     }
-}
-
-/// Stores the font pointer Nexus delivered for `identifier`.
-fn store_font(identifier: &str, font: Option<&mut sys::ImFont>) {
-    let Some(index) = FontRole::ALL
-        .iter()
-        .position(|role| role.identifier() == identifier)
-    else {
-        return;
-    };
-    let pointer = font.map_or(ptr::null_mut(), ptr::from_mut);
-    FONT_POINTERS[index].store(pointer, Ordering::Release);
 }
 
 /// Pushes the font of a [`FontRole`] onto ImGui's font stack and pops it on
@@ -163,9 +76,8 @@ impl<'ui> FontScope<'ui> {
                 frame: PhantomData,
             };
         }
-        // SAFETY: `font` was delivered by Nexus' font callback for the current
-        // atlas and is replaced (or cleared) by that callback before the atlas
-        // changes; pushing is only done during a frame (`Ui` is borrowed).
+        // SAFETY: `font` was installed by the host's bridge for the current atlas
+        // and is replaced (or cleared) before the atlas changes (`install_font`); pushing is only done during a frame (`Ui` is borrowed).
         unsafe { sys::igPushFont(font) };
         Self {
             pushed: true,

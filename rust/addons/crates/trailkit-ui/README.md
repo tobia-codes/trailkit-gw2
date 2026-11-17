@@ -5,6 +5,12 @@ Light), fonts, icons and the ImGui components every addon draws with. Runs in
 the game (addons only). Rules, tokens and the current look: the
 [`trailkit-ui` skill](../../../../.agents/skills/trailkit-ui/SKILL.md).
 
+> **No Nexus API here (ROADMAP R136):** the crate draws with ImGui only (it
+> takes ImGui from the `nexus` crate's re-export, the same version as the host)
+> and never calls Nexus; everything that talks to Nexus is in
+> [`trailkit-nexus-bridge`](../trailkit-nexus-bridge/README.md) or in each
+> addon's `nexus_bridge` module.
+
 > **Status:** used by `trailkit-memo`. Components move in here once a second
 > addon needs them (rule 7, ROADMAP R47); until then some patterns stay in
 > memo (see the skill §3).
@@ -30,7 +36,7 @@ Modules are grouped by concern (ROADMAP R134): `text`, `layout`, `controls`, `li
 | `editor` | the word-wrapping text editor: platform-independent `buffer` (text, cursor, undo) and `layout`, plus `highlight` and the drawing `view` (Windows; `keyboard` handles keys, `lines` draws the visible lines) (M58–M60) | any / Windows |
 | `text` | `TextStyle` — the text roles of `tokens.md` §7.1 (font and color, any platform); `draw_text`, `draw_text_wrapped`, `draw_truncated_text` ("…" plus full-text tooltip), `draw_icon`, `draw_icon_text` (icon in front of a text in any role, icon and capitals centered on each other, one line or wrapped; Q325), `TextStyle::push` only for measuring, centering and inputs (R96) | any / Windows |
 | `text::fonts` | shared font roles (body, bold, italic, headings, icons), embedded Open Sans + Lucide | any |
-| `text::font_registry` | registers the shared fonts and glyphs with Nexus, follows the `FontUI` size, `FontScope` guard | Windows |
+| `text::font_registry` | which `ImFont` each font role uses (`install_font`, filled by the host's bridge) and the `FontScope` guard; registering with Nexus is in [`trailkit-nexus-bridge`](../trailkit-nexus-bridge/README.md) | Windows |
 | `text::glyph_metrics` | where glyphs really sit in a line (centering by capital letters); `icon_visible_box` — where an icon's pixels are, for buttons, menus and icon texts | Windows |
 | `text::text_layout` | `centered_text`, `indent_to_center`, `truncate_to_width` ("…", `lay-truncation`), `format_count` (allocation-free count labels), `body_characters_width` (a width in body characters, e.g. a window's minimum width) | Windows |
 | `text::text_search` | `SearchQuery`: whitespace-separated terms, case-insensitive, shared by list filtering and hit highlighting (M118–M120) | any |

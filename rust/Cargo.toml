@@ -14,6 +14,7 @@ authors = ["tobia-codes"]
 trailkit-ui = { path = "addons/crates/trailkit-ui" }
 trailkit-storage = { path = "addons/crates/trailkit-storage" }
 trailkit-log = { path = "addons/crates/trailkit-log" }
+trailkit-nexus-bridge = { path = "addons/crates/trailkit-nexus-bridge" }
 trailkit-ui-testing = { path = "addons/crates/trailkit-ui-testing" }
 # Addon-internal crates (ROADMAP R76).
 trailkit-memo-shared = { path = "addons/trailkit-memo/shared" }

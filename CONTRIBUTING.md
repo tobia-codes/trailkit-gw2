@@ -131,7 +131,8 @@ from [`rust/addons/crates/trailkit-ui`](rust/addons/crates/trailkit-ui/README.md
   [`clippy.toml`](rust/clippy.toml) also bans a few methods and names the
   replacement (e.g. tooltips go through `trailkit_ui::controls::tooltip`).
 - **Nexus stays in one module** (R132, R136): only an addon's
-  `nexus_bridge` module calls the Nexus API; windows, slices and `trailkit-ui`
+  `nexus_bridge` module and the shared `trailkit-nexus-bridge` crate call the
+  Nexus API; windows, slices and `trailkit-ui`
   draw with ImGui and know nothing of Nexus.
 - **Performance beats DLL size** (R72), and dependencies are checked by
   `cargo deny` (licenses, advisories).

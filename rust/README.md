@@ -17,6 +17,7 @@ below this folder, the repository root keeps only language-neutral files.
 | | [`trailkit-ui-testing`](addons/crates/trailkit-ui-testing/README.md) | Headless UI tests and snapshot comparison (dev-dependency only) |
 | | [`trailkit-storage`](addons/crates/trailkit-storage/README.md) | Versioned, crash-safe JSON files for everything an addon saves |
 | | [`trailkit-log`](addons/crates/trailkit-log/README.md) | One local log file per addon and the binding log format |
+| | [`trailkit-nexus-bridge`](addons/crates/trailkit-nexus-bridge/README.md) | The Nexus API helpers all addons share (fonts); the only shared crate that calls Nexus |
 | `services/` | [`trailkit-api`](services/trailkit-api/README.md) | REST API server, skeleton only (backend deferred) |
 | `tools/` | [`trailkit-datagen`](tools/trailkit-datagen/README.md) | Daily data job: trading post price archive and WvW snapshots |
 | `xtask/` | [`xtask`](xtask/README.md) | Build and check commands: `cargo xtask <command>` |

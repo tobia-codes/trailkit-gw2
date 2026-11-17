@@ -7,6 +7,7 @@
 use std::sync::atomic::Ordering;
 
 use nexus::imgui::{Condition, Window};
+use trailkit_nexus_bridge::fonts::follow_body_size;
 
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText as _, Text},
@@ -15,7 +16,7 @@ use trailkit_memo_shared::{
 use trailkit_ui::{
     drawing::style_scope::StyleScope,
     layout::title_bar::{TitleBarToggle, draw_window},
-    text::font_registry::{follow_body_size, font_size_of},
+    text::font_registry::font_size_of,
     text::{TextStyle, draw_text, draw_text_wrapped},
     theme::{Theme, ThemeKind, Typography},
 };
