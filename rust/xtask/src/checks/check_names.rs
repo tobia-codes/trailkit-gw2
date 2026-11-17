@@ -161,7 +161,7 @@ mod tests {
             "README.md",
             "rust/addons/trailkit-memo/Cargo.toml",
             "rust/addons/trailkit-memo/src/i18n.rs",
-            "rust/xtask/src/sync_versions.rs",
+            "rust/xtask/src/generators/sync_versions.rs",
             "rust/addons/trailkit-memo/src/main_window/note_list.rs",
             "docs/plans/data-pipeline.md",
             ".github/workflows/ci.yml",

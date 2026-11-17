@@ -21,18 +21,9 @@
 //! - `ui-test [--update]` — build the Windows UI tests and run them (from WSL
 //!   through interop); `--update` rewrites the snapshot references (M65).
 
-mod build_icons;
-mod check_branch;
-mod check_file_length;
-mod check_names;
-mod deploy;
-mod install_hooks;
-#[cfg(test)]
-mod readme_links;
-mod subset_fonts;
-mod sync_versions;
-mod token_docs;
-mod ui_test;
+mod checks;
+mod dev;
+mod generators;
 mod workspace;
 
 use anyhow::{Result, bail};
@@ -65,26 +56,36 @@ fn main() -> Result<()> {
     match args.as_slice() {
         ["deploy", addon, rest @ ..] => {
             let (profile, features) = parse_deploy_options(rest)?;
-            deploy::run(addon, profile, features)
+            dev::deploy::run(addon, profile, features)
         }
-        ["build-icons"] => build_icons::run(build_icons::Mode::Write),
-        ["build-icons", "--check"] => build_icons::run(build_icons::Mode::Check),
-        ["check-file-length"] => check_file_length::run(check_file_length::Scope::Changed),
-        ["check-file-length", "--all"] => check_file_length::run(check_file_length::Scope::All),
-        ["check-names"] => check_names::run(),
+        ["build-icons"] => generators::build_icons::run(generators::build_icons::Mode::Write),
+        ["build-icons", "--check"] => {
+            generators::build_icons::run(generators::build_icons::Mode::Check)
+        }
+        ["check-file-length"] => {
+            checks::check_file_length::run(checks::check_file_length::Scope::Changed)
+        }
+        ["check-file-length", "--all"] => {
+            checks::check_file_length::run(checks::check_file_length::Scope::All)
+        }
+        ["check-names"] => checks::check_names::run(),
         ["check-branch", options @ ..] => {
             let (head, base) = parse_branch_options(options)?;
-            check_branch::run(head, base)
+            checks::check_branch::run(head, base)
         }
-        ["install-hooks"] => install_hooks::run(),
-        ["sync-versions"] => sync_versions::run(sync_versions::Mode::Write),
-        ["sync-versions", "--check"] => sync_versions::run(sync_versions::Mode::Check),
-        ["subset-fonts"] => subset_fonts::run(subset_fonts::Mode::Write),
-        ["subset-fonts", "--check"] => subset_fonts::run(subset_fonts::Mode::Check),
-        ["tokens"] => token_docs::run(token_docs::Mode::Write),
-        ["tokens", "--check"] => token_docs::run(token_docs::Mode::Check),
-        ["ui-test"] => ui_test::run(ui_test::Mode::Compare),
-        ["ui-test", "--update"] => ui_test::run(ui_test::Mode::Update),
+        ["install-hooks"] => dev::install_hooks::run(),
+        ["sync-versions"] => generators::sync_versions::run(generators::sync_versions::Mode::Write),
+        ["sync-versions", "--check"] => {
+            generators::sync_versions::run(generators::sync_versions::Mode::Check)
+        }
+        ["subset-fonts"] => generators::subset_fonts::run(generators::subset_fonts::Mode::Write),
+        ["subset-fonts", "--check"] => {
+            generators::subset_fonts::run(generators::subset_fonts::Mode::Check)
+        }
+        ["tokens"] => generators::token_docs::run(generators::token_docs::Mode::Write),
+        ["tokens", "--check"] => generators::token_docs::run(generators::token_docs::Mode::Check),
+        ["ui-test"] => dev::ui_test::run(dev::ui_test::Mode::Compare),
+        ["ui-test", "--update"] => dev::ui_test::run(dev::ui_test::Mode::Update),
         [] | ["help" | "--help" | "-h"] => {
             println!("{USAGE}");
             Ok(())
@@ -117,15 +118,17 @@ fn parse_branch_options<'a>(options: &[&'a str]) -> Result<(Option<&'a str>, Opt
 ///
 /// # Errors
 /// Returns an error for an unknown, repeated or incomplete option.
-fn parse_deploy_options<'a>(options: &[&'a str]) -> Result<(deploy::Profile, Option<&'a str>)> {
-    let mut profile = deploy::Profile::Debug;
+fn parse_deploy_options<'a>(
+    options: &[&'a str],
+) -> Result<(dev::deploy::Profile, Option<&'a str>)> {
+    let mut profile = dev::deploy::Profile::Debug;
     let mut features = None;
     let mut rest = options;
     loop {
         rest = match rest {
             [] => return Ok((profile, features)),
-            ["--release", tail @ ..] if profile == deploy::Profile::Debug => {
-                profile = deploy::Profile::Release;
+            ["--release", tail @ ..] if profile == dev::deploy::Profile::Debug => {
+                profile = dev::deploy::Profile::Release;
                 tail
             }
             ["--features", list, tail @ ..] if features.is_none() && !list.starts_with("--") => {
@@ -146,11 +149,11 @@ mod tests {
         let parsed = parse_deploy_options(&["--features", "fault-injection", "--release"]).ok();
         assert_eq!(
             parsed,
-            Some((deploy::Profile::Release, Some("fault-injection")))
+            Some((dev::deploy::Profile::Release, Some("fault-injection")))
         );
         assert_eq!(
             parse_deploy_options(&[]).ok(),
-            Some((deploy::Profile::Debug, None))
+            Some((dev::deploy::Profile::Debug, None))
         );
     }
 

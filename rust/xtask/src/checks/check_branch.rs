@@ -9,7 +9,7 @@ use std::process::Command;
 
 use anyhow::{Context, Result, bail};
 
-use crate::{check_names::is_kebab_case, workspace};
+use crate::{checks::check_names::is_kebab_case, workspace};
 
 /// Branch prefixes for work branches.
 const WORK_BRANCH_PREFIXES: [&str; 4] = ["feature/", "chore/", "bugfix/", "hotfix/"];
