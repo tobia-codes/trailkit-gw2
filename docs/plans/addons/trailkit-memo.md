@@ -63,6 +63,10 @@ references with autocompletion and status.
 
 ## Open questions
 
+- **Q501 – Toasts hard to see** (user feedback 2026-11-17, in-game test 21): the neutral toast ("Moved to the trash",
+  `bg.popup` with `border.subtle`) barely stands out from the note pane in Dark. Recommendation: an R87 mockup with
+  two or three variants (e.g. stronger border, the tooltip shadow, a lighter surface), Dark/Light, before any change.
+
 *Answered yes on 2026-11-09: Q151, Q164, Q165, Q166 (amended), Q168 (amended), Q169, Q170, Q171; mockup V4 approved (R87). Kept here until M180 and R89 are implemented.*
 
 - **Q151 – Dead storage worker.** Recommendation: the toast keeps "Erneut versuchen"; a click starts a new worker in

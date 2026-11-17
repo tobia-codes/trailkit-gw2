@@ -150,17 +150,3 @@ red against the [red fill mockup](https://claude.ai/artifact/E6E3L6RTBxPsPBuCNW7
 - **Get there:** deploy the branch (`cargo xtask deploy trailkit-memo`), open memo in Dark, then in Light (Setup 4).
 - **Look at:** window and pane backgrounds, borders of windows and popups, a tooltip and its shadow, the violet
   **Edit** button, a red "Discard" button and chat-link chips.
-
-## trailkit-ui module groups, branch `chore/trailkit-ui-module-groups` (R134)
-
-### 21 · Memo unchanged after the move
-
-- **Design:** none (files moved, no code changed).
-- **Get there:** deploy the branch (`cargo xtask deploy trailkit-memo`), open memo (Setup 2).
-- **Look at:** fonts and icons load (title bar, list, buttons), a tooltip, the `⋯` menu, a toast (e.g. delete
-  a note), the help window (menu › Help) with its topics, a chat-link chip and the Markdown preview of a note.
-- **Also (fonts moved to `trailkit-nexus-bridge`, Q496):** with memo open, change the GW2 interface size
-  (GW2 options › Graphics › Interface Size) and the memo text size (Ctrl+mouse wheel over memo): memo's text
-  and icons grow and shrink with it, no `?` boxes appear. (Corrected 2026-11-17: memo follows Nexus' `FontUI`,
-  which follows the GW2 interface size, not the Nexus font size slider.)
-- **Before / now:** identical to `develop`; nothing may differ.
