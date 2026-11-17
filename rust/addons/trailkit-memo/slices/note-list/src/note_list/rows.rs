@@ -17,9 +17,8 @@ use trailkit_ui::{
     text::fonts::FontRole,
     text::glyph_metrics::{capital_middle, icon_visible_box},
     text::icons::Icon,
+    text::search_hits::mark_search_hits,
     text::text_layout::{format_count, truncate_to_width},
-    text::text_search::SearchQuery,
-    theme::Theme,
 };
 
 use super::{
@@ -181,14 +180,20 @@ fn draw_group_title<'ui, 'group>(
         context.frame_padding,
     );
     let title_position = [title_x, row_start[1] + context.frame_padding[1]];
-    if let Some(search) = context.search {
-        draw_title_hits(ui, context.theme, search.query, &label, title_position);
-    }
     window_draw_list(ui).add_text(
         title_position,
         context.theme.text.primary.to_array(),
         &*label,
     );
+    if let Some(search) = context.search {
+        mark_search_hits(
+            ui,
+            context.theme,
+            &label,
+            search.query.hit_ranges(&label),
+            title_position,
+        );
+    }
     (label, token)
 }
 
@@ -248,16 +253,16 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut RowContext<'_, '_>) {
         return;
     }
     let label = truncate_to_width(ui, &note.title, title_end - title_x);
+    ui.text(&label);
     if let Some(search) = context.search {
-        draw_title_hits(
+        mark_search_hits(
             ui,
             context.theme,
-            search.query,
             &label,
+            search.query.hit_ranges(&label),
             [title_x, row_start[1] + context.frame_padding[1]],
         );
     }
-    ui.text(&label);
     // Interaction belongs to the whole row (the tree node item).
     if is_row_hovered {
         handle_hovered_row(ui, node, &note.title, &label, context);
@@ -399,22 +404,4 @@ fn draw_row_icon(ui: &Ui, icon: Icon, color: Color, end: f32, text_top: f32) -> 
     window_draw_list(ui).add_text([left, top], color.to_array(), glyph);
     let is_hovered = ui.is_mouse_hovering_rect([left, top], [end, top + ui.text_line_height()]);
     (left, is_hovered)
-}
-
-/// Marks the search hits in a row title drawn at `position` with the
-/// `accent.highlight` background (M122); call before drawing the text.
-fn draw_title_hits(ui: &Ui, theme: &Theme, query: &SearchQuery, title: &str, position: [f32; 2]) {
-    for range in query.hit_ranges(title) {
-        let left = position[0] + ui.calc_text_size(&title[..range.start])[0];
-        let right = position[0] + ui.calc_text_size(&title[..range.end])[0];
-        window_draw_list(ui)
-            .add_rect(
-                [left, position[1]],
-                [right, position[1] + ui.text_line_height()],
-                theme.accent.highlight.to_array(),
-            )
-            .filled(true)
-            .rounding(theme.radius.small)
-            .build();
-    }
 }

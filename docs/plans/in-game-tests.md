@@ -20,7 +20,9 @@ is ready when the user is back at the PC.
 3. Test data: make sure the list has a group with at least one note in it
    and one more note outside it. The two buttons **above the list** create a
    note (sheet with plus) and a group (folder with plus); type a name, Enter.
-4. Theme: switch Dark/Light in Nexus where a test says so. German: set the
+4. Theme: memo always draws **Dark** in game; the theme choice comes with the
+   settings window (M28 step 8), so Light is checked only by the snapshot tests
+   (corrected 2026-11-17). German: set the
    Nexus language to Deutsch; "narrow" means dragging the window's
    bottom-right corner as far left as it goes.
 5. Reload memo (tests 7, 10): Nexus menu › Addons › trailkit-memo › unload,
@@ -85,31 +87,17 @@ red against the [red fill mockup](https://claude.ai/artifact/E6E3L6RTBxPsPBuCNW7
 - **Now:** **red filled** button left of brass "Restore". Narrow:
   "Restore" on top, red "Discard" below. Click "Discard" to clean up.
 
-### 8 · Save error: "Try again" toast and "Saving failed" dialog
-
-- **Design:** [mockup, section `error-toast`](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr#error-toast) and [discard dialogs](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr#discard-dialogs)
-- **Get there:** in Windows Explorer open `<GW2>/addons/trailkit/memo/`,
-  `notes.json` › Properties › tick **Read-only**. In game: select a note ›
-  Edit › type a letter › **Save** › click another note.
-  If nothing fails, read-only is not enough: report it.
-- **Look at:** (a) the red toast at the bottom, button **"Try again"**;
-  (b) the dialog "Saving failed", button **"Discard"**.
-- **Before:** (a) darker filled button without frame; (b) grey button.
-- **Now:** (a) **normal grey button with frame**, like "Cancel";
-  (b) **red filled** "Discard" left, brass "Save again" right.
-- **Clean up:** untick Read-only, click "Save again".
-
 ### 10 · Hover and pressed colors of brass and red buttons (R107)
 
 - **Design:** [mockup, section `proposal`](https://claude.ai/artifact/3v1UcDmCNSJinm8iWZb5wr#proposal)
 - **Get there:** brass: select a note, hover **Edit** (top right), then hold
   the mouse button down on it and drag away before releasing. Red: Trash ›
-  hover **Empty**, hold it down, drag away. In Dark and in Light.
+  hover **Empty**, hold it down, drag away (Dark; Light via snapshots).
 - **Look at:** the fill of the button while hovered and while held.
 - **Before:** brass got **lighter** on hover in Dark; red got duller
   (transparent) and in Light hard to read.
 - **Now:** both get **clearly darker** on hover and a bit darker again while
-  held, in Dark and Light; the label stays easy to read. The brass line of
+  held; the label stays easy to read. The brass line of
   the splitter between list and note also turns darker brass on hover.
 
 ## Branch `feature/crash-protection` (R104, merged)
@@ -131,7 +119,7 @@ red against the [red fill mockup](https://claude.ai/artifact/E6E3L6RTBxPsPBuCNW7
 ### 18 · New colors and reset icons
 
 - **Design:** [mockup v4](https://claude.ai/artifact/GgYDB2fh1Lg1w3sd5jEaM5) (V3 Amethyst, red A1, Lucide A, chips).
-- **Get there:** open memo in Dark, then in Light (Setup 4). Have one daily
+- **Get there:** open memo (Dark, Setup 4). Have one daily
   and one weekly note (right-click a note › Reset type).
 - **Look at:** (a) **Edit** button, selection bar, check boxes, focus frame of
   the search field and a rename, search hits; (b) the list rows of the daily
@@ -161,18 +149,6 @@ red against the [red fill mockup](https://claude.ai/artifact/E6E3L6RTBxPsPBuCNW7
 ### 20 · Theme looks unchanged
 
 - **Design:** none (no visible change; the values were compared one to one).
-- **Get there:** deploy the branch (`cargo xtask deploy trailkit-memo`), open memo in Dark, then in Light (Setup 4).
+- **Get there:** deploy the branch (`cargo xtask deploy trailkit-memo`), open memo (Dark, Setup 4).
 - **Look at:** window and pane backgrounds, borders of windows and popups, a tooltip and its shadow, the violet
   **Edit** button, a red "Discard" button and chat-link chips.
-
-## trailkit-ui module groups, branch `chore/trailkit-ui-module-groups` (R134)
-
-### 21 · Memo unchanged after the move
-
-- **Design:** none (files moved, no code changed).
-- **Get there:** deploy the branch (`cargo xtask deploy trailkit-memo`), open memo (Setup 2).
-- **Look at:** fonts and icons load (title bar, list, buttons), a tooltip, the `⋯` menu, a toast (e.g. delete
-  a note), the help window (menu › Help) with its topics, a chat-link chip and the Markdown preview of a note.
-- **Also (fonts moved to `trailkit-nexus-bridge`, Q496):** change the Nexus font size (Nexus options ›
-  Style › font size) with memo open: memo's text and icons grow and shrink with it, no `?` boxes appear.
-- **Before / now:** identical to `develop`; nothing may differ.

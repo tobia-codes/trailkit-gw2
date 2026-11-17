@@ -146,8 +146,9 @@ pub struct NoteList {
     drag: Option<TreeDrag>,
     /// Rectangles of the rows drawn in this frame; reused every frame.
     rows: Vec<RowRect>,
-    /// A row was pressed while searching: dragging cannot move it (M125).
-    drag_blocked_by_search: bool,
+    /// The row pressed while searching and the mouse position of the press:
+    /// dragging cannot move it (M125), a release in place selects it.
+    search_press: Option<(NodeId, [f32; 2])>,
     /// A row to scroll into the middle of the list when it is drawn next
     /// (M185).
     reveal: Option<NodeId>,

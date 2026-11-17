@@ -60,7 +60,7 @@ pub(super) const DARK_ACCENT: AccentColors = AccentColors {
     hover: Color::from_rgb_hex(0x4A1F89),
     active: Color::from_rgb_hex(0x451783),
     text: Color::from_rgb_hex(0xB48AE6),
-    highlight: Color::from_rgb_hex(0x542C96).with_alpha(0.48),
+    highlight: Color::from_rgb_hex(0x542C96),
 };
 
 /// Accent of the light theme.
@@ -69,7 +69,7 @@ pub(super) const LIGHT_ACCENT: AccentColors = AccentColors {
     hover: Color::from_rgb_hex(0x4A1F89),
     active: Color::from_rgb_hex(0x451783),
     text: Color::from_rgb_hex(0x6A3BAA),
-    highlight: Color::from_rgb_hex(0x542C96).with_alpha(0.16),
+    highlight: Color::from_rgb_hex(0x542C96),
 };
 
 /// Status of the dark theme.

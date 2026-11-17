@@ -91,7 +91,7 @@ Chat links from the game (`[&…]`, e.g. a waypoint or an item) show as chips wi
 
 ### Saving and drafts
 
-- **Save** (or **Ctrl+Enter** / **Ctrl+S**) saves your changes and closes the editor once they are on disk, **Cancel** throws them away — memo asks first if you changed something.
+- **Save** (or **Ctrl+S**) saves your changes and closes the editor once they are on disk, **Cancel** throws them away — memo asks first if you changed something.
 - If you choose another note, create one or close the window while you have unsaved changes, memo asks whether to save or discard them. (Set `"unsaved_changes": "save_automatically"` in `settings.json` to save without asking; a switch follows in the settings window.)
 - **Escape** closes the window; with unsaved changes memo asks first.
 - If the game or the addon closes while you are editing, your changes are kept as a draft. Such notes are marked with a yellow warning sign in the list (a collapsed group shows it too), and a hint above the list says how many there are; **Go to note** takes you to them one by one, and **x** hides the hint until the game restarts. In the note, choose **Restore** to continue or **Discard** to drop the changes. Drafts are deleted automatically after 30 days.
@@ -126,7 +126,7 @@ Show the **Search** field from the menu or press **Ctrl+F** (not while editing);
 - Groups with hits open by themselves; their number shows how many notes match. A group whose name matches shows everything inside.
 - Hits are marked in the titles and in the open note, which jumps to the first hit. Notes that match only through their text show the number of hits at the end of the row.
 - Link texts and chat-link codes are searched, link addresses are not. A chip whose code matches gets a frame.
-- The open note always stays in the list, even if it no longer matches after an edit.
+- The list shows only matches. The open note stays open on the right even when it does not match; click a match to open it.
 
 ## Trash and undo
 
@@ -170,7 +170,7 @@ These are the keys memo uses, sorted by where they work.
 
 - **Ctrl+B** – bold
 - **Ctrl+I** – italic
-- **Ctrl+Enter** or **Ctrl+S** – save
+- **Ctrl+S** – save
 - **Ctrl+Z** – undo your typing
 - **Backspace** – next to a chat link chip: delete the whole chip
 

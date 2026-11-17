@@ -77,28 +77,19 @@ pub struct SearchResults {
     /// Content occurrences of notes that match, but not by their title alone
     /// (shown at the row end, M122).
     content_hits: HashMap<NoteId, usize>,
-    /// Whether any note or group matches (the kept-visible node does not
-    /// count); without, the list shows the empty state (M126).
+    /// Whether any note or group matches; without, the list shows the empty
+    /// state (M126).
     has_hits: bool,
 }
 
 impl SearchResults {
     /// Searches `document` with `index` (built from the same document).
-    /// `keep_visible` — the open note — stays visible even when it does not
-    /// match (M125).
+    /// Only matches are visible; the open note too only when it matches
+    /// (M196).
     #[must_use]
-    pub fn compute(
-        document: &NotesDocument,
-        index: &NoteSearchIndex,
-        query: &SearchQuery,
-        keep_visible: Option<NodeId>,
-    ) -> Self {
+    pub fn compute(document: &NotesDocument, index: &NoteSearchIndex, query: &SearchQuery) -> Self {
         let mut results = Self::default();
-        let search = Search {
-            index,
-            query,
-            keep_visible,
-        };
+        let search = Search { index, query };
         search.visit_nodes(&document.root, false, &mut results);
         results
     }
@@ -130,8 +121,6 @@ struct Search<'search> {
     index: &'search NoteSearchIndex,
     /// What to look for.
     query: &'search SearchQuery,
-    /// A node shown even without a match (the open note).
-    keep_visible: Option<NodeId>,
 }
 
 impl Search<'_> {
@@ -173,10 +162,9 @@ impl Search<'_> {
         results.has_hits |= title_matches;
         let shows_everything = inside_match || title_matches;
         let (matches, child_visible) = self.visit_nodes(&group.children, shows_everything, results);
-        let node = NodeId::Group(group.id);
-        let visible = shows_everything || child_visible || self.keep_visible == Some(node);
+        let visible = shows_everything || child_visible;
         if visible {
-            results.visible.insert(node);
+            results.visible.insert(NodeId::Group(group.id));
             results.group_counts.insert(group.id, matches);
         }
         (matches, visible)
@@ -205,7 +193,7 @@ impl Search<'_> {
                     .insert(note.id, self.query.count_in_lowered(&indexed.content));
             }
         }
-        let visible = matches || inside_match || self.keep_visible == Some(node);
+        let visible = matches || inside_match;
         if visible {
             results.visible.insert(node);
         }
@@ -236,9 +224,9 @@ mod tests {
     }
 
     /// Runs `query` over `document`.
-    fn search(document: &NotesDocument, query: &str, keep: Option<NodeId>) -> SearchResults {
+    fn search(document: &NotesDocument, query: &str) -> SearchResults {
         let query = SearchQuery::parse(query).expect("query has terms");
-        SearchResults::compute(document, &NoteSearchIndex::build(document), &query, keep)
+        SearchResults::compute(document, &NoteSearchIndex::build(document), &query)
     }
 
     /// Root: note "Mithril" (body "ore farm"), group "Dailies" with note
@@ -273,7 +261,7 @@ mod tests {
     #[test]
     fn matching_notes_show_with_their_groups() {
         let (document, [mithril, dailies, vault, raids, wing]) = sample();
-        let results = search(&document, "ORE", None);
+        let results = search(&document, "ORE");
         assert!(results.has_hits());
         for (node, visible) in [
             (mithril, true),
@@ -293,28 +281,28 @@ mod tests {
     #[test]
     fn content_only_matches_report_their_hit_count() {
         let (document, [mithril, _, vault, _, _]) = sample();
-        let results = search(&document, "ore", None);
+        let results = search(&document, "ore");
         let (NodeId::Note(mithril), NodeId::Note(vault)) = (mithril, vault) else {
             unreachable!()
         };
         // "ore", "more" contains "ore" too: three occurrences.
         assert_eq!(results.content_hits(vault), Some(3));
         assert_eq!(results.content_hits(mithril), Some(1));
-        let results = search(&document, "mithril", None);
+        let results = search(&document, "mithril");
         assert_eq!(results.content_hits(mithril), None, "title match");
     }
 
     #[test]
     fn terms_may_split_between_title_and_content() {
         let (document, [mithril, ..]) = sample();
-        assert!(search(&document, "mithril farm", None).is_visible(mithril));
-        assert!(!search(&document, "mithril raid", None).is_visible(mithril));
+        assert!(search(&document, "mithril farm").is_visible(mithril));
+        assert!(!search(&document, "mithril raid").is_visible(mithril));
     }
 
     #[test]
     fn a_matching_group_title_shows_everything_inside() {
         let (document, [_, dailies, vault, raids, wing]) = sample();
-        let results = search(&document, "dailies", None);
+        let results = search(&document, "dailies");
         for node in [dailies, vault, raids, wing] {
             assert!(results.is_visible(node), "{node:?}");
         }
@@ -323,18 +311,18 @@ mod tests {
     #[test]
     fn link_targets_and_markers_are_not_searched() {
         let (document, [.., wing]) = sample();
-        assert!(!search(&document, "example", None).is_visible(wing));
-        assert!(!search(&document, "**", None).has_hits());
-        assert!(search(&document, "guide", None).is_visible(wing));
+        assert!(!search(&document, "example").is_visible(wing));
+        assert!(!search(&document, "**").has_hits());
+        assert!(search(&document, "guide").is_visible(wing));
     }
 
     #[test]
-    fn the_open_note_stays_visible_without_a_match() {
-        let (document, [_, dailies, _, raids, wing]) = sample();
-        let results = search(&document, "zzz", Some(wing));
+    fn without_a_match_nothing_is_visible() {
+        let (document, [mithril, dailies, vault, raids, wing]) = sample();
+        let results = search(&document, "zzz");
         assert!(!results.has_hits());
-        for node in [dailies, raids, wing] {
-            assert!(results.is_visible(node), "{node:?}");
+        for node in [mithril, dailies, vault, raids, wing] {
+            assert!(!results.is_visible(node), "{node:?} (M196)");
         }
     }
 }

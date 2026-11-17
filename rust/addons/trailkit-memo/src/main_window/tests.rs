@@ -558,6 +558,20 @@ fn escape_closes_the_window_menu_before_the_window() {
 }
 
 #[test]
+fn escape_belongs_to_the_window_while_its_menu_is_open() {
+    let document = sample_document();
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    assert!(
+        !memo.takes_escape(),
+        "nothing open: Escape closes the window"
+    );
+    memo.apply_title_bar_toggle(0);
+    assert!(memo.takes_escape(), "the open menu takes Escape (M195)");
+    memo.close_window_menu();
+    assert!(!memo.takes_escape());
+}
+
+#[test]
 fn showing_the_notes_returns_to_the_regular_page() {
     let document = sample_document();
     let selected = selected_first(&document);

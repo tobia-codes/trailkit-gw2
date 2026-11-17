@@ -32,9 +32,10 @@ base = { name = "accent", dark = "#542C96", light = "#542C96", purpose = "Fill o
 hover = { name = "accent.hover", dark = "#4A1F89", light = "#4A1F89", purpose = "Hovered primary button (4 % darker, R107)" }
 active = { name = "accent.active", dark = "#451783", light = "#451783", purpose = "Pressed primary button (6 % darker, R107)" }
 text = { name = "accent.text", dark = "#B48AE6", light = "#6A3BAA", purpose = "Accent as text, icon or line" }
-# highlight: Dark 48 % is as visible on `bg.panel` as the approved mockup's hits;
-# Light 16 %: above 17 % `text.link` on a hit falls below 4.5:1.
-highlight = { name = "accent.highlight", dark = { hex = "#542C96", alpha = 0.48 }, light = { hex = "#542C96", alpha = 0.16 }, purpose = "Behind search hits" }
+# highlight: opaque like a text marker, the hit drawn on it in `text.on_accent`
+# (M197, mockup B https://claude.ai/artifact/7syt1SvtzDj1TcafzBT7F7); the
+# translucent 48 % / 16 % before were hard to see in game.
+highlight = { name = "accent.highlight", dark = "#542C96", light = "#542C96", purpose = "Behind search hits, the hit in text.on_accent" }
 
 [shared.status]
 title = "Status"

@@ -4,6 +4,8 @@
 //! Lucide `check` and `chevron-right` icons like the dropdown, and submenus
 //! open flush beside their parent instead of overlapping it.
 
+use std::cell::Cell;
+
 use crate::controls::tooltip::draw_reason_tooltip;
 use nexus::imgui::{ItemHoveredFlags, MenuItem, MenuToken, StyleColor, StyleVar, Ui};
 
@@ -54,9 +56,37 @@ pub(crate) fn draw_fitted_popup(ui: &Ui, theme: &Theme, id: &str, content: impl 
         menu.padding + menu.row_padding_y,
     ]));
     ui.popup(id, || {
+        let frame = ui.frame_count();
+        if CLOSE_FRAME.get() == Some(frame) {
+            ui.close_current_popup();
+        } else {
+            LAST_OPEN_FRAME.set(Some(frame));
+        }
         let _square = hide_square_row_highlight(ui);
         content();
     });
+}
+
+thread_local! {
+    /// ImGui frame in which a popup of [`draw_fitted_popup`] was last drawn
+    /// open. Each addon DLL has its own copy; popups draw on the render thread.
+    static LAST_OPEN_FRAME: Cell<Option<i32>> = const { Cell::new(None) };
+    /// ImGui frame in which [`close_open_popups`] asked to close the popups.
+    static CLOSE_FRAME: Cell<Option<i32>> = const { Cell::new(None) };
+}
+
+/// Whether a popup of this module (menu, dropdown list) was drawn open in the
+/// current frame. Call it after drawing the window, e.g. to let Escape close
+/// the popup instead of the window.
+#[must_use]
+pub fn popup_drawn_this_frame(ui: &Ui) -> bool {
+    LAST_OPEN_FRAME.get() == Some(ui.frame_count())
+}
+
+/// Closes every popup of this module that is drawn later in this frame; call
+/// it before drawing them. Nested menus close with their popup.
+pub fn close_open_popups(ui: &Ui) {
+    CLOSE_FRAME.set(Some(ui.frame_count()));
 }
 
 /// The span to center an icon in beside a label drawn at line top `top`: the

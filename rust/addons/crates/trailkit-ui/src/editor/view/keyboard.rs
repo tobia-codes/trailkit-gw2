@@ -85,9 +85,6 @@ impl TextEditor {
         let pressed = |key: Key| ui.is_key_pressed(key);
 
         self.handle_shortcuts(ui, response);
-        if response.submitted {
-            return;
-        }
 
         let horizontal = [
             (Key::LeftArrow, Direction::Backward),
@@ -178,18 +175,13 @@ impl TextEditor {
         }
     }
 
-    /// Handles the Ctrl shortcuts: submit (Ctrl+Enter, M52), select all,
-    /// copy, cut, paste, undo and redo. Sets `response.submitted` on submit
-    /// and does nothing else then.
+    /// Handles the Ctrl shortcuts: select all, copy, cut, paste, undo and
+    /// redo. Ctrl+Enter does nothing; saving belongs to the addon (memo M194).
     fn handle_shortcuts(&mut self, ui: &Ui, response: &mut EditorResponse) {
         if !ui.io().key_ctrl {
             return;
         }
         let pressed = |key: Key| ui.is_key_pressed(key);
-        if pressed(Key::Enter) || pressed(Key::KeyPadEnter) {
-            response.submitted = true;
-            return;
-        }
         if pressed(Key::A) {
             self.buffer.select_all();
             self.after_move(ui);

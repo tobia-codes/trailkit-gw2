@@ -22,9 +22,9 @@ use trailkit_ui::{
 };
 
 use super::{
-    CLOSE_REQUESTED, DELETE_KEY_ARMED, DELETE_KEY_PRESSED, HELP, HELP_OPEN, LANGUAGE, NEXUS_LINK,
-    NOTES, NotesState, SEARCH_ESCAPED, SEARCH_KEY_ARMED, SEARCH_KEY_PRESSED, SEARCH_TAKES_ESCAPE,
-    TITLE_BAR, UNSAVED_CHANGES, VISIBLE, WINDOW_TITLE,
+    CLOSE_REQUESTED, DELETE_KEY_ARMED, DELETE_KEY_PRESSED, ESCAPE_CAUGHT, HELP, HELP_OPEN,
+    LANGUAGE, NEXUS_LINK, NOTES, NotesState, SEARCH_KEY_ARMED, SEARCH_KEY_PRESSED, TITLE_BAR,
+    UNSAVED_CHANGES, VISIBLE, WINDOW_TAKES_ESCAPE, WINDOW_TITLE,
     guard::{RunState, draft_kept, run_state, take_help_request, try_lock_after_panic},
     help::MemoHelp,
     is_gameplay, settings,
@@ -211,8 +211,8 @@ fn draw_main_window(
                 Text::NotesInaccessible.get(language),
             ),
             NotesState::Ready(window) => {
-                if SEARCH_ESCAPED.swap(false, Ordering::Relaxed) {
-                    window.clear_search_by_escape();
+                if ESCAPE_CAUGHT.swap(false, Ordering::Relaxed) {
+                    window.handle_escape(ui);
                 }
                 if SEARCH_KEY_PRESSED.swap(false, Ordering::Relaxed) {
                     window.toggle_search_by_key();
@@ -259,13 +259,14 @@ fn apply_title_bar_click(
     }
 }
 
-/// Shows the hidden window again when Nexus hid it too early: Escape in the
-/// focused, non-empty search field only clears the search (M124), and with
-/// unsaved changes a keybind or quick access click asks first (M54).
+/// Shows the hidden window again when Nexus hid it too early: Escape only
+/// closes an open popup or the window menu, or clears the focused, non-empty
+/// search field (M124), and with unsaved changes a keybind or quick access
+/// click asks first (M54).
 fn reopen_hidden_window_if_needed() {
-    if !VISIBLE.load(Ordering::Relaxed) && SEARCH_TAKES_ESCAPE.swap(false, Ordering::Relaxed) {
+    if !VISIBLE.load(Ordering::Relaxed) && WINDOW_TAKES_ESCAPE.swap(false, Ordering::Relaxed) {
         VISIBLE.store(true, Ordering::Relaxed);
-        SEARCH_ESCAPED.store(true, Ordering::Relaxed);
+        ESCAPE_CAUGHT.store(true, Ordering::Relaxed);
     }
     if !VISIBLE.load(Ordering::Relaxed) && UNSAVED_CHANGES.load(Ordering::Relaxed) {
         VISIBLE.store(true, Ordering::Relaxed);
@@ -285,14 +286,14 @@ fn apply_close_request(notes: &mut NotesState, open: bool) {
             let may_close =
                 window.take_close_approval() || (close_requested && window.request_close());
             UNSAVED_CHANGES.store(window.has_unsaved_changes(), Ordering::Relaxed);
-            SEARCH_TAKES_ESCAPE.store(window.search_takes_escape(), Ordering::Relaxed);
+            WINDOW_TAKES_ESCAPE.store(window.takes_escape(), Ordering::Relaxed);
             may_close
         }
         _ => close_requested,
     };
     if may_close {
         UNSAVED_CHANGES.store(false, Ordering::Relaxed);
-        SEARCH_TAKES_ESCAPE.store(false, Ordering::Relaxed);
+        WINDOW_TAKES_ESCAPE.store(false, Ordering::Relaxed);
         VISIBLE.store(false, Ordering::Relaxed);
     }
 }

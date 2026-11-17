@@ -2,6 +2,7 @@
 //! keys (memo M122, M129, M138).
 
 use super::*;
+use trailkit_memo_shared::list_filter::ListFilter;
 
 /// Focuses the search with Ctrl+F, types `query` and lets the window
 /// settle; returns the last image.
@@ -182,4 +183,64 @@ fn the_search_x_clears_the_text_and_then_closes_the_field() {
     assert!(memo.ui_state.search_visible, "the field stays");
     click_x(&mut memo);
     assert!(!memo.ui_state.search_visible, "the empty field closes");
+}
+
+#[test]
+fn a_click_on_a_row_selects_it_during_a_search() {
+    let document = sample_document();
+    let shopping = first_note(&document);
+    let ui_state = UiState {
+        selected: weekly_note(&document),
+        ..UiState::default()
+    };
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    let size = [640.0, 360.0];
+    // "Shopping" leaves the shopping list as the first row; the open weekly
+    // note stays visible below it.
+    search_for(&mut memo, size, "Shopping");
+    let row = [100.0, 145.0];
+    let input = |down: bool| FrameInput {
+        mouse_position: row,
+        left_button_down: down,
+        ..FrameInput::default()
+    };
+    let mut harness = UiHarness::new(size);
+    let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
+    harness.settle(2, &input(false), &mut draw_dark);
+    harness.step(&input(true), &mut draw_dark);
+    harness.settle(2, &input(false), &mut draw_dark);
+    assert_eq!(
+        memo.ui_state.selected, shopping,
+        "a press and release in place selects, even though dragging is blocked (M125)"
+    );
+}
+
+#[test]
+fn the_open_note_leaves_the_list_but_stays_shown_during_a_search() {
+    let document = sample_document();
+    let weekly = weekly_note(&document);
+    let ui_state = UiState {
+        selected: weekly,
+        search_visible: true,
+        ..UiState::default()
+    };
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    memo.search_field.text = "Shopping".to_owned();
+    memo.update_search();
+    let Some(search) = &memo.search.current else {
+        panic!("the search runs");
+    };
+    assert!(
+        weekly.is_some_and(|node| !search.results.is_visible(node)),
+        "the open note does not match, so the list hides it (M196)"
+    );
+    assert_eq!(memo.ui_state.selected, weekly, "but it stays open");
+    memo.note_list_takes_delete_key = true;
+    assert!(
+        !memo.takes_delete_key(),
+        "the Delete key cannot delete the hidden note"
+    );
+    memo.search_field.text.clear();
+    memo.update_search();
+    assert!(memo.takes_delete_key(), "it is back in the list");
 }

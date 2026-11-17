@@ -70,8 +70,8 @@ pub struct AccentColors {
     /// `accent.text`: the accent as text, icon or line on a surface (active
     /// toggles, check marks, drop line); ≥ 4.5:1 in both themes.
     pub text: Color,
-    /// `accent.highlight`: translucent accent behind search hits (memo M122);
-    /// text on it keeps ≥ 4.5:1 over every surface.
+    /// `accent.highlight`: opaque accent behind search hits, the hit drawn on
+    /// it in `text.on_accent` like a text marker (memo M122, M197).
     pub highlight: Color,
 }
 

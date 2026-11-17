@@ -9,6 +9,7 @@ use trailkit_ui::feedback::toast::Toast;
 
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText},
+    list_filter::ListFilter,
     note_tree::{NodeId, TrashEntry, TreeNode},
     undo::UndoStep,
 };
@@ -204,14 +205,21 @@ impl MemoWindow {
         }
     }
 
-    /// Whether the Delete key belongs to this window (M175): the list claimed it
-    /// and nothing lies above the list.
+    /// Whether the Delete key belongs to this window (M175): the list claimed it,
+    /// nothing lies above the list, and the selected entry is shown in it; a
+    /// search may hide the open note (M196).
     #[must_use]
-    pub const fn takes_delete_key(&self) -> bool {
+    pub fn takes_delete_key(&self) -> bool {
         self.note_list_takes_delete_key
             && !self.window_menu_open
             && self.leave_prompt.is_none()
             && self.confirmation.is_none()
+            && self.ui_state.selected.is_some_and(|node| {
+                self.search
+                    .current
+                    .as_ref()
+                    .is_none_or(|search| search.results.is_visible(node))
+            })
     }
 
     /// Deletes the selected entry after the Delete key was caught (M133, M175).

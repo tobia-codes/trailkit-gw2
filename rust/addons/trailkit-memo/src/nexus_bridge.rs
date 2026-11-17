@@ -170,13 +170,14 @@ static UNSAVED_CHANGES: AtomicBool = AtomicBool::new(false);
 /// the render callback shows it again and asks (M54).
 static CLOSE_REQUESTED: AtomicBool = AtomicBool::new(false);
 
-/// Whether Escape should clear the search instead of closing the window (the
-/// focused search field holds text, M124). Written by the render callback.
-static SEARCH_TAKES_ESCAPE: AtomicBool = AtomicBool::new(false);
+/// Whether Escape belongs to the window instead of closing it (an open
+/// popup or window menu, or the search, M124; see `MemoWindow::takes_escape`).
+/// Written by the render callback.
+static WINDOW_TAKES_ESCAPE: AtomicBool = AtomicBool::new(false);
 
-/// Set when Nexus hid the window while the search took Escape; the render
-/// callback shows it again and clears the search (M124).
-static SEARCH_ESCAPED: AtomicBool = AtomicBool::new(false);
+/// Set when Nexus hid the window while it took Escape; the render callback
+/// shows it again and lets the window handle the key.
+static ESCAPE_CAUGHT: AtomicBool = AtomicBool::new(false);
 
 /// Whether Ctrl+F belongs to the window: it has the focus and no editor is open
 /// (M174). Written by the render callback, false while it does not draw.

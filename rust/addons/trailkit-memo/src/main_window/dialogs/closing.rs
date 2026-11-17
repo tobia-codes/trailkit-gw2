@@ -4,7 +4,7 @@
 
 use jiff::Timestamp;
 use nexus::imgui::Ui;
-use trailkit_ui::theme::Theme;
+use trailkit_ui::{controls::menu::close_open_popups, theme::Theme};
 
 use trailkit_memo_drafts::draft_overview::DraftOverviewAction;
 use trailkit_memo_shared::{i18n::Language, settings::UnsavedChanges};
@@ -77,6 +77,28 @@ impl MemoWindow {
         }
         self.editor = None;
         true
+    }
+
+    /// Whether Escape belongs to the window instead of closing it: a menu or
+    /// dropdown popup is open, the window menu is open (M166), or the search
+    /// takes it (M124). Nexus hides the window on Escape; the bridge then
+    /// shows it again and calls [`Self::handle_escape`].
+    #[must_use]
+    pub fn takes_escape(&self) -> bool {
+        self.popup_open || self.window_menu_open || self.search_takes_escape()
+    }
+
+    /// Handles Escape the window took (see [`Self::takes_escape`]): closes the
+    /// open popup, else the window menu, else clears the search. Call it
+    /// before drawing the window content, so the popup closes this frame.
+    pub fn handle_escape(&mut self, ui: &Ui) {
+        if std::mem::take(&mut self.popup_open) {
+            close_open_popups(ui);
+        } else if self.window_menu_open {
+            self.window_menu_open = false;
+        } else if self.search_takes_escape() {
+            self.clear_search_by_escape();
+        }
     }
 
     /// Closes the window menu, so the close button closes the window at once
