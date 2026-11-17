@@ -109,6 +109,18 @@ API" is not enforceable; we can only raise the bar and limit damage:
 - **Tech stack:** the proposed stack below is not grilled yet. Grill it (web framework, DB access,
   migrations, deployment, monitoring, GDPR) and where shared strings such as the lock texts live
   (`trailkit-i18n`, ROADMAP layout) before the B23 server work starts.
+- **R121 round, open (session 41, 2026-11-16):**
+  - Q472: backup storage for B33: Scaleway Object Storage (France, per GB, real off-site; recommended), Hetzner
+    Storage Box (same provider, about 3–4 €) or OVH Object Storage. Check current prices before setup.
+  - Q473: price history retention **13 months** instead of 365 days (user wish, amends B1) and the poll tiers
+    (proposal: every 5 minutes for the last 7 days, hourly for 13 months, about 20–25 GB). Before deciding,
+    compare GW2BLTC, GW2Efficiency and DataWars2 resolution/retention: their hosts are blocked in the cloud.
+  - Q474: record why Nexus instead of an own overlay (in-process risk handled by Rust and R104; overlay loses
+    exclusive fullscreen, needs its own install, harder on Proton) and the rule that Nexus calls stay in the
+    addon's `addon/` module or core and UI goes through `trailkit-ui`, so an overlay port stays a few weeks.
+  - Still to grill: browser session length, user names, sync conflicts, admin roles, forum (moderation, DSA),
+    REST API scope, where addons get their data (D19), frontend stack and SSR (R45, R52).
+  - Also pending user OK: about 20 semver patch updates (`cargo update`), `cargo audit` in CI (R130).
 - **Price poll frequency (user idea 2026-11-16):** once the server runs, possibly poll prices more often than
   daily (B1, B5). Estimate for about 27,000 items with 1-year retention: daily about 1 GB, hourly 15–20 GB,
   every 5 minutes about 180 GB (needs downsampling or TimescaleDB compression). Backups stay small with

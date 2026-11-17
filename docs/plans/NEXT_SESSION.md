@@ -23,11 +23,10 @@ the upstream (narrow fetch refspec): set `branch.<b>.remote/merge` by hand for t
 **On the Mac (no game, no WSL):** `git fetch origin && git switch develop && git pull --ff-only`; deploy, `ui-test` and in-game
 tests wait for the Windows PC; check `source ~/.cargo/env` and a first `cargo test` there; snapshots via the PR's Windows CI.
 
-**Session 38 (2026-11-14, cloud):** PR #129 merged (German empty-trash fixture, test only). C-703/25 P checked via
-secondary sources only (CURIA blocked in cloud): still pending, no hearing, DPF in force. The user chose memo first:
-**favorites grilling in progress on `feature/memo-favorites`** — decided M188–M191 (Q399–Q406, Q409–Q413); open Q407,
-Q408, Q414–Q419 (trailkit-memo.md "Open questions"; Q407/Q408 carry the user's follow-up questions). Then R87 mockup.
-Core-mandatory plan R109 merged (PR #130); R110–R112 and the frontend topics went to develop on their own PR.
+**Session 41 (2026-11-16/17, phone, cloud):** R121 round started on `chore/plan-frontend-backend-scope` (pushed, no PR yet):
+B26–B33 (opt-in sync, recovery codes, end-to-end encryption, sharing prepared, 2FA, addon login, DPAPI, backups), R129–R131.
+**Continue there:** open Q472–Q474 and the rest of the R121 round (backend.md "Open questions"); then merge OK for the branch.
+Favorites grilling (`feature/memo-favorites`, M188–M191 decided): open Q407, Q408, Q416–Q419 in trailkit-memo.md.
 
 **Open, in this order:**
 1. **In-game tests 1–3, 6–8, 10, 11, 18** ([`in-game-tests.md`](in-game-tests.md)) whenever the user is at the PC; deploy `develop` first.
@@ -55,7 +54,7 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M194+, R129+, B26+, BL18+, questions from 463**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M194+, R132+, B34+, BL18+, questions from 475**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
 1. **Storage failures:** done (memo M180, 2026-11-10).
