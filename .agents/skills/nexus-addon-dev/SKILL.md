@@ -22,7 +22,7 @@ for new addons: [`references/addon-structure.md`](references/addon-structure.md)
   neutral shared types between slices.
 - **Overlay portability (ROADMAP R132):** Nexus API calls (loader,
   events, keybinds, quick access, textures, paths) stay in the app's
-  `addon/` module or in core; all UI goes through `trailkit-ui`. Slices
+  `nexus_bridge` module (`nexus_bridge.rs` + `nexus_bridge/`, R136) or in core; all UI goes through `trailkit-ui`. Slices
   never call the Nexus API directly, so a port to an own overlay stays
   a few weeks of work.
 - A slice owns its state, `draw` function, text enum and help section;

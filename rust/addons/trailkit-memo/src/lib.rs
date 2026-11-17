@@ -4,12 +4,12 @@
 //! window toggled by a keybind (unbound by default, memo plan M14) or the
 //! quick access icon (R55) and builds the DLL. What slices share lives in
 //! `trailkit-memo-shared`. Platform-independent logic stays testable on any
-//! host (R23); the Nexus glue in `addon` only compiles for Windows.
+//! host (R23); the Nexus bridge in `nexus_bridge` only compiles for Windows.
 
 #[cfg(windows)]
-mod addon;
-#[cfg(windows)]
 mod main_window;
+#[cfg(windows)]
+mod nexus_bridge;
 #[cfg(windows)]
 mod options_tab;
 

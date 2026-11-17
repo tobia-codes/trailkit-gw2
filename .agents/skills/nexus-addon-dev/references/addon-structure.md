@@ -16,7 +16,7 @@ addons/trailkit-<addon>/
 ├── assets/icons/         quick-access icon source (.svg; .png generated)
 ├── src/
 │   ├── lib.rs            crate root; `all_texts()` = app + every slice's texts
-│   ├── addon.rs          Nexus export, load/unload, render (#[cfg(windows)])
+│   ├── nexus_bridge.rs   the only Nexus API calls: export, load/unload, render (#[cfg(windows)], R136)
 │   ├── main_window.rs    window state, `new`, `draw`, close/unload handling
 │   └── main_window/      one file per concern, e.g.
 │       ├── actions.rs    `WindowAction` + `apply` dispatcher + per-area apply fns

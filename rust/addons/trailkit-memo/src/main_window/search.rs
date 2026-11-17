@@ -74,7 +74,7 @@ impl MemoWindow {
         self.search_field.clear(true);
     }
 
-    /// Ctrl+F as ImGui sees it; in game `addon::catch_window_keys` gets it first
+    /// Ctrl+F as ImGui sees it; in game `nexus_bridge::catch_window_keys` gets it first
     /// while it belongs to the window (M174). It toggles the search
     /// field (M124, M138, M176). The search sits
     /// in the note list, which the editor hides, so it does nothing there

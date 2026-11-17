@@ -1,5 +1,7 @@
-//! Nexus glue: addon export, load/unload and registrations (Windows only);
-//! the render callbacks are in `render`.
+//! The Nexus bridge (ROADMAP R132, R136): the only module of memo that calls
+//! the Nexus API. Addon export, load/unload and registrations (Windows only);
+//! the render callbacks are in `render`. Everything else in memo (main window,
+//! slices) and `trailkit-ui` draws with ImGui only and knows nothing of Nexus.
 //!
 //! Threading (nexus-addon-dev skill §2): the keybind callback only flips an
 //! atomic; the render callback returns after one relaxed atomic load while the

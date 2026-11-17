@@ -130,6 +130,9 @@ from [`rust/addons/crates/trailkit-ui`](rust/addons/crates/trailkit-ui/README.md
 - **Lints are errors.** Clippy runs with `-D warnings`; fix the cause.
   [`clippy.toml`](rust/clippy.toml) also bans a few methods and names the
   replacement (e.g. tooltips go through `trailkit_ui::controls::tooltip`).
+- **Nexus stays in one module** (R132, R136): only an addon's
+  `nexus_bridge` module calls the Nexus API; windows, slices and `trailkit-ui`
+  draw with ImGui and know nothing of Nexus.
 - **Performance beats DLL size** (R72), and dependencies are checked by
   `cargo deny` (licenses, advisories).
 
