@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-17 (session 42; R121 round done). Current state and
+Last updated: 2026-11-17 (session 42; R121 done, code structure rules R133–R137). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -23,9 +23,10 @@ the upstream (narrow fetch refspec): set `branch.<b>.remote/merge` by hand for t
 **On the Mac (no game, no WSL):** `git fetch origin && git switch develop && git pull --ff-only`; deploy, `ui-test` and in-game
 tests wait for the Windows PC; check `source ~/.cargo/env` and a first `cargo test` there; snapshots via the PR's Windows CI.
 
-**Sessions 41–42 (2026-11-16/17):** R121 round done on `chore/plan-frontend-backend-scope`: B26–B44, R129–R132
-(Scaleway backups, 12-month prices at 5 min/1 h, Discord, `api.gw2.trailkit.de`, client keys, TanStack Start, prerendering).
-**Next:** merge OK for that branch; then the approved `cargo update` patch bumps and `cargo audit` in CI (Q484, R130) on a `chore/` branch.
+**Session 42 (2026-11-17, PC):** R121 merged (#141). Unpushed, waiting for in-game tests 19–21 and merge OK:
+`chore/dependency-patch-updates` (test 19) and `chore/trailkit-ui-module-groups` (tests 20, 21; contains `chore/generated-theme-folder`):
+R133–R137 (generated folder, trailkit-ui groups, nexus_bridge + crate `trailkit-nexus-bridge`, max 10 loose files, xtask groups).
+**Next:** grouping of memo `main_window/` (11 loose files, R137; proposal Q500); then the favorites grilling.
 Favorites grilling (`feature/memo-favorites`, M188–M191 decided): open Q407, Q408, Q416–Q419 in trailkit-memo.md.
 
 **Open, in this order:**
@@ -54,7 +55,7 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M194+, R133+, B45+, BL18+, questions from 485**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M194+, R138+, B45+, BL18+, questions from 500**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
 1. **Storage failures:** done (memo M180, 2026-11-10).
