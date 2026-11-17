@@ -145,6 +145,15 @@ red against the [red fill mockup](https://claude.ai/artifact/E6E3L6RTBxPsPBuCNW7
   countdown, plain dropdown; (c) waypoint blue, skill copper, achievement
   rosé; (d) deep red with light label, darker on hover and hold.
 
+## Generated theme folder, branch `chore/generated-theme-folder` (R133)
+
+### 20 · Theme looks unchanged
+
+- **Design:** none (no visible change; the values were compared one to one).
+- **Get there:** deploy the branch (`cargo xtask deploy trailkit-memo`), open memo in Dark, then in Light (Setup 4).
+- **Look at:** window and pane backgrounds, borders of windows and popups, a tooltip and its shadow, the violet
+  **Edit** button, a red "Discard" button and chat-link chips.
+
 ## trailkit-ui module groups, branch `chore/trailkit-ui-module-groups` (R134)
 
 ### 21 · Memo unchanged after the move

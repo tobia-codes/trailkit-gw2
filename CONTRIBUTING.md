@@ -117,7 +117,8 @@ from [`rust/addons/crates/trailkit-ui`](rust/addons/crates/trailkit-ui/README.md
   ImGui widget draws it (`draw_selected_content`, not `draw_button_content`).
   Rust files `snake_case.rs`, module folders as `foo.rs` + `foo/` (no
   `mod.rs`), other paths `kebab-case`, crates `trailkit-*`, data keys
-  `snake_case`. The binding table:
+  `snake_case`. Generated Rust code always lives in a `generated` module
+  (`generated.rs` + `generated/`, R135) and is never edited by hand. The binding table:
   [naming conventions](docs/agent-reference.md#naming-conventions), checked
   by `cargo xtask check-names`.
 - **Small files and functions.** `cargo xtask check-file-length` hints at

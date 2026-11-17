@@ -2,7 +2,8 @@
 //! reference from the token files in `design/tokens/` (ROADMAP R84, R118).
 //!
 //! The token files are the only source of the values: they become
-//! `trailkit-ui/src/theme/values.rs` (Q455) and the reference
+//! `trailkit-ui/src/theme/generated.rs` with one module per token file in
+//! `theme/generated/` (Q455, R133) and the reference
 //! `token-values.md` with every token's purpose (Q456). The test
 //! [`tests::the_generated_files_are_current`] fails in `cargo test`
 //! (pre-push hook and CI) when either file is out of date.
@@ -28,8 +29,9 @@ const TOKENS_DIRECTORY: &str = "design/tokens";
 /// The generated reference, relative to the repository root.
 const DOCUMENT_PATH: &str = ".agents/skills/trailkit-ui/references/token-values.md";
 
-/// The generated theme values, relative to the Cargo workspace root.
-const VALUES_PATH: &str = "addons/crates/trailkit-ui/src/theme/values.rs";
+/// The `theme` module directory that holds the generated theme values,
+/// relative to the Cargo workspace root.
+const THEME_DIRECTORY: &str = "addons/crates/trailkit-ui/src/theme";
 
 /// What `cargo xtask tokens` does.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -161,6 +163,45 @@ fn write_or_check(mode: Mode, path: &Path, shown: &str, content: &str) -> Result
     Ok(())
 }
 
+/// Deletes, or in [`Mode::Check`] rejects, Rust files in the generated
+/// module directory that no token file produces any more.
+///
+/// # Errors
+/// Returns an error if the directory cannot be read or a file cannot be
+/// deleted — or, in [`Mode::Check`], if such a file exists.
+fn remove_or_reject_stale_modules(
+    mode: Mode,
+    theme_directory: &Path,
+    files: &[rust_values::RustFile],
+) -> Result<()> {
+    let directory = theme_directory.join(rust_values::MODULE_DIRECTORY);
+    let entries =
+        fs::read_dir(&directory).with_context(|| format!("reading {}", directory.display()))?;
+    for entry in entries {
+        let path = entry
+            .with_context(|| format!("reading {}", directory.display()))?
+            .path();
+        let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
+            continue;
+        };
+        let relative = format!("{}/{name}", rust_values::MODULE_DIRECTORY);
+        if files.iter().any(|file| file.path == relative) {
+            continue;
+        }
+        let shown = format!("{THEME_DIRECTORY}/{relative}");
+        match mode {
+            Mode::Write => {
+                fs::remove_file(&path).with_context(|| format!("deleting {}", path.display()))?;
+                println!("deleted {shown}");
+            }
+            Mode::Check => {
+                bail!("{shown} comes from no token file; run `cargo xtask tokens`")
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Generates or checks the theme values and the reference.
 ///
 /// # Errors
@@ -169,13 +210,23 @@ fn write_or_check(mode: Mode, path: &Path, shown: &str, content: &str) -> Result
 pub fn run(mode: Mode) -> Result<()> {
     let repository = workspace::repository_root();
     let groups = read_groups(&repository.join(TOKENS_DIRECTORY))?;
-    let values = rustfmt(&rust_values::render(&groups)?)?;
-    write_or_check(
-        mode,
-        &workspace::workspace_root().join(VALUES_PATH),
-        VALUES_PATH,
-        &values,
-    )?;
+    let theme_directory = workspace::workspace_root().join(THEME_DIRECTORY);
+    let files = rust_values::render(&groups)?;
+    if mode == Mode::Write {
+        let directory = theme_directory.join(rust_values::MODULE_DIRECTORY);
+        fs::create_dir_all(&directory)
+            .with_context(|| format!("creating {}", directory.display()))?;
+    }
+    for file in &files {
+        let shown = format!("{THEME_DIRECTORY}/{}", file.path);
+        write_or_check(
+            mode,
+            &theme_directory.join(&file.path),
+            &shown,
+            &rustfmt(&file.source)?,
+        )?;
+    }
+    remove_or_reject_stale_modules(mode, &theme_directory, &files)?;
     write_or_check(
         mode,
         &repository.join(DOCUMENT_PATH),

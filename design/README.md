@@ -27,7 +27,7 @@ tokens by one of them only.
 
 ```sh
 cd rust
-cargo xtask tokens   # generates trailkit-ui/src/theme/values.rs and token-values.md
+cargo xtask tokens   # generates trailkit-ui/src/theme/generated{.rs,/} and token-values.md
 ```
 
 A test fails in `cargo test` while a generated file is out of date.
