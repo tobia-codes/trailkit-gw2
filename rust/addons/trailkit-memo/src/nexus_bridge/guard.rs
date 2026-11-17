@@ -25,7 +25,10 @@ use nexus::alert::send_alert;
 
 use trailkit_memo_shared::i18n::{Language, LocalizedText as _};
 
-use super::{DELETE_KEY_ARMED, HELP, LANGUAGE, NOTES, NotesState, SEARCH_KEY_ARMED, VISIBLE};
+use super::{
+    DELETE_KEY_ARMED, FIND_KEY_ARMED, FIND_STEP_ARMED, HELP, LANGUAGE, NOTES, NotesState,
+    SEARCH_KEY_ARMED, VISIBLE,
+};
 use crate::help_text::HelpText;
 
 /// How far memo still runs.
@@ -180,8 +183,10 @@ fn stop_after_panic(callback: Callback) {
         return;
     };
     RUN_STATE.store(next as u8, Ordering::Release);
-    // The game gets every key again (M174, M175).
+    // The game gets every key again (M174, M175, M198, M199).
     SEARCH_KEY_ARMED.store(false, Ordering::Relaxed);
+    FIND_KEY_ARMED.store(false, Ordering::Relaxed);
+    FIND_STEP_ARMED.store(false, Ordering::Relaxed);
     DELETE_KEY_ARMED.store(false, Ordering::Relaxed);
     VISIBLE.store(false, Ordering::Relaxed);
     if current != RunState::Running {

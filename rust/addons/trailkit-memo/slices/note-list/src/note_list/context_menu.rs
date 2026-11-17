@@ -9,7 +9,8 @@ use trailkit_memo_shared::{
 };
 use trailkit_ui::{
     controls::menu::{
-        MenuItemTone, begin_submenu, draw_menu_item, draw_menu_item_with_icon, draw_popup,
+        MenuItemTone, begin_submenu, draw_menu_item, draw_menu_item_with_icon,
+        draw_menu_item_with_shortcut, draw_popup,
     },
     layout::separator::draw_compact_separator,
     text::icons::Icon,
@@ -61,17 +62,47 @@ pub(super) fn draw_context_menu(
     });
 }
 
+/// An extra first item of the `⋯` menu with its shortcut, set off by a
+/// separator ("Find in note", M198).
+#[derive(Debug, Clone, Copy)]
+pub struct LeadingItem<'item> {
+    /// The icon before the label.
+    pub icon: Icon,
+    /// The label.
+    pub label: &'item str,
+    /// The shortcut at the row's end.
+    pub shortcut: &'item str,
+}
+
+/// What was chosen in the `⋯` menu besides the actions.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct NoteMenuChoice {
+    /// "Rename", which the caller answers with the editor's title input
+    /// (M161).
+    pub rename: bool,
+    /// The [`LeadingItem`].
+    pub leading: bool,
+}
+
 /// Draws the `⋯` menu of `note` if it is open (must run every frame, right
-/// after [`trailkit_ui::controls::menu::place_next_popup`]): the same items as the row's
-/// context menu (M160). Returns whether "Rename" was chosen, which the caller
-/// answers with the editor's title input (M161).
-pub fn draw_note_menu(ui: &Ui, popup_id: &str, note: &Note, mut menu: EntryMenu<'_>) -> bool {
-    let mut rename = false;
+/// after [`trailkit_ui::controls::menu::place_next_popup`]): `leading` first,
+/// then the same items as the row's context menu (M160).
+pub fn draw_note_menu(
+    ui: &Ui,
+    popup_id: &str,
+    note: &Note,
+    leading: LeadingItem<'_>,
+    mut menu: EntryMenu<'_>,
+) -> NoteMenuChoice {
+    let mut choice = NoteMenuChoice::default();
     let theme = menu.theme;
     draw_popup(ui, theme, popup_id, || {
-        rename = draw_entry_menu_items(ui, NodeId::Note(note.id), Some(note), &mut menu);
+        choice.leading =
+            draw_menu_item_with_shortcut(ui, theme, leading.icon, leading.label, leading.shortcut);
+        draw_compact_separator(ui, theme);
+        choice.rename = draw_entry_menu_items(ui, NodeId::Note(note.id), Some(note), &mut menu);
     });
-    rename
+    choice
 }
 
 /// Draws the items of an entry's menu; one order everywhere (M160). Returns

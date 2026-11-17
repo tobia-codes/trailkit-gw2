@@ -4,26 +4,20 @@
 use super::*;
 use trailkit_memo_shared::list_filter::ListFilter;
 
-/// Focuses the search with Ctrl+F, types `query` and lets the window
-/// settle; returns the last image.
+/// Shows the search as Shift pressed twice does (M199), types `query` and
+/// lets the window settle; returns the last image.
 fn search_for(
     memo: &mut MemoWindow,
     size: [f32; 2],
     query: &str,
 ) -> trailkit_ui_testing::raster::Image {
+    memo.toggle_search_by_key();
     let mut harness = UiHarness::new(size);
     let mut draw_frame = |harness: &mut UiHarness, input: &FrameInput| {
         harness.frame(input, |ui| draw(ui, memo, size, ThemeKind::Dark))
     };
     draw_frame(&mut harness, &FrameInput::default());
-    draw_frame(
-        &mut harness,
-        &FrameInput {
-            control: true,
-            keys: vec![0x46],
-            ..FrameInput::default()
-        },
-    );
+    draw_frame(&mut harness, &FrameInput::default());
     draw_frame(&mut harness, &FrameInput::default());
     draw_frame(
         &mut harness,
@@ -105,14 +99,11 @@ fn hiding_the_search_field_clears_the_search() {
     assert!(memo.ui_state.search_visible);
 }
 
-#[test]
-fn ctrl_f_does_nothing_in_the_editor() {
-    let document = sample_document();
-    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
-    memo.apply(&WindowAction::StartEditing, Language::English);
+/// Presses Ctrl+F in a focused window showing `memo`.
+fn press_ctrl_f(memo: &mut MemoWindow) {
     let size = [640.0, 360.0];
     let mut harness = UiHarness::new(size);
-    let mut draw_frame = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
+    let mut draw_frame = |ui: &Ui| draw(ui, memo, size, ThemeKind::Dark);
     harness.step(&FrameInput::default(), &mut draw_frame);
     harness.step(
         &FrameInput {
@@ -122,11 +113,96 @@ fn ctrl_f_does_nothing_in_the_editor() {
         },
         &mut draw_frame,
     );
+    harness.step(&FrameInput::default(), &mut draw_frame);
+}
+
+#[test]
+fn ctrl_f_finds_in_the_open_note_also_in_the_editor() {
+    let document = sample_document();
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    press_ctrl_f(&mut memo);
+    assert!(memo.find.visible, "Ctrl+F opens find in the note (M198)");
+    assert!(!memo.ui_state.search_visible, "not the list search (M199)");
+    memo.close_find();
+    memo.apply(&WindowAction::StartEditing, Language::English);
+    press_ctrl_f(&mut memo);
+    assert!(memo.find.visible, "also in the editor");
+    assert!(memo.editor.is_some(), "a shortcut must not end an edit");
+}
+
+#[test]
+fn ctrl_f_does_nothing_without_an_open_note() {
+    let (mut memo, _worker, _directory) = memo_window(sample_document(), UiState::default());
+    press_ctrl_f(&mut memo);
     assert!(
-        memo.editor.is_some(),
-        "a shortcut must not end an edit (M167)"
+        !memo.find.visible,
+        "only an open note can be searched (Q513)"
     );
-    assert!(!memo.ui_state.search_visible);
+    assert!(!memo.takes_find_key(), "the game keeps the key");
+}
+
+#[test]
+fn find_steps_through_the_hits_and_wraps() {
+    let document = sample_document();
+    let shown = first_note(&document).and_then(|node| match node {
+        NodeId::Note(note) => Some(note),
+        NodeId::Group(_) => None,
+    });
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    memo.find_text("ecto");
+    memo.record_find_hits(shown, 3);
+    memo.step_find(false);
+    assert_eq!(
+        memo.find.current, 2,
+        "back from the first wraps to the last (Q505)"
+    );
+    memo.step_find(true);
+    assert_eq!(memo.find.current, 0, "on from the last wraps to the first");
+    memo.step_find(true);
+    memo.record_find_hits(shown, 1);
+    assert_eq!(
+        memo.find.current, 0,
+        "fewer hits keep the current one in range"
+    );
+    memo.find_text("zzz");
+    memo.record_find_hits(shown, 0);
+    memo.step_find(true);
+    assert_eq!(memo.find.current, 0, "without hits nothing moves");
+}
+
+#[test]
+fn find_offers_the_selection_then_the_list_search() {
+    let document = sample_document();
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    memo.search_field.text = "coins".to_owned();
+    memo.open_find();
+    assert_eq!(memo.find.field.text, "coins", "the list search (Q507)");
+    memo.close_find();
+    memo.apply(&WindowAction::StartEditing, Language::English);
+    if let Some(editor) = memo.editor.as_mut() {
+        let start = editor.body_text().find("Globs").unwrap_or(0);
+        editor.select_in_body(start..start + "Globs".len());
+    }
+    memo.open_find();
+    assert_eq!(
+        memo.find.field.text, "Globs",
+        "the editor's selection first"
+    );
+}
+
+#[test]
+fn escape_closes_the_find_bar_before_the_window() {
+    let document = sample_document();
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    memo.find_text("ecto");
+    assert!(memo.takes_escape(), "the open bar takes Escape (Q508)");
+    let size = [640.0, 360.0];
+    let mut harness = UiHarness::new(size);
+    harness.step(&FrameInput::default(), |ui| {
+        memo.handle_escape(ui);
+    });
+    assert!(!memo.find.visible);
+    assert!(!memo.takes_escape(), "the next Escape closes the window");
 }
 
 #[test]
