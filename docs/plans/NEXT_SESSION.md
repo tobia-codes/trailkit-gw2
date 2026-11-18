@@ -29,6 +29,8 @@ tests; #147 README **Packages** (R138: update with every dependency change). All
 `gem_exchange.rs`, `gw2_api.rs`. Coverage 2026-11-18 before #146: addons 89 % of lines, memo app 70 %, datagen 52 %.
 **Then test gaps:** extract and test the Escape/close logic of `nexus_bridge/render.rs` like `key_routing.rs`; window actions (new group, format,
 preview, compact view, open folder, clear search); Ctrl+Y/Ctrl+Shift+Z keys. `xtask` last. Prove new tests with injected faults.
+**Coverage tooling — open question (2026-11-18):** A `cargo xtask coverage` + docs in agent-reference/CONTRIBUTING (recommended), B docs only,
+C try `cargo-llvm-cov`; ask the user. Until then the manual steps:
 **Coverage on demand, not in CI** (`llvm-tools` installed): `RUSTFLAGS="-C instrument-coverage" CARGO_TARGET_DIR=target/coverage cargo xwin test --no-run`, run
 each binary from its crate with `LLVM_PROFILE_FILE`/`TRAILKIT_SNAPSHOT_ROOT` via `WSLENV` (`/p`), `llvm-profdata merge`, `llvm-cov export`; then delete `rust/*.profraw` and the 2.8 GB build.
 
@@ -43,8 +45,8 @@ each binary from its crate with `LLVM_PROFILE_FILE`/`TRAILKIT_SNAPSHOT_ROOT` via
 3. Last: chat translation addon feasibility (BL16, research first); then the queue below and the review items, one at a time.
 
 **Memo data model (M201–M203), implemented 2026-11-18 on `feature/memo-extensible-data-model` (phone, not deployed):** `notes.json` v2
-(`kind` → `reset_schedule`, `expanded` dropped), `collapsed_groups` in `ui_state.json`, `UnknownFields` in `trailkit-storage`. Next: deploy, in-game
-test 25, merge OK. Main-window tests only ran in the PR's Windows CI. **Open (grill):** an unknown tree node `type` (e.g. a future `guild_note`)
+(`kind` → `reset_schedule`, `expanded` dropped), `collapsed_groups` in `ui_state.json`, `UnknownFields` in `trailkit-storage`. Draft PR open (no auto-merge). On the PC: `git fetch origin && git switch feature/memo-extensible-data-model && git pull`, check the PR's Windows CI
+(snapshots), `cargo xtask deploy trailkit-memo`, in-game test 25, then merge OK. Main-window tests only ran in the PR's Windows CI. **Open (grill):** an unknown tree node `type` (e.g. a future `guild_note`)
 still makes an older build fail to load `notes.json`; `settings.json`/`ui_state.json` do not keep unknown fields (M202 covers notes only so far).
 **Decided, not scheduled:** Q340 backups with restore after settings and export/import (M28); Q329 `cargo bloat` at release prep.
 
