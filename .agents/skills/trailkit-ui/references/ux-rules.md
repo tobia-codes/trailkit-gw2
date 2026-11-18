@@ -105,6 +105,10 @@ Each rule has an id (`area-name`) so reviews can cite it.
   meanwhile: `ButtonState::Disabled { reason }`, label in `text.disabled`, no
   hover, the reason in a tooltip with a neutral `ban` icon, never `danger`
   (it is no error; R93).
+- `ix-no-disabled-buttons` — **Buttons are not disabled** unless the user
+  explicitly approved that button (R140). A button stays active and, when its
+  action cannot run, says why on click, e.g. an error at the field. A busy
+  spinner (`ix-busy-buttons`) is no exception to ask for.
 - `ix-drag-threshold` — Drag starts only after a few pixels of movement;
   show a drop indicator line between items and highlight target groups;
   Escape cancels the drag.
@@ -137,7 +141,7 @@ Each rule has an id (`area-name`) so reviews can cite it.
   discard / cancel.
 - `form-grouping` — Related settings are grouped under a section heading;
   advanced options are collapsed by default (progressive disclosure).
-- `form-disabled-why` — Disabled controls say *why* and *how to enable* them
+- `form-disabled-why` — Controls that are disabled with approval (R140) say *why* and *how to enable* them
   (tooltip or `DependencyHint`), e.g. "Requires trailkit-core".
 - `form-read-only` — Read-only values look different from disabled ones.
 - `form-secret` — Secret inputs (API key) are masked with a show/hide toggle

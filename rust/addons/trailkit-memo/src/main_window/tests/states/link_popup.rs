@@ -135,6 +135,16 @@ fn link_popup_states() {
         editing_in_long_link,
         &open_with(LINK_BUTTON),
     );
+    let mut missing = open_with(LINK_BUTTON);
+    missing.extend(wait());
+    missing.push(pressing(ENTER));
+    missing.extend(wait());
+    assert_state(
+        "link-popup-missing-address",
+        WIDE,
+        selected_editing_focused,
+        &missing,
+    );
     let mut confirm = open_with(LINK_BUTTON);
     confirm.extend(wait());
     confirm.push(pressing(ENTER));

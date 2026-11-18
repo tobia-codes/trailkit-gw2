@@ -4,7 +4,7 @@
 use nexus::imgui::{StyleVar, Ui};
 use trailkit_memo_shared::i18n::{Language, LocalizedText, text_field_texts};
 use trailkit_ui::{
-    controls::button::{Button, ButtonKind, ButtonState, draw_popup_icon_button},
+    controls::button::{Button, ButtonKind, draw_popup_icon_button},
     controls::menu::draw_popup_at,
     controls::text_field::TextField,
     text::icons::Icon,
@@ -202,7 +202,7 @@ impl LinkPopup {
             self.focus_requests.saturating_add(1)
         };
 
-        let buttons = self.draw_buttons(ui, language, theme, width, problem);
+        let buttons = self.draw_buttons(ui, language, theme, width);
         let confirmed = text.submitted || address.submitted || buttons.confirmed;
         if buttons.cancelled {
             LinkPopupOutcome::Cancelled
@@ -217,14 +217,7 @@ impl LinkPopup {
 
     /// Draws the button row: "remove link" at the left of an existing link,
     /// "Cancel" and the primary button at the right.
-    fn draw_buttons(
-        &self,
-        ui: &Ui,
-        language: Language,
-        theme: &Theme,
-        width: f32,
-        problem: Option<AddressProblem>,
-    ) -> ButtonClicks {
+    fn draw_buttons(&self, ui: &Ui, language: Language, theme: &Theme, width: f32) -> ButtonClicks {
         let start = ui.cursor_screen_pos();
         let removed = self.draft.is_existing
             && draw_popup_icon_button(
@@ -239,12 +232,7 @@ impl LinkPopup {
             EditorText::LinkInsert
         }
         .get(language);
-        let state = problem.map_or(ButtonState::Ready, |problem| ButtonState::Disabled {
-            reason: problem_text(problem).get(language),
-        });
-        let confirm = Button::new(confirm_label)
-            .kind(ButtonKind::Primary)
-            .state(state);
+        let confirm = Button::new(confirm_label).kind(ButtonKind::Primary);
         let cancel = Button::new(EditorText::LinkCancel.get(language));
         let confirm_width = confirm.measure(ui, theme);
         let cancel_width = cancel.measure(ui, theme);

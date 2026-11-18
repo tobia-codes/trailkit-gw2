@@ -130,7 +130,8 @@ Open a note and click **Edit**.
 
 1. With nothing selected click the **link button**. **Before:** `[](https://)`
    appeared in the text. **Now:** a popup with **Text (optional)** and
-   **Address** opens, the cursor is in Text, Insert is grey.
+   **Address** opens, the cursor is in Text, Insert is active. Press Enter: a red message says an
+   address is needed.
 2. Press Tab, type `wiki.guildwars2.com`, press Enter. **Expected:** the popup
    closes and `https://wiki.guildwars2.com` is in the text.
 3. Select a word, press **Ctrl+K**. **Expected:** the word is in Text and the
@@ -141,7 +142,7 @@ Open a note and click **Edit**.
    with Save and an icon at the left. Change the text and save; then open it
    again and click the icon: the link is gone, its text stays.
 6. Enter `ftp://example.com`, click into Text. **Expected:** a red message
-   with an icon below Address, the button stays grey.
+   with an icon below Address; the button stays active and does not insert.
 7. Save the note. **Expected:** the pasted `https://…` address from step 2 is
    a clickable link in the reading view.
 8. Set Nexus to Deutsch and drag the window narrow. **Expected:** the popup

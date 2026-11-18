@@ -7,8 +7,8 @@ use nexus::imgui::{StyleColor, StyleVar, Ui, WindowHoveredFlags};
 use crate::{
     drawing::draw_list::window_draw_list,
     drawing::style_scope::StyleScope,
-    text::icons::Icon,
-    text::{IconText, TextFlow, TextStyle, draw_icon_text, draw_text},
+    feedback::status_line::{Status, draw_status_line},
+    text::{TextStyle, draw_text},
     theme::Theme,
 };
 
@@ -21,6 +21,14 @@ pub struct TextFieldResponse {
     pub submitted: bool,
     /// The field has the keyboard focus.
     pub is_active: bool,
+}
+
+/// Draws `error` at the cursor as the problem of the form field above it:
+/// the `danger` icon and small text, wrapped at `width` (`form-errors`). Every
+/// form shows its field errors through here, so they look the same.
+pub fn draw_field_error(ui: &Ui, theme: &Theme, error: &str, width: f32) {
+    let _wrap = ui.push_text_wrap_pos_with_pos(ui.cursor_pos()[0] + width);
+    draw_status_line(ui, theme, Status::Danger, error, TextStyle::Small);
 }
 
 /// The texts every field shares. The addon translates them once (this crate
@@ -150,19 +158,7 @@ impl<'a> TextField<'a> {
         ui.dummy([0.0, 0.0]);
 
         if let Some(error) = self.error {
-            let _wrap = ui.push_text_wrap_pos_with_pos(ui.cursor_pos()[0] + self.width);
-            draw_icon_text(
-                ui,
-                theme,
-                &IconText {
-                    icon: Icon::CIRCLE_ALERT,
-                    icon_color: theme.status.danger,
-                    text: error,
-                    style: TextStyle::Small,
-                    text_color: Some(theme.status.danger),
-                    flow: TextFlow::Wrapped,
-                },
-            );
+            draw_field_error(ui, theme, error, self.width);
         }
         response
     }

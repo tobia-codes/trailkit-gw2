@@ -126,7 +126,8 @@ Build once, use everywhere. Planned:
   (`Ready`, `Busy` = spinner, `Disabled { reason }` = `text.disabled`
   label, no hover, reason tooltip with a neutral `ban` icon via
   `tooltip::draw_reason_tooltip`); `draw_button`, `draw_primary_button` …
-  are short forms. Icon buttons: `draw_icon_button_with_state`. Disabled
+  are short forms. Icon buttons: `draw_icon_button_with_state`. **A button
+  is only disabled with the user's explicit approval (R140).** Disabled
   menu entries use the same reason tooltip. Drive `Busy` with
   `busy::BusyState` (at least 0.6 s); on popups and toasts
   `draw_popup_icon_button` (hover on `bg.active`)
@@ -138,8 +139,8 @@ Build once, use everywhere. Planned:
   `EmptyState` (optional icon, title, hint, buttons with one primary)
 - Text field — **exists** (R139): `controls::text_field::TextField`, the
   label above the input in `TextStyle::Label`, `.optional(true)` adds the mark
-  the addon translated once (`TextFieldTexts`), plus placeholder, focus and an
-  error with icon below the field. Helper text, disabled and secret fields
+  the addon translated once (`TextFieldTexts`), plus placeholder and focus;
+  `draw_field_error` is the one look of a field error (`draw_status_line`). Helper text, disabled and secret fields
   are added with their first real use
 - Text and icons — **exist** (R96): `text::draw_text`, `draw_text_wrapped`,
   `draw_truncated_text`, `draw_icon`; borderless inputs use

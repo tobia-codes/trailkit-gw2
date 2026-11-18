@@ -54,7 +54,7 @@ Modules are grouped by concern (ROADMAP R134): `text`, `layout`, `controls`, `li
 | `controls::spinner` | `draw_spinner` — a rotating Lucide `loader-circle` for running actions (M180) | Windows |
 | `controls::dropdown` | `draw_dropdown` (themed select box: the selected content in a button, the option list with a check mark below it, M87, R71), `dropdown_width` | Windows |
 | `controls::menu` | `draw_menu_item` (Lucide check mark), `begin_submenu` (Lucide chevron, opens flush beside the parent, M98/M99) | Windows |
-| `controls::text_field` | `TextField` — a one-line input with its label above it (`TextStyle::Label`), `.optional(true)`, placeholder, focus request and error below it; shared texts come from the addon as `TextFieldTexts` (R139) | Windows |
+| `controls::text_field` | `TextField` — a one-line input with its label above it (`TextStyle::Label`), `.optional(true)`, placeholder, focus request and error below it; shared texts come from the addon as `TextFieldTexts` (R139); `draw_field_error` is the one look of a field error | Windows |
 | `controls::tooltip` | `draw_tooltip`, `draw_tooltip_with`: every tooltip, text centered by its capitals (M171) | Windows |
 | `lists::list_row` | `draw_list_row` — a full-width selectable row: truncated title (Body or BodyStrong) with tooltip, trailing text, optional detail line; trash and help topics (R96, Q305) | Windows |
 | `lists::selection_bar` | `draw_row_state` / `draw_row_state_in` — the one function for a row's hover, pressed and selection fill and the accent bar on its left edge; `hide_square_row_highlight` for the row's item (R71, Q306) | Windows |
