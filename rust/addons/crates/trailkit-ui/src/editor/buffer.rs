@@ -221,10 +221,19 @@ impl TextBuffer {
     }
 
     /// Deletes the selection, or one step in `direction` if nothing is
-    /// selected (Backspace / Delete, with Ctrl a word).
+    /// selected (Backspace / Delete, with Ctrl a word). Backspace directly
+    /// behind a list marker removes the whole marker with its indentation
+    /// and keeps the item's text (M206).
     pub fn delete(&mut self, direction: Direction, step: Step) {
         if self.has_selection() {
             self.replace(self.selection(), "", EditKind::Other);
+            return;
+        }
+        if direction == Direction::Backward
+            && step == Step::Character
+            && let Some(marker) = self.list_marker_before_cursor()
+        {
+            self.replace(marker, "", EditKind::Other);
             return;
         }
         let other_end = self.position_after(direction, step);
@@ -238,6 +247,14 @@ impl TextBuffer {
             EditKind::Other
         };
         self.replace(range, "", kind);
+    }
+
+    /// The range of the list marker that ends exactly at the cursor, if any.
+    fn list_marker_before_cursor(&self) -> Option<Range<usize>> {
+        let start = line_start(&self.text, self.cursor);
+        let line = &self.text[start..line_end(&self.text, self.cursor)];
+        let marker = list_marker(line)?;
+        (marker.text == self.text[start..self.cursor]).then_some(start..self.cursor)
     }
 
     /// Enter: inserts a line break and continues a markdown list item
@@ -582,6 +599,61 @@ mod tests {
         let mut plain = TextBuffer::new("");
         type_text(&mut plain, "text\nmore");
         assert_eq!(plain.text(), "text\nmore");
+    }
+
+    #[test]
+    fn backspace_behind_a_list_marker_removes_the_whole_marker() {
+        for (text, expected) in [
+            ("- [ ] ", ""),
+            ("- [x] item", "item"),
+            ("- [X] item", "item"),
+            ("- item", "item"),
+            ("* item", "item"),
+            ("+ item", "item"),
+            ("12. item", "item"),
+            ("  - [ ] item", "item"),
+            ("first\n- [ ] item\nlast", "first\nitem\nlast"),
+        ] {
+            let line_start = text.find('\n').map_or(0, |index| index + 1);
+            let marker_length = text[line_start..]
+                .find("item")
+                .unwrap_or(text.len() - line_start);
+            let mut buffer = TextBuffer::new(text);
+            buffer.select(line_start + marker_length, line_start + marker_length);
+            buffer.delete(Direction::Backward, Step::Character);
+            assert_eq!(buffer.text(), expected, "in {text:?}");
+            assert_eq!(buffer.cursor(), line_start, "in {text:?}");
+            assert!(buffer.undo(), "in {text:?}");
+            assert_eq!(buffer.text(), text, "in {text:?}");
+        }
+    }
+
+    #[test]
+    fn backspace_elsewhere_in_a_list_item_deletes_one_character() {
+        for (text, cursor, expected) in [
+            ("- [ ] item", 10, "- [ ] ite"),
+            ("- [ ] item", 7, "- [ ] tem"),
+            ("- [ ] item", 3, "-  ] item"),
+            ("- [", 3, "- "),
+            ("plain", 5, "plai"),
+        ] {
+            let mut buffer = TextBuffer::new(text);
+            buffer.select(cursor, cursor);
+            buffer.delete(Direction::Backward, Step::Character);
+            assert_eq!(buffer.text(), expected, "in {text:?} at {cursor}");
+        }
+    }
+
+    #[test]
+    fn delete_and_ctrl_backspace_keep_their_steps_behind_a_marker() {
+        let mut forward = TextBuffer::new("- item");
+        forward.select(2, 2);
+        forward.delete(Direction::Forward, Step::Character);
+        assert_eq!(forward.text(), "- tem");
+        let mut word = TextBuffer::new("- [ ] item");
+        word.select(6, 6);
+        word.delete(Direction::Backward, Step::Word);
+        assert!(word.text().starts_with('-'), "{:?}", word.text());
     }
 
     #[test]

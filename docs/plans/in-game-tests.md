@@ -92,3 +92,16 @@ each move.
 6. Rest on the middle of the collapsed group for about a second, without
    releasing. **Expected:** it opens, the frame stays; on release the note is
    its last entry.
+
+## Test 28 — Backspace removes a list marker (M206, 2026-11-18)
+
+No visible design change. Open a note and click **Edit**.
+
+1. Type `- [ ] ` on a new line and press Backspace once. **Before:** one
+   character went away. **Now:** the whole marker is gone.
+2. Type `- [ ] Text`, put the cursor directly before `Text`, press Backspace.
+   **Expected:** only `Text` stays; Ctrl+Z brings the marker back.
+3. Repeat with `- Text`, `1. Text` and an indented `  - [ ] Text`.
+   **Expected:** only `Text` stays, without indentation.
+4. Put the cursor inside or at the end of `Text`, press Backspace.
+   **Expected:** one character goes away, as before.
