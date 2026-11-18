@@ -1,4 +1,4 @@
-//! The link popup (M208): its snapshots and what confirming it writes.
+//! The link dialog (M208): its snapshots and what confirming it writes.
 
 use super::*;
 
@@ -110,27 +110,27 @@ fn typing_text(characters: &str) -> FrameInput {
 }
 
 #[test]
-fn link_popup_states() {
+fn link_dialog_states() {
     assert_state(
-        "link-popup",
+        "link-dialog",
         WIDE,
         selected_editing_focused,
         &open_with(LINK_BUTTON),
     );
     assert_state(
-        "link-popup-selection",
+        "link-dialog-selection",
         WIDE,
         || editing_selecting("first", None),
         &open_with(LINK_BUTTON),
     );
     assert_state(
-        "link-popup-existing",
+        "link-dialog-existing",
         WIDE,
         editing_in_link,
         &open_with(LINK_BUTTON),
     );
     assert_state(
-        "link-popup-long-address",
+        "link-dialog-long-address",
         WIDE,
         editing_in_long_link,
         &open_with(LINK_BUTTON),
@@ -140,7 +140,7 @@ fn link_popup_states() {
     missing.push(pressing(ENTER));
     missing.extend(wait());
     assert_state(
-        "link-popup-missing-address",
+        "link-dialog-missing-address",
         WIDE,
         selected_editing_focused,
         &missing,
@@ -150,21 +150,21 @@ fn link_popup_states() {
     confirm.push(pressing(ENTER));
     confirm.extend(wait());
     assert_state(
-        "link-popup-error",
+        "link-dialog-error",
         WIDE,
         editing_in_unsupported_link,
         &confirm,
     );
     assert_state_in(
         Language::German,
-        "min-de-link-popup",
+        "min-de-link-dialog",
         MINIMUM,
         selected_editing_focused,
         &open_with(MINIMUM_LINK_BUTTON),
     );
     assert_state_in(
         Language::German,
-        "min-de-link-popup-existing",
+        "min-de-link-dialog-existing",
         MINIMUM,
         editing_in_link,
         &open_with(MINIMUM_LINK_BUTTON),
@@ -172,14 +172,14 @@ fn link_popup_states() {
 }
 
 #[test]
-fn ctrl_k_opens_the_link_popup() {
+fn ctrl_k_opens_the_link_dialog() {
     let mut steps = wait();
     steps.push(FrameInput {
         control: true,
         ..pressing(KEY_K)
     });
     steps.extend(wait());
-    assert_state("link-popup-ctrl-k", WIDE, selected_editing_focused, &steps);
+    assert_state("link-dialog-ctrl-k", WIDE, selected_editing_focused, &steps);
 }
 
 #[test]

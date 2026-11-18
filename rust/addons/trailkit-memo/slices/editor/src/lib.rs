@@ -16,4 +16,4 @@ pub mod note_editing;
 #[cfg(windows)]
 pub mod editor;
 #[cfg(windows)]
-mod link_popup;
+mod link_dialog;

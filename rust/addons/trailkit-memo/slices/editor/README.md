@@ -13,9 +13,9 @@ unsaved-changes dialog, hands in the preview layout, search and chip state
 | Module | Content |
 |--------|---------|
 | `note_editing` | `EditSession` (start, from draft, changes, to draft), `FormatCommand`, `format_edit`, `ActiveFormats` — platform-independent |
-| `link_edit` | `link_draft`, `normalized_address`, `link_edit`: what the link popup starts with, accepts and writes (M208) — platform-independent |
-| `link_popup` | The popup with link text and address (Windows only, private) |
-| `editor` | `Editor` (title, body, preview cache, link popup, Ctrl+S/B/I/K), `draw_toolbar` → `ToolbarAction`, `draw` → `EditorOutput` (actions, new split, splitter released) (Windows only) |
+| `link_edit` | `link_draft`, `normalized_address`, `link_edit`: what the link dialog starts with, accepts and writes (M208) — platform-independent |
+| `link_dialog` | The centered dialog with link text and address; the app draws the dimmed window around it (Windows only, private) |
+| `editor` | `Editor` (title, body, preview cache, link dialog, Ctrl+S/B/I/K), `draw_toolbar` → `ToolbarAction`, `draw` → `EditorOutput` (actions, new split, splitter released) (Windows only) |
 | `i18n` | the slice's texts (`EditorText`, en/de) |
 
 ## Packages

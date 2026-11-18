@@ -28,6 +28,10 @@ pub enum EditorText {
     ShowPreview,
     /// Tooltip of the preview button while the preview is shown (M60).
     HidePreview,
+    /// Title of the dialog for a new link (M208).
+    LinkInsertTitle,
+    /// Title of the dialog for an existing link (M208).
+    LinkEditTitle,
     /// Label of the link text field (M208).
     LinkText,
     /// Label of the link address field (M208).
@@ -36,7 +40,7 @@ pub enum EditorText {
     LinkInsert,
     /// Button that saves a changed link (M208).
     LinkSave,
-    /// Button that closes the link popup (M208).
+    /// Button that closes the link dialog (M208).
     LinkCancel,
     /// Tooltip of the button that turns a link into plain text (M208).
     LinkRemove,
@@ -59,6 +63,8 @@ impl LocalizedText for EditorText {
         Self::InsertEventRequiresCore,
         Self::ShowPreview,
         Self::HidePreview,
+        Self::LinkInsertTitle,
+        Self::LinkEditTitle,
         Self::LinkText,
         Self::LinkAddress,
         Self::LinkInsert,
@@ -71,6 +77,10 @@ impl LocalizedText for EditorText {
 
     fn get(self, language: Language) -> &'static str {
         match (self, language) {
+            (Self::LinkInsertTitle, Language::English) => "Insert link",
+            (Self::LinkInsertTitle, Language::German) => "Link einfügen",
+            (Self::LinkEditTitle, Language::English) => "Edit link",
+            (Self::LinkEditTitle, Language::German) => "Link bearbeiten",
             (Self::LinkText, Language::English | Language::German) => "Text",
             (Self::LinkAddress, Language::English) => "Address",
             (Self::LinkAddress, Language::German) => "Adresse",

@@ -122,22 +122,22 @@ No visible design change. Open a note, click **Edit** and type
 5. Type a bare `https://wiki.guildwars2.com`, press Backspace at its end.
    **Expected:** one character goes away.
 
-## Test 30 — link popup and pasted addresses (M208, M209, 2026-11-18)
+## Test 30 — link dialog and pasted addresses (M208, M209, 2026-11-18)
 
 Approved design: https://claude.ai/artifact/SgWHJ1mMKSTArQMEVaqACm
 
 Open a note and click **Edit**.
 
 1. With nothing selected click the **link button**. **Before:** `[](https://)`
-   appeared in the text. **Now:** a popup with **Text (optional)** and
+   appeared in the text. **Now:** a dialog **Insert link**, centered over the dimmed window, with **Text (optional)** and
    **Address** opens, the cursor is in Text, Insert is active. Press Enter: a red message says an
    address is needed.
-2. Press Tab, type `wiki.guildwars2.com`, press Enter. **Expected:** the popup
+2. Press Tab, type `wiki.guildwars2.com`, press Enter. **Expected:** the dialog
    closes and `https://wiki.guildwars2.com` is in the text.
 3. Select a word, press **Ctrl+K**. **Expected:** the word is in Text and the
    cursor in Address. Type an address, press Enter: the word is now a link.
 4. Copy an `https://` address, press Ctrl+K elsewhere. **Expected:** it is
-   already in Address. Escape closes the popup, the text stays unchanged.
+   already in Address. Escape closes the dialog, the text stays unchanged.
 5. Put the cursor in a link, press Ctrl+K. **Expected:** both values are there,
    with Save and an icon at the left. Change the text and save; then open it
    again and click the icon: the link is gone, its text stays.
@@ -145,5 +145,7 @@ Open a note and click **Edit**.
    with an icon below Address; the button stays active and does not insert.
 7. Save the note. **Expected:** the pasted `https://…` address from step 2 is
    a clickable link in the reading view.
-8. Set Nexus to Deutsch and drag the window narrow. **Expected:** the popup
+8. Set Nexus to Deutsch and drag the window narrow. **Expected:** the dialog
    fits and shows **Text (optional)**, **Adresse**, **Abbrechen**, **Einfügen**.
+9. Open the dialog and click the dimmed area beside it. **Expected:** it
+   closes and the text stays unchanged.

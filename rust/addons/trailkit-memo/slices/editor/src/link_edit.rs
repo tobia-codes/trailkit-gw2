@@ -1,4 +1,4 @@
-//! What the link popup edits (memo plan M208): the link at the selection, the
+//! What the link dialog edits (memo plan M208): the link at the selection, the
 //! check of its address and the markdown it becomes. Platform-independent, so
 //! it can be unit-tested on any host (ROADMAP R23).
 
@@ -14,7 +14,7 @@ const DEFAULT_SCHEME: &str = "https://";
 /// The scheme added to an e-mail address.
 const MAIL_SCHEME: &str = "mailto:";
 
-/// The field of the link popup that gets the keyboard focus first.
+/// The field of the link dialog that gets the keyboard focus first.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LinkField {
     /// The link text.
@@ -23,7 +23,7 @@ pub enum LinkField {
     Address,
 }
 
-/// The starting values of the link popup.
+/// The starting values of the link dialog.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LinkDraft {
     /// The part of the body the link replaces.

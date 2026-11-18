@@ -38,24 +38,6 @@ pub fn draw_popup(ui: &Ui, theme: &Theme, id: &str, content: impl FnOnce()) {
     draw_fitted_popup(ui, theme, id, content);
 }
 
-/// Draws the popup `id` if it is open with its top-left corner at the screen
-/// `position`, as wide as `content`.
-pub fn draw_popup_at(ui: &Ui, theme: &Theme, id: &str, position: [f32; 2], content: impl FnOnce()) {
-    // SAFETY: a plain ImGui call on the render thread inside a frame; it only
-    // places the next window.
-    unsafe {
-        nexus::imgui::sys::igSetNextWindowPos(
-            nexus::imgui::sys::ImVec2 {
-                x: position[0],
-                y: position[1],
-            },
-            nexus::imgui::Condition::Always as i32,
-            nexus::imgui::sys::ImVec2 { x: 0.0, y: 0.0 },
-        );
-    }
-    draw_fitted_popup(ui, theme, id, content);
-}
-
 /// Draws the popup `id` if it is open, as wide as its rows, e.g. a dropdown's
 /// options. Every popup goes through here: the style gives its rows their room
 /// (memo M177), and ImGui's own square row highlight is hidden, as the entries

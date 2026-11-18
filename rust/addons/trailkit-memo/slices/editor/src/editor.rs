@@ -30,8 +30,8 @@ use trailkit_ui::{
 
 use crate::{
     i18n::EditorText,
+    link_dialog::{LinkDialog, LinkDialogOutcome},
     link_edit::{link_draft, link_edit},
-    link_popup::{LinkPopup, LinkPopupOutcome, LinkPopupPlace},
     note_editing::{ActiveFormats, EditSession, FormatCommand, active_formats, format_edit},
 };
 
@@ -174,10 +174,10 @@ pub struct Editor {
     active: Option<(u64, Range<usize>, ActiveFormats)>,
     /// Find hits in the body while the find bar is open (M198).
     find: Option<BodyFind>,
-    /// The open link popup (M208).
-    link_popup: Option<LinkPopup>,
-    /// Whether the link popup opens in the next drawn frame.
-    link_popup_requested: bool,
+    /// The open link dialog (M208).
+    link_dialog: Option<LinkDialog>,
+    /// Whether the link dialog opens in the next drawn frame.
+    link_dialog_requested: bool,
 }
 
 /// Find hits in the body, cached per text revision and phrase (M198).
@@ -206,8 +206,8 @@ impl Editor {
             title_focus_pending: false,
             active: None,
             find: None,
-            link_popup: None,
-            link_popup_requested: false,
+            link_dialog: None,
+            link_dialog_requested: false,
         }
     }
 
@@ -324,7 +324,7 @@ impl Editor {
     /// link command opens the link popup instead (M208).
     pub fn format(&mut self, command: FormatCommand) {
         if command == FormatCommand::Link {
-            self.link_popup_requested = true;
+            self.link_dialog_requested = true;
             return;
         }
         let edit = format_edit(self.body.text(), self.body.selection(), command);
@@ -493,9 +493,7 @@ impl Editor {
                 self.format(FormatCommand::Link);
             }
         }
-        let area_min = ui.window_pos();
-        let window_size = ui.window_size();
-        let area_max = [area_min[0] + window_size[0], area_min[1] + window_size[1]];
+        self.update_link_dialog(ui, input.is_dialog_open);
         // Preview (M60, M72): editor and preview always stay side by side,
         // however narrow; the minimum only keeps the splitter usable.
         let available = ui.content_region_avail()[0];
@@ -547,70 +545,66 @@ impl Editor {
                 }
             });
         }
-        self.draw_link_popup(
-            ui,
-            language,
-            theme,
-            input.is_dialog_open,
-            [area_min, area_max],
-        );
         output
     }
 
-    /// Opens the link popup if asked to, draws it and applies its result
-    /// (M208). A dialog over the editor closes it.
-    fn draw_link_popup(
-        &mut self,
-        ui: &Ui,
-        language: Language,
-        theme: &Theme,
-        is_dialog_open: bool,
-        [area_min, area_max]: [[f32; 2]; 2],
-    ) {
-        if std::mem::take(&mut self.link_popup_requested) && !is_dialog_open {
+    /// Opens the link dialog if asked to and keeps the keyboard away from the
+    /// body while it is open; a dialog of the app closes it (M208).
+    fn update_link_dialog(&mut self, ui: &Ui, is_dialog_open: bool) {
+        if std::mem::take(&mut self.link_dialog_requested) && !is_dialog_open {
             let clipboard = ui.clipboard_text();
             let draft = link_draft(
                 self.body.text(),
                 self.body.selection(),
                 clipboard.as_deref(),
             );
-            self.link_popup = Some(LinkPopup::new(draft));
+            self.link_dialog = Some(LinkDialog::new(draft));
         }
-        let Some(popup) = self.link_popup.as_mut() else {
+        if is_dialog_open {
+            self.link_dialog = None;
+        } else if self.link_dialog.is_some() {
+            self.body.unfocus();
+        }
+    }
+
+    /// Whether the link dialog is open.
+    #[must_use]
+    pub const fn is_link_dialog_open(&self) -> bool {
+        self.link_dialog.is_some()
+    }
+
+    /// Closes the link dialog without a change and returns to the body.
+    pub fn cancel_link_dialog(&mut self) {
+        if self.link_dialog.take().is_some() {
+            self.body.focus();
+        }
+    }
+
+    /// Draws the open link dialog into the current, dimmed window and applies
+    /// its result.
+    pub fn draw_link_dialog(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+        let Some(dialog) = self.link_dialog.as_mut() else {
             return;
         };
-        self.body.unfocus();
-        let place = LinkPopupPlace {
-            cursor: self.body.cursor_position().unwrap_or(area_min),
-            line_height: self.body.line_height(),
-            area_min,
-            area_max,
-        };
-        let outcome = if is_dialog_open {
-            LinkPopupOutcome::Cancelled
-        } else {
-            popup.draw(ui, language, theme, place)
-        };
+        let outcome = dialog.draw(ui, language, theme);
         let edit = match &outcome {
-            LinkPopupOutcome::Open => return,
-            LinkPopupOutcome::Cancelled => None,
-            LinkPopupOutcome::Submitted { text, address } => {
-                Some(link_edit(popup.draft(), text, address))
+            LinkDialogOutcome::Open => return,
+            LinkDialogOutcome::Cancelled => None,
+            LinkDialogOutcome::Submitted { text, address } => {
+                Some(link_edit(dialog.draft(), text, address))
             }
-            LinkPopupOutcome::Removed => Some(format_edit(
+            LinkDialogOutcome::Removed => Some(format_edit(
                 self.body.text(),
-                popup.draft().range.clone(),
+                dialog.draft().range.clone(),
                 FormatCommand::Link,
             )),
         };
-        self.link_popup = None;
+        self.link_dialog = None;
         if let Some(edit) = edit {
             self.body
                 .apply_edit(edit.range, &edit.replacement, edit.selection);
             self.sync_body();
         }
-        if !is_dialog_open {
-            self.body.focus();
-        }
+        self.body.focus();
     }
 }

@@ -1,6 +1,8 @@
-//! Feedback to the user: toasts, status cards and status lines
+//! Feedback to the user: dialog cards, toasts, status cards and status lines
 //! (ROADMAP R134).
 
+#[cfg(windows)]
+pub mod dialog_frame;
 #[cfg(windows)]
 pub mod status_card;
 #[cfg(windows)]

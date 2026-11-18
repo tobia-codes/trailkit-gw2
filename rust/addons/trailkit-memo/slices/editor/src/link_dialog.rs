@@ -1,13 +1,15 @@
-//! The popup that inserts or edits a link (memo plan M208): text and address
-//! in labelled fields, opened from the link button and Ctrl+K.
+//! The dialog that inserts or edits a link (memo plan M208): text and address
+//! in labelled fields on a card centered in the dimmed window, opened from the
+//! link button and Ctrl+K. The app draws the dimmed window around it.
 
-use nexus::imgui::{StyleVar, Ui};
+use nexus::imgui::{Key, MouseButton, StyleVar, Ui};
 use trailkit_memo_shared::i18n::{Language, LocalizedText, text_field_texts};
 use trailkit_ui::{
     controls::button::{Button, ButtonKind, draw_popup_icon_button},
-    controls::menu::draw_popup_at,
     controls::text_field::TextField,
+    feedback::dialog_frame::draw_dialog_frame,
     text::icons::Icon,
+    text::{TextStyle, draw_text_wrapped},
     theme::Theme,
 };
 
@@ -16,38 +18,25 @@ use crate::{
     link_edit::{AddressProblem, LinkDraft, LinkField, normalized_address},
 };
 
-/// ImGui id of the popup.
-const POPUP_ID: &str = "##link_popup";
-
 /// Placeholder of the address field.
 const ADDRESS_PLACEHOLDER: &str = "https://";
 
-/// Width of the popup in multiples of the font size.
-const WIDTH_IN_FONT_SIZES: f32 = 27.0;
+/// Width of the fields in multiples of the font size.
+const CONTENT_WIDTH_IN_FONT_SIZES: f32 = 24.0;
 
-/// Height assumed for placing the popup until it was drawn once.
-const FIRST_HEIGHT_IN_FONT_SIZES: f32 = 13.0;
+/// The largest share of the window width the card may take.
+const MAXIMUM_WINDOW_FRACTION: f32 = 0.9;
+
+/// Height assumed for the card until it was drawn once.
+const FIRST_HEIGHT_IN_FONT_SIZES: f32 = 15.0;
 
 /// How many frames a field asks for the keyboard focus; ImGui may drop a
-/// request while the popup appears.
+/// request while the dialog appears.
 const MAX_FOCUS_REQUESTS: u8 = 4;
 
-/// Where the popup goes, in screen coordinates.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub(crate) struct LinkPopupPlace {
-    /// Top-left corner of the cursor.
-    pub(crate) cursor: [f32; 2],
-    /// Height of the cursor's line.
-    pub(crate) line_height: f32,
-    /// Top-left corner of the area the popup stays in.
-    pub(crate) area_min: [f32; 2],
-    /// Bottom-right corner of that area.
-    pub(crate) area_max: [f32; 2],
-}
-
-/// How the popup ended, if it did.
+/// How the dialog ended, if it did.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum LinkPopupOutcome {
+pub(crate) enum LinkDialogOutcome {
     /// It stays open.
     Open,
     /// It was closed without a change.
@@ -63,9 +52,9 @@ pub(crate) enum LinkPopupOutcome {
     Removed,
 }
 
-/// The open link popup.
+/// The open link dialog.
 #[derive(Debug)]
-pub(crate) struct LinkPopup {
+pub(crate) struct LinkDialog {
     /// What it was opened for.
     draft: LinkDraft,
     /// The edited link text.
@@ -80,14 +69,12 @@ pub(crate) struct LinkPopup {
     is_address_active: bool,
     /// Whether the user tried to confirm, so a missing address is shown.
     confirm_attempted: bool,
-    /// Whether ImGui was told to open the popup.
-    is_opened: bool,
-    /// Height of the popup in the last frame.
+    /// Height of the card in the last frame.
     height: Option<f32>,
 }
 
-impl LinkPopup {
-    /// A popup with the values of `draft`.
+impl LinkDialog {
+    /// A dialog with the values of `draft`.
     pub(crate) fn new(draft: LinkDraft) -> Self {
         Self {
             text: draft.text.clone(),
@@ -97,74 +84,65 @@ impl LinkPopup {
             focus_requests: 0,
             is_address_active: false,
             confirm_attempted: false,
-            is_opened: false,
             height: None,
         }
     }
 
-    /// What the popup was opened for.
+    /// What the dialog was opened for.
     pub(crate) const fn draft(&self) -> &LinkDraft {
         &self.draft
     }
 
-    /// Draws the popup beside the cursor: above its line if there is room,
-    /// else below it. Closing it by a click outside or Escape cancels.
-    pub(crate) fn draw(
-        &mut self,
-        ui: &Ui,
-        language: Language,
-        theme: &Theme,
-        place: LinkPopupPlace,
-    ) -> LinkPopupOutcome {
-        if !self.is_opened {
-            ui.open_popup(POPUP_ID);
-            self.is_opened = true;
-        }
+    /// Draws the card centered in the current window. Escape or a click on
+    /// the dimmed area cancels.
+    pub(crate) fn draw(&mut self, ui: &Ui, language: Language, theme: &Theme) -> LinkDialogOutcome {
         let font_size = ui.current_font_size();
-        let margin = theme.spacing.small;
-        let padding = theme.menu.padding + theme.menu.row_padding_x;
-        let room = (place.area_max[0] - place.area_min[0] - 2.0 * margin).max(1.0);
-        let width = (font_size * WIDTH_IN_FONT_SIZES).min(room);
+        let padding = theme.spacing.large;
+        let window_width = ui.window_size()[0];
+        let width = (font_size * CONTENT_WIDTH_IN_FONT_SIZES)
+            .min(window_width * MAXIMUM_WINDOW_FRACTION - 2.0 * padding)
+            .max(1.0);
         let height = self
             .height
             .unwrap_or(font_size * FIRST_HEIGHT_IN_FONT_SIZES);
-        let left = place.area_min[0] + margin;
-        let top = place.area_min[1] + margin;
-        let x = place.cursor[0].clamp(left, (place.area_max[0] - margin - width).max(left));
-        let above = place.cursor[1] - theme.spacing.extra_small - height;
-        let y = if above >= top {
-            above
-        } else {
-            (place.cursor[1] + place.line_height + theme.spacing.extra_small)
-                .min((place.area_max[1] - margin - height).max(top))
-        };
+        let frame = draw_dialog_frame(ui, theme, [width + 2.0 * padding, height]);
+        let spacing = theme.spacing.small;
+        let _spacing = ui.push_style_var(StyleVar::ItemSpacing([spacing, spacing]));
+        ui.set_cursor_screen_pos([frame.min[0] + padding, frame.min[1] + padding]);
+        let mut outcome = LinkDialogOutcome::Open;
+        ui.group(|| outcome = self.draw_content(ui, language, theme, width));
+        self.height = Some(ui.item_rect_max()[1] - frame.min[1] + padding);
 
-        let mut outcome = LinkPopupOutcome::Cancelled;
-        draw_popup_at(ui, theme, POPUP_ID, [x, y], || {
-            self.height = Some(ui.window_size()[1]);
-            outcome = self.draw_content(ui, language, theme, (width - 2.0 * padding).max(1.0));
-            if outcome != LinkPopupOutcome::Open {
-                ui.close_current_popup();
-            }
-        });
-        outcome
+        let is_backdrop_click = !frame.contains(ui.io().mouse_pos)
+            && ui.is_window_hovered()
+            && ui.is_mouse_clicked(MouseButton::Left);
+        if ui.is_key_pressed(Key::Escape) || is_backdrop_click {
+            LinkDialogOutcome::Cancelled
+        } else {
+            outcome
+        }
     }
 
-    /// Draws the fields and buttons, `width` wide.
+    /// Draws the title, the fields and the buttons, `width` wide.
     fn draw_content(
         &mut self,
         ui: &Ui,
         language: Language,
         theme: &Theme,
         width: f32,
-    ) -> LinkPopupOutcome {
-        let _spacing = ui.push_style_var(StyleVar::ItemSpacing([
-            theme.spacing.small,
-            theme.spacing.small,
-        ]));
+    ) -> LinkDialogOutcome {
+        let title = if self.draft.is_existing {
+            EditorText::LinkEditTitle
+        } else {
+            EditorText::LinkInsertTitle
+        };
+        {
+            let _wrap = ui.push_text_wrap_pos_with_pos(ui.cursor_pos()[0] + width);
+            draw_text_wrapped(ui, theme, TextStyle::Heading3, title.get(language));
+        }
         let wanted = (self.focus_requests < MAX_FOCUS_REQUESTS).then_some(self.focus);
-        let problem = normalized_address(&self.address).err();
-        let error = problem
+        let error = normalized_address(&self.address)
+            .err()
             .filter(|problem| {
                 self.confirm_attempted
                     || (*problem == AddressProblem::Unsupported && !self.is_address_active)
@@ -203,15 +181,14 @@ impl LinkPopup {
         };
 
         let buttons = self.draw_buttons(ui, language, theme, width);
-        let confirmed = text.submitted || address.submitted || buttons.confirmed;
         if buttons.cancelled {
-            LinkPopupOutcome::Cancelled
+            LinkDialogOutcome::Cancelled
         } else if buttons.removed {
-            LinkPopupOutcome::Removed
-        } else if confirmed {
+            LinkDialogOutcome::Removed
+        } else if text.submitted || address.submitted || buttons.confirmed {
             self.confirm()
         } else {
-            LinkPopupOutcome::Open
+            LinkDialogOutcome::Open
         }
     }
 
@@ -249,9 +226,9 @@ impl LinkPopup {
     }
 
     /// Accepts a usable address; otherwise shows why and returns to its field.
-    fn confirm(&mut self) -> LinkPopupOutcome {
+    fn confirm(&mut self) -> LinkDialogOutcome {
         match normalized_address(&self.address) {
-            Ok(address) => LinkPopupOutcome::Submitted {
+            Ok(address) => LinkDialogOutcome::Submitted {
                 text: self.text.clone(),
                 address,
             },
@@ -259,7 +236,7 @@ impl LinkPopup {
                 self.confirm_attempted = true;
                 self.focus = LinkField::Address;
                 self.focus_requests = 0;
-                LinkPopupOutcome::Open
+                LinkDialogOutcome::Open
             }
         }
     }

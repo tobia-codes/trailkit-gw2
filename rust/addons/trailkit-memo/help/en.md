@@ -71,7 +71,7 @@ You write notes in markdown, with buttons for the formatting.
 
 ### The editor
 
-Click **Edit** at the top right of a note, or double-click the note. You edit the title and the text in markdown; the buttons in the bar above (in groups, like in Word) insert headings (H1, H2 — clicking the other level switches it, the same level removes it), **bold**, *italic*, lists and checkboxes (also **Ctrl+B** and **Ctrl+I**); clicking a button again removes the formatting. The link button or **Ctrl+K** opens a small window for the link's text and address. Buttons of the formatting at the cursor light up. The event button needs trailkit-core.
+Click **Edit** at the top right of a note, or double-click the note. You edit the title and the text in markdown; the buttons in the bar above (in groups, like in Word) insert headings (H1, H2 — clicking the other level switches it, the same level removes it), **bold**, *italic*, lists and checkboxes (also **Ctrl+B** and **Ctrl+I**); clicking a button again removes the formatting. The link button or **Ctrl+K** opens a small dialog for the link's text and address. Buttons of the formatting at the cursor light up. The event button needs trailkit-core.
 
 - The **eye** button shows a preview of the formatted note next to the text; drag the gap between them to change the widths. memo remembers both.
 - **While you edit** the note list makes way for the editor and comes back when you save or cancel. If you had hidden it yourself, it stays hidden. Click into the game to use the chat or your keys; click into the text to go on writing.

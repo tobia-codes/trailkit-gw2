@@ -6,9 +6,9 @@ pub(super) mod closing;
 pub(super) mod save_status;
 
 use nexus::imgui::{Condition, Key, MouseButton, StyleColor, StyleVar, Ui, Window, WindowFlags};
-use trailkit_ui::drawing::draw_list::window_draw_list;
 use trailkit_ui::{
     controls::button::{Button, ButtonKind, ButtonState},
+    feedback::dialog_frame::draw_dialog_frame,
     feedback::status_card::{CardDetail, CardStatus, StatusCard, draw_status_card},
     feedback::status_line::{Status, draw_status_line},
     text::font_registry::FontScope,
@@ -175,22 +175,8 @@ pub(super) fn draw_dialog_card(
     let stacked = row_width > content_width;
     let width = content_width + 2.0 * padding;
     let height = last_height.unwrap_or(window_size[1] / 3.0);
-    let min = [
-        window_position[0] + ((window_size[0] - width) / 2.0).max(0.0),
-        window_position[1] + ((window_size[1] - height) / 2.0).max(0.0),
-    ];
-    let max = [min[0] + width, min[1] + height];
-    let draw_list = window_draw_list(ui);
-    draw_list
-        .add_rect(min, max, theme.surface.panel.to_array())
-        .filled(true)
-        .rounding(theme.radius.large)
-        .build();
-    draw_list
-        .add_rect(min, max, theme.border.subtle.to_array())
-        .thickness(theme.border.width.max(1.0))
-        .rounding(theme.radius.large)
-        .build();
+    let frame = draw_dialog_frame(ui, theme, [width, height]);
+    let (min, max) = (frame.min, frame.max);
     let left = min[0] + padding;
     ui.set_cursor_screen_pos([left, min[1] + padding]);
     {
@@ -432,28 +418,21 @@ impl MemoWindow {
             confirmation_dialog(confirmation, language)
         } else {
             self.dialog_height = None;
+            self.draw_link_dialog(ui, language, theme);
             return;
         };
-        let _body_font = FontScope::push(ui, FontRole::Body);
         let Some(window_rect) = self.window_rect else {
             return;
         };
-        let _background =
-            ui.push_style_color(StyleColor::WindowBg, theme.surface.modal_overlay.to_array());
-        let _border = ui.push_style_var(StyleVar::WindowBorderSize(0.0));
         let mut answer = None;
         let mut measured = self.dialog_height;
-        Window::new("###trailkit-memo-dialog")
-            .position(window_rect[0], Condition::Always)
-            .size(window_rect[1], Condition::Always)
-            .flags(
-                WindowFlags::NO_DECORATION
-                    | WindowFlags::NO_MOVE
-                    | WindowFlags::NO_SAVED_SETTINGS
-                    | WindowFlags::NO_NAV,
-            )
-            .focused(self.window_focused)
-            .build(ui, || {
+        draw_dimmed_window(
+            ui,
+            theme,
+            "###trailkit-memo-dialog",
+            window_rect,
+            self.window_focused,
+            || {
                 let card = draw_dialog_card(ui, theme, &content, measured);
                 measured = Some(card.height);
                 answer = card.answer;
@@ -469,10 +448,64 @@ impl MemoWindow {
                 {
                     answer = Some(content.escape.clone());
                 }
-            });
+            },
+        );
         self.dialog_height = measured;
         if let Some(answer) = answer {
             self.apply(&answer, language);
         }
     }
+
+    /// Draws the link dialog of the editor, if open, over the dimmed window
+    /// like the other dialogs (M208).
+    fn draw_link_dialog(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+        let Some(window_rect) = self.window_rect else {
+            return;
+        };
+        let is_focused = self.window_focused;
+        let Some(editor) = self
+            .editor
+            .as_mut()
+            .filter(|editor| editor.is_link_dialog_open())
+        else {
+            return;
+        };
+        draw_dimmed_window(
+            ui,
+            theme,
+            "###trailkit-memo-link-dialog",
+            window_rect,
+            is_focused,
+            || editor.draw_link_dialog(ui, language, theme),
+        );
+    }
+}
+
+/// Draws `content` in a borderless window exactly over the main window at
+/// `window_rect` (position and size), dimming only that window
+/// (`overlay-dialog-scope`). `is_focused` brings it back to the front when the
+/// main window was clicked.
+fn draw_dimmed_window(
+    ui: &Ui,
+    theme: &Theme,
+    id: &str,
+    window_rect: [[f32; 2]; 2],
+    is_focused: bool,
+    content: impl FnOnce(),
+) {
+    let _body_font = FontScope::push(ui, FontRole::Body);
+    let _background =
+        ui.push_style_color(StyleColor::WindowBg, theme.surface.modal_overlay.to_array());
+    let _border = ui.push_style_var(StyleVar::WindowBorderSize(0.0));
+    Window::new(id)
+        .position(window_rect[0], Condition::Always)
+        .size(window_rect[1], Condition::Always)
+        .flags(
+            WindowFlags::NO_DECORATION
+                | WindowFlags::NO_MOVE
+                | WindowFlags::NO_SAVED_SETTINGS
+                | WindowFlags::NO_NAV,
+        )
+        .focused(is_focused)
+        .build(ui, content);
 }
