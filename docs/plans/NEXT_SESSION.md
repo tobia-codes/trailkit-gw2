@@ -23,13 +23,13 @@ the upstream (narrow fetch refspec): set `branch.<b>.remote/merge` by hand for t
 **On the Mac (no game, no WSL):** `git fetch origin && git switch develop && git pull --ff-only`; deploy, `ui-test` and in-game
 tests wait for the Windows PC; check `source ~/.cargo/env` and a first `cargo test` there; snapshots via the PR's Windows CI.
 
-**Session 43 (2026-11-18, PC):** find in note and Shift twice merged (#145, M198, M199); data-safety tests and the stopped-worker fix follow on
-`chore/memo-data-safety-tests`. **Next:** README rule (Q514, option A): every project README says which own and external packages it uses directly,
-what each does and why; update `AGENTS.md`, `CONTRIBUTING.md` and the outline; no CI check unless asked. Then pipeline coverage gaps, then favorites.
+**Session 43 (2026-11-18, PC):** find in note and Shift twice (#145), data-safety tests and stopped-worker fix (#146) merged; all in-game tests passed.
+README package rule R138 is on `chore/readme-packages`. **Next:** pipeline coverage gaps and its two known bugs, then the favorites grilling.
+Coverage needs `llvm-tools` (installed); run it on demand, not in CI. `trailkit-memo` declares unused `serde` and `uuid`.
 Favorites grilling (`feature/memo-favorites`, M188–M191 decided): open Q407, Q408, Q416–Q419 in trailkit-memo.md.
 
 **Open, in this order:**
-1. **In-game test 11** ([`in-game-tests.md`](in-game-tests.md)) whenever the user is at the PC; deploy `develop` first.
+1. **In-game tests:** none open ([`in-game-tests.md`](in-game-tests.md)).
    **Session 40 (2026-11-16):** tests 4, 5, 9, 12–17 OK; stuck rename fixed (#134). Q436 (menu divider) open. Q437–Q443 settled:
    violet accent R124, red fill R125, chips R126, calendar icons M193 on `feature/violet-accent` (deployed, test 18).
    **Session 39 (2026-11-15):** wishes of 2026-11-14 settled as ROADMAP R114–R123 (Q420–Q435; memo M192) on
@@ -54,7 +54,7 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M200+, R138+, B45+, BL19+, questions from 515**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M200+, R139+, B45+, BL19+, questions from 515**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
 1. **Storage failures:** done (memo M180, 2026-11-10).

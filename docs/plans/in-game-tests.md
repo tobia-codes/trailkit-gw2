@@ -25,19 +25,5 @@ is ready when the user is back at the PC.
    (corrected 2026-11-17). German: set the
    Nexus language to Deutsch; "narrow" means dragging the window's
    bottom-right corner as far left as it goes.
-5. Reload memo (test 11): Nexus menu › Addons › trailkit-memo › unload,
+5. Reload memo: Nexus menu › Addons › trailkit-memo › unload,
    then load again.
-
-## Branch `feature/crash-protection` (R104, merged)
-
-### 11 · Draft rescue after a panic
-
-- **Get there:** `cargo xtask deploy trailkit-memo --features fault-injection`;
-  in Nexus › Options › Keybinds bind `trailkit.memo.keybind.fault_injection`;
-  select a note › Edit › type a letter › press the key.
-- **Look at:** the help window, then after reloading memo (Setup 5) the note,
-  then the newest log in `<GW2>/addons/trailkit/logs/memo/`.
-- **Before:** a panic could crash the game.
-- **Now:** memo stops and opens the help on "Report a problem"; after the
-  reload the typed text is back as a **draft** (yellow card, test 7); the
-  log contains **`draft=kept`**. Then deploy a normal build again (Setup 1).

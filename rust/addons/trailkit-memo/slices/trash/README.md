@@ -17,6 +17,17 @@ because the app applies them to the note tree.
 | `labels` | formatted texts: days left, info line, dialog questions, toast message |
 | `i18n` | the slice's texts (`TrashText`, en/de), including the delete dialogs and the undo toast |
 
+## Packages
+
+The packages this project uses directly.
+
+| Package | Type | What it does | Why it is used here |
+|---------|------|--------------|---------------------|
+| [`trailkit-memo-shared`](../../shared/README.md) | own | Note tree, settings, drafts, undo, storage worker and texts shared by memo. | Uses memo's note types, texts and settings. |
+| [`trailkit-ui`](../../../crates/trailkit-ui/README.md) | own, Windows only | Theme, fonts and shared ImGui components. | Uses the shared theme, text and controls. |
+| `jiff` | external | Date, time and time-zone types. | Shows how long ago entries were deleted. |
+| `nexus` | external, Windows only | Rust bindings for the Raidcore Nexus addon API and its ImGui. | Draws its interface with ImGui. |
+
 ## Build and test
 
 Built as part of the addon (`cargo xtask deploy trailkit-memo`). Texts and

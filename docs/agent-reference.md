@@ -53,11 +53,14 @@ has nothing to say is left out, slices stay short:
    go stale. Behavior is described in the plan, the help page and the code.
 3. **Contents**: modules, files or sub-projects, each with one line; a parent
    README links every child README (checked by a test).
-4. **Build and test**: the exact commands.
-5. **Usage** or **API**: how to run it or how other code uses it.
-6. **Rules**: what applies to this part only (allowed dependencies, threading,
+4. **Packages** (R138): every own and external package the project uses
+   directly, with its type, what it does and why this project uses it. Update
+   it in the same change as the dependency.
+5. **Build and test**: the exact commands.
+6. **Usage** or **API**: how to run it or how other code uses it.
+7. **Rules**: what applies to this part only (allowed dependencies, threading,
    what does not belong here), linking `CONTRIBUTING.md` for general rules.
-7. **Links**: plans, decisions, upstream docs.
+8. **Links**: plans, decisions, upstream docs.
 
 ## Development environment
 

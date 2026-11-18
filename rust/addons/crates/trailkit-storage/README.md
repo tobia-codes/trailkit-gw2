@@ -16,6 +16,19 @@ append-only log file of [`trailkit-log`](../trailkit-log/README.md), which uses
 | `trailkit_directory` | `TrailkitDirectory`, `AddonName`: the shared `trailkit/{<addon>,shared,logs}/` folders (R92) |
 | `file_name` | `FileName`: a path shown as its file name only, for log lines |
 
+## Packages
+
+The packages this project uses directly.
+
+| Package | Type | What it does | Why it is used here |
+|---------|------|--------------|---------------------|
+| `jiff` | external | Date, time and time-zone types. | Dates backups and decides when they expire. |
+| `log` | external | Common logging interface for Rust crates. | Reports cleanup problems without failing a save. |
+| `serde` | external | Framework for serializing and deserializing Rust types. | Lets each addon define its stored document types. |
+| `serde_json` | external | JSON support for `serde`. | Stores documents as readable JSON. |
+| `thiserror` | external | Derives typed error enums. | Gives callers precise storage errors. |
+| `tempfile` | external, tests only | Creates temporary files and folders. | Gives tests isolated folders. |
+
 ## What it does
 
 | Concern | Behavior |

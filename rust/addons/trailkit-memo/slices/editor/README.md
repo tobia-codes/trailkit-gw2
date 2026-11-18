@@ -16,6 +16,17 @@ unsaved-changes dialog, hands in the preview layout, search and chip state
 | `editor` | `Editor` (title, body, preview cache, Ctrl+S/B/I), `draw_toolbar` → `ToolbarAction`, `draw` → `EditorOutput` (actions, new split, splitter released) (Windows only) |
 | `i18n` | the slice's texts (`EditorText`, en/de) |
 
+## Packages
+
+The packages this project uses directly.
+
+| Package | Type | What it does | Why it is used here |
+|---------|------|--------------|---------------------|
+| [`trailkit-memo-shared`](../../shared/README.md) | own | Note tree, settings, drafts, undo, storage worker and texts shared by memo. | Uses memo's note types, texts and settings. |
+| [`trailkit-ui`](../../../crates/trailkit-ui/README.md) | own | Theme, fonts and shared ImGui components. | Provides the text editor, Markdown view and controls. |
+| `jiff` | external | Date, time and time-zone types. | Stamps saved notes and drafts. |
+| `nexus` | external, Windows only | Rust bindings for the Raidcore Nexus addon API and its ImGui. | Draws its interface with ImGui. |
+
 ## Build and test
 
 Built as part of the addon (`cargo xtask deploy trailkit-memo`). Edit

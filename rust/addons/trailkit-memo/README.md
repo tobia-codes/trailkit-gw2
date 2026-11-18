@@ -66,6 +66,34 @@ this module rewritten.
 | `help/{en,de}.md` | in-game help page source; updated with every user-visible change (rule 6) |
 | `package.json` | version placeholder for Changesets (R16) |
 
+## Packages
+
+The packages this project uses directly.
+
+| Package | Type | What it does | Why it is used here |
+|---------|------|--------------|---------------------|
+| [`trailkit-log`](../crates/trailkit-log/README.md) | own | Local log files and the log export of the addons. | Starts logging and builds the log export. |
+| [`trailkit-memo-drafts`](slices/drafts/README.md) | own | Draft card and draft overview. | Adds the draft interface. |
+| [`trailkit-memo-editor`](slices/editor/README.md) | own | Edit session, Markdown formatting and editor view. | Adds note editing. |
+| [`trailkit-memo-note-list`](slices/note-list/README.md) | own | Note tree rows, rename, menus and drag and drop. | Adds the note list. |
+| [`trailkit-memo-note-view`](slices/note-view/README.md) | own | Reading view of the selected note. | Adds the reading view. |
+| [`trailkit-memo-reset-schedule`](slices/reset-schedule/README.md) | own | Daily and weekly reset rules and their controls. | Adds note resets. |
+| [`trailkit-memo-search`](slices/search/README.md) | own | Note search, search field and find bar. | Adds both searches. |
+| [`trailkit-memo-shared`](shared/README.md) | own | Note tree, settings, drafts, undo, storage worker and texts shared by memo. | Holds the data and services the app connects. |
+| [`trailkit-memo-trash`](slices/trash/README.md) | own | Trash list, preview and labels. | Adds the trash. |
+| [`trailkit-nexus-bridge`](../crates/trailkit-nexus-bridge/README.md) | own, Windows only | Nexus helpers shared by the addons, such as font registration. | Registers the shared fonts. |
+| [`trailkit-storage`](../crates/trailkit-storage/README.md) | own | Versioned, crash-safe JSON files. | Locates and describes memo's stored files. |
+| [`trailkit-ui`](../crates/trailkit-ui/README.md) | own | Theme, fonts and shared ImGui components. | Provides the window theme and components. |
+| `jiff` | external | Date, time and time-zone types. | Handles current time, resets and trash dates in the window. |
+| `log` | external | Common logging interface for Rust crates. | Writes memo's log events. |
+| `nexus` | external, Windows only | Rust bindings for the Raidcore Nexus addon API and its ImGui. | Connects the addon to Nexus and draws its windows. |
+| `serde` | external | Framework for serializing and deserializing Rust types. | Currently not used directly by this crate; candidate for removal. |
+| `uuid` | external | Generates and stores UUIDs. | Currently not used directly by this crate; candidate for removal. |
+| `windows` | external, Windows only | Official Rust bindings for Windows APIs. | Catches window keys and finds the Downloads folder. |
+| [`trailkit-ui-testing`](../crates/trailkit-ui-testing/README.md) | own, tests only | Headless ImGui, simulated input and snapshot comparison. | Drives the window in tests and compares snapshots. |
+| `serde_json` | external, tests only | JSON support for `serde`. | Reads stored documents in tests. |
+| `tempfile` | external, tests only | Creates temporary files and folders. | Gives window tests isolated data folders. |
+
 ## Files
 
 Stored in `addons/trailkit/memo/` inside the Guild Wars 2 folder, through

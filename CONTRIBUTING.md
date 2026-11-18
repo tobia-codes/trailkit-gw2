@@ -59,7 +59,9 @@ builds it and hot-reloads it into the running game
 ## 3. How the repository is organised
 
 One monorepo, one Cargo workspace (R2). Every project has its own README;
-start from [Find your way](README.md#find-your-way).
+start from [Find your way](README.md#find-your-way). Its **Packages** section
+names the own and external packages the project uses directly, what they do and
+why they are used (R138); change it together with the dependencies.
 
 | Folder | What lives there |
 |--------|------------------|

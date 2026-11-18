@@ -10,6 +10,16 @@ M43–M50, M96–M117). Depends only on
 | `tree_drag` | drop zones: turns the mouse position over the recorded rows into an insertion point and its indicator (ImGui-free) |
 | `i18n` | the slice's texts (`NoteListText`, en/de) |
 
+## Packages
+
+The packages this project uses directly.
+
+| Package | Type | What it does | Why it is used here |
+|---------|------|--------------|---------------------|
+| [`trailkit-memo-shared`](../../shared/README.md) | own | Note tree, settings, drafts, undo, storage worker and texts shared by memo. | Uses memo's note types, texts and settings. |
+| [`trailkit-ui`](../../../crates/trailkit-ui/README.md) | own, Windows only | Theme, fonts and shared ImGui components. | Uses the shared theme, text and controls. |
+| `nexus` | external, Windows only | Rust bindings for the Raidcore Nexus addon API and its ImGui. | Draws its interface with ImGui. |
+
 ## How the app wires it
 
 - The app draws the menu button and the search field, then

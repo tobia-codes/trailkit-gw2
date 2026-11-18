@@ -17,6 +17,15 @@ that archives the trading post prices every day. A REST backend is planned.
 - [Contributing](#contributing)
 - [License](#license)
 
+## Packages
+
+JavaScript tooling of the repository root. Rust packages are listed in
+[`rust/README.md`](rust/README.md#packages).
+
+| Package | Type | What it does | Why it is used here |
+|---------|------|--------------|---------------------|
+| `@changesets/cli` | external, development only | Records release notes and version bumps. | Versions the addons and generates their changelogs. |
+
 ## Find your way
 
 Every project has its own README with purpose, build, usage and its rules.

@@ -10,6 +10,19 @@ check-file-length, check-names, the README link test), `src/generators/` (build-
 subset-fonts, sync-versions, tokens) and `src/dev/` (deploy, ui-test, install-hooks);
 `src/main.rs` parses the command line, `src/workspace.rs` finds paths and addons.
 
+## Packages
+
+The packages this project uses directly.
+
+| Package | Type | What it does | Why it is used here |
+|---------|------|--------------|---------------------|
+| `allsorts` | external | Reads and subsets OpenType and TrueType fonts. | Subsets the fonts embedded in the addons. |
+| `anyhow` | external | Error type with context for applications. | Adds context to command failures. |
+| `resvg` | external | Renders SVG images to pixels. | Renders the addon icon images. |
+| `serde_json` | external | JSON support for `serde`. | Reads JSON files such as `package.json`. |
+| `toml_edit` | external | Edits TOML while keeping its formatting. | Reads token files and updates package versions. |
+| `tempfile` | external, tests only | Creates temporary files and folders. | Gives command tests isolated folders. |
+
 ## Commands
 
 | Command | What it does |

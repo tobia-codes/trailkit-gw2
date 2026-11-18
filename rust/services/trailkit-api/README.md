@@ -17,6 +17,10 @@ Layout decisions: ROADMAP R90.
 - Version `0.0.0`, not managed by Changesets; versioning is decided with the
   first deploy.
 
+## Packages
+
+This skeleton uses no other packages yet.
+
 ## Build and test
 
 ```sh
