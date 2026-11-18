@@ -219,8 +219,12 @@ pub enum Text {
     MenuNotes,
     /// Window menu: show the search field (M166).
     MenuSearch,
-    /// The search shortcut shown in the window menu (M166).
+    /// The search shortcut shown in the window menu (M166; Shift twice, M199).
     SearchShortcut,
+    /// The `⋯` menu entry that opens find in the note (M198).
+    FindInNote,
+    /// Its shortcut, shown at the entry's end (M198).
+    FindInNoteShortcut,
     /// Window menu: show the hidden note list (M166).
     ShowNoteList,
     /// Window menu: hide the note list (M166).
@@ -274,6 +278,8 @@ impl LocalizedText for Text {
         Self::MenuNotes,
         Self::MenuSearch,
         Self::SearchShortcut,
+        Self::FindInNote,
+        Self::FindInNoteShortcut,
         Self::ShowNoteList,
         Self::HideNoteList,
         Self::MoreActions,
@@ -354,8 +360,12 @@ impl LocalizedText for Text {
             (Self::MenuNotes, Language::German) => "Notizen",
             (Self::MenuSearch, Language::English) => "Search",
             (Self::MenuSearch, Language::German) => "Suchen",
-            (Self::SearchShortcut, Language::English) => "Ctrl+F",
-            (Self::SearchShortcut, Language::German) => "Strg+F",
+            (Self::SearchShortcut, Language::English) => "2× Shift",
+            (Self::SearchShortcut, Language::German) => "2× Umschalt",
+            (Self::FindInNote, Language::English) => "Find in note",
+            (Self::FindInNote, Language::German) => "In Notiz suchen",
+            (Self::FindInNoteShortcut, Language::English) => "Ctrl+F",
+            (Self::FindInNoteShortcut, Language::German) => "Strg+F",
             (Self::ShowNoteList, Language::English) => "Show note list",
             (Self::ShowNoteList, Language::German) => "Notizliste einblenden",
             (Self::HideNoteList, Language::English) => "Hide note list",

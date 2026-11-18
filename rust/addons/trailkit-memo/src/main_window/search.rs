@@ -44,15 +44,16 @@ impl MemoWindow {
             && !self.search_field.text.is_empty()
     }
 
-    /// Whether Ctrl+F belongs to this window (M174): it has the focus, and the
-    /// editor is not open, which keeps the shortcut from ending an edit (M167).
+    /// Whether Shift pressed twice belongs to this window (M199): it has the
+    /// focus, and the editor is not open, which hides the note list the
+    /// search sits in (M167, Q512).
     #[must_use]
     pub const fn takes_search_key(&self) -> bool {
         self.window_focused && self.editor.is_none()
     }
 
-    /// Toggles the search after Ctrl+F was caught (M174, M176). The editor keeps
-    /// the key from ending an edit (M167).
+    /// Toggles the search after Shift was pressed twice (M199, M176). The
+    /// editor keeps the key from ending an edit (M167).
     pub fn toggle_search_by_key(&mut self) {
         if self.editor.is_some() {
             return;
@@ -71,18 +72,13 @@ impl MemoWindow {
         self.search_field.clear(true);
     }
 
-    /// Ctrl+F as ImGui sees it; in game `nexus_bridge::catch_window_keys` gets it first
-    /// while it belongs to the window (M174). It toggles the search
-    /// field (M124, M138, M176). The search sits
-    /// in the note list, which the editor hides, so it does nothing there
-    /// (M167): a shortcut must not end an edit.
+    /// Ctrl+F as ImGui sees it; in game `nexus_bridge::catch_window_keys` gets
+    /// it first while it belongs to the window (M174). It opens or closes find
+    /// in the open note (M198, M199), in the reading view and the editor.
     pub(super) fn handle_search_keys(&mut self, ui: &Ui) {
-        if self.editor.is_some()
-            || !(self.window_focused && ui.io().key_ctrl && ui.is_key_index_pressed(VIRTUAL_KEY_F))
-        {
-            return;
+        if self.window_focused && ui.io().key_ctrl && ui.is_key_index_pressed(VIRTUAL_KEY_F) {
+            self.toggle_find_by_key();
         }
-        self.toggle_search_by_key();
     }
 
     /// Shows the search field (M138) with the note list it sits in, and moves

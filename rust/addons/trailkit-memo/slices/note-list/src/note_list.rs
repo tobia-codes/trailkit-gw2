@@ -7,7 +7,7 @@
 //! ([`ListSearch`], [`NoteRowExtras`], ROADMAP R76 questions 48–53).
 
 mod context_menu;
-pub use context_menu::{EntryMenu, draw_note_menu};
+pub use context_menu::{EntryMenu, LeadingItem, NoteMenuChoice, draw_note_menu};
 mod delete;
 mod drag_and_drop;
 mod rename;

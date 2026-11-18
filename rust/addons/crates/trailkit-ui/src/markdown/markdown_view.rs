@@ -24,6 +24,7 @@ use crate::{
     text::font_registry::FontScope,
     text::fonts::FontRole,
     text::icons::Icon,
+    text::search_hits::HitMark,
     text::text_search::SearchQuery,
     text::{TextStyle, draw_icon},
     theme::Theme,
@@ -32,9 +33,10 @@ use crate::{
 /// Readable line length in average characters (`lay-line-length`, 60–80).
 const READABLE_LINE_CHARACTERS: f32 = 75.0;
 
-/// Search hits to mark while drawing (memo plan M122): matching text gets an
-/// `accent.highlight` background, a matching chat-link chip an
-/// `accent.text` frame.
+/// Search hits to mark while drawing (memo plan M122, M197, M198): matching
+/// text is marked like a text marker, a matching chat-link chip gets an
+/// `accent.text` frame. Find in a note also numbers the hits in drawing
+/// order and marks only the current one filled, the others framed.
 #[derive(Debug)]
 pub struct SearchHighlight<'query> {
     /// What to mark.
@@ -42,15 +44,74 @@ pub struct SearchHighlight<'query> {
     /// Window-content y of the first marked line, filled in by
     /// [`draw_markdown`] (scroll target for "jump to the first hit").
     first_hit_y: Option<f32>,
+    /// Find in a note: the index of the current hit; `None` marks every
+    /// hit filled (the list search).
+    current: Option<usize>,
+    /// Hits numbered so far while drawing.
+    hit_count: usize,
+    /// Window-content y of the current hit's line, once drawn.
+    current_hit_y: Option<f32>,
 }
 
 impl<'query> SearchHighlight<'query> {
-    /// Marks the hits of `query`.
+    /// Marks every hit of `query` filled (the list search, M197).
     #[must_use]
     pub const fn new(query: &'query SearchQuery) -> Self {
         Self {
             query,
             first_hit_y: None,
+            current: None,
+            hit_count: 0,
+            current_hit_y: None,
+        }
+    }
+
+    /// Marks the hit numbered `current` (0-based, drawing order) filled and
+    /// the others framed (find in a note, M198).
+    #[must_use]
+    pub const fn with_current(query: &'query SearchQuery, current: usize) -> Self {
+        Self {
+            current: Some(current),
+            ..Self::new(query)
+        }
+    }
+
+    /// How many hits were drawn (text hits and chips), after
+    /// [`draw_markdown`].
+    #[must_use]
+    pub const fn hit_count(&self) -> usize {
+        self.hit_count
+    }
+
+    /// Window-content y (as for `set_scroll_y`) of the top of the current
+    /// hit's line, if it was drawn.
+    #[must_use]
+    pub const fn current_hit_y(&self) -> Option<f32> {
+        self.current_hit_y
+    }
+
+    /// How the next hit is marked, and whether it is the current one.
+    fn next_mark(&self) -> (HitMark, bool) {
+        self.mark_at(0)
+    }
+
+    /// How the hit `offset` places after the next one is marked, and
+    /// whether it is the current one.
+    fn mark_at(&self, offset: usize) -> (HitMark, bool) {
+        let index = self.hit_count + offset;
+        match self.current {
+            Some(current) if current == index => (HitMark::Filled, true),
+            Some(_) => (HitMark::Framed, false),
+            None => (HitMark::Filled, false),
+        }
+    }
+
+    /// Counts `count` drawn hits; `current_y` is the screen y of the current
+    /// hit if it was among them.
+    fn count_hits(&mut self, ui: &Ui, count: usize, current_y: Option<f32>) {
+        self.hit_count += count;
+        if let Some(y) = current_y {
+            self.current_hit_y = Some(y - ui.window_pos()[1] + ui.scroll_y());
         }
     }
 

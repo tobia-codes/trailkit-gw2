@@ -23,6 +23,7 @@ use trailkit_ui::{
     markdown::{self, MarkdownDocument},
     text::TextStyle,
     text::icons::Icon,
+    text::search_hits::HitMark,
     text::text_search::SearchQuery,
     theme::Theme,
 };
@@ -166,6 +167,21 @@ pub struct Editor {
     /// Formatting active at the cursor, cached per text revision and
     /// selection (M69).
     active: Option<(u64, Range<usize>, ActiveFormats)>,
+    /// Find hits in the body while the find bar is open (M198).
+    find: Option<BodyFind>,
+}
+
+/// Find hits in the body, cached per text revision and phrase (M198).
+#[derive(Debug)]
+struct BodyFind {
+    /// Text revision the hits belong to.
+    revision: u64,
+    /// The lower-cased phrase they were found for.
+    phrase: Vec<String>,
+    /// The current hit the marks were set for.
+    current: usize,
+    /// Byte ranges of the hits in the body, in text order.
+    ranges: Vec<Range<usize>>,
 }
 
 impl Editor {
@@ -180,6 +196,7 @@ impl Editor {
             title_was_active: false,
             title_focus_pending: false,
             active: None,
+            find: None,
         }
     }
 
@@ -211,11 +228,80 @@ impl Editor {
         self.body.select(range);
     }
 
+    /// The text selected in the body, e.g. to fill the find field (M198).
+    #[must_use]
+    pub fn selected_body_text(&self) -> &str {
+        self.body
+            .text()
+            .get(self.body.selection())
+            .unwrap_or_default()
+    }
+
+    /// Finds `query` in the body and marks its hits, `current` filled and
+    /// the others framed; `None` clears the marks (M198). Cheap while text,
+    /// phrase and current hit stay the same. Returns the number of hits.
+    pub fn update_find(&mut self, query: Option<&SearchQuery>, current: usize) -> usize {
+        let Some(query) = query else {
+            if self.find.take().is_some() {
+                self.body.set_find_hits([]);
+            }
+            return 0;
+        };
+        let revision = self.body.revision();
+        let is_stale = self
+            .find
+            .as_ref()
+            .is_none_or(|find| find.revision != revision || find.phrase != query.terms());
+        if is_stale {
+            self.find = Some(BodyFind {
+                revision,
+                phrase: query.terms().to_vec(),
+                current: usize::MAX,
+                ranges: query.hit_ranges(self.body.text()),
+            });
+        }
+        let Some(find) = self.find.as_mut() else {
+            return 0;
+        };
+        if find.current != current {
+            find.current = current;
+            let marks = find.ranges.iter().enumerate().map(|(index, range)| {
+                let mark = if index == current {
+                    HitMark::Filled
+                } else {
+                    HitMark::Framed
+                };
+                (range.clone(), mark)
+            });
+            self.body.set_find_hits(marks);
+        }
+        find.ranges.len()
+    }
+
+    /// Selects the find hit `index` (see [`Self::update_find`]) with the
+    /// cursor after it and scrolls to it (M198).
+    pub fn select_find_hit(&mut self, index: usize) {
+        if let Some(range) = self
+            .find
+            .as_ref()
+            .and_then(|find| find.ranges.get(index))
+            .cloned()
+        {
+            self.body.select(range);
+        }
+    }
+
     /// Moves the keyboard focus into the title input with the whole title
     /// selected, so typing replaces it ("Rename", M161).
     pub fn focus_title(&mut self) {
         self.body.unfocus();
         self.title_focus_pending = true;
+    }
+
+    /// Gives the body the keyboard focus back (e.g. after the find bar
+    /// closed, M198).
+    pub fn focus_body(&mut self) {
+        self.body.focus();
     }
 
     /// Takes the keyboard focus from the body (e.g. for the search field).

@@ -7,6 +7,7 @@
 
 mod actions;
 mod dialogs;
+mod find_in_note;
 mod panes;
 mod search;
 mod text_scale;
@@ -54,6 +55,7 @@ use crate::help_text::HelpText;
 use self::{
     actions::{LeaveReason, WindowAction},
     dialogs::save_status::{EditorCommit, SaveFailedPrompt, SaveStatus},
+    find_in_note::FindInNote,
     panes::layout::draw_empty_state,
     search::SearchCache,
     trash::{Confirmation, TrashState},
@@ -162,6 +164,8 @@ pub struct MemoWindow {
     /// The search field above the note list (M118); its text survives
     /// closing the window, not a game restart (M124).
     search_field: SearchField,
+    /// Find in the open note (M198).
+    find: FindInNote,
     /// Search index and results, rebuilt only when needed (M119).
     search: SearchCache,
     /// Groups collapsed during the current search; the saved expand state
@@ -253,6 +257,7 @@ impl MemoWindow {
             dialog_height: None,
             next_reset_check: None,
             search_field: SearchField::default(),
+            find: FindInNote::default(),
             search: SearchCache::default(),
             collapsed_in_search: HashSet::new(),
             document_revision: 0,

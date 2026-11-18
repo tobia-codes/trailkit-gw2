@@ -94,6 +94,7 @@ impl MemoWindow {
         let input = NoteViewInput {
             note: Some(note),
             search: None,
+            find: None,
             chips: chip_context(language),
             title_trailing: None,
             read_only: Some(ReadOnly { subtitle: &info }),

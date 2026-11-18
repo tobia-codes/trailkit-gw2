@@ -22,9 +22,10 @@ use trailkit_ui::{
 };
 
 use super::{
-    CLOSE_REQUESTED, DELETE_KEY_ARMED, DELETE_KEY_PRESSED, ESCAPE_CAUGHT, HELP, HELP_OPEN,
-    LANGUAGE, NEXUS_LINK, NOTES, NotesState, SEARCH_KEY_ARMED, SEARCH_KEY_PRESSED, TITLE_BAR,
-    UNSAVED_CHANGES, VISIBLE, WINDOW_TAKES_ESCAPE, WINDOW_TITLE,
+    CLOSE_REQUESTED, DELETE_KEY_ARMED, DELETE_KEY_PRESSED, ESCAPE_CAUGHT, FIND_KEY_ARMED,
+    FIND_KEY_PRESSED, FIND_STEP, FIND_STEP_ARMED, FIND_STEP_NEXT, FIND_STEP_NONE,
+    FIND_STEP_PREVIOUS, HELP, HELP_OPEN, LANGUAGE, NEXUS_LINK, NOTES, NotesState, SEARCH_KEY_ARMED,
+    SEARCH_KEY_PRESSED, TITLE_BAR, UNSAVED_CHANGES, VISIBLE, WINDOW_TAKES_ESCAPE, WINDOW_TITLE,
     guard::{RunState, draft_kept, run_state, take_help_request, try_lock_after_panic},
     help::MemoHelp,
     is_gameplay, settings,
@@ -52,6 +53,8 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
     // Stay false on every path that does not draw the window, so the game keeps
     // these keys while memo is hidden.
     SEARCH_KEY_ARMED.store(false, Ordering::Relaxed);
+    FIND_KEY_ARMED.store(false, Ordering::Relaxed);
+    FIND_STEP_ARMED.store(false, Ordering::Relaxed);
     DELETE_KEY_ARMED.store(false, Ordering::Relaxed);
     reopen_hidden_window_if_needed();
     let main_visible = VISIBLE.load(Ordering::Relaxed);
@@ -217,6 +220,14 @@ fn draw_main_window(
                 if SEARCH_KEY_PRESSED.swap(false, Ordering::Relaxed) {
                     window.toggle_search_by_key();
                 }
+                if FIND_KEY_PRESSED.swap(false, Ordering::Relaxed) {
+                    window.toggle_find_by_key();
+                }
+                match FIND_STEP.swap(FIND_STEP_NONE, Ordering::Relaxed) {
+                    FIND_STEP_NEXT => window.step_find(true),
+                    FIND_STEP_PREVIOUS => window.step_find(false),
+                    _ => {}
+                }
                 if DELETE_KEY_PRESSED.swap(false, Ordering::Relaxed) {
                     window.delete_selected_by_key(language);
                 }
@@ -236,6 +247,8 @@ fn draw_main_window(
     if let NotesState::Ready(window) = &*notes {
         let visible = VISIBLE.load(Ordering::Relaxed);
         SEARCH_KEY_ARMED.store(window.takes_search_key() && visible, Ordering::Relaxed);
+        FIND_KEY_ARMED.store(window.takes_find_key() && visible, Ordering::Relaxed);
+        FIND_STEP_ARMED.store(window.takes_find_step_key() && visible, Ordering::Relaxed);
         DELETE_KEY_ARMED.store(window.takes_delete_key() && visible, Ordering::Relaxed);
     }
 }

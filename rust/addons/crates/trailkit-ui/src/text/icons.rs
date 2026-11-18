@@ -125,8 +125,12 @@ impl Icon {
     /// `circle-help`: opens the help window
     /// (Q171, R100).
     pub const CIRCLE_HELP: Self = Self('\u{e082}');
+    /// `arrow-up`: previous hit of find in a note (memo M198).
+    pub const ARROW_UP: Self = Self('\u{e04a}');
+    /// `arrow-down`: next hit of find in a note (memo M198).
+    pub const ARROW_DOWN: Self = Self('\u{e042}');
     /// Every icon above; keep in sync when adding one.
-    pub const ALL: [Self; 54] = [
+    pub const ALL: [Self; 56] = [
         Self::FOLDER_INPUT,
         Self::MENU,
         Self::FILE_TEXT,
@@ -181,6 +185,8 @@ impl Icon {
         Self::EXTERNAL_LINK,
         Self::INFO,
         Self::CIRCLE_HELP,
+        Self::ARROW_UP,
+        Self::ARROW_DOWN,
     ];
 
     /// The glyph as a character of the icon font.
