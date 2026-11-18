@@ -434,7 +434,7 @@ mod tests {
     use super::*;
     use crate::{
         drafts::Draft,
-        note_tree::{Note, NoteId, NoteKind, TreeNode},
+        note_tree::{Note, NoteId, ResetSchedule, TreeNode},
         settings::QuickAccessIcon,
     };
 
@@ -464,7 +464,7 @@ mod tests {
         Arc::new(NotesDocument {
             root: vec![TreeNode::Note(Note::new(
                 title.to_owned(),
-                NoteKind::Normal,
+                ResetSchedule::Never,
                 Timestamp::now(),
             ))],
             trash: Vec::new(),

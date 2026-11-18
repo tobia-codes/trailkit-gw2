@@ -292,7 +292,7 @@ impl MemoWindow {
                     true,
                 );
             } else if let Some(note) = note {
-                chosen_kind = draw_kind_dropdown(ui, theme, language, note.kind);
+                chosen_kind = draw_kind_dropdown(ui, theme, language, note.reset_schedule);
             }
         };
         let trailing_size = if compact {

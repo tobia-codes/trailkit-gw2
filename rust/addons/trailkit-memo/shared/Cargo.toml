@@ -13,6 +13,7 @@ publish = false
 jiff.workspace = true
 log.workspace = true
 serde.workspace = true
+serde_json.workspace = true
 thiserror.workspace = true
 trailkit-log.workspace = true
 trailkit-storage.workspace = true
@@ -20,7 +21,6 @@ trailkit-ui.workspace = true
 uuid.workspace = true
 
 [dev-dependencies]
-serde_json.workspace = true
 tempfile.workspace = true
 
 # Local time conversion through the Windows API (ROADMAP R72).

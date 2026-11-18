@@ -162,7 +162,7 @@ fn only_the_tree_scrolls_below_the_fixed_list_header() {
         document.root.push(Node::Note(note(
             &format!("Note {number}"),
             "",
-            NoteKind::Normal,
+            ResetSchedule::Never,
         )));
     }
     let ui_state = selected_first_with_search(&document);

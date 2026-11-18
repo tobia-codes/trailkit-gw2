@@ -165,12 +165,12 @@ impl NotesDocument {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::note_tree::{Group, GroupId, NoteKind, node::tests::noon};
+    use crate::note_tree::{Group, GroupId, ResetSchedule, node::tests::noon};
 
     /// A tree `[First, Raids[Weekly, Daily], Last]`; returns the document
     /// and the ids of `First`, `Raids` and `Weekly`.
     fn sample() -> (NotesDocument, NodeId, GroupId, NodeId) {
-        let note = |title: &str| Note::new(title.to_owned(), NoteKind::Normal, noon());
+        let note = |title: &str| Note::new(title.to_owned(), ResetSchedule::Never, noon());
         let first = note("First");
         let weekly = note("Weekly");
         let mut raids = Group::new("Raids".to_owned());

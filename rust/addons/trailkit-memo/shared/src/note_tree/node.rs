@@ -22,20 +22,21 @@ impl ResetPeriod {
 
 /// What happens to a note's checkboxes at the game's reset times (M13).
 ///
-/// Stored flat in the note as `"kind"` plus, for reset kinds,
-/// `"last_reset_applied_at"`; a normal note cannot carry a reset time.
+/// Stored flat in the note as `"reset_schedule"` (`never`, `daily`,
+/// `weekly`, M203) plus, for `daily`/`weekly`, `"last_reset_applied_at"`; a
+/// note that is never reset cannot carry a reset time.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "snake_case")]
-pub enum NoteKind {
+#[serde(tag = "reset_schedule", rename_all = "snake_case")]
+pub enum ResetSchedule {
     /// A plain note; nothing is reset.
-    Normal,
+    Never,
     /// All checkboxes are unchecked at the daily reset (00:00 UTC).
-    DailyReset {
+    Daily {
         /// The reset that was last applied to this note.
         last_reset_applied_at: Timestamp,
     },
     /// All checkboxes are unchecked at the weekly reset (Monday 07:30 UTC).
-    WeeklyReset {
+    Weekly {
         /// The reset that was last applied to this note.
         last_reset_applied_at: Timestamp,
     },
@@ -50,12 +51,13 @@ pub struct Note {
     pub title: String,
     /// The note content as markdown.
     pub body: String,
-    /// Normal or reset note, with its reset state.
+    /// Whether and when the note's checkboxes are reset, with the reset
+    /// state (M13, M203).
     #[serde(flatten)]
-    pub kind: NoteKind,
+    pub reset_schedule: ResetSchedule,
     /// When the note was created.
     pub created_at: Timestamp,
-    /// When the note's title or content was last changed by the user; kind
+    /// When the note's title or content was last changed by the user; reset
     /// changes and resets do not count (M86, M88).
     pub updated_at: Timestamp,
 }
@@ -96,42 +98,42 @@ pub struct TrashEntry {
     pub former_index: usize,
 }
 
-impl NoteKind {
-    /// A note kind with `period` (`None` = normal note) whose reset state
+impl ResetSchedule {
+    /// A reset schedule with `period` (`None` = never reset) whose reset state
     /// starts at `now`, so checks made before `now` stay until the next
     /// reset (M90).
     #[must_use]
     pub const fn with_period(period: Option<ResetPeriod>, now: Timestamp) -> Self {
         match period {
-            None => Self::Normal,
-            Some(ResetPeriod::Daily) => Self::DailyReset {
+            None => Self::Never,
+            Some(ResetPeriod::Daily) => Self::Daily {
                 last_reset_applied_at: now,
             },
-            Some(ResetPeriod::Weekly) => Self::WeeklyReset {
+            Some(ResetPeriod::Weekly) => Self::Weekly {
                 last_reset_applied_at: now,
             },
         }
     }
 
-    /// The reset period, or `None` for a normal note.
+    /// The reset period, or `None` if the note is never reset.
     #[must_use]
     pub const fn period(self) -> Option<ResetPeriod> {
         match self {
-            Self::Normal => None,
-            Self::DailyReset { .. } => Some(ResetPeriod::Daily),
-            Self::WeeklyReset { .. } => Some(ResetPeriod::Weekly),
+            Self::Never => None,
+            Self::Daily { .. } => Some(ResetPeriod::Daily),
+            Self::Weekly { .. } => Some(ResetPeriod::Weekly),
         }
     }
 
-    /// The reset state, or `None` for a normal note.
+    /// The reset state, or `None` if the note is never reset.
     #[must_use]
     pub const fn last_reset_applied_at(self) -> Option<Timestamp> {
         match self {
-            Self::Normal => None,
-            Self::DailyReset {
+            Self::Never => None,
+            Self::Daily {
                 last_reset_applied_at,
             }
-            | Self::WeeklyReset {
+            | Self::Weekly {
                 last_reset_applied_at,
             } => Some(last_reset_applied_at),
         }
@@ -139,17 +141,17 @@ impl NoteKind {
 }
 
 impl Note {
-    /// Creates a new, empty note of `kind` created at `now`.
+    /// Creates a new, empty note with `reset_schedule` created at `now`.
     ///
-    /// For reset kinds, the reset state starts at `now`, so the first reset
+    /// For daily/weekly schedules, the reset state starts at `now`, so the first reset
     /// after creation is applied.
     #[must_use]
-    pub fn new(title: String, kind: NoteKind, now: Timestamp) -> Self {
+    pub fn new(title: String, reset_schedule: ResetSchedule, now: Timestamp) -> Self {
         Self {
             id: NoteId::new_unique(),
             title,
             body: String::new(),
-            kind,
+            reset_schedule,
             created_at: now,
             updated_at: now,
         }
@@ -254,26 +256,26 @@ pub(super) mod tests {
     }
 
     #[test]
-    fn note_is_stored_flat_with_kind_and_type_tags() -> serde_json::Result<()> {
+    fn note_is_stored_flat_with_reset_schedule_and_type_tags() -> serde_json::Result<()> {
         let note = Note::new(
             "Dailies".to_owned(),
-            NoteKind::DailyReset {
+            ResetSchedule::Daily {
                 last_reset_applied_at: noon(),
             },
             noon(),
         );
         let value = serde_json::to_value(TreeNode::Note(note))?;
         assert_eq!(value["type"], "note");
-        assert_eq!(value["kind"], "daily_reset");
+        assert_eq!(value["reset_schedule"], "daily");
         assert_eq!(value["last_reset_applied_at"], "2026-11-01T12:00:00Z");
         assert_eq!(value["created_at"], "2026-11-01T12:00:00Z");
         Ok(())
     }
     #[test]
-    fn normal_note_has_no_reset_time() -> serde_json::Result<()> {
-        let note = Note::new("Ideas".to_owned(), NoteKind::Normal, noon());
+    fn never_reset_note_has_no_reset_time() -> serde_json::Result<()> {
+        let note = Note::new("Ideas".to_owned(), ResetSchedule::Never, noon());
         let value = serde_json::to_value(note)?;
-        assert_eq!(value["kind"], "normal");
+        assert_eq!(value["reset_schedule"], "never");
         assert!(value.get("last_reset_applied_at").is_none());
         Ok(())
     }
@@ -284,7 +286,7 @@ pub(super) mod tests {
         let mut inner = Group::new("Inner".to_owned());
         inner.children.push(TreeNode::Note(Note::new(
             "A".to_owned(),
-            NoteKind::Normal,
+            ResetSchedule::Never,
             noon(),
         )));
         inner
@@ -293,7 +295,7 @@ pub(super) mod tests {
         outer.children.push(TreeNode::Group(inner));
         outer.children.push(TreeNode::Note(Note::new(
             "B".to_owned(),
-            NoteKind::Normal,
+            ResetSchedule::Never,
             noon(),
         )));
         assert_eq!(outer.note_count(), 2);

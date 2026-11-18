@@ -26,7 +26,7 @@ use trailkit_ui_testing::{
 
 use super::*;
 use trailkit_memo_shared::{
-    note_tree::{Group, NoteKind, ResetPeriod, TreeNode as Node},
+    note_tree::{Group, ResetPeriod, ResetSchedule, TreeNode as Node},
     storage_worker::{SaveConnection, SavingAllowed, SettingsSummary, StorageWorker, WorkerTiming},
 };
 
@@ -39,8 +39,8 @@ fn fixed_time() -> Timestamp {
 }
 
 /// A note with `title`, `body` and `kind`.
-fn note(title: &str, body: &str, kind: NoteKind) -> Note {
-    let mut note = Note::new(title.to_owned(), kind, fixed_time());
+fn note(title: &str, body: &str, reset_schedule: ResetSchedule) -> Note {
+    let mut note = Note::new(title.to_owned(), reset_schedule, fixed_time());
     note.body = body.to_owned();
     note
 }
@@ -51,7 +51,7 @@ fn sample_document() -> NotesDocument {
     raids.children.push(Node::Note(note(
         "Weekly clears",
         "- [x] Spirit Vale\n- [ ] Salvation Pass",
-        NoteKind::WeeklyReset {
+        ResetSchedule::Weekly {
             last_reset_applied_at: fixed_time(),
         },
     )));
@@ -60,12 +60,12 @@ fn sample_document() -> NotesDocument {
             Node::Note(note(
                 "Shopping list",
                 "## Ectos\n- [x] **250** Globs of Ectoplasm\n- [ ] Mystic Coins\nCheck the [wiki](https://wiki.guildwars2.com) first.",
-                NoteKind::Normal,
+                ResetSchedule::Never,
             )),
             Node::Note(note(
                 "Dailies",
                 "- [ ] Wizard's Vault",
-                NoteKind::DailyReset {
+                ResetSchedule::Daily {
                     last_reset_applied_at: fixed_time(),
                 },
             )),
@@ -446,7 +446,10 @@ fn kind_dropdown_lists_the_kinds_and_changes_the_note() {
     let image = harness.settle(2, &at([300.0, 300.0], false), &mut draw_light);
     // The chip takes the color of the daily badge (M104).
     assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-daily-chip-light", &image);
-    let kind = memo.document.note(note).map(|note| note.kind.period());
+    let kind = memo
+        .document
+        .note(note)
+        .map(|note| note.reset_schedule.period());
     assert_eq!(kind, Some(Some(ResetPeriod::Daily)));
 }
 

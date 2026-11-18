@@ -7,16 +7,17 @@
 //! Platform-independent so it can be unit-tested on any host (ROADMAP R23).
 
 mod ids;
+mod migration;
 mod node;
 mod trash;
 mod traversal;
 
 use jiff::Timestamp;
 use serde::{Deserialize, Serialize};
-use trailkit_storage::{SchemaVersion, VersionedDocument};
+use trailkit_storage::{DocumentFields, MigrationError, SchemaVersion, VersionedDocument};
 
 pub use ids::{GroupId, NodeId, NoteId};
-pub use node::{Group, Note, NoteKind, ResetPeriod, TrashEntry, TreeNode};
+pub use node::{Group, Note, ResetPeriod, ResetSchedule, TrashEntry, TreeNode};
 pub use trash::TRASH_RETENTION;
 pub use traversal::Place;
 use traversal::{
@@ -62,7 +63,16 @@ pub struct NotesDocument {
 
 impl VersionedDocument for NotesDocument {
     const FILE_STEM: &'static str = "notes";
-    const CURRENT_SCHEMA_VERSION: SchemaVersion = SchemaVersion::FIRST;
+    /// Version 2 renamed `kind` to `reset_schedule` (M203).
+    const CURRENT_SCHEMA_VERSION: SchemaVersion = SchemaVersion(2);
+
+    /// See [`migration::migrate_one_step`].
+    fn migrate_one_step(
+        from: SchemaVersion,
+        fields: DocumentFields,
+    ) -> Result<DocumentFields, MigrationError> {
+        migration::migrate_one_step(from, fields)
+    }
 }
 
 impl NotesDocument {
@@ -286,7 +296,7 @@ impl NotesDocument {
         }
     }
 
-    /// Changes the reset period of note `id` (`None` = normal note, M86).
+    /// Changes the reset period of note `id` (`None` = never reset, M86).
     /// A new reset period starts at `now` (M90); `updated_at` stays. Returns
     /// whether anything changed.
     pub fn set_reset_period(
@@ -296,10 +306,10 @@ impl NotesDocument {
         now: Timestamp,
     ) -> bool {
         self.note_mut(id).is_some_and(|note| {
-            if note.kind.period() == period {
+            if note.reset_schedule.period() == period {
                 return false;
             }
-            note.kind = NoteKind::with_period(period, now);
+            note.reset_schedule = ResetSchedule::with_period(period, now);
             true
         })
     }
@@ -340,20 +350,20 @@ mod tests {
         let mut group = Group::new("Raids".to_owned());
         group.children.push(TreeNode::Note(Note::new(
             "Weekly clears".to_owned(),
-            NoteKind::WeeklyReset {
+            ResetSchedule::Weekly {
                 last_reset_applied_at: noon(),
             },
             noon(),
         )));
         NotesDocument {
             root: vec![
-                TreeNode::Note(Note::new("Ideas".to_owned(), NoteKind::Normal, noon())),
+                TreeNode::Note(Note::new("Ideas".to_owned(), ResetSchedule::Never, noon())),
                 TreeNode::Group(group),
             ],
             trash: vec![TrashEntry {
                 node: TreeNode::Note(Note::new(
                     "Old".to_owned(),
-                    NoteKind::DailyReset {
+                    ResetSchedule::Daily {
                         last_reset_applied_at: noon(),
                     },
                     noon(),
@@ -378,19 +388,19 @@ mod tests {
     }
 
     #[test]
-    fn kind_change_starts_a_new_period_and_keeps_updated_at() {
+    fn reset_schedule_change_starts_a_new_period_and_keeps_updated_at() {
         let mut document = sample_document();
         let id = note_id(&document, "Ideas").expect("sample note");
         let later = "2026-11-01T18:00:00Z".parse().unwrap_or_default();
         assert!(document.set_reset_period(id, Some(ResetPeriod::Daily), later));
         assert!(!document.set_reset_period(id, Some(ResetPeriod::Daily), later));
         let note = document.note(id).expect("sample note");
-        assert_eq!(note.kind.last_reset_applied_at(), Some(later));
+        assert_eq!(note.reset_schedule.last_reset_applied_at(), Some(later));
         assert_eq!(note.updated_at, noon());
         assert!(document.set_reset_period(id, None, later));
         assert_eq!(
-            document.note(id).map(|note| note.kind),
-            Some(NoteKind::Normal)
+            document.note(id).map(|note| note.reset_schedule),
+            Some(ResetSchedule::Never)
         );
     }
 
@@ -398,7 +408,7 @@ mod tests {
     fn insert_after_a_nested_note_and_fall_back_to_the_root() {
         let mut document = sample_document();
         let weekly = note_id(&document, "Weekly clears").expect("sample note");
-        let new = Note::new("New".to_owned(), NoteKind::Normal, noon());
+        let new = Note::new("New".to_owned(), ResetSchedule::Never, noon());
         let new_id = new.id;
         document.insert(
             InsertionPoint::After(NodeId::Note(weekly)),
@@ -412,7 +422,7 @@ mod tests {
             Some(NodeId::Note(new_id))
         );
 
-        let orphan = Note::new("Orphan".to_owned(), NoteKind::Normal, noon());
+        let orphan = Note::new("Orphan".to_owned(), ResetSchedule::Never, noon());
         let orphan_id = orphan.id;
         document.insert(
             InsertionPoint::After(NodeId::Note(NoteId::new_unique())),
@@ -497,7 +507,7 @@ mod tests {
         };
         group.expanded = false;
         let group_id = group.id;
-        let note = Note::new("New".to_owned(), NoteKind::Normal, noon());
+        let note = Note::new("New".to_owned(), ResetSchedule::Never, noon());
         let note_id = note.id;
 
         document.append(Some(group_id), TreeNode::Note(note));
@@ -517,7 +527,7 @@ mod tests {
     /// The tree `A G1[B G2[C]] D` with G2 collapsed, plus the ids of
     /// G1, G2, A, B and C.
     fn move_document() -> (NotesDocument, [GroupId; 2], [NoteId; 3]) {
-        let note = |title: &str| Note::new(title.to_owned(), NoteKind::Normal, noon());
+        let note = |title: &str| Note::new(title.to_owned(), ResetSchedule::Never, noon());
         let (a, b, c, d) = (note("A"), note("B"), note("C"), note("D"));
         let ids = [a.id, b.id, c.id];
         let mut inner = Group::new("G2".to_owned());
@@ -636,7 +646,7 @@ mod tests {
     fn insert_before_and_at_the_start() {
         let (mut document, [outer, _], [_, b, _]) = move_document();
         let note =
-            |title: &str| TreeNode::Note(Note::new(title.to_owned(), NoteKind::Normal, noon()));
+            |title: &str| TreeNode::Note(Note::new(title.to_owned(), ResetSchedule::Never, noon()));
         document.insert(InsertionPoint::Before(NodeId::Note(b)), note("X"));
         document.insert(InsertionPoint::Start(outer), note("Y"));
         document.insert(InsertionPoint::Start(GroupId::new_unique()), note("Z"));

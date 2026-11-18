@@ -527,7 +527,7 @@ fn list_rows() {
             document.root.push(Node::Note(note(
                 &format!("Note {number}"),
                 "",
-                NoteKind::Normal,
+                ResetSchedule::Never,
             )));
         }
         let ui_state = selected_first(&document);

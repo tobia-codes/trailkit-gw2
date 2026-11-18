@@ -206,11 +206,15 @@ mod tests {
     use jiff::Timestamp;
 
     use super::*;
-    use trailkit_memo_shared::note_tree::NoteKind;
+    use trailkit_memo_shared::note_tree::ResetSchedule;
 
     /// A note with `title` and `body`.
     fn note(title: &str, body: &str) -> Note {
-        let mut note = Note::new(title.to_owned(), NoteKind::Normal, Timestamp::UNIX_EPOCH);
+        let mut note = Note::new(
+            title.to_owned(),
+            ResetSchedule::Never,
+            Timestamp::UNIX_EPOCH,
+        );
         note.body = body.to_owned();
         note
     }

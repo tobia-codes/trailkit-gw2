@@ -19,7 +19,7 @@ use trailkit_memo_editor::{
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText, Text},
     note_tree::{
-        Group, GroupId, InsertionPoint, NodeId, Note, NoteId, NoteKind, ResetPeriod,
+        Group, GroupId, InsertionPoint, NodeId, Note, NoteId, ResetPeriod, ResetSchedule,
         TreeNode as Node,
     },
     settings::UnsavedChanges,
@@ -310,7 +310,7 @@ impl MemoWindow {
                 let point = self.insertion_point(*point);
                 let note = Note::new(
                     Text::NewNote.get(language).to_owned(),
-                    NoteKind::Normal,
+                    ResetSchedule::Never,
                     now,
                 );
                 let id = NodeId::Note(note.id);

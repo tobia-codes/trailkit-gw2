@@ -5,7 +5,7 @@
 use jiff::Timestamp;
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText},
-    note_tree::{NoteKind, ResetPeriod},
+    note_tree::{ResetPeriod, ResetSchedule},
     row_badge::RowBadge,
 };
 use trailkit_ui::text::icons::Icon;
@@ -27,8 +27,8 @@ pub const KIND_OPTIONS: [(Option<ResetPeriod>, ResetText); 3] = [
 /// The row badge of a note (M45, M193): a calendar icon for reset notes,
 /// `None` for normal notes.
 #[must_use]
-pub fn reset_badge(kind: NoteKind) -> Option<RowBadge> {
-    let icon = match kind.period()? {
+pub fn reset_badge(reset_schedule: ResetSchedule) -> Option<RowBadge> {
+    let icon = match reset_schedule.period()? {
         ResetPeriod::Daily => Icon::CALENDAR_1,
         ResetPeriod::Weekly => Icon::CALENDAR_DAYS,
     };
@@ -74,11 +74,11 @@ pub fn draw_kind_dropdown(
     ui: &nexus::imgui::Ui,
     theme: &Theme,
     language: Language,
-    kind: NoteKind,
+    reset_schedule: ResetSchedule,
 ) -> Option<Option<ResetPeriod>> {
     let selected = KIND_OPTIONS
         .iter()
-        .position(|(period, _)| *period == kind.period())
+        .position(|(period, _)| *period == reset_schedule.period())
         .unwrap_or(0);
     let index = trailkit_ui::controls::dropdown::draw_dropdown(
         ui,
@@ -97,8 +97,8 @@ mod tests {
 
     #[test]
     fn only_reset_notes_have_a_badge() {
-        assert_eq!(reset_badge(NoteKind::Normal), None);
-        let weekly = NoteKind::with_period(Some(ResetPeriod::Weekly), Timestamp::UNIX_EPOCH);
+        assert_eq!(reset_badge(ResetSchedule::Never), None);
+        let weekly = ResetSchedule::with_period(Some(ResetPeriod::Weekly), Timestamp::UNIX_EPOCH);
         assert_eq!(
             reset_badge(weekly),
             Some(RowBadge {

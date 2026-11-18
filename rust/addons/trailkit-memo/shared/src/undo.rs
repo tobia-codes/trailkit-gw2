@@ -110,12 +110,17 @@ fn apply(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::note_tree::{Note, NoteKind, TreeNode};
+    use crate::note_tree::{Note, ResetSchedule, TreeNode};
 
     /// A root level with three notes; returns the document and their ids.
     fn sample() -> (NotesDocument, [NodeId; 3]) {
-        let notes = ["A", "B", "C"]
-            .map(|title| Note::new(title.to_owned(), NoteKind::Normal, Timestamp::UNIX_EPOCH));
+        let notes = ["A", "B", "C"].map(|title| {
+            Note::new(
+                title.to_owned(),
+                ResetSchedule::Never,
+                Timestamp::UNIX_EPOCH,
+            )
+        });
         let ids = [0, 1, 2].map(|index| NodeId::Note(notes[index].id));
         let document = NotesDocument {
             root: notes.into_iter().map(TreeNode::Note).collect(),
