@@ -45,7 +45,7 @@ const VIRTUAL_KEY_B: i32 = 0x42;
 /// Windows virtual-key code of `I`.
 const VIRTUAL_KEY_I: i32 = 0x49;
 
-/// Windows virtual-key code of `K` (Ctrl+K opens the link popup, M208).
+/// Windows virtual-key code of `K` (Ctrl+K opens the link dialog, M208).
 const VIRTUAL_KEY_K: i32 = 0x4B;
 
 /// Windows virtual-key code of `S` (Ctrl+S saves, M93).
@@ -321,7 +321,7 @@ impl Editor {
     }
 
     /// Applies a formatting command to the body at its selection (M53); the
-    /// link command opens the link popup instead (M208).
+    /// link command opens the link dialog instead (M208).
     pub fn format(&mut self, command: FormatCommand) {
         if command == FormatCommand::Link {
             self.link_dialog_requested = true;
