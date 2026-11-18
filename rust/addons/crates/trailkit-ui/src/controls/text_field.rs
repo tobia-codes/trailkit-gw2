@@ -2,10 +2,11 @@
 //! the label above the field, an "(optional)" mark switched on per field, a
 //! placeholder and an error directly below it (`form-errors`).
 
-use nexus::imgui::{StyleColor, StyleVar, Ui};
+use nexus::imgui::{StyleColor, StyleVar, Ui, WindowHoveredFlags};
 
 use crate::{
     drawing::draw_list::window_draw_list,
+    drawing::style_scope::StyleScope,
     text::icons::Icon,
     text::{IconText, TextFlow, TextStyle, draw_icon_text, draw_text},
     theme::Theme,
@@ -96,7 +97,7 @@ impl<'a> TextField<'a> {
     }
 
     /// Draws the label, the field and its error at the cursor.
-    pub fn draw(self, ui: &Ui, theme: &Theme, texts: TextFieldTexts<'_>) -> TextFieldResponse {
+    pub fn draw(mut self, ui: &Ui, theme: &Theme, texts: TextFieldTexts<'_>) -> TextFieldResponse {
         let _id = ui.push_id(self.id);
         let _spacing = ui.push_style_var(StyleVar::ItemSpacing([
             theme.spacing.small,
@@ -109,32 +110,29 @@ impl<'a> TextField<'a> {
         }
 
         let start = ui.cursor_screen_pos();
-        let response = {
-            let _fill = ui.push_style_color(StyleColor::FrameBg, theme.surface.input.to_array());
-            let _hover =
-                ui.push_style_color(StyleColor::FrameBgHovered, theme.surface.hover.to_array());
-            let _active =
-                ui.push_style_color(StyleColor::FrameBgActive, theme.surface.input.to_array());
-            let _hint =
-                ui.push_style_color(StyleColor::TextDisabled, theme.text.secondary.to_array());
-            let _rounding = ui.push_style_var(StyleVar::FrameRounding(theme.radius.medium));
-            let _border = ui.push_style_var(StyleVar::FrameBorderSize(0.0));
-            ui.set_next_item_width(self.width);
-            if self.takes_focus {
-                ui.set_keyboard_focus_here();
-            }
-            let submitted = ui
-                .input_text("##input", self.value)
-                .hint(self.placeholder)
-                .enter_returns_true(true)
-                .build();
-            TextFieldResponse {
-                changed: ui.is_item_edited(),
-                submitted,
-                is_active: ui.is_item_active(),
-            }
-        };
-
+        let height = ui.frame_height() + theme.spacing.small;
+        let end = [start[0] + self.width, start[1] + height];
+        let is_hovered = ui.is_mouse_hovering_rect(start, end)
+            && ui.is_window_hovered_with_flags(
+                WindowHoveredFlags::ALLOW_WHEN_BLOCKED_BY_ACTIVE_ITEM,
+            );
+        // The fill depends on the input's state but lies below its text.
+        let draw_list = window_draw_list(ui);
+        let response = draw_list.with_layer_below(
+            || self.draw_input(ui, theme, start, height),
+            |response| {
+                let fill = if is_hovered && !response.is_active {
+                    theme.surface.hover
+                } else {
+                    theme.surface.input
+                };
+                draw_list
+                    .add_rect(start, end, fill.to_array())
+                    .filled(true)
+                    .rounding(theme.radius.medium)
+                    .build();
+            },
+        );
         let frame = if self.error.is_some() {
             theme.status.danger
         } else if response.is_active {
@@ -142,12 +140,14 @@ impl<'a> TextField<'a> {
         } else {
             theme.border.color
         };
-        let end = [start[0] + self.width, start[1] + ui.frame_height()];
-        window_draw_list(ui)
+        draw_list
             .add_rect(start, end, frame.to_array())
             .rounding(theme.radius.medium)
             .thickness(theme.border.width)
             .build();
+        // Leave the cursor below the field, as a regular item would.
+        ui.set_cursor_screen_pos([start[0], end[1]]);
+        ui.dummy([0.0, 0.0]);
 
         if let Some(error) = self.error {
             let _wrap = ui.push_text_wrap_pos_with_pos(ui.cursor_pos()[0] + self.width);
@@ -165,5 +165,39 @@ impl<'a> TextField<'a> {
             );
         }
         response
+    }
+
+    /// Draws the frameless input inside the field at `start`. It stays clear
+    /// of the field's sides, so long text ends before the frame.
+    fn draw_input(
+        &mut self,
+        ui: &Ui,
+        theme: &Theme,
+        start: [f32; 2],
+        height: f32,
+    ) -> TextFieldResponse {
+        let inset = ui.clone_style().frame_padding[0];
+        let _frame = StyleScope::transparent_frame(ui);
+        let _hint = ui.push_style_color(StyleColor::TextDisabled, theme.text.secondary.to_array());
+        let _border = ui.push_style_var(StyleVar::FrameBorderSize(0.0));
+        let _padding = ui.push_style_var(StyleVar::FramePadding([
+            0.0,
+            (height - ui.text_line_height()) / 2.0,
+        ]));
+        ui.set_cursor_screen_pos([start[0] + inset, start[1]]);
+        ui.set_next_item_width((self.width - 2.0 * inset).max(1.0));
+        if self.takes_focus {
+            ui.set_keyboard_focus_here();
+        }
+        let submitted = ui
+            .input_text("##input", self.value)
+            .hint(self.placeholder)
+            .enter_returns_true(true)
+            .build();
+        TextFieldResponse {
+            changed: ui.is_item_edited(),
+            submitted,
+            is_active: ui.is_item_active(),
+        }
     }
 }

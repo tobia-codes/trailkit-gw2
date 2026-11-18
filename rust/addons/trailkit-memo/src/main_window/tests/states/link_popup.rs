@@ -39,11 +39,11 @@ fn editing_in_link() -> Fixture {
     editing_selecting("wiki]", Some(0))
 }
 
-/// The focused editor inside a link whose address memo does not open.
-fn editing_in_unsupported_link() -> Fixture {
+/// The focused editor inside the only text of the note, the link `body`.
+fn editing_in_link_body(body: &str) -> Fixture {
     let mut document = sample_document();
     if let Some(Node::Note(first)) = document.root.first_mut() {
-        first.body = "[wiki](ftp://example.com)".to_owned();
+        first.body = body.to_owned();
     }
     let ui_state = selected_first(&document);
     let mut fixture = memo_window(document, ui_state);
@@ -54,6 +54,18 @@ fn editing_in_unsupported_link() -> Fixture {
         editor.select_in_body(2..2);
     }
     fixture
+}
+
+/// The focused editor inside a link whose address memo does not open.
+fn editing_in_unsupported_link() -> Fixture {
+    editing_in_link_body("[wiki](ftp://example.com)")
+}
+
+/// The focused editor inside a link with an address wider than the field.
+fn editing_in_long_link() -> Fixture {
+    editing_in_link_body(
+        "[wiki](https://wiki.guildwars2.com/wiki/Guild_Wars_2_Wiki:Requests_for_comment/archive)",
+    )
 }
 
 /// Runs `steps` on `fixture` and returns the edited body.
@@ -115,6 +127,12 @@ fn link_popup_states() {
         "link-popup-existing",
         WIDE,
         editing_in_link,
+        &open_with(LINK_BUTTON),
+    );
+    assert_state(
+        "link-popup-long-address",
+        WIDE,
+        editing_in_long_link,
         &open_with(LINK_BUTTON),
     );
     let mut confirm = open_with(LINK_BUTTON);

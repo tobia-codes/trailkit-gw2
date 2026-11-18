@@ -42,6 +42,25 @@ pub fn window_draw_list<'ui>(_ui: &'ui Ui<'ui>) -> WindowDrawList<'ui> {
 }
 
 impl WindowDrawList<'_> {
+    /// Runs `top`, then `below` with its result, and shows what `below` drew
+    /// underneath what `top` drew: a background can follow the state of the
+    /// widget on it. Neither may split this draw list again.
+    pub fn with_layer_below<T>(self, top: impl FnOnce() -> T, below: impl FnOnce(&T)) -> T {
+        // SAFETY: `raw` is the frame's draw list (see `window_draw_list`);
+        // channel 1 exists after the split.
+        unsafe {
+            sys::ImDrawList_ChannelsSplit(self.raw, 2);
+            sys::ImDrawList_ChannelsSetCurrent(self.raw, 1);
+        }
+        let result = top();
+        // SAFETY: as above; channel 0 always exists.
+        unsafe { sys::ImDrawList_ChannelsSetCurrent(self.raw, 0) };
+        below(&result);
+        // SAFETY: as above; merges the split made at the start.
+        unsafe { sys::ImDrawList_ChannelsMerge(self.raw) };
+        result
+    }
+
     /// A line from `start` to `end` in `color`, 1 px thick until
     /// [`Line::thickness`].
     pub fn add_line(self, start: [f32; 2], end: [f32; 2], color: impl Into<ImColor32>) -> Line {
