@@ -1,6 +1,7 @@
 //! Snapshot tests of the memo main window (memo plan M65), run with
 //! `cargo xtask ui-test` (`--update` rewrites `tests/snapshots/`).
 
+mod data_safety;
 mod note_list;
 mod save_errors;
 mod search;
@@ -73,15 +74,11 @@ fn sample_document() -> NotesDocument {
     }
 }
 
-/// A memo window for `document` with `ui_state`, backed by a storage worker
-/// in a temporary directory (returned so it outlives the window).
-fn memo_window(
-    document: NotesDocument,
-    ui_state: UiState,
-) -> (MemoWindow, StorageWorker, tempfile::TempDir) {
-    let directory = tempfile::tempdir().unwrap_or_else(|error| panic!("temp dir: {error}"));
+/// A storage worker on `directory` that writes only when told to, with the
+/// connection a window talks to it through.
+fn storage_worker_in(directory: &std::path::Path) -> (StorageWorker, SaveConnection) {
     let (worker, loaded) = StorageWorker::spawn(
-        DocumentStore::new(directory.path()),
+        DocumentStore::new(directory),
         WorkerTiming {
             debounce: Duration::from_secs(3600),
             retry_delay: Duration::from_secs(3600),
@@ -94,14 +91,23 @@ fn memo_window(
         .recv_timeout(Duration::from_secs(5))
         .unwrap_or_else(|error| panic!("storage worker load: {error}"))
         .reports;
+    let saver = worker.saver();
+    (worker, SaveConnection { saver, reports })
+}
+
+/// A memo window for `document` with `ui_state`, backed by a storage worker
+/// in a temporary directory (returned so it outlives the window).
+fn memo_window(
+    document: NotesDocument,
+    ui_state: UiState,
+) -> (MemoWindow, StorageWorker, tempfile::TempDir) {
+    let directory = tempfile::tempdir().unwrap_or_else(|error| panic!("temp dir: {error}"));
+    let (worker, connection) = storage_worker_in(directory.path());
     let window = MemoWindow::new(
         document,
         None,
         ui_state,
-        SaveConnection {
-            saver: worker.saver(),
-            reports,
-        },
+        connection,
         directory.path().to_path_buf(),
         DraftsDocument::default(),
         Settings::DEFAULT,

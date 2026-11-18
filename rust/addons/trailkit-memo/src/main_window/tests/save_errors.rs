@@ -12,7 +12,7 @@ use super::*;
 const WAIT: Duration = Duration::from_secs(5);
 
 /// Reads the worker's reports until `done` holds; panics after [`WAIT`].
-fn wait_until(memo: &mut MemoWindow, what: &str, done: impl Fn(&MemoWindow) -> bool) {
+pub(super) fn wait_until(memo: &mut MemoWindow, what: &str, done: impl Fn(&MemoWindow) -> bool) {
     let deadline = std::time::Instant::now() + WAIT;
     while !done(memo) {
         assert!(
@@ -26,14 +26,14 @@ fn wait_until(memo: &mut MemoWindow, what: &str, done: impl Fn(&MemoWindow) -> b
 
 /// A folder where the temporary notes file must go makes every notes save
 /// fail; returns its path so the test can remove it again.
-fn block_notes(directory: &tempfile::TempDir) -> std::path::PathBuf {
+pub(super) fn block_notes(directory: &tempfile::TempDir) -> std::path::PathBuf {
     let blocker = directory.path().join("notes.json.tmp");
     fs::create_dir(&blocker).unwrap_or_else(|error| panic!("blocker: {error}"));
     blocker
 }
 
 /// The title of the first root note on disk.
-fn saved_first_title(directory: &tempfile::TempDir) -> Option<String> {
+pub(super) fn saved_first_title(directory: &tempfile::TempDir) -> Option<String> {
     let document = DocumentStore::new(directory.path())
         .load::<NotesDocument>(Timestamp::now())
         .into_document()?;
@@ -44,7 +44,7 @@ fn saved_first_title(directory: &tempfile::TempDir) -> Option<String> {
 }
 
 /// The title of the first root note in the window.
-fn first_title(memo: &MemoWindow) -> Option<&str> {
+pub(super) fn first_title(memo: &MemoWindow) -> Option<&str> {
     memo.document.root.iter().find_map(|node| match node {
         Node::Note(note) => Some(note.title.as_str()),
         Node::Group(_) => None,
@@ -52,7 +52,7 @@ fn first_title(memo: &MemoWindow) -> Option<&str> {
 }
 
 /// Starts editing the first note and appends to its title.
-fn edit_first_title(memo: &mut MemoWindow) {
+pub(super) fn edit_first_title(memo: &mut MemoWindow) {
     memo.apply(&WindowAction::StartEditing, Language::English);
     let Some(editor) = memo.editor.as_mut() else {
         panic!("editing did not start");
