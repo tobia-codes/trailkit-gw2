@@ -82,14 +82,21 @@ impl MemoWindow {
             return;
         }
         let candidate = Arc::new(candidate);
-        self.save_status.waiting.push_back(WriteRequester::Editor);
-        self.saver.save_notes(Arc::clone(&candidate));
-        self.saver.write_now();
+        let worker_stopped = self.save_status.worker_stopped;
+        if !worker_stopped {
+            self.save_status.waiting.push_back(WriteRequester::Editor);
+            self.saver.save_notes(Arc::clone(&candidate));
+            self.saver.write_now();
+        }
         self.editor_commit = Some(EditorCommit {
             candidate,
             then,
             failed: false,
         });
+        // No answer will come from a stopped worker: the save has failed.
+        if worker_stopped {
+            self.editor_write_failed();
+        }
     }
 
     /// The editor's text is on disk: it enters the tree, the editor closes
