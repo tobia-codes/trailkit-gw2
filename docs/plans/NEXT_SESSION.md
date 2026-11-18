@@ -1,12 +1,12 @@
 # Next session — handoff
 
-Last updated: 2026-11-17 (session 42; R121 done, code structure rules R133–R137). Current state and
+Last updated: 2026-11-18 (session 43; find in note, data-safety tests, README packages). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
 
-- Phase 0 + 0b complete; daily archives sometimes run hours late. Memo standalone: storage, tree, editor/preview, chips, resets, drag & drop, search,
-  trash/undo, UX/keyboard improvements, help window and status cards through M186 and the crash protection (R104) are implemented and tested in game.
+- Phase 0 + 0b complete; daily archives sometimes run hours late. Memo standalone: storage, tree, editor/preview, chips, resets, drag & drop, both searches,
+  trash/undo, UX/keyboard improvements, help window, status cards and crash protection (R104) are implemented and tested in game (through M199).
 - Decisions: `addons/trailkit-memo.md`, `ROADMAP.md`. Appearance: trailkit-ui `current-design.md`; review: tokens.md §10.
 
 ## ▶ Resume here
@@ -23,20 +23,23 @@ the upstream (narrow fetch refspec): set `branch.<b>.remote/merge` by hand for t
 **On the Mac (no game, no WSL):** `git fetch origin && git switch develop && git pull --ff-only`; deploy, `ui-test` and in-game
 tests wait for the Windows PC; check `source ~/.cargo/env` and a first `cargo test` there; snapshots via the PR's Windows CI.
 
-**Session 43 (2026-11-18, PC):** find in note and Shift twice (#145), data-safety tests and stopped-worker fix (#146) merged; all in-game tests passed.
-README package rule R138 is on `chore/readme-packages`. **Next:** pipeline coverage gaps and its two known bugs, then the favorites grilling.
-Coverage needs `llvm-tools` (installed); run it on demand, not in CI.
-Favorites grilling (`feature/memo-favorites`, M188–M191 decided): open Q407, Q408, Q416–Q419 in trailkit-memo.md.
+**Session 43 (2026-11-18, PC):** all merged into `develop`: #144 Escape closes menus first (M195), only Ctrl+S saves (M194), search list shows only
+matches (M196), hit marker (M197); #145 find in note with Ctrl+F and list search with Shift twice (M198, M199); #146 stopped-worker save fix and 22
+data-safety tests; #147 README **Packages** sections (R138, keep them current with every dependency change). All in-game tests passed; the list is empty.
+
+**Next: data pipeline** (`rust/tools/trailkit-datagen`, user-approved order). First review item 3 and the failing GemExchange job below, then tests for
+`archive.rs`, `wvw.rs`, `gem_exchange.rs`, `gw2_api.rs`. Coverage 2026-11-18 before #146: addons 89 % of lines, memo app 70 %, datagen 52 %.
+**Then test gaps:** extract and test the Escape/close logic of `nexus_bridge/render.rs` like `key_routing.rs`; window actions (new group, format,
+preview, compact view, open folder, clear search); Ctrl+Y/Ctrl+Shift+Z keys. `xtask` last. Prove new tests with injected faults.
+**Coverage on demand, not in CI:** `llvm-tools` is installed. Build tests with `RUSTFLAGS="-C instrument-coverage"` and `CARGO_TARGET_DIR=target/coverage`
+(`cargo xwin test --target x86_64-pc-windows-msvc --no-run`), run each binary from its crate with `LLVM_PROFILE_FILE` and `TRAILKIT_SNAPSHOT_ROOT` passed
+through `WSLENV` (`/p`), then `llvm-profdata merge` and `llvm-cov export --summary-only`. Delete stray `rust/*.profraw` and `target/coverage` (2.8 GB).
 
 **Open, in this order:**
-1. **In-game tests:** none open ([`in-game-tests.md`](in-game-tests.md)).
-   **Session 40 (2026-11-16):** tests 4, 5, 9, 12–17 OK; stuck rename fixed (#134). Q436 (menu divider) open. Q437–Q443 settled:
-   violet accent R124, red fill R125, chips R126, calendar icons M193 on `feature/violet-accent` (deployed, test 18).
-   **Session 39 (2026-11-15):** wishes of 2026-11-14 settled as ROADMAP R114–R123 (Q420–Q435; memo M192) on
-   `chore/plan-wishes-2026-11-14`. **Next:** the frontend/backend round (R121: stack, SSR, deployment, accounts without
-   email, sync, admin roles, forum, REST API, price history). Core wishes settled: layout editor R122,
-   hint about new addons R123. **Then** continue the favorites grilling on `feature/memo-favorites` (Q407, Q408, Q416–Q419),
-   mockup (R87), implementation. The `rust/` move (R116, #137) and the token source and generator (R118, #138) are merged. Review finding 2 done; **next: finding 3**.
+1. **In-game tests:** none open. After that pipeline work: Q501 toast visibility needs an R87 mockup; BL18 text size in core settings needs grilling.
+   Propose splits via grilling for length hints: `shared/i18n.rs`, `get`, `slices/editor/editor.rs`, `draw_find_bar`, `draw_main_window`, `actions.rs`.
+   Q436 (menu divider) stays open. The user kept the current find marks (current filled, others framed; section 5 of the mockup was declined).
+   **Favorites** on `feature/memo-favorites` (M188–M191 decided): open Q407, Q408, Q416–Q419, then mockup (R87) and implementation.
 2. **Remaining wishes of 2026-11-13:** memo struck-through checked items, then the second window. event:
    filters ("used in notes", a meta train order: research trains, timing, a source with licence/GDPR first), favorite events.
    All addons: more languages without growing the DLLs (BACKLOG BL15; reworks the `get` tables kept whole in Q392).
