@@ -38,8 +38,8 @@ collapsed and which notes are daily/weekly reset notes.
    trash are there. **Once only:** every group is expanded (the old expand
    state is not carried over, M201).
 2. Hover a reset note's calendar badge, and open the dropdown behind its
-   title. **Expected:** daily/weekly notes keep their kind; a normal note
-   shows the normal kind. Check a box in a daily note: it stays checked
+   title. **Expected:** daily/weekly notes keep their kind; a note without
+   a reset shows **No reset** (Deutsch: **Kein Reset**, M204). Check a box in a daily note: it stays checked
    until the next daily reset, as before.
 3. Collapse a group (click its arrow), reload memo (Setup step 5).
    **Expected:** the group is still collapsed. Before: same behavior, but
@@ -55,3 +55,18 @@ collapsed and which notes are daily/weekly reset notes.
    `backups/notes.v1.bak.json` exists (copy of the old file) and
    `notes.json` shows `"schema_version": 2` and `"reset_schedule"` instead of
    `"kind"`.
+
+## Test 26 — "No reset" label (M204, 2026-11-18)
+
+Approved design: https://claude.ai/artifact/HKKD3uQMPHy3cSyXxLgUZz
+
+1. Deploy (Setup step 1), open memo and select a note that has no reset.
+   **Before:** the box next to its title said "Normal". **Now:** it says
+   **No reset**.
+2. Open that box. **Expected:** No reset (checked), Daily reset, Weekly
+   reset.
+3. Right-click the note in the list › **Reset type**. **Expected:** the same
+   three entries, No reset checked.
+4. Set the Nexus language to Deutsch, drag the window as narrow as it goes.
+   **Expected:** the box says **Kein Reset**, the list shows Kein Reset,
+   Täglicher Reset and Wöchentlicher Reset, nothing is cut off.

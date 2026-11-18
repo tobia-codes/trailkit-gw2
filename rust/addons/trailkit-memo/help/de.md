@@ -102,7 +102,7 @@ Tägliche und wöchentliche Notizen entfernen ihre Häkchen beim Reset des Spiel
 
 ### Die Art wählen
 
-Wähle die Art einer Notiz im Feld neben ihrem Titel (*Normal*, *Täglicher Reset*, *Wöchentlicher Reset*) oder per Rechtsklick in der Liste › *Reset-Art*. Beim täglichen bzw. wöchentlichen Reset des Spiels werden alle Häkchen in so einer Notiz entfernt – praktisch für Dailies und wöchentliche Raids. Stellst du eine Notiz auf täglich oder wöchentlich um, bleiben ihre Häkchen bis zum nächsten Reset.
+Wähle die Art einer Notiz im Feld neben ihrem Titel (*Kein Reset*, *Täglicher Reset*, *Wöchentlicher Reset*) oder per Rechtsklick in der Liste › *Reset-Art*. Beim täglichen bzw. wöchentlichen Reset des Spiels werden alle Häkchen in so einer Notiz entfernt – praktisch für Dailies und wöchentliche Raids. Stellst du eine Notiz auf täglich oder wöchentlich um, bleiben ihre Häkchen bis zum nächsten Reset.
 
 ### Wann Notizen zurückgesetzt werden
 

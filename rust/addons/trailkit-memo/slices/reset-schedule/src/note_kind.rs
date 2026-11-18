@@ -19,7 +19,7 @@ use crate::{
 
 /// The note kinds in menu and dropdown order with their labels (M86).
 pub const KIND_OPTIONS: [(Option<ResetPeriod>, ResetText); 3] = [
-    (None, ResetText::KindNormal),
+    (None, ResetText::KindNoReset),
     (Some(ResetPeriod::Daily), ResetText::KindDaily),
     (Some(ResetPeriod::Weekly), ResetText::KindWeekly),
 ];

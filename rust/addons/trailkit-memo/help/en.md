@@ -102,7 +102,7 @@ Daily and weekly notes untick their checkboxes at the game's reset.
 
 ### Choosing the kind
 
-Choose the kind of a note in the box next to its title (*Normal*, *Daily reset*, *Weekly reset*), or right-click it in the list › *Reset type*. At the game's daily or weekly reset all checkboxes in such a note are unticked again — handy for dailies and weekly clears. A note you switch to daily or weekly keeps its ticks until the next reset.
+Choose the kind of a note in the box next to its title (*No reset*, *Daily reset*, *Weekly reset*), or right-click it in the list › *Reset type*. At the game's daily or weekly reset all checkboxes in such a note are unticked again — handy for dailies and weekly clears. A note you switch to daily or weekly keeps its ticks until the next reset.
 
 ### When notes reset
 
