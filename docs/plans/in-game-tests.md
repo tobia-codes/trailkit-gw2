@@ -27,3 +27,31 @@ is ready when the user is back at the PC.
    bottom-right corner as far left as it goes.
 5. Reload memo: Nexus menu › Addons › trailkit-memo › unload,
    then load again.
+
+## Test 25 — migrated notes and collapsed groups (M201–M203, 2026-11-18)
+
+No visible design change; checks that existing notes survive the
+`notes.json` version 2 migration. Before deploying, note which groups are
+collapsed and which notes are daily/weekly reset notes.
+
+1. Deploy (Setup step 1), open memo. **Expected:** all notes, groups and the
+   trash are there. **Once only:** every group is expanded (the old expand
+   state is not carried over, M201).
+2. Hover a reset note's calendar badge, and open the dropdown behind its
+   title. **Expected:** daily/weekly notes keep their kind; a normal note
+   shows the normal kind. Check a box in a daily note: it stays checked
+   until the next daily reset, as before.
+3. Collapse a group (click its arrow), reload memo (Setup step 5).
+   **Expected:** the group is still collapsed. Before: same behavior, but
+   it was stored in `notes.json`; now `ui_state.json` holds
+   `collapsed_groups`.
+4. With that group collapsed: create a note in it (right-click the group,
+   new note in its context menu), drag another note into it, then press
+   Ctrl+Z.
+   **Expected:** each time the group opens to show the entry, as before.
+5. Delete a note inside the collapsed group, open the trash, restore it.
+   **Expected:** the group opens and shows the restored note.
+6. In the memo folder (`addons/trailkit/memo/`), check
+   `backups/notes.v1.bak.json` exists (copy of the old file) and
+   `notes.json` shows `"schema_version": 2` and `"reset_schedule"` instead of
+   `"kind"`.

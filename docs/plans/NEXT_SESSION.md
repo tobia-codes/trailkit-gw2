@@ -33,7 +33,7 @@ preview, compact view, open folder, clear search); Ctrl+Y/Ctrl+Shift+Z keys. `xt
 each binary from its crate with `LLVM_PROFILE_FILE`/`TRAILKIT_SNAPSHOT_ROOT` via `WSLENV` (`/p`), `llvm-profdata merge`, `llvm-cov export`; then delete `rust/*.profraw` and the 2.8 GB build.
 
 **Open, in this order:**
-1. **In-game tests:** none open. After that pipeline work: Q501 toast visibility needs an R87 mockup; BL18 text size in core settings needs grilling.
+1. **In-game tests:** test 25 (memo data model) after deploying the branch above. After that pipeline work: Q501 toast visibility needs an R87 mockup; BL18 text size in core settings needs grilling.
    Propose splits via grilling for length hints: `shared/i18n.rs`, `get`, `slices/editor/editor.rs`, `draw_find_bar`, `draw_main_window`, `actions.rs`.
    Q436 (menu divider) stays open. The user kept the current find marks (current filled, others framed; section 5 of the mockup was declined).
    **Favorites** on `feature/memo-favorites` (M188–M191 decided): open Q407, Q408, Q416–Q419, then mockup (R87) and implementation.
@@ -42,8 +42,10 @@ each binary from its crate with `LLVM_PROFILE_FILE`/`TRAILKIT_SNAPSHOT_ROOT` via
    All addons: more languages without growing the DLLs (BACKLOG BL15; reworks the `get` tables kept whole in Q392).
 3. Last: chat translation addon feasibility (BL16, research first); then the queue below and the review items, one at a time.
 
-**Memo data model (M200–M203, 2026-11-18, phone), not implemented:** keep `notes.json`; `expanded` to `ui_state.json`; forward-compatible
-fields (unknown fields/values kept, M202); `kind` → `reset_schedule` (`never`/`daily`/`weekly`) with a migration step. Before the first release.
+**Memo data model (M201–M203), implemented 2026-11-18 on `feature/memo-extensible-data-model` (phone, not deployed):** `notes.json` v2
+(`kind` → `reset_schedule`, `expanded` dropped), `collapsed_groups` in `ui_state.json`, `UnknownFields` in `trailkit-storage`. Next: deploy, in-game
+test 25, merge OK. Main-window tests only ran in the PR's Windows CI. **Open (grill):** an unknown tree node `type` (e.g. a future `guild_note`)
+still makes an older build fail to load `notes.json`; `settings.json`/`ui_state.json` do not keep unknown fields (M202 covers notes only so far).
 **Decided, not scheduled:** Q340 backups with restore after settings and export/import (M28); Q329 `cargo bloat` at release prep.
 
 **Lessons:** measure before fixing; remove probes by editing; mockups first (R87); snapshot checks need a (draft) PR.
