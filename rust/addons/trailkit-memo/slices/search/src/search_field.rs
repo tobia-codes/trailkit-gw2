@@ -25,8 +25,6 @@ pub struct SearchField {
     generation: i32,
     /// Focus the input on the next frame (Ctrl+F, after clearing).
     focus_requested: bool,
-    /// Select the whole text when the input takes the focus (find bar, M198).
-    select_all_pending: bool,
     /// Whether the input had the keyboard focus last frame.
     is_active: bool,
 }
@@ -59,16 +57,10 @@ impl SearchField {
         self.focus_requested = keep_focus;
     }
 
-    /// Focuses the input on the next frame (Ctrl+F, M124).
+    /// Focuses the input on the next frame (M124). ImGui selects its whole
+    /// text then, so typing replaces it (find bar, M198).
     pub fn request_focus(&mut self) {
         self.focus_requested = true;
-    }
-
-    /// Focuses the input on the next frame with its whole text selected, so
-    /// typing replaces it (find bar, M198).
-    pub fn request_focus_selecting_all(&mut self) {
-        self.focus_requested = true;
-        self.select_all_pending = true;
     }
 
     /// Replaces the text, e.g. to fill the find field (M198).
@@ -208,14 +200,7 @@ impl SearchField {
         if std::mem::take(&mut self.focus_requested) {
             ui.set_keyboard_focus_here();
         }
-        let changed = ui
-            .input_text("##search", &mut self.text)
-            .hint(hint)
-            .auto_select_all(self.select_all_pending)
-            .build();
-        if ui.is_item_activated() {
-            self.select_all_pending = false;
-        }
+        let changed = ui.input_text("##search", &mut self.text).hint(hint).build();
         self.is_active = ui.is_item_active();
         changed
     }

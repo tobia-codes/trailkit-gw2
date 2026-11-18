@@ -123,7 +123,7 @@ impl MemoWindow {
         }
         self.find.visible = true;
         self.find.reveal_pending = true;
-        self.find.field.request_focus_selecting_all();
+        self.find.field.request_focus();
     }
 
     /// Opens the find bar with `text` in its field, as if typed (tests and

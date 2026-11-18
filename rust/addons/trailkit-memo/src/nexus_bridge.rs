@@ -29,8 +29,8 @@ use jiff::Timestamp;
 use windows::Win32::{
     Foundation::{HWND, LPARAM, WPARAM},
     UI::{
-        Input::KeyboardAndMouse::{GetKeyState, VIRTUAL_KEY, VK_CONTROL, VK_F3, VK_SHIFT},
-        WindowsAndMessaging::{WM_KEYDOWN, WM_KEYUP, WM_MBUTTONDOWN, WM_RBUTTONDOWN},
+        Input::KeyboardAndMouse::{GetKeyState, VIRTUAL_KEY},
+        WindowsAndMessaging::{WM_MBUTTONDOWN, WM_RBUTTONDOWN},
     },
 };
 
@@ -77,6 +77,7 @@ mod double_shift;
 mod fault_injection;
 mod guard;
 mod help;
+mod key_routing;
 mod logging;
 mod render;
 mod storage;
@@ -84,6 +85,7 @@ mod storage;
 use self::double_shift::DoubleShift;
 use self::guard::{Callback, RunState, guard, run_state};
 use self::help::MemoHelp;
+use self::key_routing::{ArmedKeys, KeyMessage, KeySignal, route_key};
 
 use self::storage::start_storage;
 
@@ -222,10 +224,6 @@ static DELETE_KEY_ARMED: AtomicBool = AtomicBool::new(false);
 /// Set when the Delete key was caught; the render callback deletes (M175).
 static DELETE_KEY_PRESSED: AtomicBool = AtomicBool::new(false);
 
-/// Windows virtual-key code of `F`.
-const VIRTUAL_KEY_F: usize = 0x46;
-/// Windows virtual-key code of Delete.
-const VIRTUAL_KEY_DELETE: usize = 0x2E;
 /// What a `WndProc` callback returns for a message it consumed.
 const MESSAGE_CONSUMED: u32 = 0;
 /// What a `WndProc` callback returns for a message others should see.
@@ -472,42 +470,39 @@ fn route_window_message(message: u32, key: WPARAM, details: LPARAM) -> u32 {
         record_mouse_button_press();
         return MESSAGE_PASSED;
     }
-    if message == WM_KEYUP && key.0 == usize::from(VK_SHIFT.0) {
-        lock_double_shift().shift_up(Instant::now());
+    let armed = ArmedKeys {
+        search: SEARCH_KEY_ARMED.load(Ordering::Relaxed),
+        find: FIND_KEY_ARMED.load(Ordering::Relaxed),
+        find_step: FIND_STEP_ARMED.load(Ordering::Relaxed),
+        delete: DELETE_KEY_ARMED.load(Ordering::Relaxed),
+    };
+    let key_message = KeyMessage {
+        message,
+        key: key.0,
+        is_repeat: details.0 & KEY_WAS_DOWN != 0,
+    };
+    let signal = route_key(
+        key_message,
+        armed,
+        Instant::now(),
+        &mut lock_double_shift(),
+        is_down,
+    );
+    let Some(signal) = signal else {
         return MESSAGE_PASSED;
+    };
+    match signal {
+        KeySignal::ToggleSearch => SEARCH_KEY_PRESSED.store(true, Ordering::Relaxed),
+        KeySignal::ToggleFind => FIND_KEY_PRESSED.store(true, Ordering::Relaxed),
+        KeySignal::FindNext => FIND_STEP.store(FIND_STEP_NEXT, Ordering::Relaxed),
+        KeySignal::FindPrevious => FIND_STEP.store(FIND_STEP_PREVIOUS, Ordering::Relaxed),
+        KeySignal::Delete => DELETE_KEY_PRESSED.store(true, Ordering::Relaxed),
     }
-    if message != WM_KEYDOWN {
-        return MESSAGE_PASSED;
+    if signal.consumes_key() {
+        MESSAGE_CONSUMED
+    } else {
+        MESSAGE_PASSED
     }
-    // Shift twice toggles the list search (M199); Shift stays with the game.
-    if key.0 == usize::from(VK_SHIFT.0) {
-        let is_repeat = details.0 & KEY_WAS_DOWN != 0;
-        if lock_double_shift().shift_down(Instant::now(), is_repeat)
-            && SEARCH_KEY_ARMED.load(Ordering::Relaxed)
-        {
-            SEARCH_KEY_PRESSED.store(true, Ordering::Relaxed);
-        }
-        return MESSAGE_PASSED;
-    }
-    lock_double_shift().other_key();
-    if key.0 == VIRTUAL_KEY_DELETE && DELETE_KEY_ARMED.load(Ordering::Relaxed) {
-        DELETE_KEY_PRESSED.store(true, Ordering::Relaxed);
-        return MESSAGE_CONSUMED;
-    }
-    if key.0 == VIRTUAL_KEY_F && FIND_KEY_ARMED.load(Ordering::Relaxed) && is_down(VK_CONTROL) {
-        FIND_KEY_PRESSED.store(true, Ordering::Relaxed);
-        return MESSAGE_CONSUMED;
-    }
-    if key.0 == usize::from(VK_F3.0) && FIND_STEP_ARMED.load(Ordering::Relaxed) {
-        let step = if is_down(VK_SHIFT) {
-            FIND_STEP_PREVIOUS
-        } else {
-            FIND_STEP_NEXT
-        };
-        FIND_STEP.store(step, Ordering::Relaxed);
-        return MESSAGE_CONSUMED;
-    }
-    MESSAGE_PASSED
 }
 
 /// Bit 30 of a key message's `lParam`: the key was already down (repeat).
