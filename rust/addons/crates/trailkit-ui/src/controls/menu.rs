@@ -45,15 +45,16 @@ pub fn draw_popup(ui: &Ui, theme: &Theme, id: &str, content: impl FnOnce()) {
 pub(crate) fn draw_fitted_popup(ui: &Ui, theme: &Theme, id: &str, content: impl FnOnce()) {
     let menu = theme.menu;
     // A row's item rect reaches half the item spacing beyond its text, so the
-    // spacing makes the row's padding and gap. The window padding adds what the
-    // rect takes back; the highlight leaves half the gap at each end.
+    // spacing makes the row's padding and gap. The window padding puts the text
+    // that far inside the highlight, which keeps `space.sm` from the popup's
+    // edge on every side (R144); the highlight leaves half the gap at each end.
     let _spacing = ui.push_style_var(StyleVar::ItemSpacing([
         2.0 * menu.row_padding_x,
         2.0 * menu.row_padding_y + menu.row_gap,
     ]));
     let _padding = ui.push_style_var(StyleVar::WindowPadding([
-        menu.padding + menu.row_padding_x,
-        menu.padding + menu.row_padding_y,
+        theme.spacing.small + theme.border.width + menu.row_padding_x,
+        theme.spacing.small + menu.row_padding_y + menu.row_gap / 2.0,
     ]));
     ui.popup(id, || {
         let frame = ui.frame_count();
@@ -115,29 +116,55 @@ pub fn place_next_popup(position: [f32; 2], pivot_x: f32) {
     }
 }
 
-/// Fills the menu row `[min, max]` (screen) in `color` with `radius.md`
-/// corners into `draw_list`, leaving half of `menu.row_gap` at top and bottom.
+/// The rectangle a menu row's highlight fills: the row's height without half
+/// a gap at each end, and the current popup's width without `space.sm` and its
+/// border, so all rows of every kind line up (R144).
+#[must_use]
+pub fn menu_row_highlight_rect(ui: &Ui, theme: &Theme) -> [[f32; 2]; 2] {
+    row_highlight_rect(ui, theme, [ui.item_rect_min(), ui.item_rect_max()])
+}
+
+/// [`menu_row_highlight_rect`] for a row spanning `[min, max]`.
+fn row_highlight_rect(ui: &Ui, theme: &Theme, [min, max]: [[f32; 2]; 2]) -> [[f32; 2]; 2] {
+    let inset = theme.spacing.small + theme.border.width;
+    let left = ui.window_pos()[0];
+    let half_gap = theme.menu.row_gap / 2.0;
+    [
+        [left + inset, min[1] + half_gap],
+        [left + ui.window_size()[0] - inset, max[1] - half_gap],
+    ]
+}
+
+/// The x where content at a menu row's right end stops.
+pub(crate) fn menu_row_content_right(ui: &Ui, theme: &Theme) -> f32 {
+    menu_row_highlight_rect(ui, theme)[1][0] - theme.menu.row_padding_x
+}
+
+/// Fills the highlight of the row spanning `[min, max]` with `color`.
 ///
 /// # Safety
-/// `draw_list` must be a draw list of the current frame, used on the render
-/// thread.
+///
+/// `draw_list` must be the draw list of the current window, on the render
+/// thread inside a frame.
 unsafe fn fill_menu_row(
     draw_list: *mut nexus::imgui::sys::ImDrawList,
+    ui: &Ui,
     theme: &Theme,
-    [min, max]: [[f32; 2]; 2],
+    row: [[f32; 2]; 2],
     color: Color,
 ) {
+    let [min, max] = row_highlight_rect(ui, theme, row);
     // SAFETY: guaranteed by the caller; the call only adds a rectangle.
     unsafe {
         nexus::imgui::sys::ImDrawList_AddRectFilled(
             draw_list,
             nexus::imgui::sys::ImVec2 {
                 x: min[0],
-                y: min[1] + theme.menu.row_gap / 2.0,
+                y: min[1],
             },
             nexus::imgui::sys::ImVec2 {
                 x: max[0],
-                y: max[1] - theme.menu.row_gap / 2.0,
+                y: max[1],
             },
             packed(color),
             theme.radius.medium,
@@ -165,6 +192,7 @@ pub(crate) fn draw_menu_row_highlight(ui: &Ui, theme: &Theme, selected: bool) {
     unsafe {
         fill_menu_row(
             nexus::imgui::sys::igGetWindowDrawList(),
+            ui,
             theme,
             [ui.item_rect_min(), ui.item_rect_max()],
             color,
@@ -204,7 +232,6 @@ pub fn draw_menu_item(ui: &Ui, theme: &Theme, label: &str, checked: bool) -> boo
     draw_menu_row_highlight(ui, theme, false);
     draw_menu_row_label(origin, theme.text.primary, label);
     if checked {
-        let max = ui.item_rect_max();
         // SAFETY: called on the render thread inside a frame, so the
         // current window's draw list is valid.
         let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
@@ -212,7 +239,7 @@ pub fn draw_menu_item(ui: &Ui, theme: &Theme, label: &str, checked: bool) -> boo
             draw_list,
             ui,
             Icon::CHECK,
-            max[0] - theme.menu.row_padding_x - icon_width(ui),
+            menu_row_content_right(ui, theme) - icon_width(ui),
             label_icon_span(ui, origin[1]),
             packed(theme.accent.text),
         );
@@ -310,7 +337,7 @@ fn draw_icon_menu_item(
     let label_x = origin[0] + icon_width(ui) + theme.spacing.small;
     draw_menu_row_label([label_x, origin[1]], color, label);
     if let Some(shortcut) = shortcut {
-        let right = ui.item_rect_max()[0] - theme.menu.row_padding_x;
+        let right = menu_row_content_right(ui, theme);
         let x = right - ui.calc_text_size(shortcut)[0];
         draw_menu_row_label([x, origin[1]], theme.text.secondary, shortcut);
     }
@@ -368,7 +395,7 @@ pub fn begin_submenu<'ui>(
         ];
         // SAFETY: render thread inside a frame; `draw_list` belongs to the
         // parent menu of this frame.
-        unsafe { fill_menu_row(draw_list, theme, row, theme.surface.popup_hover) };
+        unsafe { fill_menu_row(draw_list, ui, theme, row, theme.surface.popup_hover) };
     }
     let begin = label.as_ptr().cast::<std::ffi::c_char>();
     // SAFETY: render thread inside a frame; `draw_list` belongs to the

@@ -82,7 +82,7 @@ Klicke oben rechts in einer Notiz auf **Bearbeiten** oder doppelklicke die Notiz
 - **Links** öffnen sich im Browser (nur `http://` und `https://`), E-Mail-Adressen in deinem Mailprogramm; das Icon vor dem Link zeigt, was sich öffnet; fahre mit der Maus darüber, um das Ziel zu sehen, sofern der Link es nicht schon anzeigt.
 - **Link einfügen:** Markiere bei Bedarf Text, klicke auf den Link-Button oder drücke **Strg+K**, gib die Adresse ein und drücke Enter. Der Text ist optional, `https://` wird ergänzt, wenn es fehlt, und eine Adresse aus der Zwischenablage ist schon eingetragen. Steht der Cursor in einem Link, änderst du ihn dort oder entfernst den Link und behältst seinen Text.
 - **Rechtsklick auf einen Link** öffnet ihn oder kopiert seine Adresse.
-- **Adresse einfügen:** Ein einfaches `https://…` in deinem Text wird von selbst zum anklickbaren Link.
+- **Adresse einfügen:** Ein einfaches `https://…` oder eine E-Mail-Adresse in deinem Text wird von selbst zum anklickbaren Link.
 
 ### Chat-Links
 

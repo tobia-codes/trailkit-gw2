@@ -26,7 +26,6 @@ pub(super) const BUTTON_LAYOUT: ButtonLayout = ButtonLayout {
 
 /// Menu tokens, the same in both built-in themes.
 pub(super) const MENU_LAYOUT: MenuLayout = MenuLayout {
-    padding: 6.0,
     row_padding_x: 10.0,
     row_padding_y: 7.0,
     row_gap: 2.0,

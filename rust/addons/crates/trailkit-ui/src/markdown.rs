@@ -14,7 +14,7 @@ pub mod markdown_view;
 
 use pulldown_cmark::{Event, HeadingLevel, LinkType, Options, Parser, Tag, TagEnd};
 
-use self::bare_urls::find_bare_urls;
+use self::bare_urls::find_bare_links;
 use crate::chat_link::{ChatLinkChip, find_chat_codes};
 use crate::text::icons::Icon;
 
@@ -163,10 +163,13 @@ pub fn inline_ranges(source: &str) -> Vec<InlineRange> {
         .collect()
 }
 
-/// Turns bare web addresses in plain text spans into link spans (memo plan
-/// M209). Code, raw HTML and the text of links stay as they are.
+/// Turns bare web and e-mail addresses in plain text spans into link spans
+/// (memo plan M209, M211). Code, raw HTML and the text of links stay as they are.
 fn split_bare_urls(spans: Vec<Span>) -> Vec<Span> {
-    if !spans.iter().any(|span| span.text.contains("://")) {
+    if !spans
+        .iter()
+        .any(|span| span.text.contains("://") || span.text.contains('@'))
+    {
         return spans;
     }
     let mut split = Vec::with_capacity(spans.len());
@@ -185,15 +188,14 @@ fn split_bare_urls(spans: Vec<Span>) -> Vec<Span> {
             style: span.style.clone(),
             chip: None,
         };
-        for range in find_bare_urls(&span.text) {
-            if range.start > text_start {
-                split.push(plain(&span.text[text_start..range.start]));
+        for found in find_bare_links(&span.text) {
+            if found.range.start > text_start {
+                split.push(plain(&span.text[text_start..found.range.start]));
             }
-            let url = &span.text[range.clone()];
-            let mut link = plain(url);
-            link.style.link = Some(url.to_owned());
+            let mut link = plain(&span.text[found.range.clone()]);
+            link.style.link = Some(found.target);
             split.push(link);
-            text_start = range.end;
+            text_start = found.range.end;
         }
         if text_start < span.text.len() {
             split.push(plain(&span.text[text_start..]));
@@ -713,6 +715,18 @@ mod tests {
             links_in(&format!("- [ ] {url}")),
             [(url.to_owned(), url.to_owned())]
         );
+    }
+
+    #[test]
+    fn bare_email_addresses_become_mail_links() {
+        assert_eq!(
+            links_in("Write to bogus@example.com."),
+            [(
+                "bogus@example.com".to_owned(),
+                "mailto:bogus@example.com".to_owned()
+            )]
+        );
+        assert!(links_in("`bogus@example.com`").is_empty());
     }
 
     #[test]

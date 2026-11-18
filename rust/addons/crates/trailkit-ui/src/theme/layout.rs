@@ -87,8 +87,6 @@ impl TooltipLayout {
 /// Menu layout (memo M177).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct MenuLayout {
-    /// `menu.padding`: gap between a menu's edge and its rows.
-    pub padding: f32,
     /// `menu.row_padding_x`: gap between a row's edge and its content.
     pub row_padding_x: f32,
     /// `menu.row_padding_y`: gap between a row's edge and its text line.

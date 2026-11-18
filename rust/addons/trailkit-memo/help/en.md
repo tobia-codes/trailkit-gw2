@@ -82,7 +82,7 @@ Click **Edit** at the top right of a note, or double-click the note. You edit th
 - **Links** open in your browser (only `http://` and `https://`), e-mail addresses in your mail program; the icon before a link shows which; hover a link to see where it goes, unless it already shows its address.
 - **Add a link:** select text if you like, click the link button or press **Ctrl+K**, enter the address and press Enter. The text is optional, `https://` is added if it is missing, and an address from the clipboard is filled in. With the cursor in a link you change it there, or remove the link and keep its text.
 - **Right-click a link** to open it or copy its address.
-- **Paste an address:** a plain `https://…` in your text becomes a clickable link by itself.
+- **Paste an address:** a plain `https://…` or e-mail address in your text becomes a clickable link by itself.
 
 ### Chat links
 

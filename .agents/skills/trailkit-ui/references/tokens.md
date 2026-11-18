@@ -144,6 +144,7 @@ the next element; `TextField` and `draw_dialog_frame` already follow this.
 | Dialog title to its content | `space.md` |
 | Last input, error or text to the button row | `space.lg` |
 | Inside a dialog card | `space.lg` |
+| Popup edge to a highlighted row | `space.sm` on all four sides |
 
 ## 6. Selection
 

@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-18 (session 43; find in note, data-safety tests, README packages). Current state and
+Last updated: 2026-11-18 (session 44; memo links, dialogs, shared form rules). Current state and
 next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
@@ -23,19 +23,21 @@ the upstream (narrow fetch refspec): set `branch.<b>.remote/merge` by hand for t
 **On the Mac (no game, no WSL):** `git fetch origin && git switch develop && git pull --ff-only`; deploy, `ui-test` and in-game
 tests wait for the Windows PC; check `source ~/.cargo/env` and a first `cargo test` there; snapshots via the PR's Windows CI.
 
-**Session 43 (2026-11-18, PC), all on `develop`:** #144 M194–M197; #145 find in note, Shift twice (M198, M199); #146 stopped-worker fix, 22 data-safety
-tests; #147 README **Packages** (R138: update with every dependency change). All in-game tests passed; the list is empty.
+**Session 44 (2026-11-18, PC), continue on `feature/memo-extensible-data-model`, draft PR #152 (pushed, NOT merged, no auto-merge).** Done there: data model M201–M203,
+"No reset" M204, drop zones M205, Backspace on list markers and links M206/M207, link dialog M208, bare links and e-mails M209/M211, right-click menu of links and chips M210,
+`TextField` + `TextStyle::Label` (R139), no disabled buttons without approval (R140), close icon on dialogs (R141), wrapped tooltips (R142), link icons `LinkKind` (R143), measured spacing `tokens.md` §5.1 (R144).
+**On the phone next (no game, one question per message, mock first):** 1. existing disabled buttons: find arrows, event button, log export active and explaining on click? Recommended yes; the lock in the save-failed dialog stays.
+2. shared input core for `SearchField` and `TextField`? Recommended yes. 3. slash menu BL23: check Notion's behavior, then mock. 4. splits for the length hints (`markdown.rs`, `editor.rs`, `dialogs.rs`, `i18n.rs`, `actions.rs`, `buffer.rs`, `states.rs`).
+Backlog from this session: BL20 in-game browser, BL21 achievement addon, BL22 achievement notes, BL24 item icons. Mocks: link dialog https://claude.ai/artifact/SgWHJ1mMKSTArQMEVaqACm, menu https://claude.ai/artifact/T75AGbpSsUuT4K4yTwpSTs.
+**Back on the PC:** `git fetch origin && git switch feature/memo-extensible-data-model && git pull --ff-only`, `cargo xtask deploy trailkit-memo`, finish in-game tests 25 (from step 4), 26, 27 (from step 2), 28–32, then ask for the merge OK.
 **Next: data pipeline** (`rust/tools/trailkit-datagen`): the failing GemExchange job below (review item 3 done, D42), then tests for `archive.rs`, `wvw.rs`,
 `gem_exchange.rs`, `gw2_api.rs`. Coverage 2026-11-18 before #146: addons 89 % of lines, memo app 70 %, datagen 52 %.
-**Then test gaps:** extract and test the Escape/close logic of `nexus_bridge/render.rs` like `key_routing.rs`; window actions (new group, format,
-preview, compact view, open folder, clear search); Ctrl+Y/Ctrl+Shift+Z keys. `xtask` last. Prove new tests with injected faults.
-**Coverage tooling — open question (2026-11-18):** A `cargo xtask coverage` + docs in agent-reference/CONTRIBUTING (recommended), B docs only,
-C try `cargo-llvm-cov`; ask the user. Until then the manual steps:
-**Coverage on demand, not in CI** (`llvm-tools` installed): `RUSTFLAGS="-C instrument-coverage" CARGO_TARGET_DIR=target/coverage cargo xwin test --no-run`, run
-each binary from its crate with `LLVM_PROFILE_FILE`/`TRAILKIT_SNAPSHOT_ROOT` via `WSLENV` (`/p`), `llvm-profdata merge`, `llvm-cov export`; then delete `rust/*.profraw` and the 2.8 GB build.
+**Then test gaps:** extract and test the Escape/close logic of `nexus_bridge/render.rs` like `key_routing.rs`; window actions (new group, format, preview, compact view, open folder, clear search); Ctrl+Y/Ctrl+Shift+Z keys. `xtask` last. Prove new tests with injected faults.
+**Coverage tooling — open question (2026-11-18):** A `cargo xtask coverage` + docs in agent-reference/CONTRIBUTING (recommended), B docs only, C try `cargo-llvm-cov`; ask the user. Until then the manual steps:
+**Coverage on demand, not in CI** (`llvm-tools` installed): `RUSTFLAGS="-C instrument-coverage" CARGO_TARGET_DIR=target/coverage cargo xwin test --no-run`, run each binary from its crate with `LLVM_PROFILE_FILE`/`TRAILKIT_SNAPSHOT_ROOT` via `WSLENV` (`/p`), `llvm-profdata merge`, `llvm-cov export`; then delete `rust/*.profraw` and the 2.8 GB build.
 
 **Open, in this order:**
-1. **In-game tests:** tests 25 (memo data model), 26 ("No reset" label, M204), 27 (drop onto groups, M205) 28 (Backspace on list markers, M206), 29 (deleting links, M207) , 30 (link dialog, M208, M209) and 31 (link and chip menu, M210) after deploying the branch above. After that pipeline work: Q501 toast visibility needs an R87 mockup; BL18 text size in core settings needs grilling.
+1. **In-game tests:** tests 25–32 after deploying the branch above. After that pipeline work: Q501 toast visibility needs an R87 mockup; BL18 text size in core settings needs grilling.
    Propose splits via grilling for length hints: `shared/i18n.rs`, `get`, `slices/editor/editor.rs`, `draw_find_bar`, `draw_main_window`, `actions.rs`.
    Q436 (menu divider) stays open. The user kept the current find marks (current filled, others framed; section 5 of the mockup was declined).
    **Favorites** on `feature/memo-favorites` (M188–M191 decided): open Q407, Q408, Q416–Q419, then mockup (R87) and implementation.
@@ -44,10 +46,7 @@ each binary from its crate with `LLVM_PROFILE_FILE`/`TRAILKIT_SNAPSHOT_ROOT` via
    All addons: more languages without growing the DLLs (BACKLOG BL15; reworks the `get` tables kept whole in Q392).
 3. Last: chat translation addon feasibility (BL16, research first); then the queue below and the review items, one at a time.
 
-**Memo data model (M201–M203), implemented 2026-11-18 on `feature/memo-extensible-data-model` (phone, not deployed):** `notes.json` v2
-(`kind` → `reset_schedule`, `expanded` dropped), `collapsed_groups` in `ui_state.json`, `UnknownFields` in `trailkit-storage`. Draft PR open (no auto-merge). On the PC: `git fetch origin && git switch feature/memo-extensible-data-model && git pull`, check the PR's Windows CI
-(snapshots), `cargo xtask deploy trailkit-memo`, in-game test 25, then merge OK. Main-window tests only ran in the PR's Windows CI. **Open (grill):** an unknown tree node `type` (e.g. a future `guild_note`)
-still makes an older build fail to load `notes.json`; `settings.json`/`ui_state.json` do not keep unknown fields (M202 covers notes only so far).
+**Open (grill):** an unknown tree node `type` (e.g. a future `guild_note`) still stops older builds from loading `notes.json`; `settings.json`/`ui_state.json` do not keep unknown fields (M202 covers notes only).
 **Decided, not scheduled:** Q340 backups with restore after settings and export/import (M28); Q329 `cargo bloat` at release prep.
 
 **Lessons:** measure before fixing; remove probes by editing; mockups first (R87); snapshot checks need a (draft) PR.
@@ -60,12 +59,9 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M211+, R145+, B46+, BL25+, questions from 515**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M212+, R145+, B46+, BL25+, questions from 515**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
-1. **Storage failures:** done (memo M180, 2026-11-10).
-2. **Pre-push protection:** done (Q460–Q462, R48, 2026-11-16).
-3. **WvW snapshot validity:** done (D42, 2026-11-18): no file and a failed run once the region's matches have ended.
 4. **Search cache:** `rust/addons/trailkit-memo/src/main_window/search.rs::update_search` calls `SearchQuery::parse` before checking the
    cache, allocating for unchanged queries every frame. Check unchanged inputs first; no benchmark was run.
 5. **Docs/skills accuracy:** READMEs done (R91). Still wrong: `nexus-addon-dev/references/addon-structure.md`

@@ -5,10 +5,16 @@
 //! needs nexus-rs' ImGui).
 #![cfg(windows)]
 
+use std::cell::Cell;
+
 use nexus::imgui::{Condition, Ui, Window};
 use trailkit_ui::{
-    controls::menu::{close_open_popups, draw_popup, popup_drawn_this_frame},
-    theme::Theme,
+    controls::menu::{
+        close_open_popups, draw_menu_item, draw_popup, menu_row_highlight_rect,
+        popup_drawn_this_frame,
+    },
+    drawing::style_scope::StyleScope,
+    theme::{Theme, ThemeKind},
 };
 use trailkit_ui_testing::harness::{FrameInput, UiHarness};
 
@@ -53,4 +59,48 @@ fn reports_an_open_popup_and_closes_it_on_request() {
 
     harness.step(&input, |ui| result = draw(ui, false, false));
     assert_eq!(result, (false, false), "and stays closed");
+}
+
+/// A highlighted row keeps the same distance to every edge of its menu.
+#[test]
+fn menu_rows_have_the_same_gap_on_every_side() {
+    let theme = ThemeKind::Dark.theme();
+    let gaps = Cell::new(None);
+    let mut harness = UiHarness::new([300.0, 200.0]);
+    let mut frame = |open: bool| {
+        harness.step(&FrameInput::default(), |ui: &Ui| {
+            let _style = StyleScope::push(ui, &theme);
+            Window::new("window")
+                .position([0.0, 0.0], Condition::Always)
+                .size([300.0, 200.0], Condition::Always)
+                .build(ui, || {
+                    if open {
+                        ui.open_popup("menu");
+                    }
+                    draw_popup(ui, &theme, "menu", || {
+                        let position = ui.window_pos();
+                        let size = ui.window_size();
+                        draw_menu_item(ui, &theme, "First", false);
+                        let [first, _] = menu_row_highlight_rect(ui, &theme);
+                        draw_menu_item(ui, &theme, "Last", false);
+                        let [_, last] = menu_row_highlight_rect(ui, &theme);
+                        gaps.set(Some([
+                            first[0] - position[0],
+                            position[0] + size[0] - last[0],
+                            first[1] - position[1],
+                            position[1] + size[1] - last[1],
+                        ]));
+                    });
+                });
+        });
+    };
+    frame(true);
+    for _ in 0..3 {
+        frame(false);
+    }
+    let gaps = gaps.get().expect("the menu was drawn");
+    let expected = theme.spacing.small + theme.border.width;
+    for gap in gaps {
+        assert!((gap - expected).abs() < 0.5, "uneven gaps {gaps:?}");
+    }
 }

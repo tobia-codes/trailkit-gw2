@@ -169,3 +169,13 @@ coin chip, in the reading view.
 4. Right-click the coin chip. **Expected:** only Copy chat link.
 5. With Nexus in German, **Im Wiki öffnen** opens the German wiki.
 6. Open a menu and press Escape. **Expected:** only the menu closes.
+
+## Test 32 — even popup spacing and e-mail links (R144, M211, 2026-11-18)
+
+1. Open any right-click menu and the reset type dropdown, hover the first and
+   last row. **Before:** 7 px at the sides, 5 px above and below. **Now:** the
+   highlight keeps the same 8 px (`space.sm`) from all four edges.
+2. Type `bogus@example.com` in a note and save it. **Expected:** it is a link
+   with the mail icon and no tooltip. A click opens the mail program; a right
+   click offers Write email and Copy email address.
+3. Type `a@b` and `` `bogus@example.com` ``. **Expected:** both stay plain text.

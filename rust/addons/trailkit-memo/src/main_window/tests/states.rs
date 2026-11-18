@@ -627,7 +627,7 @@ fn note_content_hovers() {
         WIDE,
         || {
             with_body(
-                "A [web link](https://a.de), [mail](mailto:a@b.de) and a **[bold *mixed* link](https://b.de)**.\n\nhttps://wiki.guildwars2.com/wiki/Main_Page_with_a_long_address_that_wraps_around_the_line_end",
+                "A [web link](https://a.de), [mail](mailto:a@b.de) and a **[bold *mixed* link](https://b.de)** or bogus@example.com.\n\nhttps://wiki.guildwars2.com/wiki/Main_Page_with_a_long_address_that_wraps_around_the_line_end",
                 |_| {},
             )
         },

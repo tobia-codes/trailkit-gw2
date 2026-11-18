@@ -177,7 +177,6 @@ Addons only.
 
 | Token | Dark | Light | Purpose |
 | --- | --- | --- | --- |
-| `menu.padding` | 6 px | 6 px | Gap between a menu's edge and its rows |
 | `menu.row_padding_x` | 10 px | 10 px | Gap between a menu row's edge and its content |
 | `menu.row_padding_y` | 7 px | 7 px | Gap between a menu row's edge and its text line |
 | `menu.row_gap` | 2 px | 2 px | Gap between two menu rows |
