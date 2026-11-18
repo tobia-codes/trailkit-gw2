@@ -79,7 +79,7 @@ Click **Edit** at the top right of a note, or double-click the note. You edit th
 ### Checkboxes and links
 
 - **Checkboxes** in a note can be ticked directly, without the editor.
-- **Links** open in your browser (only `http://` and `https://`), e-mail addresses in your mail program; hover a link to see where it goes.
+- **Links** open in your browser (only `http://` and `https://`), e-mail addresses in your mail program; hover a link to see where it goes, unless it already shows its address.
 - **Add a link:** select text if you like, click the link button or press **Ctrl+K**, enter the address and press Enter. The text is optional, `https://` is added if it is missing, and an address from the clipboard is filled in. With the cursor in a link you change it there, or remove the link and keep its text.
 - **Paste an address:** a plain `https://…` in your text becomes a clickable link by itself.
 

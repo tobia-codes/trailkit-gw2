@@ -144,7 +144,8 @@ Open a note and click **Edit**.
 6. Enter `sdsdsd`, press Enter, then try `ftp://example.com` and click into Text. **Expected:** a red message
    with an icon below Address; the button stays active and does not insert.
 7. Save the note. **Expected:** the pasted `https://…` address from step 2 is
-   a clickable link in the reading view.
+   a clickable link in the reading view, without a tooltip. A link with its
+   own text still shows its address as a tooltip.
 8. Set Nexus to Deutsch and drag the window narrow. **Expected:** the dialog
    fits and shows **Text (optional)**, **Adresse**, **Abbrechen**, **Einfügen**.
 9. Open the dialog and click the dimmed area beside it, then open it again

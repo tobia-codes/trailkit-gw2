@@ -615,6 +615,12 @@ fn note_content_hovers() {
     ] {
         assert_state(name, WIDE, selected, &hover(position));
     }
+    assert_state(
+        "hover-bare-link",
+        WIDE,
+        || with_body("https://wiki.guildwars2.com", |_| {}),
+        &hover([300.0, 157.0]),
+    );
     assert_state("pressed-checkbox", WIDE, selected, &press([228.0, 225.0]));
 }
 

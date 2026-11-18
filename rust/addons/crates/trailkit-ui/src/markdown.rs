@@ -332,6 +332,14 @@ pub fn link_target_label(url: &str) -> &str {
         .map_or(url, |_| &url[MAIL_SCHEME.len()..])
 }
 
+/// What the tooltip of a link showing `text` says: where it goes, or nothing
+/// if `text` already is exactly that (memo plan M209).
+#[must_use]
+pub fn link_tooltip<'url>(text: &str, url: &'url str) -> Option<&'url str> {
+    let target = link_target_label(url);
+    (text != target).then_some(target)
+}
+
 /// The visible text of `document` for searching (memo plan M120): span
 /// texts (link texts, task texts, chat codes) without markdown markers or
 /// link targets, one line per block.
@@ -640,6 +648,17 @@ mod tests {
             .iter()
             .filter_map(|span| Some((span.text.clone(), span.style.link.clone()?)))
             .collect()
+    }
+
+    #[test]
+    fn a_link_showing_its_own_target_needs_no_tooltip() {
+        assert_eq!(link_tooltip("https://a.de", "https://a.de"), None);
+        assert_eq!(link_tooltip("a@b.de", "mailto:a@b.de"), None);
+        assert_eq!(link_tooltip("Wiki", "https://a.de"), Some("https://a.de"));
+        assert_eq!(
+            link_tooltip("https://a.de/", "https://a.de"),
+            Some("https://a.de")
+        );
     }
 
     #[test]
