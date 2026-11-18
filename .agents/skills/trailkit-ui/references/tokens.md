@@ -157,7 +157,8 @@ every addon.
 | Object or page title | note title, group title in the trash preview | `Heading1` (`text.primary`) |
 | Section | settings or help sections | `Heading2` (`text.primary`) |
 | Subsection, dialog title | "Delete permanently?" | `Heading3` (`text.primary`) |
-| Content, labels, empty-state title | note body, "No notes yet" | `Body` (`text.primary`) |
+| Content, empty-state title | note body, "No notes yet" | `Body` (`text.primary`) |
+| Form field label | "Address" above its input | `Label` (bold, `text.primary`, R139) |
 | Emphasis | group name in a list | `BodyStrong` (`text.primary`) |
 | Info and metadata | info line ("deleted today · 30 days left"), counts, hints, placeholders ("Select an entry to view it.") | `Secondary` (`text.secondary`) |
 | Fine print | export lines, footnotes, keyboard shortcuts | `Small` (`text.secondary`) |

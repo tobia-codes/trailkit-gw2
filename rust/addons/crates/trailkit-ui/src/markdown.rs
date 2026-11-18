@@ -7,11 +7,13 @@
 //! per content change, never per frame; the Windows-only `markdown_view`
 //! draws the result.
 
+mod bare_urls;
 #[cfg(windows)]
 pub mod markdown_view;
 
 use pulldown_cmark::{Event, HeadingLevel, LinkType, Options, Parser, Tag, TagEnd};
 
+use self::bare_urls::find_bare_urls;
 use crate::chat_link::{ChatLinkChip, find_chat_codes};
 
 /// A parsed markdown document, ready to draw.
@@ -96,6 +98,8 @@ pub struct SpanStyle {
     /// Target of a clickable link; only `http(s)` and `mailto:` links are
     /// kept (M37, M183).
     pub link: Option<String>,
+    /// Code, raw HTML or link text, which never becomes a bare link.
+    pub is_literal: bool,
 }
 
 impl Span {
@@ -157,6 +161,45 @@ pub fn inline_ranges(source: &str) -> Vec<InlineRange> {
         .collect()
 }
 
+/// Turns bare web addresses in plain text spans into link spans (memo plan
+/// M209). Code, raw HTML and the text of links stay as they are.
+fn split_bare_urls(spans: Vec<Span>) -> Vec<Span> {
+    if !spans.iter().any(|span| span.text.contains("://")) {
+        return spans;
+    }
+    let mut split = Vec::with_capacity(spans.len());
+    for span in spans {
+        if span.style.is_literal
+            || span.style.link.is_some()
+            || span.chip.is_some()
+            || span.is_line_break()
+        {
+            split.push(span);
+            continue;
+        }
+        let mut text_start = 0;
+        let plain = |text: &str| Span {
+            text: text.to_owned(),
+            style: span.style.clone(),
+            chip: None,
+        };
+        for range in find_bare_urls(&span.text) {
+            if range.start > text_start {
+                split.push(plain(&span.text[text_start..range.start]));
+            }
+            let url = &span.text[range.clone()];
+            let mut link = plain(url);
+            link.style.link = Some(url.to_owned());
+            split.push(link);
+            text_start = range.end;
+        }
+        if text_start < span.text.len() {
+            split.push(plain(&span.text[text_start..]));
+        }
+    }
+    split
+}
+
 /// Where an inline link `[text](target)` is in the source.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InlineLink {
@@ -167,6 +210,18 @@ pub struct InlineLink {
 }
 
 impl InlineLink {
+    /// The link text between the brackets.
+    #[must_use]
+    pub fn text_range(&self) -> std::ops::Range<usize> {
+        self.range.start + 1..self.closing_bracket
+    }
+
+    /// The target between the parentheses, with a title if it has one.
+    #[must_use]
+    pub fn target_range(&self) -> std::ops::Range<usize> {
+        self.closing_bracket + 2..self.range.end - 1
+    }
+
     /// Whether the byte at `offset` is one of the four characters that make
     /// this a link: the opening `[`, the `](` pair or the closing `)`.
     #[must_use]
@@ -359,6 +414,8 @@ struct Builder {
     italic: u32,
     /// Target of the link being read, if it is a web link.
     link: Option<String>,
+    /// Depth of code, raw HTML and links, whose text is never a bare link.
+    literal: u32,
 }
 
 /// The kind of block currently being collected.
@@ -378,8 +435,11 @@ impl Builder {
         match event {
             Event::Start(tag) => self.start(tag),
             Event::End(tag) => self.end(tag),
-            Event::Text(text) | Event::Code(text) | Event::Html(text) | Event::InlineHtml(text) => {
+            Event::Text(text) => self.push_text(&text),
+            Event::Code(text) | Event::Html(text) | Event::InlineHtml(text) => {
+                self.literal += 1;
                 self.push_text(&text);
+                self.literal -= 1;
             }
             // A single line break shows as one, like the user typed it (memo
             // plan M63); blank lines still separate paragraphs.
@@ -406,6 +466,9 @@ impl Builder {
 
     /// Handles the start of a tag.
     fn start(&mut self, tag: Tag<'_>) {
+        if matches!(tag, Tag::CodeBlock(_)) {
+            self.literal += 1;
+        }
         match tag {
             Tag::Heading { level, .. } => {
                 self.flush();
@@ -446,6 +509,7 @@ impl Builder {
                 dest_url,
                 ..
             } => {
+                self.literal += 1;
                 // An e-mail autolink (`<a@b.de>`) carries the bare address.
                 let url = if link_type == LinkType::Email {
                     format!("{MAIL_SCHEME}{dest_url}")
@@ -462,7 +526,13 @@ impl Builder {
     fn end(&mut self, tag: TagEnd) {
         match tag {
             TagEnd::Heading(_) | TagEnd::Item => self.flush(),
-            TagEnd::Paragraph | TagEnd::CodeBlock | TagEnd::BlockQuote(_) | TagEnd::HtmlBlock => {
+            TagEnd::CodeBlock => {
+                self.literal = self.literal.saturating_sub(1);
+                if !matches!(self.pending, Some(PendingBlock::ListItem(_))) {
+                    self.flush();
+                }
+            }
+            TagEnd::Paragraph | TagEnd::BlockQuote(_) | TagEnd::HtmlBlock => {
                 if !matches!(self.pending, Some(PendingBlock::ListItem(_))) {
                     self.flush();
                 }
@@ -473,7 +543,10 @@ impl Builder {
             }
             TagEnd::Emphasis => self.italic = self.italic.saturating_sub(1),
             TagEnd::Strong => self.bold = self.bold.saturating_sub(1),
-            TagEnd::Link => self.link = None,
+            TagEnd::Link => {
+                self.link = None;
+                self.literal = self.literal.saturating_sub(1);
+            }
             _ => {}
         }
     }
@@ -489,6 +562,7 @@ impl Builder {
             bold: self.bold > 0,
             italic: self.italic > 0,
             link: self.link.clone(),
+            is_literal: self.literal > 0,
         };
         let is_break = text == "\n";
         if let Some(last) = self.spans.last_mut()
@@ -511,7 +585,7 @@ impl Builder {
         let Some(pending) = self.pending.take() else {
             return;
         };
-        let spans = split_chat_codes(std::mem::take(&mut self.spans));
+        let spans = split_bare_urls(split_chat_codes(std::mem::take(&mut self.spans)));
         let depth = u8::try_from(self.lists.len()).unwrap_or(u8::MAX);
         let block = match pending {
             PendingBlock::Heading(level) => Block::Heading { level, spans },
@@ -554,6 +628,50 @@ const fn heading_level(level: HeadingLevel) -> u8 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The link targets of the first block of `source`, with their text.
+    fn links_in(source: &str) -> Vec<(String, String)> {
+        let document = parse(source);
+        let (Block::Paragraph { spans, .. } | Block::ListItem { spans, .. }) = &document.blocks[0]
+        else {
+            panic!("expected text in {source:?}");
+        };
+        spans
+            .iter()
+            .filter_map(|span| Some((span.text.clone(), span.style.link.clone()?)))
+            .collect()
+    }
+
+    #[test]
+    fn bare_addresses_become_links_showing_the_address() {
+        let url = "https://wiki.guildwars2.com/wiki/Event_timers";
+        assert_eq!(
+            links_in(&format!("See {url}.")),
+            [(url.to_owned(), url.to_owned())]
+        );
+        assert_eq!(
+            links_in(&format!("- [ ] {url}")),
+            [(url.to_owned(), url.to_owned())]
+        );
+    }
+
+    #[test]
+    fn code_and_existing_links_are_not_linked_again() {
+        assert!(links_in("`https://a.de` text").is_empty());
+        assert_eq!(
+            links_in("[https://a.de](https://b.de)"),
+            [("https://a.de".to_owned(), "https://b.de".to_owned())]
+        );
+        assert!(links_in("[https://a.de](ftp://b.de)").is_empty());
+    }
+
+    #[test]
+    fn inline_links_know_their_parts() {
+        let source = "a [text](https://b.c \"t\") d";
+        let links = inline_links(source);
+        assert_eq!(&source[links[0].text_range()], "text");
+        assert_eq!(&source[links[0].target_range()], "https://b.c \"t\"");
+    }
 
     #[test]
     fn inline_links_know_their_structure() {

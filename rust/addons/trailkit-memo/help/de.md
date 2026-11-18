@@ -71,7 +71,7 @@ Du schreibst Notizen in Markdown, mit Buttons für die Formatierung.
 
 ### Der Editor
 
-Klicke oben rechts in einer Notiz auf **Bearbeiten** oder doppelklicke die Notiz. Du bearbeitest Titel und Text in Markdown; die Buttons in der Leiste darüber (in Gruppen wie in Word) fügen Überschriften (H1, H2 – ein Klick auf die andere Ebene wechselt sie, auf dieselbe entfernt sie), **Fett**, *Kursiv*, Aufzählungen, Checkboxen und Links ein (auch **Strg+B** und **Strg+I**); ein erneuter Klick entfernt die Formatierung wieder (auch Links). Die Buttons der Formatierung an der Cursorposition leuchten auf. Der Event-Button benötigt trailkit-core.
+Klicke oben rechts in einer Notiz auf **Bearbeiten** oder doppelklicke die Notiz. Du bearbeitest Titel und Text in Markdown; die Buttons in der Leiste darüber (in Gruppen wie in Word) fügen Überschriften (H1, H2 – ein Klick auf die andere Ebene wechselt sie, auf dieselbe entfernt sie), **Fett**, *Kursiv*, Aufzählungen und Checkboxen ein (auch **Strg+B** und **Strg+I**); ein erneuter Klick entfernt die Formatierung wieder. Der Link-Button oder **Strg+K** öffnet ein kleines Fenster für Text und Adresse des Links. Die Buttons der Formatierung an der Cursorposition leuchten auf. Der Event-Button benötigt trailkit-core.
 
 - Der **Augen**-Button zeigt eine Vorschau der formatierten Notiz neben dem Text; ziehe den Spalt dazwischen, um die Breiten zu ändern. memo merkt sich beides.
 - **Beim Bearbeiten** macht die Notizliste dem Editor Platz und kommt zurück, sobald du speicherst oder abbrichst. Hattest du sie selbst ausgeblendet, bleibt sie ausgeblendet. Klicke ins Spiel, um den Chat oder deine Tasten zu nutzen; ein Klick in den Text und du schreibst weiter.
@@ -80,6 +80,8 @@ Klicke oben rechts in einer Notiz auf **Bearbeiten** oder doppelklicke die Notiz
 
 - **Checkboxen** in einer Notiz kannst du direkt abhaken, ohne den Editor.
 - **Links** öffnen sich im Browser (nur `http://` und `https://`), E-Mail-Adressen in deinem Mailprogramm; fahre mit der Maus darüber, um das Ziel zu sehen.
+- **Link einfügen:** Markiere bei Bedarf Text, klicke auf den Link-Button oder drücke **Strg+K**, gib die Adresse ein und drücke Enter. Der Text ist optional, `https://` wird ergänzt, wenn es fehlt, und eine Adresse aus der Zwischenablage ist schon eingetragen. Steht der Cursor in einem Link, änderst du ihn dort oder entfernst den Link und behältst seinen Text.
+- **Adresse einfügen:** Ein einfaches `https://…` in deinem Text wird von selbst zum anklickbaren Link.
 
 ### Chat-Links
 
@@ -180,6 +182,7 @@ Das sind die Tasten, die memo nutzt, sortiert danach, wo sie wirken.
 ### Editor
 
 - **Strg+B** – fett
+- **Strg+K** – Link einfügen oder ändern
 - **Strg+I** – kursiv
 - **Strg+S** – speichern
 - **Strg+Z** – dein Tippen rückgängig machen

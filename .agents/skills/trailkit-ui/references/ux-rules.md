@@ -129,7 +129,8 @@ Each rule has an id (`area-name`) so reviews can cite it.
 - `form-errors` — Errors appear directly at the field, state cause **and**
   fix ("Time must be HH:MM, e.g. 20:30"), and use `danger` + icon. Validate
   when the field loses focus, not on every keystroke.
-- `form-required` — Required fields are marked.
+- `form-required` — The exception is marked: usually a field that may stay
+  empty gets "(optional)" (`TextField::optional`, R139).
 - `form-live-apply` — Settings apply live (no "Apply" button), except
   destructive or import actions, which need explicit confirmation.
 - `form-unsaved` — Closing an editor with unsaved changes asks: save /

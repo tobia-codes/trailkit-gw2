@@ -71,7 +71,7 @@ You write notes in markdown, with buttons for the formatting.
 
 ### The editor
 
-Click **Edit** at the top right of a note, or double-click the note. You edit the title and the text in markdown; the buttons in the bar above (in groups, like in Word) insert headings (H1, H2 — clicking the other level switches it, the same level removes it), **bold**, *italic*, lists, checkboxes and links (also **Ctrl+B** and **Ctrl+I**); clicking a button again removes the formatting (also links). Buttons of the formatting at the cursor light up. The event button needs trailkit-core.
+Click **Edit** at the top right of a note, or double-click the note. You edit the title and the text in markdown; the buttons in the bar above (in groups, like in Word) insert headings (H1, H2 — clicking the other level switches it, the same level removes it), **bold**, *italic*, lists and checkboxes (also **Ctrl+B** and **Ctrl+I**); clicking a button again removes the formatting. The link button or **Ctrl+K** opens a small window for the link's text and address. Buttons of the formatting at the cursor light up. The event button needs trailkit-core.
 
 - The **eye** button shows a preview of the formatted note next to the text; drag the gap between them to change the widths. memo remembers both.
 - **While you edit** the note list makes way for the editor and comes back when you save or cancel. If you had hidden it yourself, it stays hidden. Click into the game to use the chat or your keys; click into the text to go on writing.
@@ -80,6 +80,8 @@ Click **Edit** at the top right of a note, or double-click the note. You edit th
 
 - **Checkboxes** in a note can be ticked directly, without the editor.
 - **Links** open in your browser (only `http://` and `https://`), e-mail addresses in your mail program; hover a link to see where it goes.
+- **Add a link:** select text if you like, click the link button or press **Ctrl+K**, enter the address and press Enter. The text is optional, `https://` is added if it is missing, and an address from the clipboard is filled in. With the cursor in a link you change it there, or remove the link and keep its text.
+- **Paste an address:** a plain `https://…` in your text becomes a clickable link by itself.
 
 ### Chat links
 
@@ -180,6 +182,7 @@ These are the keys memo uses, sorted by where they work.
 ### Editor
 
 - **Ctrl+B** – bold
+- **Ctrl+K** – add or change a link
 - **Ctrl+I** – italic
 - **Ctrl+S** – save
 - **Ctrl+Z** – undo your typing

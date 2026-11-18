@@ -10,7 +10,10 @@
 //! platform-independent (R23); the drawing compiles for Windows.
 
 pub mod i18n;
+pub mod link_edit;
 pub mod note_editing;
 
 #[cfg(windows)]
 pub mod editor;
+#[cfg(windows)]
+mod link_popup;

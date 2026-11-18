@@ -30,6 +30,8 @@ use trailkit_ui::{
 
 use crate::{
     i18n::EditorText,
+    link_edit::{link_draft, link_edit},
+    link_popup::{LinkPopup, LinkPopupOutcome, LinkPopupPlace},
     note_editing::{ActiveFormats, EditSession, FormatCommand, active_formats, format_edit},
 };
 
@@ -42,6 +44,9 @@ const VIRTUAL_KEY_B: i32 = 0x42;
 
 /// Windows virtual-key code of `I`.
 const VIRTUAL_KEY_I: i32 = 0x49;
+
+/// Windows virtual-key code of `K` (Ctrl+K opens the link popup, M208).
+const VIRTUAL_KEY_K: i32 = 0x4B;
 
 /// Windows virtual-key code of `S` (Ctrl+S saves, M93).
 const VIRTUAL_KEY_S: i32 = 0x53;
@@ -169,6 +174,10 @@ pub struct Editor {
     active: Option<(u64, Range<usize>, ActiveFormats)>,
     /// Find hits in the body while the find bar is open (M198).
     find: Option<BodyFind>,
+    /// The open link popup (M208).
+    link_popup: Option<LinkPopup>,
+    /// Whether the link popup opens in the next drawn frame.
+    link_popup_requested: bool,
 }
 
 /// Find hits in the body, cached per text revision and phrase (M198).
@@ -197,6 +206,8 @@ impl Editor {
             title_focus_pending: false,
             active: None,
             find: None,
+            link_popup: None,
+            link_popup_requested: false,
         }
     }
 
@@ -309,8 +320,13 @@ impl Editor {
         self.body.unfocus();
     }
 
-    /// Applies a formatting command to the body at its selection (M53).
+    /// Applies a formatting command to the body at its selection (M53); the
+    /// link command opens the link popup instead (M208).
     pub fn format(&mut self, command: FormatCommand) {
+        if command == FormatCommand::Link {
+            self.link_popup_requested = true;
+            return;
+        }
         let edit = format_edit(self.body.text(), self.body.selection(), command);
         self.body
             .apply_edit(edit.range, &edit.replacement, edit.selection);
@@ -473,8 +489,13 @@ impl Editor {
                 self.format(FormatCommand::Bold);
             } else if ui.is_key_index_pressed(VIRTUAL_KEY_I) {
                 self.format(FormatCommand::Italic);
+            } else if ui.is_key_index_pressed(VIRTUAL_KEY_K) {
+                self.format(FormatCommand::Link);
             }
         }
+        let area_min = ui.window_pos();
+        let window_size = ui.window_size();
+        let area_max = [area_min[0] + window_size[0], area_min[1] + window_size[1]];
         // Preview (M60, M72): editor and preview always stay side by side,
         // however narrow; the minimum only keeps the splitter usable.
         let available = ui.content_region_avail()[0];
@@ -526,6 +547,70 @@ impl Editor {
                 }
             });
         }
+        self.draw_link_popup(
+            ui,
+            language,
+            theme,
+            input.is_dialog_open,
+            [area_min, area_max],
+        );
         output
+    }
+
+    /// Opens the link popup if asked to, draws it and applies its result
+    /// (M208). A dialog over the editor closes it.
+    fn draw_link_popup(
+        &mut self,
+        ui: &Ui,
+        language: Language,
+        theme: &Theme,
+        is_dialog_open: bool,
+        [area_min, area_max]: [[f32; 2]; 2],
+    ) {
+        if std::mem::take(&mut self.link_popup_requested) && !is_dialog_open {
+            let clipboard = ui.clipboard_text();
+            let draft = link_draft(
+                self.body.text(),
+                self.body.selection(),
+                clipboard.as_deref(),
+            );
+            self.link_popup = Some(LinkPopup::new(draft));
+        }
+        let Some(popup) = self.link_popup.as_mut() else {
+            return;
+        };
+        self.body.unfocus();
+        let place = LinkPopupPlace {
+            cursor: self.body.cursor_position().unwrap_or(area_min),
+            line_height: self.body.line_height(),
+            area_min,
+            area_max,
+        };
+        let outcome = if is_dialog_open {
+            LinkPopupOutcome::Cancelled
+        } else {
+            popup.draw(ui, language, theme, place)
+        };
+        let edit = match &outcome {
+            LinkPopupOutcome::Open => return,
+            LinkPopupOutcome::Cancelled => None,
+            LinkPopupOutcome::Submitted { text, address } => {
+                Some(link_edit(popup.draft(), text, address))
+            }
+            LinkPopupOutcome::Removed => Some(format_edit(
+                self.body.text(),
+                popup.draft().range.clone(),
+                FormatCommand::Link,
+            )),
+        };
+        self.link_popup = None;
+        if let Some(edit) = edit {
+            self.body
+                .apply_edit(edit.range, &edit.replacement, edit.selection);
+            self.sync_body();
+        }
+        if !is_dialog_open {
+            self.body.focus();
+        }
     }
 }

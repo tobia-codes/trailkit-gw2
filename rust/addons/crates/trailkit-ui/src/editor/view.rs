@@ -68,6 +68,8 @@ pub struct TextEditor {
     sink_activation_pending: bool,
     /// Line height of the last drawn frame (for Page Up/Down).
     line_height: f32,
+    /// Screen position of the cursor's top-left corner in the last frame.
+    cursor_position: Option<[f32; 2]>,
     /// Hits of find in the note to mark, as byte ranges of the text with
     /// their look (memo M198); empty without a find.
     find_hits: Vec<(std::ops::Range<usize>, HitMark)>,
@@ -90,6 +92,7 @@ impl TextEditor {
             sink_was_active: false,
             sink_activation_pending: true,
             line_height: 0.0,
+            cursor_position: None,
             find_hits: Vec::new(),
         }
     }
@@ -134,6 +137,19 @@ impl TextEditor {
     #[must_use]
     pub const fn is_focused(&self) -> bool {
         self.focused
+    }
+
+    /// Screen position of the cursor's top-left corner in the last frame, to
+    /// place a popup beside it.
+    #[must_use]
+    pub const fn cursor_position(&self) -> Option<[f32; 2]> {
+        self.cursor_position
+    }
+
+    /// Height of a text line in the last frame.
+    #[must_use]
+    pub const fn line_height(&self) -> f32 {
+        self.line_height
     }
 
     /// Gives the editor the keyboard focus (e.g. after a toolbar button).
@@ -235,6 +251,12 @@ impl TextEditor {
                 ui.set_scroll_y(cursor_top + line_height - visible_height + 2.0 * padding);
             }
         }
+        #[expect(clippy::cast_precision_loss, reason = "line counts are small")]
+        let cursor_top = origin[1] + cursor_line as f32 * line_height;
+        let cursor_x = layout
+            .line_of(self.buffer.cursor())
+            .x_of(self.buffer.cursor());
+        self.cursor_position = Some([origin[0] + cursor_x, cursor_top]);
         if is_editor_hovered(ui) {
             ui.set_mouse_cursor(Some(MouseCursor::TextInput));
         }

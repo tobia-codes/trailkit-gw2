@@ -121,3 +121,28 @@ No visible design change. Open a note, click **Edit** and type
    **Expected:** one character goes away each time, the rest stays a link.
 5. Type a bare `https://wiki.guildwars2.com`, press Backspace at its end.
    **Expected:** one character goes away.
+
+## Test 30 — link popup and pasted addresses (M208, M209, 2026-11-18)
+
+Approved design: https://claude.ai/artifact/SgWHJ1mMKSTArQMEVaqACm
+
+Open a note and click **Edit**.
+
+1. With nothing selected click the **link button**. **Before:** `[](https://)`
+   appeared in the text. **Now:** a popup with **Text (optional)** and
+   **Address** opens, the cursor is in Text, Insert is grey.
+2. Press Tab, type `wiki.guildwars2.com`, press Enter. **Expected:** the popup
+   closes and `https://wiki.guildwars2.com` is in the text.
+3. Select a word, press **Ctrl+K**. **Expected:** the word is in Text and the
+   cursor in Address. Type an address, press Enter: the word is now a link.
+4. Copy an `https://` address, press Ctrl+K elsewhere. **Expected:** it is
+   already in Address. Escape closes the popup, the text stays unchanged.
+5. Put the cursor in a link, press Ctrl+K. **Expected:** both values are there,
+   with Save and an icon at the left. Change the text and save; then open it
+   again and click the icon: the link is gone, its text stays.
+6. Enter `ftp://example.com`, click into Text. **Expected:** a red message
+   with an icon below Address, the button stays grey.
+7. Save the note. **Expected:** the pasted `https://…` address from step 2 is
+   a clickable link in the reading view.
+8. Set Nexus to Deutsch and drag the window narrow. **Expected:** the popup
+   fits and shows **Text (optional)**, **Adresse**, **Abbrechen**, **Einfügen**.

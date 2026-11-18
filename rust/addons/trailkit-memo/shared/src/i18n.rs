@@ -185,6 +185,8 @@ pub const fn chip_text(text: ChipText, language: Language) -> &'static str {
 pub enum Text {
     /// Title of the main window.
     MainWindowTitle,
+    /// Mark behind the label of every optional form field (R139).
+    FieldOptional,
     /// Tooltip of the title bar chevron while the window is expanded (R71).
     CollapseWindow,
     /// Tooltip of the title bar chevron while the window is collapsed.
@@ -257,9 +259,21 @@ pub enum Text {
     TextSize,
 }
 
+/// The texts all form fields of memo share, translated once (R139).
+#[cfg(windows)]
+#[must_use]
+pub fn text_field_texts(
+    language: Language,
+) -> trailkit_ui::controls::text_field::TextFieldTexts<'static> {
+    trailkit_ui::controls::text_field::TextFieldTexts {
+        optional: Text::FieldOptional.get(language),
+    }
+}
+
 impl LocalizedText for Text {
     const ALL: &'static [Self] = &[
         Self::MainWindowTitle,
+        Self::FieldOptional,
         Self::CollapseWindow,
         Self::ExpandWindow,
         Self::CloseWindow,
@@ -312,6 +326,7 @@ impl LocalizedText for Text {
 
     fn get(self, language: Language) -> &'static str {
         match (self, language) {
+            (Self::FieldOptional, Language::English | Language::German) => "(optional)",
             (Self::MainWindowTitle, Language::English) => "Notes",
             (Self::MainWindowTitle, Language::German) => "Notizen",
             (Self::CollapseWindow, Language::English) => "Collapse",

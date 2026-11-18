@@ -53,11 +53,13 @@ pub enum TextStyle {
     Secondary,
     /// Fine print (0.85×, `text.secondary`).
     Small,
+    /// The label of a form field (bold, `text.primary`, R139).
+    Label,
 }
 
 impl TextStyle {
     /// Every style, from the largest to the smallest.
-    pub const ALL: [Self; 7] = [
+    pub const ALL: [Self; 8] = [
         Self::Heading1,
         Self::Heading2,
         Self::Heading3,
@@ -65,6 +67,7 @@ impl TextStyle {
         Self::BodyStrong,
         Self::Secondary,
         Self::Small,
+        Self::Label,
     ];
 
     /// The font this style draws with.
@@ -75,7 +78,7 @@ impl TextStyle {
             Self::Heading2 => FontRole::Heading2,
             Self::Heading3 => FontRole::Heading3,
             Self::Body | Self::Secondary => FontRole::Body,
-            Self::BodyStrong => FontRole::BodyBold,
+            Self::BodyStrong | Self::Label => FontRole::BodyBold,
             Self::Small => FontRole::Small,
         }
     }
@@ -84,9 +87,12 @@ impl TextStyle {
     #[must_use]
     pub const fn color(self, theme: &Theme) -> Color {
         match self {
-            Self::Heading1 | Self::Heading2 | Self::Heading3 | Self::Body | Self::BodyStrong => {
-                theme.text.primary
-            }
+            Self::Heading1
+            | Self::Heading2
+            | Self::Heading3
+            | Self::Body
+            | Self::BodyStrong
+            | Self::Label => theme.text.primary,
             Self::Secondary | Self::Small => theme.text.secondary,
         }
     }
@@ -266,6 +272,7 @@ mod tests {
             assert_eq!(style.color(&theme), expected, "{style:?}");
         }
         assert_eq!(TextStyle::BodyStrong.font(), FontRole::BodyBold);
+        assert_eq!(TextStyle::Label.font(), FontRole::BodyBold);
         assert_eq!(TextStyle::Small.font(), FontRole::Small);
         assert_eq!(TextStyle::heading(1), TextStyle::Heading1);
         assert_eq!(TextStyle::heading(6), TextStyle::Heading3);

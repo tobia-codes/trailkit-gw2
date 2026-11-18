@@ -136,6 +136,11 @@ Build once, use everywhere. Planned:
 - `Tree` with drag & drop (groups / subgroups / items)
 - Empty state — **exists** (Q283): `empty_state::draw_empty_state` with
   `EmptyState` (optional icon, title, hint, buttons with one primary)
+- Text field — **exists** (R139): `controls::text_field::TextField`, the
+  label above the input in `TextStyle::Label`, `.optional(true)` adds the mark
+  the addon translated once (`TextFieldTexts`), plus placeholder, focus and an
+  error with icon below the field. Helper text, disabled and secret fields
+  are added with their first real use
 - Text and icons — **exist** (R96): `text::draw_text`, `draw_text_wrapped`,
   `draw_truncated_text`, `draw_icon`; borderless inputs use
   `StyleScope::transparent_frame`
