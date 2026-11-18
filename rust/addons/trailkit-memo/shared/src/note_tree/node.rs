@@ -2,9 +2,17 @@
 //! M23–M25).
 
 use jiff::Timestamp;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer, ser::SerializeMap};
+use serde_json::Value;
+use trailkit_storage::UnknownFields;
 
 use super::ids::{GroupId, NodeId, NoteId};
+
+/// Stored key of [`Note::reset_schedule`] (M203).
+const RESET_SCHEDULE_KEY: &str = "reset_schedule";
+
+/// Stored key of the reset state of a `daily`/`weekly` note.
+const LAST_RESET_APPLIED_AT_KEY: &str = "last_reset_applied_at";
 
 /// How often a reset note is reset.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -25,8 +33,7 @@ impl ResetPeriod {
 /// Stored flat in the note as `"reset_schedule"` (`never`, `daily`,
 /// `weekly`, M203) plus, for `daily`/`weekly`, `"last_reset_applied_at"`; a
 /// note that is never reset cannot carry a reset time.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "reset_schedule", rename_all = "snake_case")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ResetSchedule {
     /// A plain note; nothing is reset.
     Never,
@@ -40,10 +47,18 @@ pub enum ResetSchedule {
         /// The reset that was last applied to this note.
         last_reset_applied_at: Timestamp,
     },
+    /// A schedule a newer version added (M202). Behaves like [`Self::Never`];
+    /// the stored values stay in [`Note::unknown_fields`] and are written
+    /// back unchanged until the user picks another schedule.
+    Unrecognized,
 }
 
 /// A markdown note.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+///
+/// Stored through [`StoredNote`] so that an unknown `reset_schedule` value
+/// survives a save (M202).
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(try_from = "StoredNote")]
 pub struct Note {
     /// Stable unique id.
     pub id: NoteId,
@@ -53,13 +68,130 @@ pub struct Note {
     pub body: String,
     /// Whether and when the note's checkboxes are reset, with the reset
     /// state (M13, M203).
-    #[serde(flatten)]
     pub reset_schedule: ResetSchedule,
     /// When the note was created.
     pub created_at: Timestamp,
     /// When the note's title or content was last changed by the user; reset
     /// changes and resets do not count (M86, M88).
     pub updated_at: Timestamp,
+    /// Fields a newer version added, kept on save (M202).
+    pub unknown_fields: UnknownFields,
+}
+
+/// The stored form of a [`Note`] with the reset schedule still untyped.
+#[derive(Deserialize)]
+struct StoredNote {
+    /// See [`Note::id`].
+    id: NoteId,
+    /// See [`Note::title`].
+    title: String,
+    /// See [`Note::body`].
+    body: String,
+    /// `never`, `daily`, `weekly` or a value of a newer version.
+    reset_schedule: Value,
+    /// The reset state of `daily`/`weekly`.
+    #[serde(default)]
+    last_reset_applied_at: Option<Value>,
+    /// See [`Note::created_at`].
+    created_at: Timestamp,
+    /// See [`Note::updated_at`].
+    updated_at: Timestamp,
+    /// See [`Note::unknown_fields`].
+    #[serde(flatten)]
+    unknown_fields: UnknownFields,
+}
+
+impl TryFrom<StoredNote> for Note {
+    type Error = String;
+
+    /// Types the reset schedule; an unknown value becomes
+    /// [`ResetSchedule::Unrecognized`] and keeps its stored fields.
+    ///
+    /// # Errors
+    ///
+    /// Returns a reason if a `daily`/`weekly` note has no valid
+    /// `last_reset_applied_at`.
+    fn try_from(stored: StoredNote) -> Result<Self, Self::Error> {
+        let StoredNote {
+            id,
+            title,
+            body,
+            reset_schedule,
+            last_reset_applied_at,
+            created_at,
+            updated_at,
+            mut unknown_fields,
+        } = stored;
+        let reset_time = || -> Result<Timestamp, String> {
+            let value = last_reset_applied_at
+                .clone()
+                .ok_or_else(|| format!("note {id:?}: missing {LAST_RESET_APPLIED_AT_KEY}"))?;
+            serde_json::from_value(value).map_err(|error| format!("note {id:?}: {error}"))
+        };
+        let reset_schedule = match reset_schedule.as_str() {
+            Some("never") => ResetSchedule::Never,
+            Some("daily") => ResetSchedule::Daily {
+                last_reset_applied_at: reset_time()?,
+            },
+            Some("weekly") => ResetSchedule::Weekly {
+                last_reset_applied_at: reset_time()?,
+            },
+            _ => {
+                unknown_fields.insert(RESET_SCHEDULE_KEY.to_owned(), reset_schedule);
+                if let Some(value) = last_reset_applied_at {
+                    unknown_fields.insert(LAST_RESET_APPLIED_AT_KEY.to_owned(), value);
+                }
+                ResetSchedule::Unrecognized
+            }
+        };
+        Ok(Self {
+            id,
+            title,
+            body,
+            reset_schedule,
+            created_at,
+            updated_at,
+            unknown_fields,
+        })
+    }
+}
+
+impl Serialize for Note {
+    /// Writes the note flat: known fields, the reset schedule, then the
+    /// unknown fields. A known schedule replaces stored values of an
+    /// unrecognized one, so they are never written twice.
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let mut map = serializer.serialize_map(None)?;
+        map.serialize_entry("id", &self.id)?;
+        map.serialize_entry("title", &self.title)?;
+        map.serialize_entry("body", &self.body)?;
+        let (schedule_name, reset_time) = match self.reset_schedule {
+            ResetSchedule::Never => (Some("never"), None),
+            ResetSchedule::Daily {
+                last_reset_applied_at,
+            } => (Some("daily"), Some(last_reset_applied_at)),
+            ResetSchedule::Weekly {
+                last_reset_applied_at,
+            } => (Some("weekly"), Some(last_reset_applied_at)),
+            ResetSchedule::Unrecognized => (None, None),
+        };
+        if let Some(name) = schedule_name {
+            map.serialize_entry(RESET_SCHEDULE_KEY, name)?;
+        }
+        if let Some(time) = reset_time {
+            map.serialize_entry(LAST_RESET_APPLIED_AT_KEY, &time)?;
+        }
+        map.serialize_entry("created_at", &self.created_at)?;
+        map.serialize_entry("updated_at", &self.updated_at)?;
+        for (key, value) in self.unknown_fields.iter() {
+            let replaced = schedule_name.is_some()
+                && (key == RESET_SCHEDULE_KEY || key == LAST_RESET_APPLIED_AT_KEY);
+            if !replaced {
+                map.serialize_entry(key, value)?;
+            }
+        }
+        map.end()
+    }
 }
 
 /// A group of notes and subgroups.
@@ -73,6 +205,9 @@ pub struct Group {
     pub children: Vec<TreeNode>,
     /// Whether the group is expanded in the note list (kept across sessions).
     pub expanded: bool,
+    /// Fields a newer version added, kept on save (M202).
+    #[serde(flatten)]
+    pub unknown_fields: UnknownFields,
 }
 
 /// One entry of the tree: a note or a group.
@@ -96,6 +231,9 @@ pub struct TrashEntry {
     pub former_parent: Option<GroupId>,
     /// Its position within the former parent's children.
     pub former_index: usize,
+    /// Fields a newer version added, kept on save (M202).
+    #[serde(flatten)]
+    pub unknown_fields: UnknownFields,
 }
 
 impl ResetSchedule {
@@ -119,7 +257,7 @@ impl ResetSchedule {
     #[must_use]
     pub const fn period(self) -> Option<ResetPeriod> {
         match self {
-            Self::Never => None,
+            Self::Never | Self::Unrecognized => None,
             Self::Daily { .. } => Some(ResetPeriod::Daily),
             Self::Weekly { .. } => Some(ResetPeriod::Weekly),
         }
@@ -129,7 +267,7 @@ impl ResetSchedule {
     #[must_use]
     pub const fn last_reset_applied_at(self) -> Option<Timestamp> {
         match self {
-            Self::Never => None,
+            Self::Never | Self::Unrecognized => None,
             Self::Daily {
                 last_reset_applied_at,
             }
@@ -154,6 +292,7 @@ impl Note {
             reset_schedule,
             created_at: now,
             updated_at: now,
+            unknown_fields: UnknownFields::default(),
         }
     }
 }
@@ -167,6 +306,7 @@ impl Group {
             title,
             children: Vec::new(),
             expanded: true,
+            unknown_fields: UnknownFields::default(),
         }
     }
 
@@ -279,6 +419,58 @@ pub(super) mod tests {
         assert!(value.get("last_reset_applied_at").is_none());
         Ok(())
     }
+    #[test]
+    fn keeps_fields_of_a_newer_version() -> serde_json::Result<()> {
+        let stored = serde_json::json!({
+            "type": "note", "id": "0190a9d4-0000-7000-8000-000000000001",
+            "title": "A", "body": "", "reset_schedule": "daily",
+            "last_reset_applied_at": "2026-11-01T12:00:00Z",
+            "created_at": "2026-11-01T12:00:00Z", "updated_at": "2026-11-01T12:00:00Z",
+            "color": "red"
+        });
+        let node: TreeNode = serde_json::from_value(stored.clone())?;
+        assert_eq!(serde_json::to_value(&node)?, stored);
+        let group = serde_json::json!({
+            "type": "group", "id": "0190a9d4-0000-7000-8000-000000000002",
+            "title": "G", "children": [], "expanded": true, "pinned": true
+        });
+        let node: TreeNode = serde_json::from_value(group.clone())?;
+        assert_eq!(serde_json::to_value(&node)?, group);
+        Ok(())
+    }
+
+    #[test]
+    fn keeps_an_unknown_reset_schedule_until_changed() -> serde_json::Result<()> {
+        let stored = serde_json::json!({
+            "id": "0190a9d4-0000-7000-8000-000000000001",
+            "title": "A", "body": "", "reset_schedule": "monthly",
+            "last_reset_applied_at": "2026-11-01T12:00:00Z",
+            "created_at": "2026-11-01T12:00:00Z", "updated_at": "2026-11-01T12:00:00Z",
+            "reset_day": 3
+        });
+        let mut note: Note = serde_json::from_value(stored.clone())?;
+        assert_eq!(note.reset_schedule, ResetSchedule::Unrecognized);
+        assert_eq!(note.reset_schedule.period(), None);
+        assert_eq!(serde_json::to_value(&note)?, stored);
+
+        note.reset_schedule = ResetSchedule::Never;
+        let saved = serde_json::to_value(&note)?;
+        assert_eq!(saved["reset_schedule"], "never");
+        assert!(saved.get("last_reset_applied_at").is_none());
+        assert_eq!(saved["reset_day"], 3, "other new fields stay");
+        Ok(())
+    }
+
+    #[test]
+    fn rejects_daily_note_without_reset_time() {
+        let stored = serde_json::json!({
+            "id": "0190a9d4-0000-7000-8000-000000000001",
+            "title": "A", "body": "", "reset_schedule": "daily",
+            "created_at": "2026-11-01T12:00:00Z", "updated_at": "2026-11-01T12:00:00Z"
+        });
+        assert!(serde_json::from_value::<Note>(stored).is_err());
+    }
+
     #[test]
     fn note_count_includes_nested_groups() {
         let mut outer = Group::new("Outer".to_owned());

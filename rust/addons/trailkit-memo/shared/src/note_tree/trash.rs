@@ -94,6 +94,7 @@ impl NotesDocument {
             deleted_at: now,
             former_parent: place.parent,
             former_index: place.index,
+            unknown_fields: Default::default(),
         });
         true
     }
@@ -184,6 +185,7 @@ mod tests {
                 TreeNode::Note(note("Last")),
             ],
             trash: Vec::new(),
+            unknown_fields: Default::default(),
         };
         (document, first_id, raids_id, weekly_id)
     }

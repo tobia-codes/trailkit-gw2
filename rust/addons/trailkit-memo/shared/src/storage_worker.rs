@@ -468,6 +468,7 @@ mod tests {
                 Timestamp::now(),
             ))],
             trash: Vec::new(),
+            unknown_fields: Default::default(),
         })
     }
 

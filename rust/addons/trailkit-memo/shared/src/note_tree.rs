@@ -14,7 +14,9 @@ mod traversal;
 
 use jiff::Timestamp;
 use serde::{Deserialize, Serialize};
-use trailkit_storage::{DocumentFields, MigrationError, SchemaVersion, VersionedDocument};
+use trailkit_storage::{
+    DocumentFields, MigrationError, SchemaVersion, UnknownFields, VersionedDocument,
+};
 
 pub use ids::{GroupId, NodeId, NoteId};
 pub use node::{Group, Note, ResetPeriod, ResetSchedule, TrashEntry, TreeNode};
@@ -59,6 +61,9 @@ pub struct NotesDocument {
     pub root: Vec<TreeNode>,
     /// Deleted notes and groups.
     pub trash: Vec<TrashEntry>,
+    /// Fields a newer version added, kept on save (M202).
+    #[serde(flatten)]
+    pub unknown_fields: UnknownFields,
 }
 
 impl VersionedDocument for NotesDocument {
@@ -371,7 +376,9 @@ mod tests {
                 deleted_at: noon(),
                 former_parent: None,
                 former_index: 0,
+                unknown_fields: Default::default(),
             }],
+            unknown_fields: Default::default(),
         }
     }
 
@@ -385,6 +392,23 @@ mod tests {
             }
         });
         found
+    }
+
+    #[test]
+    fn document_and_trash_keep_fields_of_a_newer_version() -> serde_json::Result<()> {
+        let stored = serde_json::json!({
+            "root": [],
+            "trash": [{
+                "node": {"type": "group", "id": "0190a9d4-0000-7000-8000-000000000002",
+                         "title": "G", "children": [], "expanded": false},
+                "deleted_at": "2026-11-01T12:00:00Z", "former_parent": null,
+                "former_index": 0, "deleted_by": "device-a"
+            }],
+            "sort_mode": "manual"
+        });
+        let document: NotesDocument = serde_json::from_value(stored.clone())?;
+        assert_eq!(serde_json::to_value(&document)?, stored);
+        Ok(())
     }
 
     #[test]
@@ -540,6 +564,7 @@ mod tests {
         let document = NotesDocument {
             root: vec![TreeNode::Note(a), TreeNode::Group(outer), TreeNode::Note(d)],
             trash: Vec::new(),
+            unknown_fields: Default::default(),
         };
         (document, groups, ids)
     }

@@ -36,9 +36,9 @@ The packages this project uses directly.
 | Format | Pretty-printed JSON, `schema_version` as the first key |
 | Saving | Atomic: write `<file>.tmp`, flush, rename over the live file; a `StorageError` reports the stage, the OS error and the size for the log |
 | Older version | Migrated step by step (`VersionedDocument::migrate_one_step`); the original is copied to `backups/<stem>.v<N>.bak.json` first |
-| Newer version | `LoadOutcome::ReadOnly` — the file is never overwritten |
+| Newer version | `LoadOutcome::ReadOnly` — the file is never overwritten; versions bump only for real restructurings (M202) |
 | Unreadable file | Moved to `backups/<stem>.corrupt-<time>.json`, caller starts fresh (`LoadOutcome::Recovered`) |
-| Unknown fields | Ignored (new fields always bump `schema_version`) |
+| Unknown fields | Optional new fields need no `schema_version` bump (memo M202); objects with user content keep them on save through `UnknownFields` (`#[serde(flatten)]`), other types ignore them |
 | Cleanup | Only the newest migration copy per file, deleted after 30 days; at most 3 copies of unreadable files |
 
 The crate is platform-independent and does no threading: run it on the

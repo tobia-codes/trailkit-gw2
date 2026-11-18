@@ -63,6 +63,7 @@ fn a_failed_save_is_logged_without_note_content() -> Result<(), Box<dyn std::err
     worker.saver().save_notes(Arc::new(NotesDocument {
         root: vec![TreeNode::Note(note)],
         trash: Vec::new(),
+        unknown_fields: Default::default(),
     }));
     // Shutdown writes the pending save, which fails.
     drop(worker);

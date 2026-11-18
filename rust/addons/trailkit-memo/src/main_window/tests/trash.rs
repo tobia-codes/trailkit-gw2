@@ -45,6 +45,7 @@ pub(super) fn document_with_trash(days_ago: [i64; 2]) -> NotesDocument {
         deleted_at: now - SignedDuration::from_hours(24 * days),
         former_parent: None,
         former_index: 0,
+        unknown_fields: Default::default(),
     })
     .collect();
     document

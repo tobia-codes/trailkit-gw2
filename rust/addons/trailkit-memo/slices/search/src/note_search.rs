@@ -258,6 +258,7 @@ mod tests {
         let document = NotesDocument {
             root: vec![TreeNode::Note(mithril), TreeNode::Group(dailies)],
             trash: Vec::new(),
+            unknown_fields: Default::default(),
         };
         (document, ids)
     }

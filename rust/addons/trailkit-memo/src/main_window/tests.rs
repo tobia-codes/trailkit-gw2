@@ -72,6 +72,7 @@ fn sample_document() -> NotesDocument {
             Node::Group(raids),
         ],
         trash: Vec::new(),
+        unknown_fields: Default::default(),
     }
 }
 

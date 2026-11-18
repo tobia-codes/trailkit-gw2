@@ -138,6 +138,7 @@ mod tests {
             deleted_at: Timestamp::UNIX_EPOCH,
             former_parent: None,
             former_index: 0,
+            unknown_fields: Default::default(),
         }
     }
 

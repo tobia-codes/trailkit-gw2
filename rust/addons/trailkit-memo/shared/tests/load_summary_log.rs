@@ -50,6 +50,7 @@ fn a_normal_session_is_three_lines() -> Result<(), Box<dyn std::error::Error>> {
     DocumentStore::new(&data).save(&NotesDocument {
         root: vec![TreeNode::Note(note()), TreeNode::Note(note())],
         trash: Vec::new(),
+        unknown_fields: Default::default(),
     })?;
 
     let (worker, loaded) = StorageWorker::spawn(
@@ -70,6 +71,7 @@ fn a_normal_session_is_three_lines() -> Result<(), Box<dyn std::error::Error>> {
     worker.saver().save_notes(Arc::new(NotesDocument {
         root: vec![TreeNode::Note(note())],
         trash: Vec::new(),
+        unknown_fields: Default::default(),
     }));
     drop(worker);
     drop(session);

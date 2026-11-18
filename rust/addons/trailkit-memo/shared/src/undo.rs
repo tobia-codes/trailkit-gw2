@@ -125,6 +125,7 @@ mod tests {
         let document = NotesDocument {
             root: notes.into_iter().map(TreeNode::Note).collect(),
             trash: Vec::new(),
+            unknown_fields: Default::default(),
         };
         (document, ids)
     }
