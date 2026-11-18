@@ -43,8 +43,8 @@ pub struct LinkDraft {
 pub enum AddressProblem {
     /// Nothing was entered.
     Missing,
-    /// It has spaces or a scheme memo does not open.
-    Unsupported,
+    /// It is no valid address, or memo does not open its scheme.
+    Invalid,
 }
 
 /// The starting values for `selection` in `body`: the link around it, or a new
@@ -67,7 +67,10 @@ pub fn link_draft(body: &str, selection: Range<usize>, clipboard: Option<&str>) 
     let text = body[selection.clone()].replace('\n', " ");
     let address = clipboard
         .map(str::trim)
-        .filter(|candidate| is_openable_link(candidate) && !candidate.contains(char::is_whitespace))
+        .filter(|candidate| {
+            candidate.contains("://") || candidate.to_ascii_lowercase().starts_with(MAIL_SCHEME)
+        })
+        .filter(|candidate| normalized_address(candidate).is_ok())
         .unwrap_or("")
         .to_owned();
     let focus = if text.is_empty() {
@@ -89,30 +92,82 @@ pub fn link_draft(body: &str, selection: Range<usize>, clipboard: Option<&str>) 
 ///
 /// # Errors
 ///
-/// Returns the [`AddressProblem`] if `address` is empty or cannot be opened.
+/// Returns the [`AddressProblem`] if `address` is empty, is no valid address
+/// or cannot be opened.
 pub fn normalized_address(address: &str) -> Result<String, AddressProblem> {
     let address = address.trim();
     if address.is_empty() {
         return Err(AddressProblem::Missing);
     }
-    if address.contains(|character: char| character.is_whitespace() || "<>".contains(character)) {
-        return Err(AddressProblem::Unsupported);
-    }
     let has_scheme =
         address.contains("://") || address.to_ascii_lowercase().starts_with(MAIL_SCHEME);
-    if has_scheme {
-        return if is_openable_link(address) {
-            Ok(address.to_owned())
-        } else {
-            Err(AddressProblem::Unsupported)
-        };
-    }
-    let scheme = if address.contains('@') && !address.contains('/') {
-        MAIL_SCHEME
+    let complete = if has_scheme {
+        address.to_owned()
+    } else if address.contains('@') && !address.contains('/') {
+        format!("{MAIL_SCHEME}{address}")
     } else {
-        DEFAULT_SCHEME
+        format!("{DEFAULT_SCHEME}{address}")
     };
-    Ok(format!("{scheme}{address}"))
+    if is_openable_link(&complete) && has_valid_destination(&complete) {
+        Ok(complete)
+    } else {
+        Err(AddressProblem::Invalid)
+    }
+}
+
+/// Whether the complete `address` names a mail box or a web host.
+fn has_valid_destination(address: &str) -> bool {
+    if address.contains(|character: char| character.is_whitespace() || "<>".contains(character)) {
+        return false;
+    }
+    if address.len() >= MAIL_SCHEME.len()
+        && address[..MAIL_SCHEME.len()].eq_ignore_ascii_case(MAIL_SCHEME)
+    {
+        let mailbox = address[MAIL_SCHEME.len()..]
+            .split('?')
+            .next()
+            .unwrap_or_default();
+        return mailbox
+            .split_once('@')
+            .is_some_and(|(name, host)| !name.is_empty() && is_valid_host(host));
+    }
+    let Some((_, rest)) = address.split_once("://") else {
+        return false;
+    };
+    let authority = rest.split(['/', '?', '#']).next().unwrap_or_default();
+    let host_and_port = authority.rsplit('@').next().unwrap_or_default();
+    match host_and_port.split_once(':') {
+        Some((host, port)) => {
+            is_valid_host(host)
+                && !port.is_empty()
+                && port.chars().all(|character| character.is_ascii_digit())
+        }
+        None => is_valid_host(host_and_port),
+    }
+}
+
+/// Whether `host` is `localhost`, an IPv4 address or a name with a top-level
+/// domain, like `wiki.guildwars2.com`.
+fn is_valid_host(host: &str) -> bool {
+    if host.eq_ignore_ascii_case("localhost") {
+        return true;
+    }
+    let labels: Vec<&str> = host.split('.').collect();
+    if labels.len() == 4 && labels.iter().all(|label| label.parse::<u8>().is_ok()) {
+        return true;
+    }
+    let is_valid_label = |label: &&str| {
+        !label.is_empty()
+            && !label.starts_with('-')
+            && !label.ends_with('-')
+            && label
+                .chars()
+                .all(|character| character.is_alphanumeric() || character == '-')
+    };
+    let has_top_level_domain = labels
+        .last()
+        .is_some_and(|label| label.chars().count() >= 2 && label.chars().all(char::is_alphabetic));
+    labels.len() >= 2 && has_top_level_domain && labels.iter().all(is_valid_label)
 }
 
 /// The edit that writes the link over `draft.range`, with the cursor behind
@@ -207,6 +262,8 @@ mod tests {
         assert_eq!(address("mailto:a@b.de"), "mailto:a@b.de");
         assert_eq!(address("some words"), "");
         assert_eq!(address("https://a.de and more"), "");
+        assert_eq!(address("a.de"), "");
+        assert_eq!(address("https://nonsense"), "");
         assert_eq!(link_draft("", 0..0, None).focus, LinkField::Text);
     }
 
@@ -219,6 +276,12 @@ mod tests {
             ("localhost:8080", "https://localhost:8080"),
             ("a@b.de", "mailto:a@b.de"),
             ("mailto:a@b.de", "mailto:a@b.de"),
+            ("https://127.0.0.1:3000/a", "https://127.0.0.1:3000/a"),
+            (
+                "wiki.guildwars2.com/wiki/Main?x=1#y",
+                "https://wiki.guildwars2.com/wiki/Main?x=1#y",
+            ),
+            ("müller.de", "https://müller.de"),
         ] {
             assert_eq!(normalized_address(typed).as_deref(), Ok(expected));
         }
@@ -227,8 +290,28 @@ mod tests {
     #[test]
     fn unusable_addresses_are_refused() {
         assert_eq!(normalized_address("  "), Err(AddressProblem::Missing));
-        for typed in ["ftp://a.de", "a b.de", "<https://a.de>"] {
-            assert_eq!(normalized_address(typed), Err(AddressProblem::Unsupported));
+        for typed in [
+            "ftp://a.de",
+            "a b.de",
+            "<https://a.de>",
+            "sdsdsdsdsd",
+            "https://sdsdsd",
+            "https://",
+            "https://.de",
+            "https://a..de",
+            "https://a.d",
+            "https://-a.de",
+            "https://a.de:port",
+            "a.1",
+            "a@b",
+            "mailto:a",
+            "mailto:@b.de",
+        ] {
+            assert_eq!(
+                normalized_address(typed),
+                Err(AddressProblem::Invalid),
+                "for {typed:?}"
+            );
         }
     }
 

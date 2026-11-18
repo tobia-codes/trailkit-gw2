@@ -48,9 +48,10 @@ Each rule has an id (`area-name`) so reviews can cite it.
   ImGui's `BeginPopupModal` (whole-screen dim) is not used. Implementation:
   a borderless window exactly over the owning window (child-window scrims
   do not reliably cover input fields in ImGui 1.80).
-- `overlay-dialog-layout` — A dialog has a heading (Heading3), a short
-  question or explanation, and one button row (see `lay-one-primary`).
-  Escape and a click on the dimmed area choose the harmless answer (e.g.
+- `overlay-dialog-layout` — A dialog has a heading (Heading3), a close icon
+  at the top right (R141), a short question, explanation or form, and one
+  button row (see `lay-one-primary`). The close icon, Escape and a click on
+  the dimmed area choose the harmless answer (e.g.
   "Keep editing"), never one that saves or discards.
   Card: `bg.panel`, 1 px `border` frame, `space.lg` padding, min ≈ 28
   characters wide, max 90 % of the window, text wraps. Button row:

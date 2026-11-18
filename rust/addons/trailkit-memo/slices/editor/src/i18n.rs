@@ -46,8 +46,8 @@ pub enum EditorText {
     LinkRemove,
     /// Why a link cannot be inserted without an address (M208).
     LinkAddressMissing,
-    /// Why an address cannot be used (M208).
-    LinkAddressUnsupported,
+    /// What is wrong with an unusable address and how to fix it (M208).
+    LinkAddressInvalid,
 }
 
 impl LocalizedText for EditorText {
@@ -72,7 +72,7 @@ impl LocalizedText for EditorText {
         Self::LinkCancel,
         Self::LinkRemove,
         Self::LinkAddressMissing,
-        Self::LinkAddressUnsupported,
+        Self::LinkAddressInvalid,
     ];
 
     fn get(self, language: Language) -> &'static str {
@@ -94,11 +94,11 @@ impl LocalizedText for EditorText {
             (Self::LinkRemove, Language::German) => "Link entfernen, Text behalten",
             (Self::LinkAddressMissing, Language::English) => "Enter an address.",
             (Self::LinkAddressMissing, Language::German) => "Gib eine Adresse ein.",
-            (Self::LinkAddressUnsupported, Language::English) => {
-                "Use an http, https or mailto address."
+            (Self::LinkAddressInvalid, Language::English) => {
+                "Enter a valid address, e.g. https://example.com."
             }
-            (Self::LinkAddressUnsupported, Language::German) => {
-                "Nutze eine http-, https- oder mailto-Adresse."
+            (Self::LinkAddressInvalid, Language::German) => {
+                "Gib eine gültige Adresse ein, z. B. https://example.com."
             }
             (Self::TitleHint, Language::English) => "Title",
             (Self::TitleHint, Language::German) => "Titel",

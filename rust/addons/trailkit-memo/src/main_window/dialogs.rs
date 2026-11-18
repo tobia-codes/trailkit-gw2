@@ -8,7 +8,7 @@ pub(super) mod save_status;
 use nexus::imgui::{Condition, Key, MouseButton, StyleColor, StyleVar, Ui, Window, WindowFlags};
 use trailkit_ui::{
     controls::button::{Button, ButtonKind, ButtonState},
-    feedback::dialog_frame::draw_dialog_frame,
+    feedback::dialog_frame::{dialog_close_width, draw_dialog_close, draw_dialog_frame},
     feedback::status_card::{CardDetail, CardStatus, StatusCard, draw_status_card},
     feedback::status_line::{Status, draw_status_line},
     text::font_registry::FontScope,
@@ -121,7 +121,10 @@ pub(super) struct DialogContent<'a> {
     pub(super) apart: Option<DialogButton<'a>>,
     /// The buttons at the right end, the main one last.
     pub(super) buttons: Vec<DialogButton<'a>>,
-    /// The harmless answer: Escape and a click on the dimmed area.
+    /// Tooltip of the close icon at the top right (R141).
+    pub(super) close: &'a str,
+    /// The harmless answer: the close icon, Escape and a click on the dimmed
+    /// area.
     pub(super) escape: WindowAction,
     /// The answer of Enter, if Enter answers at all.
     pub(super) enter: Option<WindowAction>,
@@ -180,7 +183,8 @@ pub(super) fn draw_dialog_card(
     let left = min[0] + padding;
     ui.set_cursor_screen_pos([left, min[1] + padding]);
     {
-        let _wrap = ui.push_text_wrap_pos_with_pos(left - window_position[0] + content_width);
+        let title_width = (content_width - dialog_close_width(ui, theme)).max(1.0);
+        let _wrap = ui.push_text_wrap_pos_with_pos(left - window_position[0] + title_width);
         draw_text_wrapped(ui, theme, TextStyle::Heading3, content.title);
     }
     {
@@ -194,7 +198,8 @@ pub(super) fn draw_dialog_card(
     }
     ui.dummy([0.0, theme.spacing.small]);
     let mut answer = draw_dialog_buttons(ui, theme, content, [left, content_width], stacked);
-    if ui.is_key_pressed(Key::Escape) {
+    let is_closed = draw_dialog_close(ui, theme, frame, padding, content.close);
+    if is_closed || ui.is_key_pressed(Key::Escape) {
         answer = Some(content.escape.clone());
     } else if let Some(enter) = &content.enter
         && ui.is_key_pressed(Key::Enter)
@@ -286,6 +291,7 @@ fn draw_dialog_buttons(
 pub(super) fn unsaved_changes_dialog(language: Language) -> DialogContent<'static> {
     DialogContent {
         title: Text::UnsavedChangesTitle.get(language),
+        close: Text::CloseWindow.get(language),
         question: Text::UnsavedChangesQuestion.get(language),
         status: None,
         apart: Some(DialogButton {
@@ -341,6 +347,7 @@ pub(super) fn save_failed_dialog(
     };
     DialogContent {
         title: SaveText::SaveFailed.get(language),
+        close: Text::CloseWindow.get(language),
         question: SaveText::DiscardDeletesChanges.get(language),
         status: (prompt.failed_again && !saving).then(|| SaveText::FailedAgain.get(language)),
         apart: Some(DialogButton {
@@ -376,6 +383,7 @@ fn confirmation_dialog<'a>(
 ) -> DialogContent<'a> {
     DialogContent {
         title: &confirmation.title,
+        close: Text::CloseWindow.get(language),
         question: &confirmation.text,
         status: None,
         apart: None,

@@ -3,11 +3,11 @@
 //! link button and Ctrl+K. The app draws the dimmed window around it.
 
 use nexus::imgui::{Key, MouseButton, StyleVar, Ui};
-use trailkit_memo_shared::i18n::{Language, LocalizedText, text_field_texts};
+use trailkit_memo_shared::i18n::{Language, LocalizedText, Text, text_field_texts};
 use trailkit_ui::{
     controls::button::{Button, ButtonKind, draw_popup_icon_button},
     controls::text_field::TextField,
-    feedback::dialog_frame::draw_dialog_frame,
+    feedback::dialog_frame::{dialog_close_width, draw_dialog_close, draw_dialog_frame},
     text::icons::Icon,
     text::{TextStyle, draw_text_wrapped},
     theme::Theme,
@@ -116,7 +116,9 @@ impl LinkDialog {
         let is_backdrop_click = !frame.contains(ui.io().mouse_pos)
             && ui.is_window_hovered()
             && ui.is_mouse_clicked(MouseButton::Left);
-        if ui.is_key_pressed(Key::Escape) || is_backdrop_click {
+        let is_closed =
+            draw_dialog_close(ui, theme, frame, padding, Text::CloseWindow.get(language));
+        if ui.is_key_pressed(Key::Escape) || is_backdrop_click || is_closed {
             LinkDialogOutcome::Cancelled
         } else {
             outcome
@@ -137,7 +139,8 @@ impl LinkDialog {
             EditorText::LinkInsertTitle
         };
         {
-            let _wrap = ui.push_text_wrap_pos_with_pos(ui.cursor_pos()[0] + width);
+            let title_width = (width - dialog_close_width(ui, theme)).max(1.0);
+            let _wrap = ui.push_text_wrap_pos_with_pos(ui.cursor_pos()[0] + title_width);
             draw_text_wrapped(ui, theme, TextStyle::Heading3, title.get(language));
         }
         let wanted = (self.focus_requests < MAX_FOCUS_REQUESTS).then_some(self.focus);
@@ -145,7 +148,7 @@ impl LinkDialog {
             .err()
             .filter(|problem| {
                 self.confirm_attempted
-                    || (*problem == AddressProblem::Unsupported && !self.is_address_active)
+                    || (*problem == AddressProblem::Invalid && !self.is_address_active)
             })
             .map(|problem| problem_text(problem).get(language));
 
@@ -180,6 +183,9 @@ impl LinkDialog {
             self.focus_requests.saturating_add(1)
         };
 
+        // A field ends with `space.xs`, the row adds `space.sm` before itself.
+        let spacing = theme.spacing;
+        ui.dummy([0.0, spacing.large - spacing.extra_small - spacing.small]);
         let buttons = self.draw_buttons(ui, language, theme, width);
         if buttons.cancelled {
             LinkDialogOutcome::Cancelled
@@ -257,6 +263,6 @@ struct ButtonClicks {
 const fn problem_text(problem: AddressProblem) -> EditorText {
     match problem {
         AddressProblem::Missing => EditorText::LinkAddressMissing,
-        AddressProblem::Unsupported => EditorText::LinkAddressUnsupported,
+        AddressProblem::Invalid => EditorText::LinkAddressInvalid,
     }
 }

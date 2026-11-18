@@ -138,7 +138,8 @@ Build once, use everywhere. Planned:
 - Empty state — **exists** (Q283): `empty_state::draw_empty_state` with
   `EmptyState` (optional icon, title, hint, buttons with one primary)
 - Dialog card — **exists**: `feedback::dialog_frame::draw_dialog_frame`, centered
-  in the window that dims the addon window (`overlay-dialog-layout`)
+  in the window that dims the addon window (`overlay-dialog-layout`);
+  `draw_dialog_close` gives every dialog its close icon at the top right (R141)
 - Text field — **exists** (R139): `controls::text_field::TextField`, the
   label above the input in `TextStyle::Label`, `.optional(true)` adds the mark
   the addon translated once (`TextFieldTexts`), plus placeholder and focus;

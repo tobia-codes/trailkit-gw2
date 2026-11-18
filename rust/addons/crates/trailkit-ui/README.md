@@ -59,7 +59,7 @@ Modules are grouped by concern (ROADMAP R134): `text`, `layout`, `controls`, `li
 | `lists::list_row` | `draw_list_row` — a full-width selectable row: truncated title (Body or BodyStrong) with tooltip, trailing text, optional detail line; trash and help topics (R96, Q305) | Windows |
 | `lists::selection_bar` | `draw_row_state` / `draw_row_state_in` — the one function for a row's hover, pressed and selection fill and the accent bar on its left edge; `hide_square_row_highlight` for the row's item (R71, Q306) | Windows |
 | `lists::tree_arrow` | `draw_tree_arrow` — the Lucide chevron of an expandable tree row (R71) | Windows |
-| `feedback::dialog_frame` | `draw_dialog_frame` — the card of a dialog, centered in the current window (`bg.panel`, `border.subtle`, `radius.lg`) | Windows |
+| `feedback::dialog_frame` | `draw_dialog_frame` — the card of a dialog, centered in the current window (`bg.panel`, `border.subtle`, `radius.lg`); `draw_dialog_close` — its close icon at the top right (R141) | Windows |
 | `feedback::toast` | one short message with optional actions at the bottom of the window; the timer pauses on hover (M142, `ix-toasts`); error tone without timer, with counter, spinner and close button, and a success tone (M180) | Windows |
 | `feedback::status_line` | `draw_status_line` — `draw_icon_text` with the status icon and a wrapping text in the status color (`Status`: Success, Warning, Danger, Info), Body in dialogs, Small in the log export (R96) | Windows |
 | `feedback::status_card` | `draw_status_card` — a status line on a tinted fill framed in the status color, optional detail line and buttons (M184, R103) | Windows |
