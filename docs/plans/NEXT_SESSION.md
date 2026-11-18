@@ -42,8 +42,6 @@ each binary from its crate with `LLVM_PROFILE_FILE`/`TRAILKIT_SNAPSHOT_ROOT` via
    All addons: more languages without growing the DLLs (BACKLOG BL15; reworks the `get` tables kept whole in Q392).
 3. Last: chat translation addon feasibility (BL16, research first); then the queue below and the review items, one at a time.
 
-**Git-ready memo storage (M200, 2026-11-18, phone):** one `.md` per note decided; open grilling: ordering keys, device state
-(`expanded`, `last_reset_applied_at`) out of the content, trash as tombstones with `deleted_at`, keeping unknown fields (M32).
 **Decided, not scheduled:** Q340 backups with restore after settings and export/import (M28); Q329 `cargo bloat` at release prep.
 
 **Lessons:** measure before fixing; remove probes by editing; mockups first (R87); snapshot checks need a (draft) PR.
@@ -56,7 +54,7 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M201+, R139+, B45+, BL20+, questions from 515**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M200+, R139+, B45+, BL20+, questions from 515**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
 1. **Storage failures:** done (memo M180, 2026-11-10).
