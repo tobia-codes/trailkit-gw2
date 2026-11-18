@@ -221,7 +221,7 @@ fn draw_main_window(
                     window.toggle_search_by_key();
                 }
                 if FIND_KEY_PRESSED.swap(false, Ordering::Relaxed) {
-                    window.open_find();
+                    window.toggle_find_by_key();
                 }
                 match FIND_STEP.swap(FIND_STEP_NONE, Ordering::Relaxed) {
                     FIND_STEP_NEXT => window.step_find(true),

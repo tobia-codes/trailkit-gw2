@@ -164,8 +164,8 @@ red against the [red fill mockup](https://claude.ai/artifact/E6E3L6RTBxPsPBuCNW7
   Also `⋯` › *Find in note*.
 - **Before:** Ctrl+F opened the list search; nothing searched inside a note.
 - **Now:** a bar below the toolbar shows "2 of 5"; the current hit is filled violet, the others framed;
-  the keys and arrows step and wrap; in the editor the current hit is selected; the first Escape closes
-  only the bar. Without an open note Ctrl+F does nothing.
+  the keys and arrows step and wrap; in the editor the current hit is selected; Ctrl+F again closes the
+  bar; the first Escape closes only the bar. Without an open note Ctrl+F does nothing.
 
 ### 23 · Shift twice opens the list search
 

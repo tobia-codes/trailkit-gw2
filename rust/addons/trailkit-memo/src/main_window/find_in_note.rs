@@ -135,7 +135,16 @@ impl MemoWindow {
         self.find.text_changed();
     }
 
-    /// Closes the find bar (its `x` or Escape, M198). In the editor the body
+    /// Ctrl+F (M198): opens the find bar, or closes it while it is open.
+    pub fn toggle_find_by_key(&mut self) {
+        if self.find_bar_shown() {
+            self.close_find();
+        } else {
+            self.open_find();
+        }
+    }
+
+    /// Closes the find bar (Ctrl+F, its `x` or Escape, M198). In the editor the body
     /// takes the focus back with the current hit still selected.
     pub(super) fn close_find(&mut self) {
         self.find.visible = false;

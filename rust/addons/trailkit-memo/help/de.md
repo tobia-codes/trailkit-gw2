@@ -135,7 +135,7 @@ Drücke **Strg+F**, während eine Notiz offen ist — auch beim Bearbeiten — o
 - **Enter** oder **F3** springt zum nächsten Treffer, **Umschalt+Enter** oder **Umschalt+F3** zum vorherigen; nach dem letzten geht es beim ersten weiter. Die Pfeile in der Leiste tun dasselbe.
 - Beim Bearbeiten ist der aktuelle Treffer markiert, du kannst ihn also direkt überschreiben.
 - Die Leiste übernimmt den im Editor markierten Text, sonst die Suche der Liste, sonst deine letzte Suche in der Notiz.
-- **Escape** oder das **×** schließt die Leiste; das nächste Escape schließt das Fenster.
+- Erneut **Strg+F**, **Escape** oder das **×** schließt die Leiste; danach schließt Escape das Fenster.
 
 ## Papierkorb und Rückgängig
 
@@ -161,7 +161,7 @@ Das sind die Tasten, die memo nutzt, sortiert danach, wo sie wirken.
 ### Fenster
 
 - **Zweimal Umschalt** – Suche einblenden oder schließen (nicht beim Bearbeiten)
-- **Strg+F** – in der geöffneten Notiz suchen (auch beim Bearbeiten)
+- **Strg+F** – Suche in der geöffneten Notiz öffnen oder schließen (auch beim Bearbeiten)
 - **Enter** / **F3** – nächster Treffer beim Suchen in der Notiz; mit **Umschalt** der vorherige
 - **Escape** – zuerst ein offenes Menü oder die Suchleiste schließen, die Suche leeren, während du im Feld tippst; sonst das Fenster schließen (bei ungespeicherten Änderungen fragt memo vorher nach)
 - **Strg+Z** – letztes Löschen oder Verschieben rückgängig machen

@@ -135,7 +135,7 @@ Press **Ctrl+F** while a note is open — also while editing — or choose *Find
 - **Enter** or **F3** goes to the next hit, **Shift+Enter** or **Shift+F3** to the previous one; after the last hit it starts at the first again. The arrows in the bar do the same.
 - While editing, the current hit is selected, so you can type over it.
 - The bar offers the text you selected in the editor, else the search of the list, else your last find.
-- **Escape** or the **×** closes the bar; the next Escape closes the window.
+- **Ctrl+F** again, **Escape** or the **×** closes the bar; after that, Escape closes the window.
 
 ## Trash and undo
 
@@ -161,7 +161,7 @@ These are the keys memo uses, sorted by where they work.
 ### Window
 
 - **Shift twice** – show or close the search (not while editing)
-- **Ctrl+F** – find in the open note (also while editing)
+- **Ctrl+F** – open or close find in the open note (also while editing)
 - **Enter** / **F3** – next hit while finding; with **Shift** the previous one
 - **Escape** – close an open menu or the find bar first, clear the search while you type in it; otherwise close the window (with unsaved changes memo asks first)
 - **Ctrl+Z** – undo the last delete or move

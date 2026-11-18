@@ -73,11 +73,11 @@ impl MemoWindow {
     }
 
     /// Ctrl+F as ImGui sees it; in game `nexus_bridge::catch_window_keys` gets
-    /// it first while it belongs to the window (M174). It opens find in the
-    /// open note (M198, M199), in the reading view and the editor.
+    /// it first while it belongs to the window (M174). It opens or closes find
+    /// in the open note (M198, M199), in the reading view and the editor.
     pub(super) fn handle_search_keys(&mut self, ui: &Ui) {
         if self.window_focused && ui.io().key_ctrl && ui.is_key_index_pressed(VIRTUAL_KEY_F) {
-            self.open_find();
+            self.toggle_find_by_key();
         }
     }
 

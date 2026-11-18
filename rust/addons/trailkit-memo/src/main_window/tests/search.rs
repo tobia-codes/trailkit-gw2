@@ -123,11 +123,15 @@ fn ctrl_f_finds_in_the_open_note_also_in_the_editor() {
     press_ctrl_f(&mut memo);
     assert!(memo.find.visible, "Ctrl+F opens find in the note (M198)");
     assert!(!memo.ui_state.search_visible, "not the list search (M199)");
-    memo.close_find();
+    press_ctrl_f(&mut memo);
+    assert!(!memo.find.visible, "Ctrl+F again closes it");
     memo.apply(&WindowAction::StartEditing, Language::English);
     press_ctrl_f(&mut memo);
     assert!(memo.find.visible, "also in the editor");
     assert!(memo.editor.is_some(), "a shortcut must not end an edit");
+    press_ctrl_f(&mut memo);
+    assert!(!memo.find.visible, "and closes there too");
+    assert!(memo.editor.is_some(), "closing keeps the edit");
 }
 
 #[test]
