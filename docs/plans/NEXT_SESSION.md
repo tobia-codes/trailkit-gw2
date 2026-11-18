@@ -25,7 +25,7 @@ tests wait for the Windows PC; check `source ~/.cargo/env` and a first `cargo te
 
 **Session 43 (2026-11-18, PC), all on `develop`:** #144 M194–M197; #145 find in note, Shift twice (M198, M199); #146 stopped-worker fix, 22 data-safety
 tests; #147 README **Packages** (R138: update with every dependency change). All in-game tests passed; the list is empty.
-**Next: data pipeline** (`rust/tools/trailkit-datagen`): review item 3 and the failing GemExchange job below, then tests for `archive.rs`, `wvw.rs`,
+**Next: data pipeline** (`rust/tools/trailkit-datagen`): the failing GemExchange job below (review item 3 done, D42), then tests for `archive.rs`, `wvw.rs`,
 `gem_exchange.rs`, `gw2_api.rs`. Coverage 2026-11-18 before #146: addons 89 % of lines, memo app 70 %, datagen 52 %.
 **Then test gaps:** extract and test the Escape/close logic of `nexus_bridge/render.rs` like `key_routing.rs`; window actions (new group, format,
 preview, compact view, open folder, clear search); Ctrl+Y/Ctrl+Shift+Z keys. `xtask` last. Prove new tests with injected faults.
@@ -59,9 +59,7 @@ Next ids: **M200+, R139+, B45+, BL20+, questions from 515**. Deferred: GW2 build
 
 1. **Storage failures:** done (memo M180, 2026-11-10).
 2. **Pre-push protection:** done (Q460–Q462, R48, 2026-11-16).
-3. **WvW snapshot validity:** `rust/tools/trailkit-datagen/src/wvw.rs::write_reset_snapshot`
-   saves current matches without checking the intended pre-reset time/match period.
-   A delayed job can succeed with post-reset data. Check the actual Nov 6 EU run as well.
+3. **WvW snapshot validity:** done (D42, 2026-11-18): no file and a failed run once the region's matches have ended.
 4. **Search cache:** `rust/addons/trailkit-memo/src/main_window/search.rs::update_search` calls `SearchQuery::parse` before checking the
    cache, allocating for unchanged queries every frame. Check unchanged inputs first; no benchmark was run.
 5. **Docs/skills accuracy:** READMEs done (R91). Still wrong: `nexus-addon-dev/references/addon-structure.md`

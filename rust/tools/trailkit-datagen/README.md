@@ -47,7 +47,8 @@ cargo test -p trailkit-datagen     # uses committed fixtures, never the live API
 trailkit-datagen archive --out-dir out/
 trailkit-datagen archive --out-dir out/ --fail-if-incomplete   # catch-up: exit 1 if gaps remain
 
-# WvW snapshot shortly before a weekly reset (D29)
+# WvW snapshot shortly before a weekly reset (D29); fails without writing
+# a file if the region's matches have already ended (D42)
 trailkit-datagen wvw-snapshot --region eu --out-dir out/
 ```
 
