@@ -20,8 +20,8 @@ use trailkit_ui::{
 
 use trailkit_memo_drafts::draft_hint::DraftHintAction;
 use trailkit_memo_editor::editor::{EditorAction, EditorInput, ToolbarAction};
-use trailkit_memo_note_list::note_list::{EntryMenu, draw_note_menu};
-use trailkit_memo_note_view::note_view::{NoteViewAction, NoteViewInput};
+use trailkit_memo_note_list::note_list::{EntryMenu, LeadingItem, draw_note_menu};
+use trailkit_memo_note_view::note_view::{FindInNote, NoteViewAction, NoteViewInput};
 use trailkit_memo_reset_schedule::note_kind::{draw_kind_dropdown, kind_dropdown_size};
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText, Text, chip_context},
@@ -49,6 +49,7 @@ impl MemoWindow {
             return;
         }
         if self.ui_state.compact_note_view && self.editor.is_none() {
+            self.draw_find_bar(ui, language, theme);
             self.draw_note_body(ui, language, theme);
             return;
         }
@@ -82,6 +83,8 @@ impl MemoWindow {
         if self.editor.is_some() || self.selected_note().is_some() {
             draw_separator(ui, theme);
         }
+        // Find in the note sits fixed below the toolbar (M198, variant A).
+        self.draw_find_bar(ui, language, theme);
         if self.editor.is_some() {
             self.draw_editor(ui, language, theme);
         } else {
@@ -166,10 +169,17 @@ impl MemoWindow {
             draw_reset_type_submenu(ui, theme, language, note, window_actions);
         };
         let mut list_actions = Vec::new();
-        let rename = draw_note_menu(
+        // Find in the note comes first, with its shortcut (M198).
+        let find = LeadingItem {
+            icon: Icon::SEARCH,
+            label: Text::FindInNote.get(language),
+            shortcut: Text::FindInNoteShortcut.get(language),
+        };
+        let choice = draw_note_menu(
             ui,
             POPUP_ID,
             note,
+            find,
             EntryMenu {
                 document: &self.document,
                 edited: None,
@@ -181,8 +191,11 @@ impl MemoWindow {
         );
         self.actions
             .extend(list_actions.into_iter().map(WindowAction::from));
-        if rename {
+        if choice.rename {
             self.actions.push(WindowAction::StartRenaming);
+        }
+        if choice.leading {
+            self.open_find();
         }
     }
 
@@ -193,6 +206,24 @@ impl MemoWindow {
         language: Language,
         theme: &Theme,
     ) {
+        let Some(editor) = self.editor.as_mut() else {
+            return;
+        };
+        // Find in the note marks its hits in the body; the current one is
+        // selected once it is known (M198).
+        let find = if self.find.visible && !self.trash.visible {
+            self.find.query.as_ref()
+        } else {
+            None
+        };
+        let hit_count = editor.update_find(find, self.find.current);
+        let edited = editor.session().note;
+        if find.is_some() {
+            if std::mem::take(&mut self.find.reveal_pending) && hit_count > 0 {
+                editor.select_find_hit(self.find.current.min(hit_count - 1));
+            }
+            self.record_find_hits(Some(edited), hit_count);
+        }
         let Some(editor) = self.editor.as_mut() else {
             return;
         };
@@ -269,9 +300,23 @@ impl MemoWindow {
         } else {
             kind_dropdown_size(ui, theme, language)
         };
+        // Find in the note replaces the search marks while it has a phrase;
+        // the view scrolls to the current hit once it is known (M198).
+        let finding = self.find_bar_shown() && self.find.query.is_some();
+        if finding && std::mem::take(&mut self.find.reveal_pending) {
+            self.note_view.reveal_current_hit();
+        }
+        let current = self.find.current;
+        let find = self
+            .find
+            .query
+            .as_ref()
+            .filter(|_| finding)
+            .map(|query| FindInNote { query, current });
         let input = NoteViewInput {
             note,
             search: self.search.current.as_ref().map(|current| &current.query),
+            find,
             chips: chip_context(language),
             read_only: None,
             title_trailing: Some(TitleTrailing {
@@ -298,6 +343,10 @@ impl MemoWindow {
         }
         if output.scroll_changed {
             self.saver.save_ui_state(self.ui_state);
+        }
+        if finding {
+            let shown = note.map(|note| note.id);
+            self.record_find_hits(shown, output.find_hit_count.unwrap_or(0));
         }
     }
 }

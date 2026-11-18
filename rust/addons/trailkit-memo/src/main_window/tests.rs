@@ -1,6 +1,7 @@
 //! Snapshot tests of the memo main window (memo plan M65), run with
 //! `cargo xtask ui-test` (`--update` rewrites `tests/snapshots/`).
 
+mod find_in_note;
 mod note_list;
 mod save_errors;
 mod search;

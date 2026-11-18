@@ -1,6 +1,7 @@
-//! The search field above the note list (memo plan M118, M123, M128): a
-//! `bg.input` field a little taller than a button with a Lucide magnifier, a hint, an `x` that
-//! clears it and an accent frame while focused.
+//! The search field above the note list (memo plan M118, M123, M128) and in
+//! the find bar (M198): a `bg.input` field a little taller than a button with
+//! a Lucide magnifier, a hint, an optional `x` that clears it and an accent
+//! frame while focused.
 //!
 //! Lives in memo until a second addon needs a search field (AGENTS.md
 //! rule 7); the settings window will be the likely second user.
@@ -56,9 +57,16 @@ impl SearchField {
         self.focus_requested = keep_focus;
     }
 
-    /// Focuses the input on the next frame (Ctrl+F, M124).
+    /// Focuses the input on the next frame (M124). ImGui selects its whole
+    /// text then, so typing replaces it (find bar, M198).
     pub fn request_focus(&mut self) {
         self.focus_requested = true;
+    }
+
+    /// Replaces the text, e.g. to fill the find field (M198).
+    pub fn set_text(&mut self, text: &str) {
+        text.clone_into(&mut self.text);
+        self.generation = self.generation.wrapping_add(1);
     }
 
     /// Whether the input has the keyboard focus.
@@ -75,11 +83,33 @@ impl SearchField {
         theme: &Theme,
         texts: SearchFieldTexts<'_>,
     ) -> SearchFieldResponse {
-        let start = ui.cursor_screen_pos();
         let width = ui.content_region_avail()[0];
-        // A little taller than a button (M128); the input inside keeps the
-        // regular frame height and sits centered.
-        let height = ui.frame_height() + theme.spacing.small;
+        self.draw_sized(ui, theme, Some(texts), texts.hint, width)
+    }
+
+    /// Draws the field `width` wide without the `x` (the find bar has its
+    /// own close button, M198) and reports what the user did.
+    pub fn draw_without_end_button(
+        &mut self,
+        ui: &Ui,
+        theme: &Theme,
+        hint: &str,
+        width: f32,
+    ) -> SearchFieldResponse {
+        self.draw_sized(ui, theme, None, hint, width)
+    }
+
+    /// Draws the field `width` wide; `texts` adds the `x` at its end.
+    fn draw_sized(
+        &mut self,
+        ui: &Ui,
+        theme: &Theme,
+        texts: Option<SearchFieldTexts<'_>>,
+        hint: &str,
+        width: f32,
+    ) -> SearchFieldResponse {
+        let start = ui.cursor_screen_pos();
+        let height = field_height(ui, theme);
         let input_y = start[1] + theme.spacing.small / 2.0;
         let end = [start[0] + width, start[1] + height];
         let padding = ui.clone_style().frame_padding;
@@ -107,20 +137,26 @@ impl SearchField {
         ];
         draw_magnifier(ui, theme, [start[0] + padding[0], middle], magnifier);
         let input_x = start[0] + padding[0] + (magnifier[2] - magnifier[0]) + theme.spacing.small;
-        let clear_width = padding[0] + (clear[2] - clear[0]) + theme.spacing.small;
+        let clear_width = if texts.is_some() {
+            padding[0] + (clear[2] - clear[0]) + theme.spacing.small
+        } else {
+            padding[0]
+        };
 
         let changed = self.draw_input(
             ui,
             theme,
-            texts.hint,
+            hint,
             [input_x, input_y],
             (end[0] - clear_width - input_x).max(1.0),
         );
 
         // The `x` empties a field with text and closes an empty one (M176).
         let has_text = !self.text.is_empty();
-        let tooltip = if has_text { texts.clear } else { texts.close };
-        let clicked = self.draw_end_button(ui, theme, clear_position, clear, tooltip);
+        let clicked = texts.is_some_and(|texts| {
+            let tooltip = if has_text { texts.clear } else { texts.close };
+            self.draw_end_button(ui, theme, clear_position, clear, tooltip)
+        });
         if clicked && has_text {
             self.clear(true);
         }
@@ -216,6 +252,13 @@ impl SearchField {
         window_draw_list(ui).add_text(position, color.to_array(), Icon::X.as_str(&mut buffer));
         clicked
     }
+}
+
+/// The height of the field: a little taller than a button (M128); the input
+/// inside keeps the regular frame height and sits centered.
+#[must_use]
+pub fn field_height(ui: &Ui, theme: &Theme) -> f32 {
+    ui.frame_height() + theme.spacing.small
 }
 
 /// The ink boxes of the field's magnifier and `x` (M128). Both icons are

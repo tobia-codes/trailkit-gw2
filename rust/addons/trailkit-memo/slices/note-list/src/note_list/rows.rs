@@ -17,7 +17,7 @@ use trailkit_ui::{
     text::fonts::FontRole,
     text::glyph_metrics::{capital_middle, icon_visible_box},
     text::icons::Icon,
-    text::search_hits::mark_search_hits,
+    text::search_hits::{HitMark, mark_search_hits},
     text::text_layout::{format_count, truncate_to_width},
 };
 
@@ -190,7 +190,11 @@ fn draw_group_title<'ui, 'group>(
             ui,
             context.theme,
             &label,
-            search.query.hit_ranges(&label),
+            search
+                .query
+                .hit_ranges(&label)
+                .into_iter()
+                .map(|range| (range, HitMark::Filled)),
             title_position,
         );
     }
@@ -259,7 +263,11 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut RowContext<'_, '_>) {
             ui,
             context.theme,
             &label,
-            search.query.hit_ranges(&label),
+            search
+                .query
+                .hit_ranges(&label)
+                .into_iter()
+                .map(|range| (range, HitMark::Filled)),
             [title_x, row_start[1] + context.frame_padding[1]],
         );
     }

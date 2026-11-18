@@ -80,22 +80,28 @@ impl MemoWindow {
     }
 
     /// Whether Escape belongs to the window instead of closing it: a menu or
-    /// dropdown popup is open, the window menu is open (M166), or the search
-    /// takes it (M124). Nexus hides the window on Escape; the bridge then
+    /// dropdown popup is open, the window menu is open (M166), the find bar
+    /// is open (M198), or the search takes it (M124). Nexus hides the window on Escape; the bridge then
     /// shows it again and calls [`Self::handle_escape`].
     #[must_use]
     pub fn takes_escape(&self) -> bool {
-        self.popup_open || self.window_menu_open || self.search_takes_escape()
+        self.popup_open
+            || self.window_menu_open
+            || self.find_bar_shown()
+            || self.search_takes_escape()
     }
 
     /// Handles Escape the window took (see [`Self::takes_escape`]): closes the
-    /// open popup, else the window menu, else clears the search. Call it
+    /// open popup, else the window menu, else the find bar, else clears the
+    /// search. Call it
     /// before drawing the window content, so the popup closes this frame.
     pub fn handle_escape(&mut self, ui: &Ui) {
         if std::mem::take(&mut self.popup_open) {
             close_open_popups(ui);
         } else if self.window_menu_open {
             self.window_menu_open = false;
+        } else if self.find_bar_shown() {
+            self.close_find();
         } else if self.search_takes_escape() {
             self.clear_search_by_escape();
         }

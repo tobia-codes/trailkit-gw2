@@ -1,10 +1,11 @@
 //! Plain-text search shared by list filtering and hit highlighting (memo
 //! plan M118–M120).
 //!
-//! A [`SearchQuery`] is split at whitespace into terms; a text matches when
-//! it contains **every** term, ignoring case. Accents are not folded: "ä"
-//! matches "Ä" but never "a" (M119). Terms never contain whitespace, so a
-//! hit never spans a word boundary.
+//! A [`SearchQuery`] from [`SearchQuery::parse`] is split at whitespace into
+//! terms; a text matches when it contains **every** term, ignoring case.
+//! [`SearchQuery::phrase`] keeps the input as one term, spaces included, for
+//! find in a note (M198). Accents are not folded: "ä" matches "Ä" but never
+//! "a" (M119).
 
 use std::ops::Range;
 
@@ -27,6 +28,16 @@ impl SearchQuery {
             }
         }
         (!terms.is_empty()).then_some(Self { terms })
+    }
+
+    /// Parses what the user typed as one phrase (find in a note, M198):
+    /// trimmed and lower-cased, inner spaces kept; `None` if nothing is left.
+    #[must_use]
+    pub fn phrase(input: &str) -> Option<Self> {
+        let phrase = input.trim();
+        (!phrase.is_empty()).then(|| Self {
+            terms: vec![phrase.to_lowercase()],
+        })
     }
 
     /// The lower-cased terms.
@@ -166,6 +177,17 @@ mod tests {
         for range in ranges {
             assert_eq!(text[range].to_lowercase(), "stan");
         }
+    }
+
+    #[test]
+    fn a_phrase_keeps_its_inner_spaces() {
+        assert_eq!(SearchQuery::phrase("   "), None);
+        let phrase = SearchQuery::phrase("  Globs OF ").expect("phrase");
+        assert_eq!(phrase.terms(), ["globs of"]);
+        assert_eq!(
+            phrase.hit_ranges("250 Globs of Ectoplasm, globs"),
+            vec![4..12]
+        );
     }
 
     #[test]

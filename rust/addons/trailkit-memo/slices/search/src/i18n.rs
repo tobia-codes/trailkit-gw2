@@ -19,6 +19,19 @@ pub enum SearchText {
     ClearSearchToMove,
     /// Tooltip of a row's content hit count; `{count}` is replaced (M122).
     ContentHits,
+    /// Placeholder of the find field of the open note (M198).
+    FindHint,
+    /// Position among the find hits; `{current}` and `{total}` are replaced
+    /// (M198).
+    FindCount,
+    /// The find text matches nothing in the note (M198).
+    FindNoResults,
+    /// Tooltip of the find bar's previous button (M198).
+    FindPrevious,
+    /// Tooltip of the find bar's next button (M198).
+    FindNext,
+    /// Tooltip of the find bar's close button (M198).
+    FindClose,
 }
 
 impl LocalizedText for SearchText {
@@ -29,6 +42,12 @@ impl LocalizedText for SearchText {
         Self::NoSearchResults,
         Self::ClearSearchToMove,
         Self::ContentHits,
+        Self::FindHint,
+        Self::FindCount,
+        Self::FindNoResults,
+        Self::FindPrevious,
+        Self::FindNext,
+        Self::FindClose,
     ];
 
     fn get(self, language: Language) -> &'static str {
@@ -45,6 +64,18 @@ impl LocalizedText for SearchText {
             (Self::ClearSearchToMove, Language::German) => "Suche leeren zum Verschieben",
             (Self::ContentHits, Language::English) => "Matches in the text: {count}",
             (Self::ContentHits, Language::German) => "Treffer im Text: {count}",
+            (Self::FindHint, Language::English) => "Find in note …",
+            (Self::FindHint, Language::German) => "In Notiz suchen …",
+            (Self::FindCount, Language::English) => "{current} of {total}",
+            (Self::FindCount, Language::German) => "{current} von {total}",
+            (Self::FindNoResults, Language::English) => "No results",
+            (Self::FindNoResults, Language::German) => "Keine Treffer",
+            (Self::FindPrevious, Language::English) => "Previous match (Shift+Enter)",
+            (Self::FindPrevious, Language::German) => "Vorheriger Treffer (Umschalt+Enter)",
+            (Self::FindNext, Language::English) => "Next match (Enter)",
+            (Self::FindNext, Language::German) => "Nächster Treffer (Enter)",
+            (Self::FindClose, Language::English) => "Close (Escape)",
+            (Self::FindClose, Language::German) => "Schließen (Escape)",
         }
     }
 }

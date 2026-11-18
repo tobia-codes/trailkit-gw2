@@ -29,8 +29,8 @@ use jiff::Timestamp;
 use windows::Win32::{
     Foundation::{HWND, LPARAM, WPARAM},
     UI::{
-        Input::KeyboardAndMouse::{GetKeyState, VK_CONTROL},
-        WindowsAndMessaging::{WM_KEYDOWN, WM_MBUTTONDOWN, WM_RBUTTONDOWN},
+        Input::KeyboardAndMouse::{GetKeyState, VIRTUAL_KEY},
+        WindowsAndMessaging::{WM_MBUTTONDOWN, WM_RBUTTONDOWN},
     },
 };
 
@@ -72,16 +72,20 @@ use trailkit_memo_shared::{
     },
 };
 
+mod double_shift;
 #[cfg(feature = "fault-injection")]
 mod fault_injection;
 mod guard;
 mod help;
+mod key_routing;
 mod logging;
 mod render;
 mod storage;
 
+use self::double_shift::DoubleShift;
 use self::guard::{Callback, RunState, guard, run_state};
 use self::help::MemoHelp;
+use self::key_routing::{ArmedKeys, KeyMessage, KeySignal, route_key};
 
 use self::storage::start_storage;
 
@@ -179,12 +183,39 @@ static WINDOW_TAKES_ESCAPE: AtomicBool = AtomicBool::new(false);
 /// shows it again and lets the window handle the key.
 static ESCAPE_CAUGHT: AtomicBool = AtomicBool::new(false);
 
-/// Whether Ctrl+F belongs to the window: it has the focus and no editor is open
-/// (M174). Written by the render callback, false while it does not draw.
+/// Whether Shift pressed twice belongs to the window: it has the focus and no
+/// editor is open (M199). Written by the render callback, false while it does
+/// not draw.
 static SEARCH_KEY_ARMED: AtomicBool = AtomicBool::new(false);
 
-/// Set when Ctrl+F was caught; the render callback shows the search (M174).
+/// Set when Shift was pressed twice; the render callback toggles the list
+/// search (M199).
 static SEARCH_KEY_PRESSED: AtomicBool = AtomicBool::new(false);
+
+/// Follows Shift taps for [`SEARCH_KEY_PRESSED`]; only the window message
+/// callback locks it.
+static DOUBLE_SHIFT: Mutex<DoubleShift> = Mutex::new(DoubleShift::new());
+
+/// Whether Ctrl+F belongs to the window: it has the focus and a note is open
+/// (M174, M198). Written by the render callback, false while it does not draw.
+static FIND_KEY_ARMED: AtomicBool = AtomicBool::new(false);
+
+/// Set when Ctrl+F was caught; the render callback opens find in the note.
+static FIND_KEY_PRESSED: AtomicBool = AtomicBool::new(false);
+
+/// Whether F3 belongs to the window: it has the focus and the find bar is
+/// open (M198). Written by the render callback.
+static FIND_STEP_ARMED: AtomicBool = AtomicBool::new(false);
+
+/// Set when F3 was caught: [`FIND_STEP_NEXT`] or [`FIND_STEP_PREVIOUS`]
+/// (Shift+F3); the render callback steps through the hits.
+static FIND_STEP: AtomicU8 = AtomicU8::new(FIND_STEP_NONE);
+/// [`FIND_STEP`]: no step waiting.
+const FIND_STEP_NONE: u8 = 0;
+/// [`FIND_STEP`]: go to the next hit (F3).
+const FIND_STEP_NEXT: u8 = 1;
+/// [`FIND_STEP`]: go to the previous hit (Shift+F3).
+const FIND_STEP_PREVIOUS: u8 = 2;
 
 /// Whether the Delete key belongs to the note list (M175). Written by the render
 /// callback, false while it does not draw.
@@ -193,10 +224,6 @@ static DELETE_KEY_ARMED: AtomicBool = AtomicBool::new(false);
 /// Set when the Delete key was caught; the render callback deletes (M175).
 static DELETE_KEY_PRESSED: AtomicBool = AtomicBool::new(false);
 
-/// Windows virtual-key code of `F`.
-const VIRTUAL_KEY_F: usize = 0x46;
-/// Windows virtual-key code of Delete.
-const VIRTUAL_KEY_DELETE: usize = 0x2E;
 /// What a `WndProc` callback returns for a message it consumed.
 const MESSAGE_CONSUMED: u32 = 0;
 /// What a `WndProc` callback returns for a message others should see.
@@ -422,11 +449,11 @@ extern "C-unwind" fn catch_window_keys(
     _window: HWND,
     message: u32,
     key: WPARAM,
-    _details: LPARAM,
+    details: LPARAM,
 ) -> u32 {
     guard(Callback::WindowMessages, MESSAGE_PASSED, || {
         if run_state() == RunState::Running {
-            route_window_message(message, key)
+            route_window_message(message, key, details)
         } else {
             // After an error the game gets every key and click (R104).
             MESSAGE_PASSED
@@ -434,29 +461,64 @@ extern "C-unwind" fn catch_window_keys(
     })
 }
 
-/// The body of [`catch_window_keys`] while memo runs.
-fn route_window_message(message: u32, key: WPARAM) -> u32 {
+/// The body of [`catch_window_keys`] while memo runs. `details` carries the
+/// key's previous state (bit 30), which marks auto repeat.
+fn route_window_message(message: u32, key: WPARAM, details: LPARAM) -> u32 {
     if message == WM_RBUTTONDOWN || message == WM_MBUTTONDOWN {
         // Clicks into the game never reach ImGui; the window frame uses this
         // to drop the focus (M186). The game still gets the click.
         record_mouse_button_press();
         return MESSAGE_PASSED;
     }
-    if message != WM_KEYDOWN {
+    let armed = ArmedKeys {
+        search: SEARCH_KEY_ARMED.load(Ordering::Relaxed),
+        find: FIND_KEY_ARMED.load(Ordering::Relaxed),
+        find_step: FIND_STEP_ARMED.load(Ordering::Relaxed),
+        delete: DELETE_KEY_ARMED.load(Ordering::Relaxed),
+    };
+    let key_message = KeyMessage {
+        message,
+        key: key.0,
+        is_repeat: details.0 & KEY_WAS_DOWN != 0,
+    };
+    let signal = route_key(
+        key_message,
+        armed,
+        Instant::now(),
+        &mut lock_double_shift(),
+        is_down,
+    );
+    let Some(signal) = signal else {
         return MESSAGE_PASSED;
+    };
+    match signal {
+        KeySignal::ToggleSearch => SEARCH_KEY_PRESSED.store(true, Ordering::Relaxed),
+        KeySignal::ToggleFind => FIND_KEY_PRESSED.store(true, Ordering::Relaxed),
+        KeySignal::FindNext => FIND_STEP.store(FIND_STEP_NEXT, Ordering::Relaxed),
+        KeySignal::FindPrevious => FIND_STEP.store(FIND_STEP_PREVIOUS, Ordering::Relaxed),
+        KeySignal::Delete => DELETE_KEY_PRESSED.store(true, Ordering::Relaxed),
     }
-    if key.0 == VIRTUAL_KEY_DELETE && DELETE_KEY_ARMED.load(Ordering::Relaxed) {
-        DELETE_KEY_PRESSED.store(true, Ordering::Relaxed);
-        return MESSAGE_CONSUMED;
+    if signal.consumes_key() {
+        MESSAGE_CONSUMED
+    } else {
+        MESSAGE_PASSED
     }
-    if key.0 == VIRTUAL_KEY_F && SEARCH_KEY_ARMED.load(Ordering::Relaxed) {
-        // SAFETY: `GetKeyState` only reads the calling thread's key state, and this
-        // thread is processing the window's messages. The high bit means "down".
-        let control_is_down = unsafe { GetKeyState(i32::from(VK_CONTROL.0)) } < 0;
-        if control_is_down {
-            SEARCH_KEY_PRESSED.store(true, Ordering::Relaxed);
-            return MESSAGE_CONSUMED;
-        }
-    }
-    MESSAGE_PASSED
+}
+
+/// Bit 30 of a key message's `lParam`: the key was already down (repeat).
+const KEY_WAS_DOWN: isize = 1 << 30;
+
+/// Whether `key` is held, as seen by the thread processing window messages.
+fn is_down(key: VIRTUAL_KEY) -> bool {
+    // SAFETY: `GetKeyState` only reads the calling thread's key state, and this
+    // thread is processing the window's messages. The high bit means "down".
+    unsafe { GetKeyState(i32::from(key.0)) < 0 }
+}
+
+/// Locks [`DOUBLE_SHIFT`]; a poisoned lock keeps its last state, which is
+/// only timing.
+fn lock_double_shift() -> std::sync::MutexGuard<'static, DoubleShift> {
+    DOUBLE_SHIFT
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
 }

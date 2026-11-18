@@ -38,6 +38,8 @@ pub struct NoteViewInput<'a> {
     pub note: Option<&'a Note>,
     /// The active search, whose hits are marked.
     pub search: Option<&'a SearchQuery>,
+    /// Find in the note (M198); replaces `search` while it has a query.
+    pub find: Option<FindInNote<'a>>,
     /// Texts and copy state of chat-link chips.
     pub chips: ChipContext<'a>,
     /// The widget behind the title.
@@ -46,6 +48,15 @@ pub struct NoteViewInput<'a> {
     /// (Q280), the `subtitle` line follows it and a double-click does not
     /// edit.
     pub read_only: Option<ReadOnly<'a>>,
+}
+
+/// Find in the open note (M198): what to find and which hit is current.
+#[derive(Debug, Clone, Copy)]
+pub struct FindInNote<'a> {
+    /// The phrase to find.
+    pub query: &'a SearchQuery,
+    /// The current hit, 0-based in reading order.
+    pub current: usize,
 }
 
 /// How a read-only note is shown (memo M145).
@@ -71,6 +82,8 @@ pub struct NoteViewOutput {
     pub actions: Vec<NoteViewAction>,
     /// Whether the content's scroll position changed and should be saved.
     pub scroll_changed: bool,
+    /// How many find hits the note shows, while finding (M198).
+    pub find_hit_count: Option<usize>,
 }
 
 /// State of the view that outlives a frame.
@@ -83,6 +96,8 @@ pub struct NoteView {
     restore_scroll: bool,
     /// Scroll to the first search hit on the next frame (M122).
     scroll_to_first_hit: bool,
+    /// Scroll the current find hit into view on the next frame (M198).
+    reveal_current_hit: bool,
 }
 
 impl Default for NoteView {
@@ -92,6 +107,7 @@ impl Default for NoteView {
             parsed: None,
             restore_scroll: true,
             scroll_to_first_hit: false,
+            reveal_current_hit: false,
         }
     }
 }
@@ -107,6 +123,12 @@ impl NoteView {
     /// A new search started: jump to the first hit on the next frame.
     pub fn jump_to_first_hit(&mut self) {
         self.scroll_to_first_hit = true;
+    }
+
+    /// The current find hit changed: scroll it into view on the next frame
+    /// unless it is visible already (M198).
+    pub fn reveal_current_hit(&mut self) {
+        self.reveal_current_hit = true;
     }
 
     /// Draws the selected note (or a hint without one). `note_scroll` is the
@@ -163,7 +185,7 @@ impl NoteView {
                 ui,
                 language,
                 theme,
-                (input.search, input.chips, editable),
+                (input.search, input.find, input.chips, editable),
                 note_scroll,
                 &mut output,
             );
@@ -177,7 +199,12 @@ impl NoteView {
         ui: &Ui,
         language: Language,
         theme: &Theme,
-        (search, chips, editable): (Option<&SearchQuery>, ChipContext<'_>, bool),
+        (search, find, chips, editable): (
+            Option<&SearchQuery>,
+            Option<FindInNote<'_>>,
+            ChipContext<'_>,
+            bool,
+        ),
         note_scroll: &mut f32,
         output: &mut NoteViewOutput,
     ) {
@@ -191,14 +218,26 @@ impl NoteView {
         match &self.parsed {
             Some(parsed) if !parsed.document.blocks.is_empty() => {
                 // Search hits are marked; a new search or a newly opened
-                // note jumps to the first one (M122).
-                let mut highlight = search.map(SearchHighlight::new);
+                // note jumps to the first one (M122). Find in the note marks
+                // its own hits instead, the current one filled (M198).
+                let mut highlight = match find {
+                    Some(find) => Some(SearchHighlight::with_current(find.query, find.current)),
+                    None => search.map(SearchHighlight::new),
+                };
                 if let Some(action) =
                     draw_markdown(ui, &parsed.document, theme, chips, highlight.as_mut())
                 {
                     output.actions.push(NoteViewAction::Markdown(action));
                 }
-                if std::mem::take(&mut self.scroll_to_first_hit)
+                if find.is_some() {
+                    output.find_hit_count = highlight.as_ref().map(SearchHighlight::hit_count);
+                    if std::mem::take(&mut self.reveal_current_hit)
+                        && let Some(hit) =
+                            highlight.as_ref().and_then(SearchHighlight::current_hit_y)
+                    {
+                        reveal(ui, hit);
+                    }
+                } else if std::mem::take(&mut self.scroll_to_first_hit)
                     && let Some(first_hit) =
                         highlight.as_ref().and_then(SearchHighlight::first_hit_y)
                 {
@@ -219,5 +258,15 @@ impl NoteView {
             *note_scroll = scroll;
             output.scroll_changed = true;
         }
+    }
+}
+
+/// Scrolls the content so the line at window-content `y` is visible, a
+/// third down the view, unless it is visible already (M198).
+fn reveal(ui: &Ui, y: f32) {
+    let line = ui.text_line_height();
+    let (top, height) = (ui.scroll_y(), ui.window_size()[1]);
+    if y < top || y + line > top + height {
+        ui.set_scroll_y((y - height / 3.0).max(0.0));
     }
 }
