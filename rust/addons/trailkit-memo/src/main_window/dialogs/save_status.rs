@@ -317,7 +317,7 @@ impl MemoWindow {
         self.save_status.health = SaveHealth::Healthy;
         self.saver.save_notes(Arc::new(self.document.clone()));
         self.saver.save_settings(self.settings);
-        self.saver.save_ui_state(self.ui_state);
+        self.saver.save_ui_state(&self.ui_state);
         self.saver.save_drafts(self.drafts.clone());
         self.save_status.waiting.push_back(WriteRequester::Toast);
         self.saver.write_now();

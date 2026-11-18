@@ -150,12 +150,9 @@ impl NotesDocument {
     }
 
     /// Inserts `node` at `place` (index clamped); a missing parent group
-    /// means the end of the root level. The parent group is expanded so the
-    /// entry is visible.
+    /// means the end of the root level. Expanding the parent so the entry is
+    /// visible is up to the caller (UI state, M201).
     fn insert_at(&mut self, place: Place, node: TreeNode) {
-        if let Some(parent) = place.parent.and_then(|parent| self.group_mut(parent)) {
-            parent.expanded = true;
-        }
         match self.children_mut(place.parent) {
             Some(children) => children.insert(place.index.min(children.len()), node),
             None => self.root.push(node),

@@ -219,11 +219,11 @@ mod tests {
         note
     }
 
-    /// A collapsed group with `title` and `children`.
+    /// A group with `title` and `children` (search ignores whether it is
+    /// collapsed, M124).
     fn group(title: &str, children: Vec<TreeNode>) -> Group {
         let mut group = Group::new(title.to_owned());
         group.children = children;
-        group.expanded = false;
         group
     }
 

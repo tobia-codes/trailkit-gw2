@@ -139,18 +139,21 @@ fn a_group_cannot_be_dropped_into_itself() {
 /// is saved so), the note is selected and shown (M185).
 #[test]
 fn revealing_a_note_expands_its_group_and_selects_it() {
-    let mut document = sample_document();
-    for node in &mut document.root {
-        if let Node::Group(group) = node {
-            group.expanded = false;
-        }
-    }
+    let document = sample_document();
+    let ui_state = with_root_groups_collapsed(&document, UiState::default());
     let Some(NodeId::Note(weekly)) = weekly_note(&document) else {
         panic!("the sample has a weekly note in a group");
     };
-    let (mut window, _worker, _directory) = memo_window(document, UiState::default());
+    let (mut window, _worker, _directory) = memo_window(document, ui_state);
+    assert_eq!(
+        expanded_flags(&window.document, &window.ui_state),
+        vec![false]
+    );
     window.apply(&WindowAction::RevealNote(weekly), Language::English);
-    assert_eq!(expanded_flags(&window.document), vec![true]);
+    assert_eq!(
+        expanded_flags(&window.document, &window.ui_state),
+        vec![true]
+    );
     assert_eq!(window.ui_state.selected, Some(NodeId::Note(weekly)));
     assert_eq!(window.ui_state.shown_note, Some(weekly));
 }
@@ -198,7 +201,7 @@ fn clicking_a_group_toggles_it_and_keeps_the_shown_note() {
     };
     let shown = first_note(&document);
     let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
-    let is_expanded = |memo: &MemoWindow| memo.document.group(group).is_some_and(|g| g.expanded);
+    let is_expanded = |memo: &MemoWindow| memo.ui_state.is_expanded(group);
     let before = is_expanded(&memo);
     memo.apply(&WindowAction::ClickGroup(group), Language::English);
     assert_eq!(is_expanded(&memo), !before, "the click toggles (M172)");
@@ -222,11 +225,11 @@ fn clicking_a_group_during_a_search_changes_only_the_search() {
         memo_window(document.clone(), selected_first_with_search(&document));
     memo.search_field.text = "clears".to_owned();
     memo.update_search();
-    let saved = memo.document.group(group).is_some_and(|g| g.expanded);
+    let saved = memo.ui_state.is_expanded(group);
     memo.apply(&WindowAction::ClickGroup(group), Language::English);
     assert!(memo.collapsed_in_search.contains(&group));
     assert_eq!(
-        memo.document.group(group).is_some_and(|g| g.expanded),
+        memo.ui_state.is_expanded(group),
         saved,
         "the saved state stays (M124)"
     );

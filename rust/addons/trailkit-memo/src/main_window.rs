@@ -230,6 +230,8 @@ impl MemoWindow {
         {
             ui_state.shown_note = None;
         }
+        // Saved with the next window state change.
+        ui_state.forget_missing_groups(&document);
         Self {
             document,
             problem,
@@ -369,7 +371,7 @@ impl MemoWindow {
         };
         self.ui_state.help_topic = state.topic;
         self.ui_state.help_topic_list_characters = state.topic_list_characters;
-        self.saver.save_ui_state(self.ui_state);
+        self.saver.save_ui_state(&self.ui_state);
     }
 
     /// The memo toggle of the title bar (R78): the window menu (M166). The

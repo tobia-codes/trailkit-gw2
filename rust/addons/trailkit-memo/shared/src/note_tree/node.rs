@@ -203,8 +203,6 @@ pub struct Group {
     pub title: String,
     /// Notes and subgroups in display order.
     pub children: Vec<TreeNode>,
-    /// Whether the group is expanded in the note list (kept across sessions).
-    pub expanded: bool,
     /// Fields a newer version added, kept on save (M202).
     #[serde(flatten)]
     pub unknown_fields: UnknownFields,
@@ -298,14 +296,13 @@ impl Note {
 }
 
 impl Group {
-    /// Creates a new, empty and expanded group.
+    /// Creates a new, empty group (expanded until collapsed, M201).
     #[must_use]
     pub fn new(title: String) -> Self {
         Self {
             id: GroupId::new_unique(),
             title,
             children: Vec::new(),
-            expanded: true,
             unknown_fields: UnknownFields::default(),
         }
     }
@@ -432,7 +429,7 @@ pub(super) mod tests {
         assert_eq!(serde_json::to_value(&node)?, stored);
         let group = serde_json::json!({
             "type": "group", "id": "0190a9d4-0000-7000-8000-000000000002",
-            "title": "G", "children": [], "expanded": true, "pinned": true
+            "title": "G", "children": [], "pinned": true
         });
         let node: TreeNode = serde_json::from_value(group.clone())?;
         assert_eq!(serde_json::to_value(&node)?, group);

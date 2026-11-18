@@ -1,8 +1,9 @@
 //! Migrations of `notes.json` between schema versions (memo plan M29).
 //!
-//! Version 2 (M203) renamed the note field `kind` to `reset_schedule` with
-//! the values `never`, `daily` and `weekly` (was `normal`, `daily_reset`,
-//! `weekly_reset`).
+//! Version 2 renamed the note field `kind` to `reset_schedule` with the
+//! values `never`, `daily` and `weekly` (was `normal`, `daily_reset`,
+//! `weekly_reset`, M203) and removed the group field `expanded`, which is
+//! UI state in `ui_state.json` now (M201; collapsed groups open once).
 
 use serde_json::Value;
 use trailkit_storage::{DocumentFields, MigrationError, SchemaVersion};
@@ -50,8 +51,8 @@ fn rename_kinds_in_nodes(nodes: &mut Value) -> Result<(), String> {
     nodes.iter_mut().try_for_each(rename_kinds_in_node)
 }
 
-/// Renames `kind` to `reset_schedule` in a note, or in every note below a
-/// group.
+/// Renames `kind` to `reset_schedule` in a note; in a group, removes
+/// `expanded` and migrates every node below it.
 ///
 /// # Errors
 ///
@@ -62,7 +63,9 @@ fn rename_kinds_in_node(node: &mut Value) -> Result<(), String> {
         .as_object_mut()
         .ok_or_else(|| "a node is not an object".to_owned())?;
     if let Some(children) = node.get_mut("children") {
-        return rename_kinds_in_nodes(children);
+        rename_kinds_in_nodes(children)?;
+        node.remove("expanded");
+        return Ok(());
     }
     let Some(kind) = node.remove("kind") else {
         return Ok(());
@@ -92,13 +95,13 @@ mod tests {
     }
 
     #[test]
-    fn renames_kind_in_tree_and_trash() {
+    fn renames_kind_and_drops_expanded_in_tree_and_trash() {
         let migrated = migrate(json!({
             "root": [
                 {"type": "note", "kind": "normal", "title": "A"},
-                {"type": "group", "children": [
+                {"type": "group", "expanded": false, "children": [
                     {"type": "note", "kind": "daily_reset", "last_reset_applied_at": "2026-11-01T00:00:00Z"},
-                    {"type": "group", "children": [{"type": "note", "kind": "weekly_reset"}]}
+                    {"type": "group", "expanded": true, "children": [{"type": "note", "kind": "weekly_reset"}]}
                 ]}
             ],
             "trash": [{"node": {"type": "note", "kind": "normal"}, "former_index": 0}]

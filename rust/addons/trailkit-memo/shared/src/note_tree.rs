@@ -125,19 +125,17 @@ impl NotesDocument {
     }
 
     /// Appends `node` at the end of `parent`'s children (or the root level if
-    /// `parent` is `None` or no longer exists) and expands that parent.
+    /// `parent` is `None` or no longer exists). Expanding the parent is up to
+    /// the caller (UI state, M201).
     pub fn append(&mut self, parent: Option<GroupId>, node: TreeNode) {
         match parent.and_then(|parent| self.group_mut(parent)) {
-            Some(group) => {
-                group.expanded = true;
-                group.children.push(node);
-            }
+            Some(group) => group.children.push(node),
             None => self.root.push(node),
         }
     }
 
     /// Inserts `node` at `point`. A group or sibling that no longer exists
-    /// falls back to the end of the root level; a parent group is expanded.
+    /// falls back to the end of the root level.
     pub fn insert(&mut self, point: InsertionPoint, node: TreeNode) {
         let result = match point {
             InsertionPoint::End(parent) => {
@@ -146,7 +144,6 @@ impl NotesDocument {
             }
             InsertionPoint::Start(parent) => match self.group_mut(parent) {
                 Some(group) => {
-                    group.expanded = true;
                     group.children.insert(0, node);
                     Ok(())
                 }
@@ -187,8 +184,7 @@ impl NotesDocument {
         }
     }
 
-    /// Moves `node` with all its children to `point` (M106–M112); the
-    /// target group is expanded. Returns whether anything changed; an
+    /// Moves `node` with all its children to `point` (M106–M112). Returns whether anything changed; an
     /// unchanged or impossible move ([`Self::check_move`]) does nothing.
     pub fn move_node(&mut self, node: NodeId, point: InsertionPoint) -> bool {
         if self.check_move(node, point) != MoveCheck::Changes {
@@ -207,9 +203,6 @@ impl NotesDocument {
         } else {
             target.index
         };
-        if let Some(parent) = target.parent.and_then(|parent| self.group_mut(parent)) {
-            parent.expanded = true;
-        }
         match self.children_mut(target.parent) {
             Some(children) => children.insert(index.min(children.len()), moved),
             None => self.root.push(moved),
@@ -400,7 +393,7 @@ mod tests {
             "root": [],
             "trash": [{
                 "node": {"type": "group", "id": "0190a9d4-0000-7000-8000-000000000002",
-                         "title": "G", "children": [], "expanded": false},
+                         "title": "G", "children": []},
                 "deleted_at": "2026-11-01T12:00:00Z", "former_parent": null,
                 "former_index": 0, "deleted_by": "device-a"
             }],
@@ -524,12 +517,11 @@ mod tests {
     }
 
     #[test]
-    fn append_goes_to_the_end_and_expands_the_parent() {
+    fn append_goes_to_the_end() {
         let mut document = sample_document();
-        let TreeNode::Group(group) = &mut document.root[1] else {
+        let TreeNode::Group(group) = &document.root[1] else {
             panic!("expected a group");
         };
-        group.expanded = false;
         let group_id = group.id;
         let note = Note::new("New".to_owned(), ResetSchedule::Never, noon());
         let note_id = note.id;
@@ -538,7 +530,6 @@ mod tests {
         let TreeNode::Group(group) = &document.root[1] else {
             panic!("expected a group");
         };
-        assert!(group.expanded);
         assert_eq!(
             group.children.last().map(TreeNode::id),
             Some(NodeId::Note(note_id))
@@ -548,14 +539,13 @@ mod tests {
         assert_eq!(document.root.last().map(TreeNode::title), Some("Root"));
     }
 
-    /// The tree `A G1[B G2[C]] D` with G2 collapsed, plus the ids of
+    /// The tree `A G1[B G2[C]] D`, plus the ids of
     /// G1, G2, A, B and C.
     fn move_document() -> (NotesDocument, [GroupId; 2], [NoteId; 3]) {
         let note = |title: &str| Note::new(title.to_owned(), ResetSchedule::Never, noon());
         let (a, b, c, d) = (note("A"), note("B"), note("C"), note("D"));
         let ids = [a.id, b.id, c.id];
         let mut inner = Group::new("G2".to_owned());
-        inner.expanded = false;
         inner.children.push(TreeNode::Note(c));
         let mut outer = Group::new("G1".to_owned());
         outer.children.push(TreeNode::Note(b));
@@ -569,19 +559,15 @@ mod tests {
         (document, groups, ids)
     }
 
-    /// The tree as text, e.g. `A G1[B G2[C]] D`; a collapsed group is
-    /// marked with `-`.
+    /// The tree as text, e.g. `A G1[B G2[C]] D`.
     fn outline(nodes: &[TreeNode]) -> String {
         nodes
             .iter()
             .map(|node| match node {
                 TreeNode::Note(note) => note.title.clone(),
-                TreeNode::Group(group) => format!(
-                    "{}{}[{}]",
-                    group.title,
-                    if group.expanded { "" } else { "-" },
-                    outline(&group.children)
-                ),
+                TreeNode::Group(group) => {
+                    format!("{}[{}]", group.title, outline(&group.children))
+                }
             })
             .collect::<Vec<_>>()
             .join(" ")
@@ -592,11 +578,11 @@ mod tests {
         let (mut document, [outer, inner], [a, b, c]) = move_document();
         let [a, b, c] = [a, b, c].map(NodeId::Note);
         assert!(document.move_node(a, InsertionPoint::After(b)));
-        assert_eq!(outline(&document.root), "G1[B A G2-[C]] D");
+        assert_eq!(outline(&document.root), "G1[B A G2[C]] D");
         assert!(document.move_node(a, InsertionPoint::Start(outer)));
-        assert_eq!(outline(&document.root), "G1[A B G2-[C]] D");
+        assert_eq!(outline(&document.root), "G1[A B G2[C]] D");
         assert!(document.move_node(c, InsertionPoint::End(None)));
-        assert_eq!(outline(&document.root), "G1[A B G2-[]] D C");
+        assert_eq!(outline(&document.root), "G1[A B G2[]] D C");
         assert!(document.move_node(b, InsertionPoint::End(Some(inner))));
         assert_eq!(outline(&document.root), "G1[A G2[B]] D C");
         assert!(document.move_node(c, InsertionPoint::Before(NodeId::Group(outer))));
@@ -608,7 +594,7 @@ mod tests {
         let (mut document, _, [a, ..]) = move_document();
         let d = document.root[2].id();
         assert!(document.move_node(NodeId::Note(a), InsertionPoint::After(d)));
-        assert_eq!(outline(&document.root), "G1[B G2-[C]] D A");
+        assert_eq!(outline(&document.root), "G1[B G2[C]] D A");
     }
 
     #[test]
@@ -618,7 +604,7 @@ mod tests {
             NodeId::Group(inner),
             InsertionPoint::Before(NodeId::Note(a))
         ));
-        assert_eq!(outline(&document.root), "G2-[C] A G1[B] D");
+        assert_eq!(outline(&document.root), "G2[C] A G1[B] D");
     }
 
     #[test]
@@ -675,6 +661,6 @@ mod tests {
         document.insert(InsertionPoint::Before(NodeId::Note(b)), note("X"));
         document.insert(InsertionPoint::Start(outer), note("Y"));
         document.insert(InsertionPoint::Start(GroupId::new_unique()), note("Z"));
-        assert_eq!(outline(&document.root), "A G1[Y X B G2-[C]] D Z");
+        assert_eq!(outline(&document.root), "A G1[Y X B G2[C]] D Z");
     }
 }

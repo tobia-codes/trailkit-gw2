@@ -49,7 +49,7 @@ impl MemoWindow {
             self.ui_state.note_list_characters = characters;
         }
         if response.released {
-            self.saver.save_ui_state(self.ui_state);
+            self.saver.save_ui_state(&self.ui_state);
         }
     }
 }

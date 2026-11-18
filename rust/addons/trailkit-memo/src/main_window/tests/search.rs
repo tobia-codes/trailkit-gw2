@@ -46,7 +46,7 @@ fn search_filters_the_list_and_marks_the_hits() {
         selected: weekly_note(&document),
         ..UiState::default()
     };
-    let saved_expanded = expanded_flags(&document);
+    let saved_expanded = expanded_flags(&document, &ui_state);
     let (mut memo, _worker, _directory) = memo_window(document, ui_state);
     // "clears" matches the title, "spirit" the content: the row shows one
     // content hit, the group counts one matching note (M119, M121, M122).
@@ -60,7 +60,7 @@ fn search_filters_the_list_and_marks_the_hits() {
     memo.clear_search_by_escape();
     assert!(memo.search_field.text.is_empty());
     assert_eq!(
-        expanded_flags(&memo.document),
+        expanded_flags(&memo.document, &memo.ui_state),
         saved_expanded,
         "the saved expand state is untouched"
     );

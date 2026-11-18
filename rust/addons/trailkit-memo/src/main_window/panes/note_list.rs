@@ -137,6 +137,7 @@ impl MemoWindow {
             NoteListInput {
                 document: &self.document,
                 selected: self.ui_state.selected,
+                collapsed_groups: &self.ui_state.collapsed_groups,
                 edited: self.editor.as_ref().map(|editor| editor.session().note),
                 search,
                 extras: NoteRowExtras {

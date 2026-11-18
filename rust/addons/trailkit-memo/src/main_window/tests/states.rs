@@ -407,11 +407,8 @@ pub(super) fn with_drafts_in_collapsed_group() -> Fixture {
     if let Some(NodeId::Note(weekly)) = weekly_note(&fixture.0.document) {
         fixture.0.drafts.drafts.push(draft_of(weekly));
     }
-    for node in &mut fixture.0.document.root {
-        if let Node::Group(group) = node {
-            group.expanded = false;
-        }
-    }
+    let window = &mut fixture.0;
+    window.ui_state = with_root_groups_collapsed(&window.document, window.ui_state.clone());
     fixture
 }
 

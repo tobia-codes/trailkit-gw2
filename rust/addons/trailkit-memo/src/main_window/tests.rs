@@ -211,7 +211,7 @@ fn wide_window_in_both_themes() {
         (ThemeKind::Dark, "memo-wide-dark"),
         (ThemeKind::Light, "memo-wide-light"),
     ] {
-        let (mut memo, _worker, _directory) = memo_window(document.clone(), ui_state);
+        let (mut memo, _worker, _directory) = memo_window(document.clone(), ui_state.clone());
         assert_window(&mut memo, [640.0, 360.0], theme, name);
     }
 }
@@ -489,16 +489,27 @@ fn weekly_note(document: &NotesDocument) -> Option<NodeId> {
     })
 }
 
-/// The saved expand state of every root group of `document`.
-fn expanded_flags(document: &NotesDocument) -> Vec<bool> {
+/// The saved expand state of every root group of `document` (M201).
+fn expanded_flags(document: &NotesDocument, ui_state: &UiState) -> Vec<bool> {
     document
         .root
         .iter()
         .filter_map(|node| match node {
-            Node::Group(group) => Some(group.expanded),
+            Node::Group(group) => Some(ui_state.is_expanded(group.id)),
             Node::Note(_) => None,
         })
         .collect()
+}
+
+/// `ui_state` with every root group of `document` collapsed (M201).
+fn with_root_groups_collapsed(document: &NotesDocument, ui_state: UiState) -> UiState {
+    let mut ui_state = ui_state;
+    for node in &document.root {
+        if let Node::Group(group) = node {
+            ui_state.set_expanded(group.id, false);
+        }
+    }
+    ui_state
 }
 
 #[test]
