@@ -69,6 +69,21 @@ impl ButtonLayout {
     }
 }
 
+/// Tooltip layout.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct TooltipLayout {
+    /// `tooltip.max_width`: where a tooltip's text wraps, in font sizes.
+    pub max_width: f32,
+}
+
+impl TooltipLayout {
+    /// The width at which a tooltip's text wraps, in pixels for `font_size`.
+    #[must_use]
+    pub fn max_width_for(&self, font_size: f32) -> f32 {
+        (font_size * self.max_width).round()
+    }
+}
+
 /// Menu layout (memo M177).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct MenuLayout {

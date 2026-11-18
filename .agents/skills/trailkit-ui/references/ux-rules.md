@@ -129,6 +129,8 @@ Each rule has an id (`area-name`) so reviews can cite it.
 
 - `form-labels` — Every input has a visible label; placeholders are hints,
   never the only label.
+- `form-spacing` — Forms and dialogs follow the measured spacing of
+  `tokens.md` §5.1 (R144).
 - `form-helper-text` — Non-obvious options have one line of helper text below
   them (`text.secondary`).
 - `form-errors` — Errors appear directly at the field, state cause **and**
@@ -182,10 +184,10 @@ Each rule has an id (`area-name`) so reviews can cite it.
   Save = floppy disk `save`). Secondary text buttons and dialog buttons stay text only
   (memo M130).
 - `lay-button-icon-position` — An icon in a button stands **before** the label
-  and says what the button does. An icon **after** the label (`external-link`)
-  says that the click leaves the game, e.g. opens the browser (R100, Q303).
-  Only the button variant with a trailing icon may do that:
-  `Button::opens_link` in `trailkit-ui`. No other trailing icons in buttons; a
+  and says what the button does. Links and buttons that leave the game show
+  the icon of `markdown::LinkKind` before their text: `external-link` for the
+  browser, `mail` for the mail program (R143, replaces the trailing icon of
+  R100). Buttons use `Button::opens_link`. No trailing icons in buttons; a
   menu's submenu chevron and a dropdown's chevron are indicators of those
   components, not button icons.
 - `lay-button-min-width` — Every button with a text label is at least

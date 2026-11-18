@@ -6,7 +6,7 @@ use nexus::imgui::{Key, MouseButton, StyleVar, Ui};
 use trailkit_memo_shared::i18n::{Language, LocalizedText, Text, text_field_texts};
 use trailkit_ui::{
     controls::button::{Button, ButtonKind, draw_popup_icon_button},
-    controls::text_field::TextField,
+    controls::text_field::{TextField, move_below_last_item},
     feedback::dialog_frame::{dialog_close_width, draw_dialog_close, draw_dialog_frame},
     text::icons::Icon,
     text::{TextStyle, draw_text_wrapped},
@@ -143,6 +143,7 @@ impl LinkDialog {
             let _wrap = ui.push_text_wrap_pos_with_pos(ui.cursor_pos()[0] + title_width);
             draw_text_wrapped(ui, theme, TextStyle::Heading3, title.get(language));
         }
+        move_below_last_item(ui, theme.spacing.medium);
         let wanted = (self.focus_requests < MAX_FOCUS_REQUESTS).then_some(self.focus);
         let error = normalized_address(&self.address)
             .err()
@@ -162,6 +163,7 @@ impl LinkDialog {
         .optional(true)
         .focus(wanted == Some(LinkField::Text))
         .draw(ui, theme, field_texts);
+        move_below_last_item(ui, theme.spacing.medium);
         let address = TextField::new(
             "address",
             EditorText::LinkAddress.get(language),
@@ -183,9 +185,7 @@ impl LinkDialog {
             self.focus_requests.saturating_add(1)
         };
 
-        // A field ends with `space.xs`, the row adds `space.sm` before itself.
-        let spacing = theme.spacing;
-        ui.dummy([0.0, spacing.large - spacing.extra_small - spacing.small]);
+        move_below_last_item(ui, theme.spacing.large);
         let buttons = self.draw_buttons(ui, language, theme, width);
         if buttons.cancelled {
             LinkDialogOutcome::Cancelled

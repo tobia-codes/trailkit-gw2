@@ -183,6 +183,14 @@ Addons only.
 | `menu.row_gap` | 2 px | 2 px | Gap between two menu rows |
 | `menu.min_width` | 14 × font size | 14 × font size | Minimum width of a command menu |
 
+## Tooltip
+
+Addons only.
+
+| Token | Dark | Light | Purpose |
+| --- | --- | --- | --- |
+| `tooltip.max_width` | 34 × font size | 34 × font size | Width at which a tooltip's text wraps |
+
 ## Typography
 
 Addons only.

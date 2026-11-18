@@ -621,6 +621,28 @@ fn note_content_hovers() {
         || with_body("https://wiki.guildwars2.com", |_| {}),
         &hover([300.0, 157.0]),
     );
+    assert_state(
+        "links-with-icons",
+        WIDE,
+        || {
+            with_body(
+                "A [web link](https://a.de), [mail](mailto:a@b.de) and a **[bold *mixed* link](https://b.de)**.\n\nhttps://wiki.guildwars2.com/wiki/Main_Page_with_a_long_address_that_wraps_around_the_line_end",
+                |_| {},
+            )
+        },
+        &hover(NOWHERE),
+    );
+    assert_state(
+        "hover-long-link",
+        WIDE,
+        || {
+            with_body(
+                "[wiki](https://www.google.com/search?q=Druids+groot+guild+wars+2&oq=Druids+groot+guild+wars+2&sourceid=chrome&source=chrome.ob&ie=UTF-8)",
+                |_| {},
+            )
+        },
+        &hover([232.0, 157.0]),
+    );
     assert_state("pressed-checkbox", WIDE, selected, &press([228.0, 225.0]));
 }
 

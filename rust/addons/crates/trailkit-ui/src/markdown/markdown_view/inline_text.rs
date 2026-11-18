@@ -3,15 +3,16 @@
 
 use std::ops::Range;
 
-use nexus::imgui::{MouseCursor, StyleColor, Ui};
+use nexus::imgui::{ImColor32, MouseCursor, StyleColor, Ui};
 
 use super::{LineBounds, MarkdownAction, SearchHighlight};
 use crate::{
     chat_link::ChatLinkChip,
     chat_link::chat_link_chip::{ChipContext, chip_tooltip, chip_width, draw_chip},
+    controls::dropdown::{draw_icon_into, icon_width},
     controls::tooltip::draw_tooltip,
     drawing::draw_list::window_draw_list,
-    markdown::Span,
+    markdown::{LinkKind, Span},
     text::TextStyle,
     text::font_registry::FontScope,
     text::fonts::FontRole,
@@ -28,6 +29,9 @@ struct LineCursor {
     y: f32,
     /// Distance between two lines (`typography.line_height`).
     line_height: f32,
+    /// Whether the next element stays on this line, as a link's first word
+    /// does after its icon; a word too long for it breaks in place.
+    keeps_line: bool,
 }
 
 impl LineCursor {
@@ -40,6 +44,9 @@ impl LineCursor {
     /// Starts a new line if an element `width` wide does not fit on the
     /// current one; an element at the line start stays, however wide.
     fn wrap_before(&mut self, width: f32, bounds: LineBounds) {
+        if std::mem::take(&mut self.keeps_line) {
+            return;
+        }
         if self.x > bounds.left && self.x + width > bounds.right {
             self.new_line(bounds);
         }
@@ -75,6 +82,7 @@ pub(super) fn draw_spans(
         x: bounds.left,
         y: ui.cursor_screen_pos()[1] + leading,
         line_height,
+        keeps_line: false,
     };
     let mut action = None;
     let mut hits: Vec<Range<usize>> = Vec::new();
@@ -106,7 +114,16 @@ pub(super) fn draw_spans(
                 &mut cursor,
             )
         } else {
-            draw_wrapped_text(
+            // Parts of one link in different styles share one icon.
+            let starts_link = span.style.link.is_some()
+                && (index == 0 || spans[index - 1].style.link != span.style.link);
+            let icon_click = if starts_link {
+                let _id = ui.push_id(i32::try_from(index).unwrap_or(i32::MAX));
+                draw_link_icon(ui, span, bounds, theme, &mut cursor)
+            } else {
+                None
+            };
+            let text_click = draw_wrapped_text(
                 ui,
                 span,
                 bounds,
@@ -114,7 +131,8 @@ pub(super) fn draw_spans(
                 highlight.as_deref_mut(),
                 &mut hits,
                 &mut cursor,
-            )
+            );
+            icon_click.or(text_click)
         };
         action = action.or(clicked);
     }
@@ -169,6 +187,53 @@ fn draw_chat_link(
         ui.set_clipboard_text(&chip.code);
         MarkdownAction::ChatLinkCopied(chip.code.clone())
     })
+}
+
+/// Draws the icon of the link `span` at the `cursor`, on one line with the
+/// link's first word: it shows what the click opens (R143) and acts like the
+/// link. Returns a click.
+fn draw_link_icon(
+    ui: &Ui,
+    span: &Span,
+    bounds: LineBounds,
+    theme: &Theme,
+    cursor: &mut LineCursor,
+) -> Option<MarkdownAction> {
+    let url = span.style.link.as_ref()?;
+    let icon_size = icon_width(ui);
+    let gap = theme.spacing.extra_small;
+    let first_word = span.text.split(' ').next().unwrap_or_default();
+    cursor.wrap_before(icon_size + gap + ui.calc_text_size(first_word)[0], bounds);
+    let height = ui.text_line_height();
+    ui.set_cursor_screen_pos([cursor.x, cursor.y]);
+    ui.invisible_button("##link_icon", [icon_size + gap, height]);
+    // SAFETY: on the render thread inside a frame, where ImGui has a current
+    // window and returns its draw list.
+    let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
+    draw_icon_into(
+        draw_list,
+        ui,
+        LinkKind::of(url).icon(),
+        cursor.x,
+        [cursor.y, cursor.y + height],
+        ImColor32::from(theme.text.link.to_array()).to_bits(),
+    );
+    cursor.x += icon_size + gap;
+    cursor.keeps_line = true;
+    finish_link_item(ui, span, theme, url)
+}
+
+/// Gives the last drawn item the behavior of the link to `url`: the hand
+/// cursor, the tooltip and the click.
+fn finish_link_item(ui: &Ui, span: &Span, theme: &Theme, url: &str) -> Option<MarkdownAction> {
+    if ui.is_item_hovered() {
+        ui.set_mouse_cursor(Some(MouseCursor::Hand));
+        if let Some(target) = crate::markdown::link_tooltip(&span.text, url) {
+            draw_tooltip(ui, theme, target);
+        }
+    }
+    ui.is_item_clicked()
+        .then(|| MarkdownAction::OpenLink(url.to_owned()))
 }
 
 /// Draws the text of `span` word by word at the `cursor`, wrapping at
@@ -342,12 +407,5 @@ fn draw_piece(ui: &Ui, piece: &str, span: &Span, theme: &Theme) -> Option<Markdo
             theme.text.link.to_array(),
         )
         .build();
-    if ui.is_item_hovered() {
-        ui.set_mouse_cursor(Some(MouseCursor::Hand));
-        if let Some(target) = crate::markdown::link_tooltip(&span.text, url) {
-            draw_tooltip(ui, theme, target);
-        }
-    }
-    ui.is_item_clicked()
-        .then(|| MarkdownAction::OpenLink(url.clone()))
+    finish_link_item(ui, span, theme, url)
 }

@@ -8,6 +8,7 @@ pub(super) mod save_status;
 use nexus::imgui::{Condition, Key, MouseButton, StyleColor, StyleVar, Ui, Window, WindowFlags};
 use trailkit_ui::{
     controls::button::{Button, ButtonKind, ButtonState},
+    controls::text_field::move_below_last_item,
     feedback::dialog_frame::{dialog_close_width, draw_dialog_close, draw_dialog_frame},
     feedback::status_card::{CardDetail, CardStatus, StatusCard, draw_status_card},
     feedback::status_line::{Status, draw_status_line},
@@ -187,6 +188,7 @@ pub(super) fn draw_dialog_card(
         let _wrap = ui.push_text_wrap_pos_with_pos(left - window_position[0] + title_width);
         draw_text_wrapped(ui, theme, TextStyle::Heading3, content.title);
     }
+    move_below_last_item(ui, theme.spacing.medium);
     {
         // Every new line starts at the window padding; move into the card.
         ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
@@ -196,7 +198,7 @@ pub(super) fn draw_dialog_card(
     if let Some(status) = content.status {
         draw_dialog_status(ui, theme, status, left);
     }
-    ui.dummy([0.0, theme.spacing.small]);
+    move_below_last_item(ui, theme.spacing.large);
     let mut answer = draw_dialog_buttons(ui, theme, content, [left, content_width], stacked);
     let is_closed = draw_dialog_close(ui, theme, frame, padding, content.close);
     if is_closed || ui.is_key_pressed(Key::Escape) {

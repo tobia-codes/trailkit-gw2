@@ -21,7 +21,7 @@ pub use colors::{
     AccentColors, BorderTokens, ChipCategoryColors, ChipColors, CoinColors, EventColors,
     HOVER_DARKENING, PRESSED_DARKENING, ShadowTokens, StatusColors, SurfaceColors, TextColors,
 };
-pub use layout::{ButtonLayout, ListLayout, MenuLayout, PaneLayout, Radii, Spacing};
+pub use layout::{ButtonLayout, ListLayout, MenuLayout, PaneLayout, Radii, Spacing, TooltipLayout};
 pub use typography::Typography;
 
 /// The built-in themes.
@@ -86,6 +86,8 @@ pub struct Theme {
     pub button: ButtonLayout,
     /// Menu layout (`menu.*`, memo M177).
     pub menu: MenuLayout,
+    /// Tooltip layout.
+    pub tooltip: TooltipLayout,
     /// Corner radii (`radius.*`, R71).
     pub radius: Radii,
     /// Shadows (`shadow.*`, Q327): only tooltips have one.

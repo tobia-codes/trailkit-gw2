@@ -23,6 +23,14 @@ pub struct TextFieldResponse {
     pub is_active: bool,
 }
 
+/// Puts the cursor `gap` below the last drawn item, keeping its x: the form
+/// and dialog spacing of `tokens.md` §5.1 counts from what is visible, not
+/// from the item spacing that follows an item.
+pub fn move_below_last_item(ui: &Ui, gap: f32) {
+    let x = ui.cursor_screen_pos()[0];
+    ui.set_cursor_screen_pos([x, ui.item_rect_max()[1] + gap]);
+}
+
 /// Draws `error` at the cursor as the problem of the form field above it:
 /// the `danger` icon and small text, wrapped at `width` (`form-errors`). Every
 /// form shows its field errors through here, so they look the same.
@@ -172,7 +180,7 @@ impl<'a> TextField<'a> {
         start: [f32; 2],
         height: f32,
     ) -> TextFieldResponse {
-        let inset = ui.clone_style().frame_padding[0];
+        let inset = theme.spacing.small;
         let _frame = StyleScope::transparent_frame(ui);
         let _hint = ui.push_style_color(StyleColor::TextDisabled, theme.text.secondary.to_array());
         let _border = ui.push_style_var(StyleVar::FrameBorderSize(0.0));

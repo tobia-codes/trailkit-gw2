@@ -18,7 +18,11 @@ use crate::{
 
 /// Shows `text` as a tooltip at the mouse.
 pub fn draw_tooltip(ui: &Ui, theme: &Theme, text: impl AsRef<str>) {
-    draw_tooltip_with(ui, theme, || ui.text(text.as_ref()));
+    draw_tooltip_with(ui, theme, || {
+        let width = theme.tooltip.max_width_for(ui.current_font_size());
+        let _wrap = ui.push_text_wrap_pos_with_pos(ui.cursor_pos()[0] + width);
+        ui.text_wrapped(text.as_ref());
+    });
 }
 
 /// Shows why a control is disabled (R93): a neutral Lucide `ban` icon in

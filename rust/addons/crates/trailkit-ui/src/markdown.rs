@@ -15,6 +15,7 @@ use pulldown_cmark::{Event, HeadingLevel, LinkType, Options, Parser, Tag, TagEnd
 
 use self::bare_urls::find_bare_urls;
 use crate::chat_link::{ChatLinkChip, find_chat_codes};
+use crate::text::icons::Icon;
 
 /// A parsed markdown document, ready to draw.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -330,6 +331,36 @@ pub fn link_target_label(url: &str) -> &str {
     url.get(..MAIL_SCHEME.len())
         .filter(|scheme| scheme.eq_ignore_ascii_case(MAIL_SCHEME))
         .map_or(url, |_| &url[MAIL_SCHEME.len()..])
+}
+
+/// What opens when a link is used; it decides the link's icon (R143).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LinkKind {
+    /// A web page in the browser.
+    Web,
+    /// A new message in the mail program.
+    Mail,
+}
+
+impl LinkKind {
+    /// The kind of a link to `url`.
+    #[must_use]
+    pub fn of(url: &str) -> Self {
+        if link_target_label(url).len() == url.len() {
+            Self::Web
+        } else {
+            Self::Mail
+        }
+    }
+
+    /// The icon shown before every link of this kind.
+    #[must_use]
+    pub const fn icon(self) -> Icon {
+        match self {
+            Self::Web => Icon::EXTERNAL_LINK,
+            Self::Mail => Icon::MAIL,
+        }
+    }
 }
 
 /// What the tooltip of a link showing `text` says: where it goes, or nothing
@@ -648,6 +679,15 @@ mod tests {
             .iter()
             .filter_map(|span| Some((span.text.clone(), span.style.link.clone()?)))
             .collect()
+    }
+
+    #[test]
+    fn the_address_decides_the_link_icon() {
+        assert_eq!(LinkKind::of("https://a.de"), LinkKind::Web);
+        assert_eq!(LinkKind::of("mailto:a@b.de"), LinkKind::Mail);
+        assert_eq!(LinkKind::of("MAILTO:a@b.de"), LinkKind::Mail);
+        assert_eq!(LinkKind::Web.icon(), Icon::EXTERNAL_LINK);
+        assert_eq!(LinkKind::Mail.icon(), Icon::MAIL);
     }
 
     #[test]

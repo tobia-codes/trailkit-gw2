@@ -25,3 +25,7 @@ row_padding_x = { name = "menu.row_padding_x", value = 10.0, purpose = "Gap betw
 row_padding_y = { name = "menu.row_padding_y", value = 7.0, purpose = "Gap between a menu row's edge and its text line" }
 row_gap = { name = "menu.row_gap", value = 2.0, purpose = "Gap between two menu rows" }
 min_width = { name = "menu.min_width", value = 14.0, unit = "font_size", purpose = "Minimum width of a command menu" }
+
+[addon.tooltip]
+title = "Tooltip"
+max_width = { name = "tooltip.max_width", value = 34.0, unit = "font_size", purpose = "Width at which a tooltip's text wraps" }
