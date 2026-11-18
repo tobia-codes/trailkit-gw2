@@ -157,6 +157,60 @@ pub fn inline_ranges(source: &str) -> Vec<InlineRange> {
         .collect()
 }
 
+/// Where an inline link `[text](target)` is in the source.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct InlineLink {
+    /// The whole link, from `[` to the closing `)`.
+    pub range: std::ops::Range<usize>,
+    /// The byte offset of the `]` that ends the link text.
+    closing_bracket: usize,
+}
+
+impl InlineLink {
+    /// Whether the byte at `offset` is one of the four characters that make
+    /// this a link: the opening `[`, the `](` pair or the closing `)`.
+    #[must_use]
+    pub fn is_structure_at(&self, offset: usize) -> bool {
+        offset == self.range.start
+            || offset == self.closing_bracket
+            || offset == self.closing_bracket + 1
+            || offset + 1 == self.range.end
+    }
+}
+
+/// Every inline link of `source`, in source order, as the renderer sees them:
+/// brackets in code spans or without a target are not links (memo plan M207).
+#[must_use]
+pub fn inline_links(source: &str) -> Vec<InlineLink> {
+    let mut links = Vec::new();
+    let mut open: Option<InlineLink> = None;
+    for (event, range) in Parser::new_ext(source, Options::ENABLE_TASKLISTS).into_offset_iter() {
+        match event {
+            Event::Start(Tag::Link {
+                link_type: LinkType::Inline,
+                ..
+            }) => {
+                open = Some(InlineLink {
+                    closing_bracket: range.start + 1,
+                    range,
+                });
+            }
+            Event::End(TagEnd::Link) => {
+                links.extend(
+                    open.take()
+                        .filter(|link| source[link.closing_bracket..].starts_with("](")),
+                );
+            }
+            _ => {
+                if let Some(link) = &mut open {
+                    link.closing_bracket = link.closing_bracket.max(range.end);
+                }
+            }
+        }
+    }
+    links
+}
+
 /// Returns `source` with the task checkbox at `marker` toggled, or `None` if
 /// the source no longer has a checkbox there (it changed since parsing).
 #[must_use]
@@ -500,6 +554,27 @@ const fn heading_level(level: HeadingLevel) -> u8 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn inline_links_know_their_structure() {
+        let links = inline_links("a [*b* [c]](d(e) \"f\") g");
+        assert_eq!(links.len(), 1);
+        let link = &links[0];
+        assert_eq!(link.range, 2..21);
+        for offset in [2, 10, 11, 20] {
+            assert!(link.is_structure_at(offset), "at {offset}");
+        }
+        for offset in [3, 7, 9, 12, 19] {
+            assert!(!link.is_structure_at(offset), "at {offset}");
+        }
+    }
+
+    #[test]
+    fn brackets_that_are_no_links_are_not_reported() {
+        for source in ["[a] b", "[a](", "`[a](b)`", "[&AgEAAA==]", "<https://a.b>"] {
+            assert!(inline_links(source).is_empty(), "in {source:?}");
+        }
+    }
 
     /// A plain span.
     fn plain(text: &str) -> Span {

@@ -105,3 +105,19 @@ No visible design change. Open a note and click **Edit**.
    **Expected:** only `Text` stays, without indentation.
 4. Put the cursor inside or at the end of `Text`, press Backspace.
    **Expected:** one character goes away, as before.
+
+## Test 29 — deleting a link at once (M207, 2026-11-18)
+
+No visible design change. Open a note, click **Edit** and type
+`Vorher [Wiki](https://wiki.guildwars2.com) nachher`.
+
+1. Put the cursor directly behind `)` and press Backspace. **Before:** only
+   `)` went away. **Now:** the whole link is gone; Ctrl+Z brings it back.
+2. Put the cursor directly before `[` and press Delete. **Expected:** the whole
+   link is gone; Ctrl+Z brings it back.
+3. Put the cursor between `]` and `(`, press Backspace. **Expected:** the whole
+   link is gone; Ctrl+Z brings it back.
+4. Put the cursor inside `Wiki`, then inside the address, and press Backspace.
+   **Expected:** one character goes away each time, the rest stays a link.
+5. Type a bare `https://wiki.guildwars2.com`, press Backspace at its end.
+   **Expected:** one character goes away.

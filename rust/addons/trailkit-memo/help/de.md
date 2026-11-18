@@ -185,6 +185,7 @@ Das sind die Tasten, die memo nutzt, sortiert danach, wo sie wirken.
 - **Strg+Z** – dein Tippen rückgängig machen
 - **Rücktaste** – neben einem Chat-Link-Chip: den ganzen Chip löschen
 - **Rücktaste** – direkt hinter einem Listen- oder Checkbox-Marker: den ganzen Marker entfernen, der Text bleibt
+- **Rücktaste** / **Entf** – an einer Klammer, die zu einem Link gehört: den ganzen Link löschen
 
 ## Wo deine Notizen gespeichert werden
 

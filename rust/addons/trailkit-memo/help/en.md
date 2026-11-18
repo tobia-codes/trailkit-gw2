@@ -185,6 +185,7 @@ These are the keys memo uses, sorted by where they work.
 - **Ctrl+Z** – undo your typing
 - **Backspace** – next to a chat link chip: delete the whole chip
 - **Backspace** – right after a list or checkbox marker: remove the whole marker, the text stays
+- **Backspace** / **Delete** – on a bracket or parenthesis that belongs to a link: delete the whole link
 
 ## Where your notes are stored
 
