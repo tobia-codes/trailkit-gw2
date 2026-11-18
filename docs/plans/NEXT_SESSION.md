@@ -23,17 +23,14 @@ the upstream (narrow fetch refspec): set `branch.<b>.remote/merge` by hand for t
 **On the Mac (no game, no WSL):** `git fetch origin && git switch develop && git pull --ff-only`; deploy, `ui-test` and in-game
 tests wait for the Windows PC; check `source ~/.cargo/env` and a first `cargo test` there; snapshots via the PR's Windows CI.
 
-**Session 43 (2026-11-18, PC):** all merged into `develop`: #144 Escape closes menus first (M195), only Ctrl+S saves (M194), search list shows only
-matches (M196), hit marker (M197); #145 find in note with Ctrl+F and list search with Shift twice (M198, M199); #146 stopped-worker save fix and 22
-data-safety tests; #147 README **Packages** sections (R138, keep them current with every dependency change). All in-game tests passed; the list is empty.
-
-**Next: data pipeline** (`rust/tools/trailkit-datagen`, user-approved order). First review item 3 and the failing GemExchange job below, then tests for
-`archive.rs`, `wvw.rs`, `gem_exchange.rs`, `gw2_api.rs`. Coverage 2026-11-18 before #146: addons 89 % of lines, memo app 70 %, datagen 52 %.
+**Session 43 (2026-11-18, PC), all on `develop`:** #144 M194–M197; #145 find in note, Shift twice (M198, M199); #146 stopped-worker fix, 22 data-safety
+tests; #147 README **Packages** (R138: update with every dependency change). All in-game tests passed; the list is empty.
+**Next: data pipeline** (`rust/tools/trailkit-datagen`): review item 3 and the failing GemExchange job below, then tests for `archive.rs`, `wvw.rs`,
+`gem_exchange.rs`, `gw2_api.rs`. Coverage 2026-11-18 before #146: addons 89 % of lines, memo app 70 %, datagen 52 %.
 **Then test gaps:** extract and test the Escape/close logic of `nexus_bridge/render.rs` like `key_routing.rs`; window actions (new group, format,
 preview, compact view, open folder, clear search); Ctrl+Y/Ctrl+Shift+Z keys. `xtask` last. Prove new tests with injected faults.
-**Coverage on demand, not in CI:** `llvm-tools` is installed. Build tests with `RUSTFLAGS="-C instrument-coverage"` and `CARGO_TARGET_DIR=target/coverage`
-(`cargo xwin test --target x86_64-pc-windows-msvc --no-run`), run each binary from its crate with `LLVM_PROFILE_FILE` and `TRAILKIT_SNAPSHOT_ROOT` passed
-through `WSLENV` (`/p`), then `llvm-profdata merge` and `llvm-cov export --summary-only`. Delete stray `rust/*.profraw` and `target/coverage` (2.8 GB).
+**Coverage on demand, not in CI** (`llvm-tools` installed): `RUSTFLAGS="-C instrument-coverage" CARGO_TARGET_DIR=target/coverage cargo xwin test --no-run`, run
+each binary from its crate with `LLVM_PROFILE_FILE`/`TRAILKIT_SNAPSHOT_ROOT` via `WSLENV` (`/p`), `llvm-profdata merge`, `llvm-cov export`; then delete `rust/*.profraw` and the 2.8 GB build.
 
 **Open, in this order:**
 1. **In-game tests:** none open. After that pipeline work: Q501 toast visibility needs an R87 mockup; BL18 text size in core settings needs grilling.
