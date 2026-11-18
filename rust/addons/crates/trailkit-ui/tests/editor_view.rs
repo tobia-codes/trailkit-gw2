@@ -36,6 +36,7 @@ fn chip_text(text: ChipText) -> &'static str {
         ChipText::DamagedCode => "Damaged code",
         ChipText::ClickToCopy => "Click to copy",
         ChipText::Copied => "Copied",
+        _ => "Menu entry",
     }
 }
 

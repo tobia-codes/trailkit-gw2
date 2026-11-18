@@ -452,7 +452,7 @@ impl MemoWindow {
                 }
             }
             WindowAction::Markdown(MarkdownAction::OpenLink(url)) => open_link(url),
-            WindowAction::Markdown(MarkdownAction::ChatLinkCopied(_)) => {
+            WindowAction::Markdown(MarkdownAction::Copied(_)) => {
                 self.toast = Some(WindowToast {
                     toast: Toast::new(chip_text(ChipText::Copied, language).to_owned()),
                     kind: WindowToastKind::Message,

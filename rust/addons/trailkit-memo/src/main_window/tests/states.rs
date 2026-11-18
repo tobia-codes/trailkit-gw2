@@ -14,6 +14,7 @@ use super::{trash::document_with_trash, *};
 mod chip_tooltips;
 mod find_in_note;
 mod link_dialog;
+mod link_menu;
 mod minimum_width;
 mod save_errors;
 
@@ -808,7 +809,7 @@ fn toast() {
     let copied = || {
         let mut fixture = selected();
         fixture.0.apply(
-            &WindowAction::Markdown(MarkdownAction::ChatLinkCopied("[&BDgAAAA=]".to_owned())),
+            &WindowAction::Markdown(MarkdownAction::Copied("[&BDgAAAA=]".to_owned())),
             Language::English,
         );
         fixture

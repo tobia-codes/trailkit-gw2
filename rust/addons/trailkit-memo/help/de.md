@@ -81,6 +81,7 @@ Klicke oben rechts in einer Notiz auf **Bearbeiten** oder doppelklicke die Notiz
 - **Checkboxen** in einer Notiz kannst du direkt abhaken, ohne den Editor.
 - **Links** öffnen sich im Browser (nur `http://` und `https://`), E-Mail-Adressen in deinem Mailprogramm; das Icon vor dem Link zeigt, was sich öffnet; fahre mit der Maus darüber, um das Ziel zu sehen, sofern der Link es nicht schon anzeigt.
 - **Link einfügen:** Markiere bei Bedarf Text, klicke auf den Link-Button oder drücke **Strg+K**, gib die Adresse ein und drücke Enter. Der Text ist optional, `https://` wird ergänzt, wenn es fehlt, und eine Adresse aus der Zwischenablage ist schon eingetragen. Steht der Cursor in einem Link, änderst du ihn dort oder entfernst den Link und behältst seinen Text.
+- **Rechtsklick auf einen Link** öffnet ihn oder kopiert seine Adresse.
 - **Adresse einfügen:** Ein einfaches `https://…` in deinem Text wird von selbst zum anklickbaren Link.
 
 ### Chat-Links
@@ -88,6 +89,7 @@ Klicke oben rechts in einer Notiz auf **Bearbeiten** oder doppelklicke die Notiz
 Chat-Links aus dem Spiel (`[&…]`, z. B. eine Wegmarke oder ein Gegenstand) erscheinen als Chips mit Symbol, Art und ID; Münzen zeigen ihren Betrag. Die Farbe zeigt die Gruppe: Kupfer für Orte, Blau für Fertigkeiten, Eigenschaften und Builds, Grün für Gegenstände, Violett für Erfolge, NPC-Texte und Spieler. Namen (statt IDs) kommen mit trailkit-core.
 
 - Klicke auf einen Chip, um den Code zu kopieren (eine kurze Meldung unten im Fenster bestätigt es), und füge ihn dann im Spiel-Chat ein. Fahre mit der Maus darüber, um den Code zu sehen.
+- Ein Rechtsklick auf einen Chip kopiert seinen Chat-Link oder öffnet ihn im Wiki, wenn es dort eine Seite geben kann.
 - Ein Chip mit **!** hat einen beschädigten Code; der Tooltip sagt, warum.
 - Füge im Editor einen Code in den Text ein, und er wird zum Chip. Der Cursor springt über einen Chip, und die Rücktaste löscht ihn ganz; um ihn zu ändern, lösche ihn und füge den neuen Code ein.
 

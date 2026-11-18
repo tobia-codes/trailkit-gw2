@@ -221,6 +221,21 @@ pub enum ChipText {
     ClickToCopy,
     /// Tooltip after a click: the code was copied.
     Copied,
+    /// Menu entry that opens a web link (memo M210).
+    OpenLink,
+    /// Menu entry that copies a web address.
+    CopyLinkAddress,
+    /// Menu entry that opens an e-mail link.
+    WriteEmail,
+    /// Menu entry that copies an e-mail address.
+    CopyEmailAddress,
+    /// Menu entry that copies a chat code.
+    CopyChatLink,
+    /// Menu entry that looks a chat code up in the wiki.
+    OpenInWiki,
+    /// Start of the wiki search address in the addon's language; the encoded
+    /// chat code follows it.
+    WikiSearchUrl,
 }
 
 impl ChipText {
@@ -236,6 +251,13 @@ impl ChipText {
                 Self::DamagedCode,
                 Self::ClickToCopy,
                 Self::Copied,
+                Self::OpenLink,
+                Self::CopyLinkAddress,
+                Self::WriteEmail,
+                Self::CopyEmailAddress,
+                Self::CopyChatLink,
+                Self::OpenInWiki,
+                Self::WikiSearchUrl,
             ])
     }
 }

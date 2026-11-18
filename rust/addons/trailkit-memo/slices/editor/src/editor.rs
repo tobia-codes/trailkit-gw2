@@ -536,9 +536,7 @@ impl Editor {
                 // checkboxes do not toggle. It marks search hits (M122).
                 let mut highlight = input.search.map(SearchHighlight::new);
                 match draw_markdown(ui, preview, theme, input.chips, highlight.as_mut()) {
-                    Some(
-                        action @ (MarkdownAction::OpenLink(_) | MarkdownAction::ChatLinkCopied(_)),
-                    ) => {
+                    Some(action @ (MarkdownAction::OpenLink(_) | MarkdownAction::Copied(_))) => {
                         actions.push(EditorAction::Markdown(action));
                     }
                     Some(MarkdownAction::ToggleTask(_)) | None => {}

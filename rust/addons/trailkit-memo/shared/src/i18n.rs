@@ -177,6 +177,24 @@ pub const fn chip_text(text: ChipText, language: Language) -> &'static str {
         ChipText::ClickToCopy => "Click to copy",
         ChipText::Copied if german => "Kopiert",
         ChipText::Copied => "Copied",
+        ChipText::OpenLink if german => "Link öffnen",
+        ChipText::OpenLink => "Open link",
+        ChipText::CopyLinkAddress if german => "Link-Adresse kopieren",
+        ChipText::CopyLinkAddress => "Copy link address",
+        ChipText::WriteEmail if german => "E-Mail schreiben",
+        ChipText::WriteEmail => "Write email",
+        ChipText::CopyEmailAddress if german => "E-Mail-Adresse kopieren",
+        ChipText::CopyEmailAddress => "Copy email address",
+        ChipText::CopyChatLink if german => "Chat-Link kopieren",
+        ChipText::CopyChatLink => "Copy chat link",
+        ChipText::OpenInWiki if german => "Im Wiki öffnen",
+        ChipText::OpenInWiki => "Open in wiki",
+        ChipText::WikiSearchUrl if german => {
+            "https://wiki-de.guildwars2.com/index.php?title=Spezial%3ASuche&search="
+        }
+        ChipText::WikiSearchUrl => {
+            "https://wiki.guildwars2.com/index.php?title=Special%3ASearch&search="
+        }
     }
 }
 

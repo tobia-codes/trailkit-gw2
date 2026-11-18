@@ -53,6 +53,8 @@ impl Icon {
     pub const LIST_TODO: Self = Self('\u{e4c3}');
     /// `link`: insert a link.
     pub const LINK: Self = Self('\u{e102}');
+    /// `copy`: copy a link address or chat link (memo M210).
+    pub const COPY: Self = Self('\u{e09e}');
     /// `mail`: a link that opens the mail program (R143).
     pub const MAIL: Self = Self('\u{e10f}');
     /// `unlink`: remove a link and keep its text (memo M208).
@@ -134,7 +136,7 @@ impl Icon {
     /// `arrow-down`: next hit of find in a note (memo M198).
     pub const ARROW_DOWN: Self = Self('\u{e042}');
     /// Every icon above; keep in sync when adding one.
-    pub const ALL: [Self; 58] = [
+    pub const ALL: [Self; 59] = [
         Self::FOLDER_INPUT,
         Self::MENU,
         Self::FILE_TEXT,
@@ -166,6 +168,7 @@ impl Icon {
         Self::LINK,
         Self::UNLINK,
         Self::MAIL,
+        Self::COPY,
         Self::CALENDAR_CLOCK,
         Self::EYE,
         Self::COINS,

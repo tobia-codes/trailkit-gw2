@@ -3,16 +3,16 @@
 
 use std::ops::Range;
 
-use nexus::imgui::{ImColor32, MouseCursor, StyleColor, Ui};
+use nexus::imgui::{ImColor32, MouseButton, MouseCursor, StyleColor, Ui};
 
-use super::{LineBounds, MarkdownAction, SearchHighlight};
+use super::{LineBounds, MarkdownAction, SearchHighlight, link_menu::request_link_menu};
 use crate::{
     chat_link::ChatLinkChip,
     chat_link::chat_link_chip::{ChipContext, chip_tooltip, chip_width, draw_chip},
     controls::dropdown::{draw_icon_into, icon_width},
     controls::tooltip::draw_tooltip,
     drawing::draw_list::window_draw_list,
-    markdown::{LinkKind, Span},
+    markdown::{LinkKind, Span, link_menu::LinkMenuTarget},
     text::TextStyle,
     text::font_registry::FontScope,
     text::fonts::FontRole,
@@ -181,11 +181,14 @@ fn draw_chat_link(
     if hovered {
         ui.set_mouse_cursor(Some(MouseCursor::Hand));
         chip_tooltip(ui, chip, theme, chips, true);
+        if ui.is_mouse_clicked(MouseButton::Right) {
+            request_link_menu(LinkMenuTarget::chip(chip));
+        }
     }
     cursor.x += width;
     clicked.then(|| {
         ui.set_clipboard_text(&chip.code);
-        MarkdownAction::ChatLinkCopied(chip.code.clone())
+        MarkdownAction::Copied(chip.code.clone())
     })
 }
 
@@ -230,6 +233,9 @@ fn finish_link_item(ui: &Ui, span: &Span, theme: &Theme, url: &str) -> Option<Ma
         ui.set_mouse_cursor(Some(MouseCursor::Hand));
         if let Some(target) = crate::markdown::link_tooltip(&span.text, url) {
             draw_tooltip(ui, theme, target);
+        }
+        if ui.is_mouse_clicked(MouseButton::Right) {
+            request_link_menu(LinkMenuTarget::Link(url.to_owned()));
         }
     }
     ui.is_item_clicked()

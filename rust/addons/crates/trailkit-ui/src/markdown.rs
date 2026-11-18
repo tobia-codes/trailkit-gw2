@@ -8,6 +8,7 @@
 //! draws the result.
 
 mod bare_urls;
+pub mod link_menu;
 #[cfg(windows)]
 pub mod markdown_view;
 

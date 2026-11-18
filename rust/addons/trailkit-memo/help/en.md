@@ -81,6 +81,7 @@ Click **Edit** at the top right of a note, or double-click the note. You edit th
 - **Checkboxes** in a note can be ticked directly, without the editor.
 - **Links** open in your browser (only `http://` and `https://`), e-mail addresses in your mail program; the icon before a link shows which; hover a link to see where it goes, unless it already shows its address.
 - **Add a link:** select text if you like, click the link button or press **Ctrl+K**, enter the address and press Enter. The text is optional, `https://` is added if it is missing, and an address from the clipboard is filled in. With the cursor in a link you change it there, or remove the link and keep its text.
+- **Right-click a link** to open it or copy its address.
 - **Paste an address:** a plain `https://…` in your text becomes a clickable link by itself.
 
 ### Chat links
@@ -88,6 +89,7 @@ Click **Edit** at the top right of a note, or double-click the note. You edit th
 Chat links from the game (`[&…]`, e.g. a waypoint or an item) show as chips with an icon, the kind and the id; coins show their amount. The chip color shows the group: copper for places, blue for skills, traits and builds, green for items, violet for achievements, NPC texts and players. Names (instead of ids) will come with trailkit-core.
 
 - Click a chip to copy its code (a short message at the bottom of the window confirms it), then paste it into the game chat. Hover it to see the code.
+- Right-click a chip to copy its chat link or, where the wiki can have a page, open it in the wiki.
 - A chip with **!** has a broken code; the tooltip says why.
 - In the editor, paste a code into the text and it becomes a chip. The cursor jumps over a chip and Backspace deletes it whole; to change it, delete it and paste the new code.
 

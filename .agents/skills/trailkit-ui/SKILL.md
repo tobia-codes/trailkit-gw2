@@ -146,7 +146,8 @@ Build once, use everywhere. Planned:
   `draw_field_error` is the one look of a field error (`draw_status_line`). Helper text, disabled and secret fields
   are added with their first real use
 - Links — **exist** (R143): `markdown::LinkKind` picks the icon from the
-  address, the markdown view and `Button::opens_link` draw it before the text
+  address, the markdown view and `Button::opens_link` draw it before the text;
+  right-clicking a link or chip opens the shared menu of `markdown::link_menu`
 - Text and icons — **exist** (R96): `text::draw_text`, `draw_text_wrapped`,
   `draw_truncated_text`, `draw_icon`; borderless inputs use
   `StyleScope::transparent_frame`
