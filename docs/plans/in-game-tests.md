@@ -70,3 +70,25 @@ Approved design: https://claude.ai/artifact/HKKD3uQMPHy3cSyXxLgUZz
 4. Set the Nexus language to Deutsch, drag the window as narrow as it goes.
    **Expected:** the box says **Kein Reset**, the list shows Kein Reset,
    Täglicher Reset and Wöchentlicher Reset, nothing is cut off.
+
+## Test 27 — dropping onto groups (M205, 2026-11-18)
+
+Approved design: https://claude.ai/artifact/MsEL3kqnjuRrTA3eSehcWb
+
+Needs a group with at least two notes and a note outside it. Ctrl+Z undoes
+each move.
+
+1. Drag the outside note onto the **middle** of the open group's row.
+   **Before:** the upper half placed it above the group. **Now:** the whole
+   row gets a frame; on release the note is the group's last entry.
+2. Drag it to the group row's **top edge**. **Expected:** a line above the
+   group; the note lands above the group.
+3. Drag it to the row's **bottom edge**. **Expected:** an indented line below
+   the title; the note becomes the group's first entry.
+4. Drag it between two entries of the group. **Expected:** an indented line
+   there, and the note lands exactly there.
+5. Collapse the group and repeat on its row. **Expected:** top edge = above,
+   middle = frame and into the group (it opens), bottom edge = below it.
+6. Rest on the middle of the collapsed group for about a second, without
+   releasing. **Expected:** it opens, the frame stays; on release the note is
+   its last entry.

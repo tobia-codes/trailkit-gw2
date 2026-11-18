@@ -1,4 +1,4 @@
-//! Drop zones of the note list's drag & drop (memo plan M106–M111).
+//! Drop zones of the note list's drag & drop (memo plan M106–M111, M205).
 //!
 //! The list records one [`RowRect`] per drawn row; [`resolve_drop`] turns
 //! the mouse position into the [`InsertionPoint`] the drop goes to and the
@@ -12,7 +12,7 @@ use trailkit_memo_shared::note_tree::{GroupId, InsertionPoint, NodeId};
 pub const DRAG_THRESHOLD: f32 = 6.0;
 
 /// Seconds a drag must rest over the middle of a collapsed group before the
-/// group expands (M108).
+/// group expands (M108). The middle stays "into the group" afterwards (M205).
 pub const EXPAND_DELAY_SECONDS: f64 = 0.7;
 
 /// What kind of row a [`RowRect`] belongs to; decides its drop zones.
@@ -20,11 +20,11 @@ pub const EXPAND_DELAY_SECONDS: f64 = 0.7;
 pub enum RowKind {
     /// A note: upper half = before, lower half = after (M107).
     Note,
-    /// An expanded group: upper half = before, lower half = first position
-    /// inside the group (M107).
+    /// An expanded group: top quarter = before, middle = into, at the end,
+    /// bottom quarter = first position inside the group (M205).
     ExpandedGroup(GroupId),
-    /// A collapsed group: top quarter = before, bottom quarter = after,
-    /// middle = into, at the end (M108).
+    /// A collapsed group: top quarter = before, middle = into, at the end,
+    /// bottom quarter = after (M108, M205).
     CollapsedGroup(GroupId),
 }
 
@@ -57,7 +57,7 @@ pub enum DropIndicator {
         /// Right end.
         right: f32,
     },
-    /// A highlighted collapsed group the drop goes into.
+    /// A highlighted group the drop goes into, at its end (M205).
     Highlight {
         /// The row's top-left corner.
         min: [f32; 2],
@@ -128,25 +128,28 @@ pub fn resolve_drop(rows: &[RowRect], mouse_y: f32, indent: f32) -> Option<DropT
         indicator: line(bottom, row.left),
         collapsed_group: None,
     };
+    let into_group = |group: GroupId, collapsed_group: Option<GroupId>| DropTarget {
+        point: InsertionPoint::End(Some(group)),
+        indicator: DropIndicator::Highlight {
+            min: [row.left, row.top],
+            max: [row.right, row.bottom],
+        },
+        collapsed_group,
+    };
+    let is_top_quarter = offset < height / 4.0;
+    let is_bottom_quarter = offset >= height * 3.0 / 4.0;
     Some(match row.kind {
         RowKind::Note if offset < height / 2.0 => before,
         RowKind::Note => after,
-        RowKind::ExpandedGroup(_) if offset < height / 2.0 => before,
-        RowKind::ExpandedGroup(group) => DropTarget {
+        RowKind::ExpandedGroup(_) | RowKind::CollapsedGroup(_) if is_top_quarter => before,
+        RowKind::ExpandedGroup(group) if is_bottom_quarter => DropTarget {
             point: InsertionPoint::Start(group),
             indicator: line(bottom, row.left + indent),
             collapsed_group: None,
         },
-        RowKind::CollapsedGroup(_) if offset < height / 4.0 => before,
-        RowKind::CollapsedGroup(_) if offset >= height * 3.0 / 4.0 => after,
-        RowKind::CollapsedGroup(group) => DropTarget {
-            point: InsertionPoint::End(Some(group)),
-            indicator: DropIndicator::Highlight {
-                min: [row.left, row.top],
-                max: [row.right, row.bottom],
-            },
-            collapsed_group: Some(group),
-        },
+        RowKind::CollapsedGroup(_) if is_bottom_quarter => after,
+        RowKind::ExpandedGroup(group) => into_group(group, None),
+        RowKind::CollapsedGroup(group) => into_group(group, Some(group)),
     })
 }
 
@@ -204,10 +207,14 @@ mod tests {
         assert_eq!(point_at(&rows, 9.0), Some(InsertionPoint::Before(note)));
         assert_eq!(point_at(&rows, 11.0), Some(InsertionPoint::After(note)));
         assert_eq!(
-            point_at(&rows, 29.0),
+            point_at(&rows, 24.0),
             Some(InsertionPoint::Before(NodeId::Group(expanded)))
         );
-        assert_eq!(point_at(&rows, 31.0), Some(InsertionPoint::Start(expanded)));
+        assert_eq!(
+            point_at(&rows, 30.0),
+            Some(InsertionPoint::End(Some(expanded)))
+        );
+        assert_eq!(point_at(&rows, 36.0), Some(InsertionPoint::Start(expanded)));
         assert_eq!(
             point_at(&rows, 44.0),
             Some(InsertionPoint::Before(NodeId::Group(collapsed)))
@@ -237,9 +244,9 @@ mod tests {
             row(note, RowKind::Note, 16.0, 20.0),
         ];
         let line = |mouse_y| resolve_drop(&rows, mouse_y, 16.0).map(|target| target.indicator);
-        // Into the expanded group: indented line below its title.
+        // First place in the expanded group: indented line below its title.
         assert_eq!(
-            line(15.0),
+            line(16.0),
             Some(DropIndicator::Line {
                 y: 20.0,
                 left: 16.0,
@@ -278,6 +285,23 @@ mod tests {
                 right: 200.0
             })
         );
+    }
+
+    #[test]
+    fn expanded_group_middle_is_highlighted_and_does_not_wait_to_expand() {
+        let group = GroupId::new_unique();
+        let rows = [row(
+            NodeId::Group(group),
+            RowKind::ExpandedGroup(group),
+            0.0,
+            0.0,
+        )];
+        let target = resolve_drop(&rows, 10.0, 16.0);
+        assert_eq!(target.and_then(|target| target.collapsed_group), None);
+        assert!(matches!(
+            target.map(|target| target.indicator),
+            Some(DropIndicator::Highlight { .. })
+        ));
     }
 
     #[test]

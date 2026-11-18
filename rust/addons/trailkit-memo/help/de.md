@@ -54,7 +54,7 @@ Deine Notizen stehen in einer Liste, die du sortieren und in Gruppen ordnen kann
 
 ### Sortieren und verschieben
 
-- **Sortieren:** Ziehe eine Notiz oder Gruppe an eine neue Stelle. Eine Linie zeigt, wo sie landet; auf der unteren Hälfte einer offenen Gruppe wird sie deren erster Eintrag, unter dem letzten Eintrag kommt sie ans Ende der Liste. Auf der Mitte einer geschlossenen Gruppe landet sie an deren Ende; bleibst du kurz darauf, öffnet sich die Gruppe. Ein rotes Verbotszeichen heißt: Dort geht es nicht hin (eine Gruppe kann nicht in sich selbst). Am oberen oder unteren Rand scrollt die Liste. Escape bricht ab.
+- **Sortieren:** Ziehe eine Notiz oder Gruppe an eine neue Stelle. Eine Linie zeigt, wo sie landet. Am oberen Rand einer Gruppe kommt sie über die Gruppe; am unteren Rand kommt sie unter eine geschlossene Gruppe oder wird erster Eintrag einer offenen. Unter dem letzten Eintrag kommt sie ans Ende der Liste. Lege sie auf der Mitte einer Gruppe ab, die dann einen Rahmen bekommt, um sie ans Ende der Gruppe zu setzen; bleibst du kurz darauf, öffnet sich eine geschlossene Gruppe. Ein rotes Verbotszeichen heißt: Dort geht es nicht hin (eine Gruppe kann nicht in sich selbst). Am oberen oder unteren Rand scrollt die Liste. Escape bricht ab.
 - **Verschieben nach:** Rechtsklick › *Verschieben nach* › *Oberste Ebene* oder eine Gruppe verschiebt den Eintrag an deren Ende, ohne zu ziehen.
 
 ### Gruppen

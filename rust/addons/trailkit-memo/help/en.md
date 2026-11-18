@@ -54,7 +54,7 @@ Your notes sit in a list that you can sort and organize in groups.
 
 ### Sorting and moving
 
-- **Reorder:** drag a note or group to a new place. A line shows where it lands; on the lower half of an open group it becomes the group's first entry, below the last entry it goes to the end of the list. Drop on the middle of a closed group to put it at its end; rest there a moment and the group opens. A red "no entry" sign means it cannot go there (a group cannot go into itself). Near the top or bottom edge the list scrolls. Escape cancels.
+- **Reorder:** drag a note or group to a new place. A line shows where it lands. At the top edge of a group it goes above the group; at the bottom edge it goes below a closed group or becomes the first entry of an open one. Below the last entry it goes to the end of the list. Drop on the middle of a group, which gets a frame, to put it at the group's end; rest there a moment and a closed group opens. A red "no entry" sign means it cannot go there (a group cannot go into itself). Near the top or bottom edge the list scrolls. Escape cancels.
 - **Move to:** right-click › *Move to* › *Top level* or a group moves the entry to the end of it, without dragging.
 
 ### Groups

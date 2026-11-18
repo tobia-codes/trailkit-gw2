@@ -88,7 +88,7 @@ fn drag_rows(
 }
 
 #[test]
-fn dragging_a_note_into_an_expanded_group_moves_it_to_the_line() {
+fn dragging_a_note_onto_an_expanded_group_moves_it_to_the_end() {
     let document = sample_document();
     let ui_state = selected_first_with_search(&document);
     let (mut memo, _worker, _directory) = memo_window(document, ui_state);
@@ -96,11 +96,34 @@ fn dragging_a_note_into_an_expanded_group_moves_it_to_the_line() {
     let mut harness = UiHarness::new(size);
     {
         let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
-        // Lower half of the expanded "Raids" row = first place inside (M107).
+        // Middle of the expanded "Raids" row = into it, at the end (M205).
         let image = drag_rows(&mut harness, [100.0, 145.0], [100.0, 216.0], &mut draw_dark);
         assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-drag-into-group", &image);
         let release = FrameInput {
             mouse_position: [100.0, 216.0],
+            ..FrameInput::default()
+        };
+        harness.settle(2, &release, &mut draw_dark);
+    }
+    assert_eq!(
+        outline(&memo),
+        "Dailies, Raids[Weekly clears, Shopping list]"
+    );
+}
+
+#[test]
+fn dragging_a_note_to_the_bottom_edge_of_an_expanded_group_moves_it_to_the_start() {
+    let document = sample_document();
+    let ui_state = selected_first_with_search(&document);
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    let size = [640.0, 360.0];
+    let mut harness = UiHarness::new(size);
+    {
+        let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
+        // Bottom quarter of the expanded "Raids" row = first place (M205).
+        drag_rows(&mut harness, [100.0, 145.0], [100.0, 222.0], &mut draw_dark);
+        let release = FrameInput {
+            mouse_position: [100.0, 222.0],
             ..FrameInput::default()
         };
         harness.settle(2, &release, &mut draw_dark);

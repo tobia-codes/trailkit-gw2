@@ -204,6 +204,27 @@ fn selected() -> Fixture {
     memo_window(document, ui_state)
 }
 
+/// The sample with its first note selected and its groups collapsed.
+fn collapsed_groups() -> Fixture {
+    let document = sample_document();
+    let ui_state = with_root_groups_collapsed(&document, selected_first(&document));
+    memo_window(document, ui_state)
+}
+
+/// The sample with its first note selected and three notes in its group.
+fn filled_group() -> Fixture {
+    let mut document = sample_document();
+    if let Some(Node::Group(raids)) = document.root.last_mut() {
+        for title in ["Fractals", "World bosses"] {
+            raids
+                .children
+                .push(Node::Note(note(title, "", ResetSchedule::Never)));
+        }
+    }
+    let ui_state = selected_first(&document);
+    memo_window(document, ui_state)
+}
+
 /// The sample with `change` applied to the state that selects its first note.
 fn selected_with(change: impl Fn(&mut UiState)) -> Fixture {
     let document = sample_document();
@@ -544,7 +565,31 @@ fn list_rows() {
         "drag-into-group",
         WIDE,
         selected,
-        &drag(SHOPPING_ROW, [100.0, 177.0]),
+        &drag(SHOPPING_ROW, [100.0, RAIDS_ROW[1]]),
+    );
+    assert_state(
+        "drag-group-first-entry",
+        WIDE,
+        selected,
+        &drag(SHOPPING_ROW, [100.0, 183.0]),
+    );
+    assert_state(
+        "drag-into-collapsed-group",
+        WIDE,
+        collapsed_groups,
+        &drag(SHOPPING_ROW, [100.0, RAIDS_ROW[1]]),
+    );
+    assert_state(
+        "drag-after-collapsed-group",
+        WIDE,
+        collapsed_groups,
+        &drag(SHOPPING_ROW, [100.0, 179.0]),
+    );
+    assert_state(
+        "drag-inside-group",
+        WIDE,
+        filled_group,
+        &drag(SHOPPING_ROW, [100.0, 226.0]),
     );
     assert_state(
         "drag-between",

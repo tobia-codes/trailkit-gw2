@@ -35,7 +35,7 @@ C try `cargo-llvm-cov`; ask the user. Until then the manual steps:
 each binary from its crate with `LLVM_PROFILE_FILE`/`TRAILKIT_SNAPSHOT_ROOT` via `WSLENV` (`/p`), `llvm-profdata merge`, `llvm-cov export`; then delete `rust/*.profraw` and the 2.8 GB build.
 
 **Open, in this order:**
-1. **In-game tests:** tests 25 (memo data model) and 26 ("No reset" label, M204) after deploying the branch above. After that pipeline work: Q501 toast visibility needs an R87 mockup; BL18 text size in core settings needs grilling.
+1. **In-game tests:** tests 25 (memo data model), 26 ("No reset" label, M204) and 27 (drop onto groups, M205) after deploying the branch above. After that pipeline work: Q501 toast visibility needs an R87 mockup; BL18 text size in core settings needs grilling.
    Propose splits via grilling for length hints: `shared/i18n.rs`, `get`, `slices/editor/editor.rs`, `draw_find_bar`, `draw_main_window`, `actions.rs`.
    Q436 (menu divider) stays open. The user kept the current find marks (current filled, others framed; section 5 of the mockup was declined).
    **Favorites** on `feature/memo-favorites` (M188–M191 decided): open Q407, Q408, Q416–Q419, then mockup (R87) and implementation.
@@ -60,7 +60,7 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M205+, R139+, B46+, BL21+, questions from 515**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M206+, R139+, B46+, BL23+, questions from 515**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
 1. **Storage failures:** done (memo M180, 2026-11-10).
@@ -89,7 +89,7 @@ Next ids: **M205+, R139+, B46+, BL21+, questions from 515**. Deferred: GW2 build
 
 Triggers/consequences: [agent reference](../agent-reference.md#recurring-checks).
 - **Dependencies (R130):** checked and updated 2026-11-17 (26 patch updates on `chore/dependency-patch-updates`, in-game test 19; jiff 1.0 open; nexus-rs current; `cargo audit`: no vulnerabilities, unmaintained `instant` and `paste` via nexus-rs). Next due 2026-11-24.
-- **Wiki:** Nov 6 review got HTTP 403; public recovery/login status not confirmed; keep Wayback.
+- **Wiki:** public again on Nov 18 (`Event_timers` HTTP 200, no login redirect). Next event-data work: switch back from Wayback per `data/events/README.md`.
 - **C-703/25 P:** Nov 15 check on CURIA: still pending, no hearing, no AG opinion, DPF in force. Order of June 4, 2026 (ECLI:EU:C:2026:465). Recheck on CURIA when triggered:
   https://juris.curia.europa.eu/juris/liste.jsf?language=en&num=C-703%2F25
 - **WvW reset snapshots (checked 2026-11-07):** both Nov 6 EU (ran 22:12 UTC, +4.8 h) and Nov 7 NA (07:16 UTC,
