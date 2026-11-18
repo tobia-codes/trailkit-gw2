@@ -71,6 +71,18 @@ Modules are grouped by concern (ROADMAP R134): `text`, `layout`, `controls`, `li
 | `drawing::draw_list` | `window_draw_list` — the current window's draw list without imgui-rs' one-at-a-time lock, which crashed the game (R104, Q355); `clippy.toml` bans the imgui-rs call | Windows |
 | `drawing::cursor_extent` | measures the mouse cursor (GW2 draws a large one) so `StyleScope` places tooltips right of it | Windows |
 
+## Packages
+
+The packages this project uses directly.
+
+| Package | Type | What it does | Why it is used here |
+|---------|------|--------------|---------------------|
+| `log` | external, Windows only | Common logging interface for Rust crates. | Reports failed link opens and missing font data. |
+| `nexus` | external, Windows only | Rust bindings for the Raidcore Nexus addon API and its ImGui. | Draws every shared component with ImGui. |
+| `pulldown-cmark` | external | Parses Markdown into events. | Parses notes and help pages for the Markdown view. |
+| `windows` | external, Windows only | Official Rust bindings for Windows APIs. | Measures the mouse cursor so tooltips stay clear of it. |
+| [`trailkit-ui-testing`](../trailkit-ui-testing/README.md) | own, tests only | Headless ImGui, simulated input and snapshot comparison. | Tests components and compares snapshots. |
+
 ## Usage
 
 ```rust

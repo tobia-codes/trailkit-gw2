@@ -13,6 +13,17 @@ else about resets lives here.
 | `note_kind` | kind options, the row badge (`RowBadge`, a calendar icon, M193) with its tooltip, the kind dropdown (Windows only) |
 | `i18n` | the slice's texts (`ResetText`, en/de) and the reset countdown format |
 
+## Packages
+
+The packages this project uses directly.
+
+| Package | Type | What it does | Why it is used here |
+|---------|------|--------------|---------------------|
+| [`trailkit-memo-shared`](../../shared/README.md) | own | Note tree, settings, drafts, undo, storage worker and texts shared by memo. | Uses memo's note types, texts and settings. |
+| [`trailkit-ui`](../../../crates/trailkit-ui/README.md) | own | Theme, fonts and shared ImGui components. | Uses the shared theme, text and controls. |
+| `jiff` | external | Date, time and time-zone types. | Calculates daily and weekly reset times. |
+| `nexus` | external, Windows only | Rust bindings for the Raidcore Nexus addon API and its ImGui. | Draws its interface with ImGui. |
+
 ## Build and test
 
 Built as part of the addon (`cargo xtask deploy trailkit-memo`). The logic

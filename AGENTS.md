@@ -57,8 +57,10 @@ Shared rules for Codex and Claude Code. `CLAUDE.md` imports this file;
    (R82), then test in game and obtain merge approval separately.
 3. **Every project has a README** in the
    [outline](docs/agent-reference.md#readme-outline), linked from its parent
-   README; keep it current. `CONTRIBUTING.md` explains these rules to humans:
-   update it when a rule changes.
+   README; keep it current. Its **Packages** section (R138) names every own and
+   external package the project uses directly, what it does and why; update it
+   with every dependency change. `CONTRIBUTING.md` explains these rules to
+   humans: update it when a rule changes.
 4. **Document every item:** functions, methods, structs, enums, traits and
    modules, public/private. Use Rust `///`/`//!`, JSDoc/TSDoc or Python
    docstrings; include relevant errors, panics and safety contracts.

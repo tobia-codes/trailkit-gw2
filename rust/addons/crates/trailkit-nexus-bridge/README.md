@@ -14,6 +14,15 @@ a port to another host replaces only the bridges.
 |--------|---------|----------|
 | `fonts` | `register_fonts`: registers the shared glyph texts and fonts with Nexus and hands every delivered font to `trailkit-ui`'s font registry; `follow_body_size`: resizes them when Nexus' `FontUI` changes | Windows |
 
+## Packages
+
+The packages this project uses directly.
+
+| Package | Type | What it does | Why it is used here |
+|---------|------|--------------|---------------------|
+| [`trailkit-ui`](../trailkit-ui/README.md) | own, Windows only | Theme, fonts and shared ImGui components. | Provides the font roles and receives the loaded fonts. |
+| `nexus` | external, Windows only | Rust bindings for the Raidcore Nexus addon API and its ImGui. | Registers and resizes fonts through Nexus. |
+
 ## Build and test
 
 ```sh

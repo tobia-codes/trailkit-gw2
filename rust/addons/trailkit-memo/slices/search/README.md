@@ -12,6 +12,17 @@ the results through the shared `ListFilter` trait.
 | `search_field` | the search field above the note list: magnifier, hint, an `x` that clears and then closes (M176), accent focus frame (Windows only) |
 | `i18n` | the slice's texts (`SearchText`, en/de) |
 
+## Packages
+
+The packages this project uses directly.
+
+| Package | Type | What it does | Why it is used here |
+|---------|------|--------------|---------------------|
+| [`trailkit-memo-shared`](../../shared/README.md) | own | Note tree, settings, drafts, undo, storage worker and texts shared by memo. | Uses memo's note types, texts and settings. |
+| [`trailkit-ui`](../../../crates/trailkit-ui/README.md) | own | Theme, fonts and shared ImGui components. | Provides text search, controls and hit marks. |
+| `nexus` | external, Windows only | Rust bindings for the Raidcore Nexus addon API and its ImGui. | Draws its interface with ImGui. |
+| `jiff` | external, tests only | Date, time and time-zone types. | Creates note timestamps in tests. |
+
 ## Build and test
 
 Built as part of the addon (`cargo xtask deploy trailkit-memo`). The search

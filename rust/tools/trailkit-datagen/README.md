@@ -14,6 +14,23 @@ monthly release `archive-YYYY-MM` and uploads the files (D34).
 > ROADMAP phase 2. Archives:
 > [releases `archive-YYYY-MM`](https://github.com/tobia-codes/trailkit-gw2/releases).
 
+## Packages
+
+The packages this project uses directly.
+
+| Package | Type | What it does | Why it is used here |
+|---------|------|--------------|---------------------|
+| `anyhow` | external | Error type with context for applications. | Adds context to job failures. |
+| `clap` | external | Parses command-line arguments. | Defines the command line of the data job. |
+| `env_logger` | external | Prints `log` records to the console. | Shows job progress in CI logs. |
+| `flate2` | external | Reads and writes gzip data. | Compresses archive files and reads them back. |
+| `jiff` | external | Date, time and time-zone types. | Handles UTC dates and reset times. |
+| `log` | external | Common logging interface for Rust crates. | Writes job progress. |
+| `serde` | external | Framework for serializing and deserializing Rust types. | Reads API data and writes manifests. |
+| `serde_json` | external | JSON support for `serde`. | Handles GW2 API responses and manifests. |
+| `sha2` | external | Computes SHA-2 checksums. | Records checksums of archive files. |
+| `ureq` | external | Small blocking HTTP client. | Downloads data from the GW2 API. |
+
 ## Build and test
 
 ```sh

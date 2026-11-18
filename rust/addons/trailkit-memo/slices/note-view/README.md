@@ -13,6 +13,16 @@ never on another slice: the app hands in the kind dropdown as a neutral
 | `note_view` | `NoteView` (markdown cache, scroll restore, jump to first hit), `NoteViewInput`, `NoteViewOutput` (actions + "scroll changed"), `NoteViewAction` (Windows only) |
 | `i18n` | the slice's texts (`NoteViewText`, en/de) |
 
+## Packages
+
+The packages this project uses directly.
+
+| Package | Type | What it does | Why it is used here |
+|---------|------|--------------|---------------------|
+| [`trailkit-memo-shared`](../../shared/README.md) | own | Note tree, settings, drafts, undo, storage worker and texts shared by memo. | Uses memo's note types, texts and settings. |
+| [`trailkit-ui`](../../../crates/trailkit-ui/README.md) | own, Windows only | Theme, fonts and shared ImGui components. | Provides the Markdown view and page layout. |
+| `nexus` | external, Windows only | Rust bindings for the Raidcore Nexus addon API and its ImGui. | Draws its interface with ImGui. |
+
 ## Build and test
 
 Built as part of the addon (`cargo xtask deploy trailkit-memo`). Texts are

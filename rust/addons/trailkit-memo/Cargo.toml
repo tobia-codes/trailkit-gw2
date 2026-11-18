@@ -17,7 +17,6 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 jiff.workspace = true
 log.workspace = true
-serde.workspace = true
 trailkit-memo-drafts.workspace = true
 trailkit-memo-trash.workspace = true
 trailkit-memo-editor.workspace = true
@@ -29,7 +28,6 @@ trailkit-memo-shared.workspace = true
 trailkit-log.workspace = true
 trailkit-storage.workspace = true
 trailkit-ui.workspace = true
-uuid.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true

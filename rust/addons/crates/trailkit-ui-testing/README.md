@@ -9,6 +9,16 @@ only** — it is never compiled into an addon DLL.
 | `snapshot` | `assert_snapshot` — compares an image with `tests/snapshots/<name>.png` (tolerance: 3/255 per channel, no differing pixels); writes `tests/snapshots/failures/<name>.actual.png` + `.diff.png` on failure | any |
 | `harness` | `UiHarness` — headless ImGui context with the real trailkit fonts (installed for `FontScope`), Nexus-like key map, simulated mouse/keyboard input per frame, rendering to images | Windows |
 
+## Packages
+
+The packages this project uses directly.
+
+| Package | Type | What it does | Why it is used here |
+|---------|------|--------------|---------------------|
+| [`trailkit-ui`](../trailkit-ui/README.md) | own | Theme, fonts and shared ImGui components. | Loads the shared fonts and theme for tests. |
+| `nexus` | external, Windows only | Rust bindings for the Raidcore Nexus addon API and its ImGui. | Runs the same ImGui version as the addons without the game. |
+| `png` | external | Encodes PNG images. | Writes snapshot, actual and diff images. |
+
 ## Usage
 
 ```rust

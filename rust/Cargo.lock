@@ -1464,7 +1464,6 @@ dependencies = [
  "jiff",
  "log",
  "nexus",
- "serde",
  "serde_json",
  "tempfile",
  "trailkit-log",
@@ -1480,7 +1479,6 @@ dependencies = [
  "trailkit-storage",
  "trailkit-ui",
  "trailkit-ui-testing",
- "uuid",
  "windows",
 ]
 

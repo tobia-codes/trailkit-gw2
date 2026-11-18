@@ -23,6 +23,18 @@ analyse a log a user sends.
 | `events` | the events this crate writes itself |
 | `system` | build kind, commit (`build.rs`), Windows version |
 
+## Packages
+
+The packages this project uses directly.
+
+| Package | Type | What it does | Why it is used here |
+|---------|------|--------------|---------------------|
+| [`trailkit-storage`](../trailkit-storage/README.md) | own | Versioned, crash-safe JSON files. | Finds the shared log folder and writes files safely. |
+| `jiff` | external | Date, time and time-zone types. | Timestamps log lines and names the daily files. |
+| `log` | external | Common logging interface for Rust crates. | Receives the records addons write through `log`. |
+| `windows` | external, Windows only | Official Rust bindings for Windows APIs. | Reads the Windows version for the session log line. |
+| `tempfile` | external, tests only | Creates temporary files and folders. | Gives tests isolated log folders. |
+
 ## Build and test
 
 ```sh

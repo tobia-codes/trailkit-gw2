@@ -16,6 +16,24 @@ depend on this crate, never on each other.
 | `storage_worker` | worker thread that loads and saves all documents debounced (M18, M30), retries failed writes (3 times, 5 s apart) and reports to the UI (M180); `storage_worker/loading.rs` loads the documents and logs it, `storage_worker/pending_save.rs` the retry cycle; the only code that touches the files |
 | `i18n` | languages, the texts no slice owns yet (en/de), local time and percentage formatting |
 
+## Packages
+
+The packages this project uses directly.
+
+| Package | Type | What it does | Why it is used here |
+|---------|------|--------------|---------------------|
+| [`trailkit-log`](../../crates/trailkit-log/README.md) | own | Local log files and the log export of the addons. | Writes error chains into storage log events. |
+| [`trailkit-storage`](../../crates/trailkit-storage/README.md) | own | Versioned, crash-safe JSON files. | Loads and saves memo's documents. |
+| [`trailkit-ui`](../../crates/trailkit-ui/README.md) | own | Theme, fonts and shared ImGui components. | Provides icons and chat-link text types. |
+| `jiff` | external | Date, time and time-zone types. | Stores note, draft and trash times. |
+| `log` | external | Common logging interface for Rust crates. | Writes storage and load events. |
+| `serde` | external | Framework for serializing and deserializing Rust types. | Defines memo's stored documents. |
+| `thiserror` | external | Derives typed error enums. | Gives storage worker failures typed errors. |
+| `uuid` | external | Generates and stores UUIDs. | Creates stable note and group ids. |
+| `windows` | external, Windows only | Official Rust bindings for Windows APIs. | Converts UTC times to the local time shown to users. |
+| `serde_json` | external, tests only | JSON support for `serde`. | Checks stored JSON in tests. |
+| `tempfile` | external, tests only | Creates temporary files and folders. | Gives storage tests isolated folders. |
+
 ## Build and test
 
 Built as part of the addon (`cargo xtask deploy trailkit-memo`). Its logic is
