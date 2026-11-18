@@ -87,8 +87,6 @@ The packages this project uses directly.
 | `jiff` | external | Date, time and time-zone types. | Handles current time, resets and trash dates in the window. |
 | `log` | external | Common logging interface for Rust crates. | Writes memo's log events. |
 | `nexus` | external, Windows only | Rust bindings for the Raidcore Nexus addon API and its ImGui. | Connects the addon to Nexus and draws its windows. |
-| `serde` | external | Framework for serializing and deserializing Rust types. | Currently not used directly by this crate; candidate for removal. |
-| `uuid` | external | Generates and stores UUIDs. | Currently not used directly by this crate; candidate for removal. |
 | `windows` | external, Windows only | Official Rust bindings for Windows APIs. | Catches window keys and finds the Downloads folder. |
 | [`trailkit-ui-testing`](../crates/trailkit-ui-testing/README.md) | own, tests only | Headless ImGui, simulated input and snapshot comparison. | Drives the window in tests and compares snapshots. |
 | `serde_json` | external, tests only | JSON support for `serde`. | Reads stored documents in tests. |

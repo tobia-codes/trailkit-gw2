@@ -25,7 +25,7 @@ tests wait for the Windows PC; check `source ~/.cargo/env` and a first `cargo te
 
 **Session 43 (2026-11-18, PC):** find in note and Shift twice (#145), data-safety tests and stopped-worker fix (#146) merged; all in-game tests passed.
 README package rule R138 is on `chore/readme-packages`. **Next:** pipeline coverage gaps and its two known bugs, then the favorites grilling.
-Coverage needs `llvm-tools` (installed); run it on demand, not in CI. `trailkit-memo` declares unused `serde` and `uuid`.
+Coverage needs `llvm-tools` (installed); run it on demand, not in CI.
 Favorites grilling (`feature/memo-favorites`, M188–M191 decided): open Q407, Q408, Q416–Q419 in trailkit-memo.md.
 
 **Open, in this order:**
