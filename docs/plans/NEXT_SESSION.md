@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-19 (session 46, PC; in-game tests of PR #152, layout decisions R147–R150). Current state and next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
+Last updated: 2026-11-19 (session 47, PC; faster CI R151, coverage scope R152, shortcut fixes, dialog width R153). Current state and next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
 
@@ -26,8 +26,8 @@ the upstream (narrow fetch refspec): set `branch.<b>.remote/merge` by hand for t
 log export active (click re-checks, then the info), event button **hidden** until the event picker exists (variant A). The mock lacks the export hint sentence. **R140 buttons, after the bugfixes below (one question at a time):** 1. **Q2 open:** tokens §5.1 rule "a hint of an element sits `space.sm` directly below it" (recommended yes; then the export info moves directly under the button, the hint sentence after it) → update the mock (R87 OK) → implement the R140 buttons + help texts + in-game test. 2. shared input core for `SearchField` and `TextField`? Recommended yes. 3. slash menu BL23: check Notion's behavior, then mock. 4. splits for the length hints (`markdown.rs`, `editor.rs`, `i18n.rs`, `actions.rs`, `buffer.rs`, `states.rs`).
 **Sessions 44–46 (2026-11-18/19), merged via PR #152:** memo data model M201–M204, drop zones, Backspace on markers/links, link dialog, bare links/e-mails, right-click menu (M205–M211),
 R139–R146 (TextField, no disabled buttons, dialog close icon, wrapped tooltips, link icons, measured form spacing, shared `Dialog`/`Backdrop`, report reuse), M213 text size percent, R149 one link underline. All in-game tests passed except the two below.
-**Next, in order:** 1. `bugfix/memo-shortcut-keys`: Ctrl+Z/Ctrl+Y/Ctrl+Shift+Z and Ctrl+0 never reach memo outside text input (not in `nexus_bridge/key_routing.rs`; the game gets them and opens Contacts) → route them like Delete/Ctrl+F; retest in-game tests 25 step 4 and 34.
-2. `bugfix/ui-tooltip-through-overlay`: `is_item_hovered` in this ImGui checks only the root window (`imgui.cpp:3117`), so buttons under the window menu show tooltips → one shared hover check in `trailkit-ui` for every tooltip, test with the menu over a button.
+**Done 2026-11-19 (PR of `bugfix/memo-shortcut-keys`):** memo catches Ctrl+Z/Y/Shift+Z, Ctrl+0 (number pad too) and Enter in dialogs; dialogs at most 20 font sizes wide (R153); editor toolbar flush with the title; CI 13 → ~4 min (R151, PR #154).
+**Next, in order:** 2. `bugfix/ui-tooltip-through-overlay`: `is_item_hovered` in this ImGui checks only the root window (`imgui.cpp:3117`), so buttons under the window menu show tooltips → one shared hover check in `trailkit-ui` for every tooltip, test with the menu over a button.
 3. `feature/ui-layout-rules`: R147 icon size by text role (0.78), R148 one spacing scale + `Stack` + one divider + dropdown list `space.xs` below its field, R150 dialog titles `Heading2`, BL25 numbered list button: one mock (R87) first.
 Also open: length hint `draw_spans` (`inline_text.rs`, 80 lines) for the split grilling; one unreproduced debug crash `imgui.h:1629` while deleting in a link label (if it recurs: Ignore, note cursor placement, key, preview, tooltip).
 **Next: data pipeline** (`rust/tools/trailkit-datagen`): the failing GemExchange job below (review item 3 done, D42); no more datagen unit tests, the backend tests cover it later (R152). Coverage 2026-11-18 before #146: addons 89 % of lines, memo app 70 %, datagen 52 %.
@@ -54,7 +54,7 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M214+, R153+, B46+, BL27+, questions from 515**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M214+, R154+, B46+, BL27+, questions from 515**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
 4. **Search cache:** `rust/addons/trailkit-memo/src/main_window/search.rs::update_search` calls `SearchQuery::parse` before checking the

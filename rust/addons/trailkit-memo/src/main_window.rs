@@ -14,6 +14,8 @@ mod text_scale;
 mod trash;
 mod window_menu;
 
+pub use trash::HistoryStep;
+
 use std::{collections::HashSet, path::PathBuf};
 
 use jiff::Timestamp;
@@ -138,6 +140,11 @@ pub struct MemoWindow {
     window_rect: Option<[[f32; 2]; 2]>,
     /// Whether the main window had the focus in the last frame.
     window_focused: bool,
+    /// Whether an ImGui text input has the keyboard this frame; Nexus then
+    /// passes every key to ImGui, so the input handles its own shortcuts.
+    text_input_active: bool,
+    /// Whether the open dialog had the focus in the last frame.
+    dialog_focused: bool,
     /// The user settings; the window changes the text scale (M57, M79).
     settings: Settings,
     /// The text scale the fonts are built for; follows
@@ -250,6 +257,8 @@ impl MemoWindow {
             leave_prompt: None,
             window_rect: None,
             window_focused: false,
+            text_input_active: false,
+            dialog_focused: false,
             applied_text_scale: settings.text_scale,
             text_scale_changed_at: None,
             settings,
@@ -291,6 +300,7 @@ impl MemoWindow {
         self.window_rect = Some([ui.window_pos(), ui.window_size()]);
         self.window_focused =
             ui.is_window_focused_with_flags(WindowFocusedFlags::ROOT_AND_CHILD_WINDOWS);
+        self.text_input_active = ui.io().want_text_input;
         self.apply_due_resets(Timestamp::now());
         self.purge_trash(Timestamp::now());
         self.handle_undo_keys(ui);

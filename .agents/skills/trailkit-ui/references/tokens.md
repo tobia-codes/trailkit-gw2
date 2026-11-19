@@ -274,7 +274,7 @@ state adds its snapshot in the same change.
    `press`, `click`, `right_click`, `drag` and `typing`. It runs Dark and Light.
    `assert_state_in` takes a language; a dialog's question built in the fixture
    stays in the fixture's language.
-3. Run `cargo xtask ui-test --update` (about 4 minutes), which writes the new
+3. Run `cargo xtask ui-test --update` (about 30 seconds, R151), which writes the new
    reference. Without `--update` every differing pixel fails, and the images land
    in `tests/snapshots/failures/`. A refactoring must pass without `--update`:
    that proves it changed no pixel. Without a local Windows build, push and take

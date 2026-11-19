@@ -375,13 +375,17 @@ impl Editor {
         let mut clicked = None;
         let spacing = ui.clone_style().item_spacing[0];
         let mut id = 0;
-        for group in FORMAT_GROUPS {
+        for (group_index, group) in FORMAT_GROUPS.iter().enumerate() {
             let width = group
                 .iter()
                 .map(|(icon, _, _)| icon_button_width(ui, *icon))
                 .sum::<f32>()
                 + spacing * (group.len().saturating_sub(1)) as f32;
-            begin_toolbar_group(ui, theme, width);
+            // The first group starts the line flush with the note title; only
+            // the groups after it get a separator.
+            if group_index > 0 {
+                begin_toolbar_group(ui, theme, width);
+            }
             for (index, (icon, tooltip, command)) in group.iter().enumerate() {
                 if index > 0 {
                     ui.same_line();

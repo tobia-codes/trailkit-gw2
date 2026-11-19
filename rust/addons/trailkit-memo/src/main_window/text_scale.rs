@@ -18,9 +18,10 @@ const TEXT_SCALE_APPLY_DELAY_SECONDS: f64 = 0.4;
 /// How long the text size percentage stays visible after a change (M80).
 const TEXT_SCALE_INDICATOR_SECONDS: f64 = 1.5;
 
-/// Windows virtual-key code of `0` (Nexus feeds ImGui with virtual-key
-/// codes; Ctrl+0 resets the text size, M79).
-const VIRTUAL_KEY_0: i32 = 0x30;
+/// Windows virtual-key codes of `0` in the number row and on the number pad
+/// (Nexus feeds ImGui with virtual-key codes; Ctrl+0 resets the text size,
+/// M79).
+const VIRTUAL_KEYS_0: [i32; 2] = [0x30, 0x60];
 
 impl MemoWindow {
     /// Ctrl+mouse wheel over the window makes the text larger or smaller,
@@ -37,11 +38,38 @@ impl MemoWindow {
         );
         let scale = if hovered && io.mouse_wheel != 0.0 {
             self.settings.text_scale.stepped(io.mouse_wheel.signum())
-        } else if self.window_focused && ui.is_key_index_pressed(VIRTUAL_KEY_0) {
+        } else if self.window_focused
+            && VIRTUAL_KEYS_0
+                .iter()
+                .any(|&key| ui.is_key_index_pressed(key))
+        {
             TextScale::DEFAULT
         } else {
             return;
         };
+        self.change_text_scale(ui, scale);
+    }
+
+    /// Whether Ctrl+0 belongs to this window (M79): it has the focus and no
+    /// text input is active, which would get the key from Nexus itself. The
+    /// window message callback catches it only then, because the game would
+    /// otherwise get it (in-game test 34).
+    #[must_use]
+    pub const fn takes_text_size_reset_key(&self) -> bool {
+        self.window_focused && !self.text_input_active
+    }
+
+    /// Resets the text size after the window message callback caught Ctrl+0
+    /// (M79).
+    pub fn reset_text_size_by_key(&mut self, ui: &Ui) {
+        if self.takes_text_size_reset_key() {
+            self.change_text_scale(ui, TextScale::DEFAULT);
+        }
+    }
+
+    /// Saves `scale` as the text size and shows the size tooltip, which the
+    /// change applies to after a short rest (M80).
+    fn change_text_scale(&mut self, ui: &Ui, scale: TextScale) {
         if scale != self.settings.text_scale {
             self.settings.text_scale = scale;
             self.saver.save_settings(self.settings);

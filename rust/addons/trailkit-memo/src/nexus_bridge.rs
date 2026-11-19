@@ -224,6 +224,51 @@ static DELETE_KEY_ARMED: AtomicBool = AtomicBool::new(false);
 /// Set when the Delete key was caught; the render callback deletes (M175).
 static DELETE_KEY_PRESSED: AtomicBool = AtomicBool::new(false);
 
+/// Whether Ctrl+Z, Ctrl+Y and Ctrl+Shift+Z belong to the window (M135,
+/// in-game test 25). Written by the render callback, false while it does not
+/// draw.
+static UNDO_KEYS_ARMED: AtomicBool = AtomicBool::new(false);
+
+/// Set when an undo key was caught: [`HISTORY_STEP_UNDO`] or
+/// [`HISTORY_STEP_REDO`]; the render callback takes the step.
+static HISTORY_STEP: AtomicU8 = AtomicU8::new(HISTORY_STEP_NONE);
+/// [`HISTORY_STEP`]: no step waiting.
+const HISTORY_STEP_NONE: u8 = 0;
+/// [`HISTORY_STEP`]: undo (Ctrl+Z).
+const HISTORY_STEP_UNDO: u8 = 1;
+/// [`HISTORY_STEP`]: redo (Ctrl+Y or Ctrl+Shift+Z).
+const HISTORY_STEP_REDO: u8 = 2;
+
+/// Whether Ctrl+0 belongs to the window (M79, in-game test 34). Written by
+/// the render callback, false while it does not draw.
+static TEXT_SIZE_RESET_ARMED: AtomicBool = AtomicBool::new(false);
+
+/// Set when Ctrl+0 was caught; the render callback resets the text size.
+static TEXT_SIZE_RESET_PRESSED: AtomicBool = AtomicBool::new(false);
+
+/// Whether Enter answers memo's open dialog (in-game test 35). Written by the
+/// render callback, false while it does not draw.
+static DIALOG_ENTER_ARMED: AtomicBool = AtomicBool::new(false);
+
+/// Set when Enter was caught for the dialog; the render callback answers it.
+static DIALOG_ENTER_PRESSED: AtomicBool = AtomicBool::new(false);
+
+/// Gives every key memo catches back to the game until the render callback
+/// arms them again (M79, M135, M174, M175, M198, M199).
+fn disarm_window_keys() {
+    for armed in [
+        &SEARCH_KEY_ARMED,
+        &FIND_KEY_ARMED,
+        &FIND_STEP_ARMED,
+        &DELETE_KEY_ARMED,
+        &UNDO_KEYS_ARMED,
+        &TEXT_SIZE_RESET_ARMED,
+        &DIALOG_ENTER_ARMED,
+    ] {
+        armed.store(false, Ordering::Relaxed);
+    }
+}
+
 /// What a `WndProc` callback returns for a message it consumed.
 const MESSAGE_CONSUMED: u32 = 0;
 /// What a `WndProc` callback returns for a message others should see.
@@ -441,8 +486,8 @@ fn detect_nexus_language() -> Option<String> {
     translate(LANGUAGE_PROBE_KEY).filter(|code| code != LANGUAGE_PROBE_KEY)
 }
 
-/// Catches memo's keys that would not reach ImGui on the input thread (M174,
-/// M175), while they belong to the window, and counts right and middle mouse
+/// Catches memo's keys that would not reach ImGui on the input thread (M79,
+/// M135, M174, M175), while they belong to the window, and counts right and middle mouse
 /// button presses for the focus (M186); otherwise the game gets them. Only
 /// touches atomics (nexus-addon-dev skill §2).
 extern "C-unwind" fn catch_window_keys(
@@ -475,6 +520,9 @@ fn route_window_message(message: u32, key: WPARAM, details: LPARAM) -> u32 {
         find: FIND_KEY_ARMED.load(Ordering::Relaxed),
         find_step: FIND_STEP_ARMED.load(Ordering::Relaxed),
         delete: DELETE_KEY_ARMED.load(Ordering::Relaxed),
+        undo: UNDO_KEYS_ARMED.load(Ordering::Relaxed),
+        text_size_reset: TEXT_SIZE_RESET_ARMED.load(Ordering::Relaxed),
+        dialog_enter: DIALOG_ENTER_ARMED.load(Ordering::Relaxed),
     };
     let key_message = KeyMessage {
         message,
@@ -497,6 +545,10 @@ fn route_window_message(message: u32, key: WPARAM, details: LPARAM) -> u32 {
         KeySignal::FindNext => FIND_STEP.store(FIND_STEP_NEXT, Ordering::Relaxed),
         KeySignal::FindPrevious => FIND_STEP.store(FIND_STEP_PREVIOUS, Ordering::Relaxed),
         KeySignal::Delete => DELETE_KEY_PRESSED.store(true, Ordering::Relaxed),
+        KeySignal::Undo => HISTORY_STEP.store(HISTORY_STEP_UNDO, Ordering::Relaxed),
+        KeySignal::Redo => HISTORY_STEP.store(HISTORY_STEP_REDO, Ordering::Relaxed),
+        KeySignal::ResetTextSize => TEXT_SIZE_RESET_PRESSED.store(true, Ordering::Relaxed),
+        KeySignal::ConfirmDialog => DIALOG_ENTER_PRESSED.store(true, Ordering::Relaxed),
     }
     if signal.consumes_key() {
         MESSAGE_CONSUMED

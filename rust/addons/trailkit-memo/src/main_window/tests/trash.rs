@@ -73,6 +73,25 @@ fn deleting_a_note_selects_the_next_row_and_can_be_undone() {
 }
 
 #[test]
+fn caught_undo_keys_step_only_while_they_belong_to_the_window() {
+    let document = sample_document();
+    let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
+    let first = first_note(&document).unwrap_or_else(|| panic!("the sample has a note"));
+    memo.apply(&WindowAction::Delete(first), Language::English);
+    memo.step_history_by_key(HistoryStep::Undo, Language::English);
+    assert_eq!(memo.document.trash.len(), 1, "the game keeps the keys");
+    memo.window_focused = true;
+    memo.text_input_active = true;
+    assert!(!memo.takes_undo_keys(), "a text input undoes its own text");
+    memo.text_input_active = false;
+    memo.step_history_by_key(HistoryStep::Undo, Language::English);
+    assert!(memo.document.trash.is_empty());
+    assert_eq!(memo.ui_state.selected, Some(first));
+    memo.step_history_by_key(HistoryStep::Redo, Language::English);
+    assert_eq!(memo.document.trash.len(), 1);
+}
+
+#[test]
 fn deleting_a_group_with_notes_asks_first() {
     let document = sample_document();
     let (raids, _) = raids_and_weekly(&document);
@@ -83,6 +102,33 @@ fn deleting_a_group_with_notes_asks_first() {
     memo.apply(&WindowAction::ConfirmAccepted, Language::English);
     assert_eq!(outline(&memo), "Shopping list, Dailies");
     assert_eq!(memo.document.trash.len(), 1);
+}
+
+#[test]
+fn caught_enter_answers_the_delete_question_only_while_it_belongs_to_it() {
+    let document = sample_document();
+    let (raids, _) = raids_and_weekly(&document);
+    let (mut memo, _worker, _directory) = memo_window(document, UiState::default());
+    memo.apply(&WindowAction::Delete(raids), Language::English);
+    memo.confirm_dialog_by_key(Language::English);
+    assert!(
+        memo.confirmation.is_some(),
+        "the game keeps Enter without focus"
+    );
+    memo.dialog_focused = true;
+    memo.text_input_active = true;
+    assert!(
+        !memo.takes_dialog_enter_key(),
+        "Nexus hands Enter to the input"
+    );
+    memo.text_input_active = false;
+    memo.confirm_dialog_by_key(Language::English);
+    assert!(memo.confirmation.is_none());
+    assert_eq!(outline(&memo), "Shopping list, Dailies");
+    assert!(
+        !memo.takes_dialog_enter_key(),
+        "without a dialog Enter stays with the game"
+    );
 }
 
 #[test]

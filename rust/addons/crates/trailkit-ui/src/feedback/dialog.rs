@@ -22,6 +22,27 @@ use crate::{
     theme::Theme,
 };
 
+/// The widest a dialog's content may be, in multiples of the font size
+/// (R153): about 400 px at 20 px body text, so a question wraps into short
+/// lines instead of one long one in a wide window. A button row that does
+/// not fit stacks (memo M70).
+pub const MAXIMUM_CONTENT_WIDTH_IN_FONT_SIZES: f32 = 20.0;
+
+/// The largest share of the window width a dialog card may take (memo M70).
+const MAXIMUM_WINDOW_FRACTION: f32 = 0.9;
+
+/// The widest content a dialog may have in a window `window_width` wide:
+/// [`MAXIMUM_CONTENT_WIDTH_IN_FONT_SIZES`] of the current font, and a card
+/// of at most 90 % of the window with its `space.lg` padding (R153, memo
+/// M70).
+#[must_use]
+pub fn maximum_content_width(ui: &Ui, theme: &Theme, window_width: f32) -> f32 {
+    let padding = theme.spacing.large;
+    (ui.current_font_size() * MAXIMUM_CONTENT_WIDTH_IN_FONT_SIZES)
+        .min(window_width * MAXIMUM_WINDOW_FRACTION - 2.0 * padding)
+        .max(1.0)
+}
+
 /// The height of a dialog's card measured in the last frame, so the next
 /// frame can center it. The dialog's owner keeps one per open dialog and
 /// resets it to the default when the dialog closes.

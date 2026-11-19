@@ -5,11 +5,11 @@
 pub(super) mod closing;
 pub(super) mod save_status;
 
-use nexus::imgui::{Key, Ui};
+use nexus::imgui::{Key, Ui, WindowFocusedFlags};
 use trailkit_ui::{
     controls::button::{Button, ButtonKind, ButtonState},
     controls::text_field::move_below_last_item,
-    feedback::dialog::{Dialog, DialogHeight},
+    feedback::dialog::{Dialog, DialogHeight, maximum_content_width},
     feedback::status_card::{CardDetail, CardStatus, StatusCard, draw_status_card},
     feedback::status_line::{Status, draw_status_line},
     text::{TextStyle, draw_text_wrapped},
@@ -77,9 +77,6 @@ impl MemoWindow {
 /// Minimum content width of a dialog card in average characters.
 pub(super) const DIALOG_MINIMUM_CHARACTERS: f32 = 28.0;
 
-/// Largest share of the window a dialog card may take.
-pub(super) const DIALOG_MAXIMUM_FRACTION: f32 = 0.9;
-
 /// A button of a dialog card and the answer it gives.
 #[derive(Debug, Clone)]
 pub(super) struct DialogButton<'a> {
@@ -138,15 +135,14 @@ fn draw_dialog_button(ui: &Ui, theme: &Theme, button: &DialogButton<'_>, size: [
 
 /// The width of a dialog's content in a window `window_width` wide: the
 /// question or the button row, at least [`DIALOG_MINIMUM_CHARACTERS`] and at
-/// most [`DIALOG_MAXIMUM_FRACTION`] of the window.
+/// most the shared dialog maximum (R153, memo M70).
 fn dialog_content_width(
     ui: &Ui,
     theme: &Theme,
     content: &DialogContent<'_>,
     window_width: f32,
 ) -> f32 {
-    let padding = theme.spacing.large;
-    let maximum_content = (window_width * DIALOG_MAXIMUM_FRACTION - 2.0 * padding).max(1.0);
+    let maximum_content = maximum_content_width(ui, theme, window_width);
     dialog_row_width(ui, theme, content)
         .max(ui.calc_text_size(content.question)[0])
         .max(ui.calc_text_size("n")[0] * DIALOG_MINIMUM_CHARACTERS)
@@ -350,8 +346,22 @@ pub(super) fn save_failed_dialog(
             },
         ],
         escape: WindowAction::SaveFailedKeepEditing,
-        enter: (!saving).then_some(WindowAction::SaveFailedRetry),
+        enter: save_failed_enter(prompt),
     }
+}
+
+/// Enter's answer in the save failed dialog: save again, unless it is saving
+/// already (M180).
+fn save_failed_enter(prompt: &SaveFailedPrompt) -> Option<WindowAction> {
+    (prompt.save.button_state() != ButtonState::Busy).then_some(WindowAction::SaveFailedRetry)
+}
+
+/// Enter's answer in the delete question `confirmation`: confirm only what
+/// can be undone (M152).
+fn confirmation_enter(confirmation: &Confirmation) -> Option<WindowAction> {
+    confirmation
+        .is_undoable()
+        .then_some(WindowAction::ConfirmAccepted)
 }
 
 /// The delete question `confirmation` (M134, M146): "Cancel" and the
@@ -381,13 +391,45 @@ fn confirmation_dialog<'a>(
             },
         ],
         escape: WindowAction::ConfirmCancelled,
-        enter: confirmation
-            .is_undoable()
-            .then_some(WindowAction::ConfirmAccepted),
+        enter: confirmation_enter(confirmation),
     }
 }
 
 impl MemoWindow {
+    /// The answer Enter gives in the open dialog, if any (M56, M152, M180);
+    /// the same order as [`Self::draw_dialog`] picks the dialog in.
+    fn dialog_enter_answer(&self) -> Option<WindowAction> {
+        if self.leave_prompt.is_some() {
+            Some(WindowAction::LeaveSaving)
+        } else if let Some(prompt) = &self.save_failed_prompt {
+            save_failed_enter(prompt)
+        } else {
+            self.confirmation.as_ref().and_then(confirmation_enter)
+        }
+    }
+
+    /// Whether Enter belongs to the open dialog: memo or its dialog has the
+    /// focus, no text input is active (Nexus would hand it Enter itself) and
+    /// Enter answers the dialog. The window message callback catches Enter
+    /// only then, because the game would otherwise open its chat (in-game
+    /// test 35).
+    #[must_use]
+    pub fn takes_dialog_enter_key(&self) -> bool {
+        (self.window_focused || self.dialog_focused)
+            && !self.text_input_active
+            && self.dialog_enter_answer().is_some()
+    }
+
+    /// Answers the open dialog as Enter does after the window message
+    /// callback caught it.
+    pub fn confirm_dialog_by_key(&mut self, language: Language) {
+        if self.takes_dialog_enter_key()
+            && let Some(answer) = self.dialog_enter_answer()
+        {
+            self.apply(&answer, language);
+        }
+    }
+
     /// Draws the open dialog (the unsaved changes question, M54, or a
     /// delete question, M134, M146) and applies the answer
     /// (`overlay-dialog-scope`). Call it after the main window is finished:
@@ -397,6 +439,7 @@ impl MemoWindow {
     /// back to the front; a click on the dimmed area picks the harmless
     /// answer, like Escape.
     pub fn draw_dialog(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+        self.dialog_focused = false;
         let content = if self.leave_prompt.is_some() {
             unsaved_changes_dialog(language)
         } else if let Some(prompt) = &self.save_failed_prompt {
@@ -411,6 +454,7 @@ impl MemoWindow {
         let Some([position, size]) = self.window_rect else {
             return;
         };
+        let mut dialog_focused = false;
         let response = Dialog::new(
             "###trailkit-memo-dialog",
             content.title,
@@ -424,8 +468,13 @@ impl MemoWindow {
             theme,
             &mut self.dialog_height,
             |window_width| dialog_content_width(ui, theme, &content, window_width),
-            |content_width| draw_dialog_content(ui, theme, &content, content_width),
+            |content_width| {
+                dialog_focused =
+                    ui.is_window_focused_with_flags(WindowFocusedFlags::ROOT_AND_CHILD_WINDOWS);
+                draw_dialog_content(ui, theme, &content, content_width)
+            },
         );
+        self.dialog_focused = dialog_focused;
         let answer = response.and_then(|response| {
             if response.is_closed {
                 Some(content.escape.clone())

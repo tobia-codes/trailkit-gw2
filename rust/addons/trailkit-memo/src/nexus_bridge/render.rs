@@ -22,17 +22,20 @@ use trailkit_ui::{
 };
 
 use super::{
-    CLOSE_REQUESTED, DELETE_KEY_ARMED, DELETE_KEY_PRESSED, ESCAPE_CAUGHT, FIND_KEY_ARMED,
-    FIND_KEY_PRESSED, FIND_STEP, FIND_STEP_ARMED, FIND_STEP_NEXT, FIND_STEP_NONE,
-    FIND_STEP_PREVIOUS, HELP, HELP_OPEN, LANGUAGE, NEXUS_LINK, NOTES, NotesState, SEARCH_KEY_ARMED,
-    SEARCH_KEY_PRESSED, TITLE_BAR, UNSAVED_CHANGES, VISIBLE, WINDOW_TAKES_ESCAPE, WINDOW_TITLE,
+    CLOSE_REQUESTED, DELETE_KEY_ARMED, DELETE_KEY_PRESSED, DIALOG_ENTER_ARMED,
+    DIALOG_ENTER_PRESSED, ESCAPE_CAUGHT, FIND_KEY_ARMED, FIND_KEY_PRESSED, FIND_STEP,
+    FIND_STEP_ARMED, FIND_STEP_NEXT, FIND_STEP_NONE, FIND_STEP_PREVIOUS, HELP, HELP_OPEN,
+    HISTORY_STEP, HISTORY_STEP_NONE, HISTORY_STEP_REDO, HISTORY_STEP_UNDO, LANGUAGE, NEXUS_LINK,
+    NOTES, NotesState, SEARCH_KEY_ARMED, SEARCH_KEY_PRESSED, TEXT_SIZE_RESET_ARMED,
+    TEXT_SIZE_RESET_PRESSED, TITLE_BAR, UNDO_KEYS_ARMED, UNSAVED_CHANGES, VISIBLE,
+    WINDOW_TAKES_ESCAPE, WINDOW_TITLE, disarm_window_keys,
     guard::{RunState, draft_kept, run_state, take_help_request, try_lock_after_panic},
     help::MemoHelp,
     is_gameplay, settings,
     storage::{receive_loaded_notes, restart_storage_worker_if_asked},
 };
 use crate::{
-    main_window::{minimum_window_width, title_bar_texts},
+    main_window::{HistoryStep, MemoWindow, minimum_window_width, title_bar_texts},
     options_tab::{VERSION_LINE, draw_options_tab},
 };
 
@@ -52,10 +55,7 @@ pub(super) fn render(ui: &nexus::imgui::Ui) {
 fn render_main_window(ui: &nexus::imgui::Ui) {
     // Stay false on every path that does not draw the window, so the game keeps
     // these keys while memo is hidden.
-    SEARCH_KEY_ARMED.store(false, Ordering::Relaxed);
-    FIND_KEY_ARMED.store(false, Ordering::Relaxed);
-    FIND_STEP_ARMED.store(false, Ordering::Relaxed);
-    DELETE_KEY_ARMED.store(false, Ordering::Relaxed);
+    disarm_window_keys();
     reopen_hidden_window_if_needed();
     let main_visible = VISIBLE.load(Ordering::Relaxed);
     if !(main_visible || HELP_OPEN.load(Ordering::Relaxed))
@@ -214,23 +214,7 @@ fn draw_main_window(
                 Text::NotesInaccessible.get(language),
             ),
             NotesState::Ready(window) => {
-                if ESCAPE_CAUGHT.swap(false, Ordering::Relaxed) {
-                    window.handle_escape(ui);
-                }
-                if SEARCH_KEY_PRESSED.swap(false, Ordering::Relaxed) {
-                    window.toggle_search_by_key();
-                }
-                if FIND_KEY_PRESSED.swap(false, Ordering::Relaxed) {
-                    window.toggle_find_by_key();
-                }
-                match FIND_STEP.swap(FIND_STEP_NONE, Ordering::Relaxed) {
-                    FIND_STEP_NEXT => window.step_find(true),
-                    FIND_STEP_PREVIOUS => window.step_find(false),
-                    _ => {}
-                }
-                if DELETE_KEY_PRESSED.swap(false, Ordering::Relaxed) {
-                    window.delete_selected_by_key(language);
-                }
+                apply_caught_keys(ui, window, language);
                 window.draw(ui, language, theme);
             }
         },
@@ -246,10 +230,50 @@ fn draw_main_window(
     apply_close_request(notes, open);
     if let NotesState::Ready(window) = &*notes {
         let visible = VISIBLE.load(Ordering::Relaxed);
-        SEARCH_KEY_ARMED.store(window.takes_search_key() && visible, Ordering::Relaxed);
-        FIND_KEY_ARMED.store(window.takes_find_key() && visible, Ordering::Relaxed);
-        FIND_STEP_ARMED.store(window.takes_find_step_key() && visible, Ordering::Relaxed);
-        DELETE_KEY_ARMED.store(window.takes_delete_key() && visible, Ordering::Relaxed);
+        for (armed, takes_key) in [
+            (&SEARCH_KEY_ARMED, window.takes_search_key()),
+            (&FIND_KEY_ARMED, window.takes_find_key()),
+            (&FIND_STEP_ARMED, window.takes_find_step_key()),
+            (&DELETE_KEY_ARMED, window.takes_delete_key()),
+            (&UNDO_KEYS_ARMED, window.takes_undo_keys()),
+            (&TEXT_SIZE_RESET_ARMED, window.takes_text_size_reset_key()),
+            (&DIALOG_ENTER_ARMED, window.takes_dialog_enter_key()),
+        ] {
+            armed.store(takes_key && visible, Ordering::Relaxed);
+        }
+    }
+}
+
+/// Applies the keys the window message callback caught for `window` since the
+/// last frame (M79, M135, M174, M175, M198, M199), before the window draws.
+fn apply_caught_keys(ui: &nexus::imgui::Ui, window: &mut MemoWindow, language: Language) {
+    if ESCAPE_CAUGHT.swap(false, Ordering::Relaxed) {
+        window.handle_escape(ui);
+    }
+    if SEARCH_KEY_PRESSED.swap(false, Ordering::Relaxed) {
+        window.toggle_search_by_key();
+    }
+    if FIND_KEY_PRESSED.swap(false, Ordering::Relaxed) {
+        window.toggle_find_by_key();
+    }
+    match FIND_STEP.swap(FIND_STEP_NONE, Ordering::Relaxed) {
+        FIND_STEP_NEXT => window.step_find(true),
+        FIND_STEP_PREVIOUS => window.step_find(false),
+        _ => {}
+    }
+    if DELETE_KEY_PRESSED.swap(false, Ordering::Relaxed) {
+        window.delete_selected_by_key(language);
+    }
+    match HISTORY_STEP.swap(HISTORY_STEP_NONE, Ordering::Relaxed) {
+        HISTORY_STEP_UNDO => window.step_history_by_key(HistoryStep::Undo, language),
+        HISTORY_STEP_REDO => window.step_history_by_key(HistoryStep::Redo, language),
+        _ => {}
+    }
+    if TEXT_SIZE_RESET_PRESSED.swap(false, Ordering::Relaxed) {
+        window.reset_text_size_by_key(ui);
+    }
+    if DIALOG_ENTER_PRESSED.swap(false, Ordering::Relaxed) {
+        window.confirm_dialog_by_key(language);
     }
 }
 
