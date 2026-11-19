@@ -7,7 +7,7 @@ use trailkit_memo_shared::i18n::{Language, LocalizedText, Text, text_field_texts
 use trailkit_ui::{
     controls::button::{Button, ButtonKind, draw_popup_icon_button},
     controls::text_field::{TextField, move_below_last_item},
-    feedback::dialog::{Dialog, DialogHeight},
+    feedback::dialog::{Dialog, DialogHeight, maximum_content_width},
     text::icons::Icon,
     theme::Theme,
 };
@@ -19,12 +19,6 @@ use crate::{
 
 /// Placeholder of the address field.
 const ADDRESS_PLACEHOLDER: &str = "https://";
-
-/// Width of the fields in multiples of the font size.
-const CONTENT_WIDTH_IN_FONT_SIZES: f32 = 24.0;
-
-/// The largest share of the window width the card may take.
-const MAXIMUM_WINDOW_FRACTION: f32 = 0.9;
 
 /// How many frames a field asks for the keyboard focus; ImGui may drop a
 /// request while the dialog appears.
@@ -118,11 +112,8 @@ impl LinkDialog {
             ui,
             theme,
             &mut height,
-            |window_width| {
-                let padding = theme.spacing.large;
-                (ui.current_font_size() * CONTENT_WIDTH_IN_FONT_SIZES)
-                    .min(window_width * MAXIMUM_WINDOW_FRACTION - 2.0 * padding)
-            },
+            // The fields take the widest a dialog may be (R153).
+            |window_width| maximum_content_width(ui, theme, window_width),
             |width| {
                 let spacing = theme.spacing.small;
                 let _spacing = ui.push_style_var(StyleVar::ItemSpacing([spacing, spacing]));

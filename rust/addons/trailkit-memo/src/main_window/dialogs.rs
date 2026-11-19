@@ -9,7 +9,7 @@ use nexus::imgui::{Key, Ui, WindowFocusedFlags};
 use trailkit_ui::{
     controls::button::{Button, ButtonKind, ButtonState},
     controls::text_field::move_below_last_item,
-    feedback::dialog::{Dialog, DialogHeight},
+    feedback::dialog::{Dialog, DialogHeight, maximum_content_width},
     feedback::status_card::{CardDetail, CardStatus, StatusCard, draw_status_card},
     feedback::status_line::{Status, draw_status_line},
     text::{TextStyle, draw_text_wrapped},
@@ -77,9 +77,6 @@ impl MemoWindow {
 /// Minimum content width of a dialog card in average characters.
 pub(super) const DIALOG_MINIMUM_CHARACTERS: f32 = 28.0;
 
-/// Largest share of the window a dialog card may take.
-pub(super) const DIALOG_MAXIMUM_FRACTION: f32 = 0.9;
-
 /// A button of a dialog card and the answer it gives.
 #[derive(Debug, Clone)]
 pub(super) struct DialogButton<'a> {
@@ -138,15 +135,14 @@ fn draw_dialog_button(ui: &Ui, theme: &Theme, button: &DialogButton<'_>, size: [
 
 /// The width of a dialog's content in a window `window_width` wide: the
 /// question or the button row, at least [`DIALOG_MINIMUM_CHARACTERS`] and at
-/// most [`DIALOG_MAXIMUM_FRACTION`] of the window.
+/// most the shared dialog maximum (R153, memo M70).
 fn dialog_content_width(
     ui: &Ui,
     theme: &Theme,
     content: &DialogContent<'_>,
     window_width: f32,
 ) -> f32 {
-    let padding = theme.spacing.large;
-    let maximum_content = (window_width * DIALOG_MAXIMUM_FRACTION - 2.0 * padding).max(1.0);
+    let maximum_content = maximum_content_width(ui, theme, window_width);
     dialog_row_width(ui, theme, content)
         .max(ui.calc_text_size(content.question)[0])
         .max(ui.calc_text_size("n")[0] * DIALOG_MINIMUM_CHARACTERS)
