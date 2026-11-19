@@ -26,7 +26,7 @@ the upstream (narrow fetch refspec): set `branch.<b>.remote/merge` by hand for t
 `TextField` + `TextStyle::Label` (R139), no disabled buttons without approval (R140), close icon on dialogs (R141), wrapped tooltips (R142), link icons `LinkKind` (R143), measured spacing `tokens.md` §5.1 (R144).
 **Session 45 (2026-11-19, phone), pushed to draft PR #152 (`7bb3c7d`, `64a4aa9`, `c80a7be`; no CI checks listed on `c80a7be` yet, check on the PC):** R145 shared `trailkit-ui` `feedback::dialog::Dialog` + `feedback::backdrop::Backdrop` (backdrop measures its content itself, Q7; close icon on by default, off also
 ignores Escape and backdrop clicks, Q5) for memo dialogs, link dialog and window menu (in-game test 33); R146 report shared/new components (`AGENTS.md` rule 7).
-**Decided, not implemented** (R140, mock https://claude.ai/artifact/2DJ1oU6jPCpswHgnaSm3W1): find arrows active (empty: focus the field; no hits: "No results" flashes),
+**Decided, not implemented** (M212, R140, mock https://claude.ai/artifact/2DJ1oU6jPCpswHgnaSm3W1): find arrows active (empty: focus the field; no hits: "No results" flashes),
 log export active (click re-checks, then the info), event button **hidden** until the event picker exists (variant A). The mock lacks the export hint sentence. **Next, in order (one question at a time):** 1. **Q2 open:** tokens §5.1 rule "a hint of an element sits `space.sm` directly below it" (recommended yes; then the export info moves directly under the button, the hint sentence after it) → update the mock (R87 OK) → implement the R140 buttons + help texts + in-game test. 2. shared input core for `SearchField` and `TextField`? Recommended yes. 3. slash menu BL23: check Notion's behavior, then mock. 4. splits for the length hints (`markdown.rs`, `editor.rs`, `i18n.rs`, `actions.rs`, `buffer.rs`, `states.rs`).
 Backlog from this session: BL20 in-game browser, BL21 achievement addon, BL22 achievement notes, BL24 item icons. Mocks: link dialog https://claude.ai/artifact/SgWHJ1mMKSTArQMEVaqACm, menu https://claude.ai/artifact/T75AGbpSsUuT4K4yTwpSTs.
 **Back on the PC:** `git fetch origin && git switch feature/memo-extensible-data-model && git pull --ff-only`, `cargo xtask deploy trailkit-memo`, check the PR's Windows snapshot CI (shared dialog must look unchanged), finish in-game tests 25 (from step 4), 26, 27 (from step 2), 28–33, then ask for the merge OK.
@@ -58,7 +58,7 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M212+, R147+, B46+, BL25+, questions from 515**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M213+, R147+, B46+, BL25+, questions from 515**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
 4. **Search cache:** `rust/addons/trailkit-memo/src/main_window/search.rs::update_search` calls `SearchQuery::parse` before checking the
