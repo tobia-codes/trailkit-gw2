@@ -1,4 +1,5 @@
-//! Decides what a key message means for memo (M174, M175, M198, M199): which
+//! Decides what a key message means for memo (M79, M135, M174, M175, M198,
+//! M199): which
 //! keys belong to the window right now and which of them the game must not
 //! get. Free of global state, so every rule can be tested; the window message
 //! callback in `nexus_bridge` applies the result.
@@ -6,7 +7,9 @@
 use std::time::Instant;
 
 use windows::Win32::UI::{
-    Input::KeyboardAndMouse::{VIRTUAL_KEY, VK_CONTROL, VK_DELETE, VK_F, VK_F3, VK_SHIFT},
+    Input::KeyboardAndMouse::{
+        VIRTUAL_KEY, VK_0, VK_CONTROL, VK_DELETE, VK_F, VK_F3, VK_SHIFT, VK_Y, VK_Z,
+    },
     WindowsAndMessaging::{WM_KEYDOWN, WM_KEYUP},
 };
 
@@ -34,6 +37,10 @@ pub(super) struct ArmedKeys {
     pub(super) find_step: bool,
     /// Delete moves the selected entry to the trash (M175).
     pub(super) delete: bool,
+    /// Ctrl+Z undoes, Ctrl+Y and Ctrl+Shift+Z redo (M135).
+    pub(super) undo: bool,
+    /// Ctrl+0 resets the text size (M79).
+    pub(super) text_size_reset: bool,
 }
 
 /// What a key message asks the window to do.
@@ -49,6 +56,12 @@ pub(super) enum KeySignal {
     FindPrevious,
     /// Delete the selected entry.
     Delete,
+    /// Take the latest step back.
+    Undo,
+    /// Do the latest undone step again.
+    Redo,
+    /// Reset the text size.
+    ResetTextSize,
 }
 
 impl KeySignal {
@@ -59,8 +72,8 @@ impl KeySignal {
 }
 
 /// Follows `message` at `now` and returns what it asks for, if anything.
-/// `is_down` tells whether a modifier is held; it is only asked for keys that
-/// depend on one.
+/// `is_down` tells whether a modifier is held; it is only asked for key
+/// presses that no other rule took.
 pub(super) fn route_key(
     message: KeyMessage,
     armed: ArmedKeys,
@@ -83,14 +96,35 @@ pub(super) fn route_key(
     double_shift.other_key();
     if is_key(VK_DELETE) && armed.delete {
         Some(KeySignal::Delete)
-    } else if is_key(VK_F) && armed.find && is_down(VK_CONTROL) {
-        Some(KeySignal::ToggleFind)
     } else if is_key(VK_F3) && armed.find_step {
         Some(if is_down(VK_SHIFT) {
             KeySignal::FindPrevious
         } else {
             KeySignal::FindNext
         })
+    } else if is_down(VK_CONTROL) {
+        route_ctrl_shortcut(message.key, armed, is_down(VK_SHIFT))
+    } else {
+        None
+    }
+}
+
+/// What `key` pressed with Ctrl asks for; `shift` tells whether Shift is
+/// held too.
+fn route_ctrl_shortcut(key: usize, armed: ArmedKeys, shift: bool) -> Option<KeySignal> {
+    let is_key = |virtual_key: VIRTUAL_KEY| key == usize::from(virtual_key.0);
+    if is_key(VK_F) && armed.find {
+        Some(KeySignal::ToggleFind)
+    } else if is_key(VK_Z) && armed.undo {
+        Some(if shift {
+            KeySignal::Redo
+        } else {
+            KeySignal::Undo
+        })
+    } else if is_key(VK_Y) && armed.undo {
+        Some(KeySignal::Redo)
+    } else if is_key(VK_0) && armed.text_size_reset {
+        Some(KeySignal::ResetTextSize)
     } else {
         None
     }
@@ -108,6 +142,8 @@ mod tests {
         find: true,
         find_step: true,
         delete: true,
+        undo: true,
+        text_size_reset: true,
     };
 
     /// A key message without auto repeat.
@@ -153,6 +189,37 @@ mod tests {
     fn delete_belongs_to_the_window_only_while_armed() {
         assert_eq!(press(VK_DELETE, ALL_ARMED, &[]), Some(KeySignal::Delete));
         assert_eq!(press(VK_DELETE, ArmedKeys::default(), &[]), None);
+    }
+
+    #[test]
+    fn ctrl_z_undoes_and_with_shift_redoes_while_armed() {
+        let signal = press(VK_Z, ALL_ARMED, &[VK_CONTROL]);
+        assert_eq!(signal, Some(KeySignal::Undo));
+        assert!(signal.is_some_and(KeySignal::consumes_key));
+        assert_eq!(
+            press(VK_Z, ALL_ARMED, &[VK_CONTROL, VK_SHIFT]),
+            Some(KeySignal::Redo)
+        );
+        assert_eq!(press(VK_Z, ALL_ARMED, &[]), None, "a plain Z is typing");
+        assert_eq!(press(VK_Z, ArmedKeys::default(), &[VK_CONTROL]), None);
+    }
+
+    #[test]
+    fn ctrl_y_redoes_while_armed() {
+        let signal = press(VK_Y, ALL_ARMED, &[VK_CONTROL]);
+        assert_eq!(signal, Some(KeySignal::Redo));
+        assert!(signal.is_some_and(KeySignal::consumes_key));
+        assert_eq!(press(VK_Y, ALL_ARMED, &[]), None);
+        assert_eq!(press(VK_Y, ArmedKeys::default(), &[VK_CONTROL]), None);
+    }
+
+    #[test]
+    fn ctrl_0_resets_the_text_size_while_armed() {
+        let signal = press(VK_0, ALL_ARMED, &[VK_CONTROL]);
+        assert_eq!(signal, Some(KeySignal::ResetTextSize));
+        assert!(signal.is_some_and(KeySignal::consumes_key));
+        assert_eq!(press(VK_0, ALL_ARMED, &[]), None);
+        assert_eq!(press(VK_0, ArmedKeys::default(), &[VK_CONTROL]), None);
     }
 
     /// Taps Shift at `start + at_ms` and returns what its press asked for.

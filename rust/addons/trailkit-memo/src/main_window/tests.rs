@@ -393,6 +393,28 @@ fn control_mouse_wheel_changes_the_text_scale_and_control_zero_resets_it() {
 }
 
 #[test]
+fn caught_control_zero_resets_the_text_size_only_while_it_belongs_to_the_window() {
+    let document = sample_document();
+    let ui_state = selected_first(&document);
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    let mut harness = UiHarness::new([480.0, 300.0]);
+    let larger = TextScale::DEFAULT.stepped(1.0);
+    memo.settings.text_scale = larger;
+    harness.step(&FrameInput::default(), |ui| memo.reset_text_size_by_key(ui));
+    assert_eq!(memo.settings.text_scale, larger, "the game keeps the key");
+    memo.window_focused = true;
+    memo.text_input_active = true;
+    assert!(
+        !memo.takes_text_size_reset_key(),
+        "Nexus passes the key to the active text input itself"
+    );
+    memo.text_input_active = false;
+    assert!(memo.takes_text_size_reset_key());
+    harness.step(&FrameInput::default(), |ui| memo.reset_text_size_by_key(ui));
+    assert_eq!(memo.settings.text_scale, TextScale::DEFAULT);
+}
+
+#[test]
 fn note_title_stays_at_the_top_while_the_content_scrolls() {
     let mut document = sample_document();
     if let Some(Node::Note(first)) = document.root.first_mut() {

@@ -42,6 +42,29 @@ impl MemoWindow {
         } else {
             return;
         };
+        self.change_text_scale(ui, scale);
+    }
+
+    /// Whether Ctrl+0 belongs to this window (M79): it has the focus and no
+    /// text input is active, which would get the key from Nexus itself. The
+    /// window message callback catches it only then, because the game would
+    /// otherwise get it (in-game test 34).
+    #[must_use]
+    pub const fn takes_text_size_reset_key(&self) -> bool {
+        self.window_focused && !self.text_input_active
+    }
+
+    /// Resets the text size after the window message callback caught Ctrl+0
+    /// (M79).
+    pub fn reset_text_size_by_key(&mut self, ui: &Ui) {
+        if self.takes_text_size_reset_key() {
+            self.change_text_scale(ui, TextScale::DEFAULT);
+        }
+    }
+
+    /// Saves `scale` as the text size and shows the size tooltip, which the
+    /// change applies to after a short rest (M80).
+    fn change_text_scale(&mut self, ui: &Ui, scale: TextScale) {
         if scale != self.settings.text_scale {
             self.settings.text_scale = scale;
             self.saver.save_settings(self.settings);

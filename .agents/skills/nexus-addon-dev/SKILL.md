@@ -106,9 +106,9 @@ for new addons: [`references/addon-structure.md`](references/addon-structure.md)
   (arrows, Backspace, Enter, …) to ImGui instead of the game only while a
   real ImGui text input is active (`io.WantTextInput`); typed characters
   always reach ImGui. `CaptureKeyboardFromApp` is not enough. Shortcuts vary and
-  the reason is unknown (tried in game 2026-11-06, no input active): Ctrl+Z, Ctrl+Y
-  and Ctrl+0 reached ImGui, Ctrl+F and Delete did not, while tests pass either way.
-  Try each new key in game. One that does not arrive uses a `WndProc` callback that
+  the reason is unknown (no input active): on 2026-11-06 Ctrl+Z, Ctrl+Y and Ctrl+0
+  reached ImGui while Ctrl+F and Delete did not; on 2026-11-19 none of them did
+  (the game opened Contacts), while tests pass either way. Try each new key in game. One that does not arrive uses a `WndProc` callback that
   flips an atomic and consumes the key while it belongs to the window (memo M174,
   M175). A click into the game world takes the keyboard from ImGui without being
   reported as a click, so never reactivate an input that lost it (memo M178). A

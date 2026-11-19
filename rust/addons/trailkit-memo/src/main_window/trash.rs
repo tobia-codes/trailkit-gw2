@@ -27,6 +27,26 @@ const VIRTUAL_KEY_Y: i32 = 0x59;
 /// Windows virtual-key code of `Z` (Ctrl+Z undoes, M135).
 const VIRTUAL_KEY_Z: i32 = 0x5A;
 
+/// Which way Ctrl+Z, Ctrl+Y or Ctrl+Shift+Z moves through the undo history
+/// (M135).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HistoryStep {
+    /// Ctrl+Z: take the latest step back.
+    Undo,
+    /// Ctrl+Y or Ctrl+Shift+Z: do the latest undone step again.
+    Redo,
+}
+
+impl HistoryStep {
+    /// The window action that takes this step.
+    const fn action(self) -> WindowAction {
+        match self {
+            Self::Undo => WindowAction::Undo,
+            Self::Redo => WindowAction::Redo,
+        }
+    }
+}
+
 /// What a delete question asks about.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum ConfirmationKind {
@@ -237,27 +257,45 @@ impl MemoWindow {
         }
     }
 
-    /// Ctrl+Z undoes, Ctrl+Y and Ctrl+Shift+Z redo while the window has the
-    /// focus and no text input is active (M135).
+    /// Whether Ctrl+Z, Ctrl+Y and Ctrl+Shift+Z belong to this window (M135):
+    /// it has the focus, no text input takes them for its own undo, and no
+    /// question is open. The window message callback catches them only then,
+    /// because the game would otherwise get them (in-game test 25).
+    #[must_use]
+    pub const fn takes_undo_keys(&self) -> bool {
+        self.window_focused
+            && !self.text_input_active
+            && self.leave_prompt.is_none()
+            && self.confirmation.is_none()
+    }
+
+    /// Takes `step` through the undo history after the window message
+    /// callback caught its key (M135).
+    pub fn step_history_by_key(&mut self, step: HistoryStep, language: Language) {
+        if self.takes_undo_keys() {
+            self.apply(&step.action(), language);
+        }
+    }
+
+    /// Ctrl+Z undoes, Ctrl+Y and Ctrl+Shift+Z redo while the keys belong to
+    /// the window and reach ImGui (M135).
     pub(super) fn handle_undo_keys(&mut self, ui: &Ui) {
         let io = ui.io();
-        if !self.window_focused
-            || !io.key_ctrl
-            || io.want_text_input
-            || self.leave_prompt.is_some()
-            || self.confirmation.is_some()
-        {
+        if !io.key_ctrl || !self.takes_undo_keys() {
             return;
         }
-        if ui.is_key_index_pressed(VIRTUAL_KEY_Z) {
+        let step = if ui.is_key_index_pressed(VIRTUAL_KEY_Z) {
             if io.key_shift {
-                self.actions.push(WindowAction::Redo);
+                HistoryStep::Redo
             } else {
-                self.actions.push(WindowAction::Undo);
+                HistoryStep::Undo
             }
         } else if ui.is_key_index_pressed(VIRTUAL_KEY_Y) {
-            self.actions.push(WindowAction::Redo);
-        }
+            HistoryStep::Redo
+        } else {
+            return;
+        };
+        self.actions.push(step.action());
     }
 
     /// Shows the trash in place of the note list, which must show for that.
