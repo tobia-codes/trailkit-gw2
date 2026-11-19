@@ -38,19 +38,6 @@ branch for memo's shortcut keys:
    cursor), press Ctrl+Z. **Expected:** the note goes back to its old place,
    its group opens and it is selected; the game opens nothing.
 
-## Test 28 — Backspace removes a list marker (M206, 2026-11-18)
-
-No visible design change. Open a note and click **Edit**.
-
-1. Type `- [ ] ` on a new line and press Backspace once. **Before:** one
-   character went away. **Now:** the whole marker is gone.
-2. Type `- [ ] Text`, put the cursor directly before `Text`, press Backspace.
-   **Expected:** only `Text` stays; Ctrl+Z brings the marker back.
-3. Repeat with `- Text`, `1. Text` and an indented `  - [ ] Text`.
-   **Expected:** only `Text` stays, without indentation.
-4. Put the cursor inside or at the end of `Text`, press Backspace.
-   **Expected:** one character goes away, as before.
-
 ## Test 29 — deleting a link at once (M207, 2026-11-18)
 
 No visible design change. Open a note, click **Edit** and type
