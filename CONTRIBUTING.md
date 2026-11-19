@@ -277,6 +277,9 @@ Tests never call live services; tools use committed fixtures. Every command:
   [`tokens.md` §10](.agents/skills/trailkit-ui/references/tokens.md) (R104)
   with a fresh `cargo xtask deploy`. Docs (README, help page, plan) change in the same PR as the
   behavior.
+- **Handing over unfinished work:** `docs/plans/NEXT_SESSION.md` on `develop` names
+  the active work branch, so the next session, also on another device, starts
+  there. The line goes away when the branch is merged.
 - **CI must pass**: formatting, Clippy and tests on Windows, branch name,
   `cargo deny`. Fix failures; never bypass a hook or a check.
 

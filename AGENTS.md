@@ -6,6 +6,9 @@ Shared rules for Codex and Claude Code. `CLAUDE.md` imports this file;
 ## Start and load context
 
 - Read `docs/plans/NEXT_SESSION.md`: **Resume here** and **Recurring checks**.
+  If it names an **active work branch**, switch to it first and read the file
+  there. Every handoff of unfinished work records that branch in the file on
+  `develop` (through a PR); remove it when the branch is merged.
   Preserve current work and follow due checks. Project: GW2 Nexus addon DLLs
   plus a Rust data pipeline; backend deferred. Plans: `docs/plans/README.md`.
 - Load only the task's skill and relevant reference sections below. Search

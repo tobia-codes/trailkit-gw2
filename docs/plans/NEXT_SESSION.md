@@ -10,6 +10,8 @@ Last updated: 2026-11-19 (session 45, phone; shared dialog and backdrop). Curren
 
 ## ▶ Resume here
 
+**Active work branch: `feature/memo-extensible-data-model` (draft PR #152).** Start every session with `git fetch origin && git switch feature/memo-extensible-data-model && git pull --ff-only`, then read this file again there: that copy is the current handoff. Remove this line when the branch is merged.
+
 **First, if [`in-game-tests.md`](in-game-tests.md) lists tests, ask the user: can you test in game now?** Remove each item once
 the user confirms it (user requests 2026-11-13, 2026-11-16); an empty list means no question. A failed test becomes a `bugfix/` branch.
 
