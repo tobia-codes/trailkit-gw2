@@ -58,7 +58,7 @@ Each rule has an id (`area-name`) so reviews can cite it.
   so it must end by itself (a running action) or always offer an active
   button that leads out (R145).
   Card: `bg.panel`, 1 px `border` frame, `space.lg` padding, min ≈ 28
-  characters wide, content at most 24 font sizes (≈ 480 px at 20 px text,
+  characters wide, content at most 20 font sizes (≈ 400 px at 20 px text,
   `feedback::dialog::maximum_content_width`, R153) and the card at most 90 %
   of the window, text wraps. Button row:
   right-aligned with the primary button last (right); a delete question's

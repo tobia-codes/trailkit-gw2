@@ -30,13 +30,17 @@ is ready when the user is back at the PC.
 
 ## Test 36 — dialogs have a maximum width (R153, 2026-11-19)
 
-Approved design: https://claude.ai/artifact/VXdbvqSVZhTnbjrMPKRbyN (variant A).
+Approved design: https://claude.ai/artifact/VXdbvqSVZhTnbjrMPKRbyN (round 2,
+20 font sizes).
 
 1. Make the memo window wide (about 1000 px or more). Right-click a group
-   with notes › *Delete*. **Expected:** the card is about as wide as the link
-   dialog (Ctrl+K in the editor); the question wraps into two lines instead
-   of running across the window (before: one long line, card nearly as wide
-   as the window).
-2. Drag the window as narrow as it goes and open the question again.
-   **Expected:** unchanged from before: the card fits the window, buttons stack
-   when they do not fit.
+   with notes › *Delete*. **Expected:** the card is about 400 px wide and the
+   question wraps into three short lines (before: two long lines, about
+   480 px).
+2. Open a note in the editor, type a letter, click another note.
+   **Expected:** "Unsaved changes" keeps its three buttons in one row.
+3. Ctrl+K in the editor. **Expected:** the link dialog's fields are as wide
+   as the delete question.
+4. Drag the window as narrow as it goes and open the question again.
+   **Expected:** unchanged: the card fits the window, buttons stack when they
+   do not fit.

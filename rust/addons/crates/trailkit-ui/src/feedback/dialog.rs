@@ -23,9 +23,10 @@ use crate::{
 };
 
 /// The widest a dialog's content may be, in multiples of the font size
-/// (R153): about 480 px at 20 px body text, so a question wraps into short
-/// lines instead of one long one in a wide window.
-pub const MAXIMUM_CONTENT_WIDTH_IN_FONT_SIZES: f32 = 24.0;
+/// (R153): about 400 px at 20 px body text, so a question wraps into short
+/// lines instead of one long one in a wide window. A button row that does
+/// not fit stacks (memo M70).
+pub const MAXIMUM_CONTENT_WIDTH_IN_FONT_SIZES: f32 = 20.0;
 
 /// The largest share of the window width a dialog card may take (memo M70).
 const MAXIMUM_WINDOW_FRACTION: f32 = 0.9;
