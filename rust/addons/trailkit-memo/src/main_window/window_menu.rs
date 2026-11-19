@@ -5,7 +5,6 @@
 use nexus::imgui::{StyleVar, Ui};
 use trailkit_ui::drawing::draw_list::window_draw_list;
 use trailkit_ui::{
-    drawing::screen_rect::ScreenRect,
     feedback::backdrop::{Backdrop, BackdropArea},
     layout::pane::draw_pane,
     layout::separator::draw_compact_separator,
@@ -128,11 +127,7 @@ impl MemoWindow {
                                 chosen = Some(row.action.clone());
                             }
                         }
-                    })?;
-                    Some(ScreenRect {
-                        min: ui.item_rect_min(),
-                        max: ui.item_rect_max(),
-                    })
+                    });
                 });
         if let Some(action) = chosen {
             self.window_menu_open = false;

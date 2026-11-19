@@ -8,21 +8,23 @@ use nexus::imgui::{
 };
 
 use crate::{
-    drawing::draw_list::window_draw_list, drawing::screen_rect::ScreenRect,
-    text::font_registry::FontScope, text::fonts::FontRole, theme::Theme,
+    drawing::draw_list::window_draw_list, text::font_registry::FontScope, text::fonts::FontRole,
+    theme::Theme,
 };
 
 /// Where a backdrop dims.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BackdropArea {
-    /// Its own borderless window exactly over `window`, title bar included,
-    /// so it dims only that window while the game and other windows stay
-    /// usable. `is_focused` brings it back to the front when the window
-    /// below was clicked.
+    /// Its own borderless window exactly over another window, title bar
+    /// included, so it dims only that window while the game and other
+    /// windows stay usable.
     Window {
-        /// The window to dim, in screen coordinates.
-        window: ScreenRect,
-        /// Whether the backdrop takes the focus in this frame.
+        /// Top-left corner of the window to dim, in screen coordinates.
+        position: [f32; 2],
+        /// Width and height of the window to dim.
+        size: [f32; 2],
+        /// Whether the backdrop takes the focus in this frame, e.g. after
+        /// the window below was clicked.
         is_focused: bool,
     },
     /// A region of `size` at the cursor of the current window, e.g. its
@@ -63,31 +65,35 @@ impl<'a> Backdrop<'a> {
     }
 
     /// Dims the area, draws `content` on it and returns whether the backdrop
-    /// was clicked: a left click on the area beside the bounds that `content`
-    /// returns (`None`: no content, the whole area counts). Always `false`
-    /// unless the backdrop is [`clickable`](Self::clickable).
-    pub fn draw(
-        &self,
-        ui: &Ui,
-        theme: &Theme,
-        content: impl FnOnce() -> Option<ScreenRect>,
-    ) -> bool {
-        let check = || {
-            let bounds = content();
+    /// was clicked: a left click on the area beside everything `content`
+    /// drew. Always `false` unless the backdrop is
+    /// [`clickable`](Self::clickable).
+    pub fn draw(&self, ui: &Ui, theme: &Theme, content: impl FnOnce()) -> bool {
+        let draw_and_check = || {
+            // The group's box is the union of everything the content drew.
+            ui.group(content);
+            let (min, max) = (ui.item_rect_min(), ui.item_rect_max());
+            let mouse = ui.io().mouse_pos;
+            let is_on_content =
+                (min[0]..=max[0]).contains(&mouse[0]) && (min[1]..=max[1]).contains(&mouse[1]);
             self.is_clickable
+                && !is_on_content
                 && ui.is_window_hovered()
                 && ui.is_mouse_clicked(MouseButton::Left)
-                && !bounds.is_some_and(|bounds| bounds.contains(ui.io().mouse_pos))
         };
         match self.area {
-            BackdropArea::Window { window, is_focused } => {
+            BackdropArea::Window {
+                position,
+                size,
+                is_focused,
+            } => {
                 let _body_font = FontScope::push(ui, FontRole::Body);
                 let _background = ui
                     .push_style_color(StyleColor::WindowBg, theme.surface.modal_overlay.to_array());
                 let _border = ui.push_style_var(StyleVar::WindowBorderSize(0.0));
                 Window::new(self.id)
-                    .position(window.min, Condition::Always)
-                    .size(window.size(), Condition::Always)
+                    .position(position, Condition::Always)
+                    .size(size, Condition::Always)
                     .flags(
                         WindowFlags::NO_DECORATION
                             | WindowFlags::NO_MOVE
@@ -95,7 +101,7 @@ impl<'a> Backdrop<'a> {
                             | WindowFlags::NO_NAV,
                     )
                     .focused(is_focused)
-                    .build(ui, check)
+                    .build(ui, draw_and_check)
                     .unwrap_or(false)
             }
             BackdropArea::Region { size } => {
@@ -122,7 +128,7 @@ impl<'a> Backdrop<'a> {
                     .filled(true)
                     .rounding(theme.radius.large)
                     .build();
-                check()
+                draw_and_check()
             }
         }
     }

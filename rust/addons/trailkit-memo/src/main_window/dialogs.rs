@@ -9,7 +9,6 @@ use nexus::imgui::{Key, Ui};
 use trailkit_ui::{
     controls::button::{Button, ButtonKind, ButtonState},
     controls::text_field::move_below_last_item,
-    drawing::screen_rect::ScreenRect,
     feedback::dialog::{Dialog, DialogHeight},
     feedback::status_card::{CardDetail, CardStatus, StatusCard, draw_status_card},
     feedback::status_line::{Status, draw_status_line},
@@ -406,14 +405,15 @@ impl MemoWindow {
             self.draw_link_dialog(ui, language, theme);
             return;
         };
-        let Some(window) = self.window_screen_rect() else {
+        let Some([position, size]) = self.window_rect else {
             return;
         };
         let response = Dialog::new(
             "###trailkit-memo-dialog",
             content.title,
             content.close,
-            window,
+            position,
+            size,
         )
         .focused(self.window_focused)
         .draw(
@@ -438,18 +438,12 @@ impl MemoWindow {
     /// Draws the link dialog of the editor, if open, over the dimmed window
     /// like the other dialogs (M208).
     fn draw_link_dialog(&mut self, ui: &Ui, language: Language, theme: &Theme) {
-        let Some(window) = self.window_screen_rect() else {
+        let Some(window) = self.window_rect else {
             return;
         };
         let is_focused = self.window_focused;
         if let Some(editor) = self.editor.as_mut() {
             editor.draw_link_dialog(ui, language, theme, window, is_focused);
         }
-    }
-
-    /// The main window of the last frame on the screen, if it was drawn.
-    fn window_screen_rect(&self) -> Option<ScreenRect> {
-        self.window_rect
-            .map(|[position, size]| ScreenRect::from_position_size(position, size))
     }
 }

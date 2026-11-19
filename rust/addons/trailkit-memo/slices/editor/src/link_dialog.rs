@@ -7,7 +7,6 @@ use trailkit_memo_shared::i18n::{Language, LocalizedText, Text, text_field_texts
 use trailkit_ui::{
     controls::button::{Button, ButtonKind, draw_popup_icon_button},
     controls::text_field::{TextField, move_below_last_item},
-    drawing::screen_rect::ScreenRect,
     feedback::dialog::{Dialog, DialogHeight},
     text::icons::Icon,
     theme::Theme,
@@ -90,14 +89,15 @@ impl LinkDialog {
         &self.draft
     }
 
-    /// Draws the dialog over `window`, the editor's window on the screen.
+    /// Draws the dialog over `window`, position and size of the editor's
+    /// window on the screen.
     /// The close icon, Escape or a click on the dimmed area cancels.
     pub(crate) fn draw(
         &mut self,
         ui: &Ui,
         language: Language,
         theme: &Theme,
-        window: ScreenRect,
+        [window_position, window_size]: [[f32; 2]; 2],
         is_focused: bool,
     ) -> LinkDialogOutcome {
         let title = if self.draft.is_existing {
@@ -110,7 +110,8 @@ impl LinkDialog {
             "###trailkit-memo-link-dialog",
             title.get(language),
             Text::CloseWindow.get(language),
-            window,
+            window_position,
+            window_size,
         )
         .focused(is_focused)
         .draw(

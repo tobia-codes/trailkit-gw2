@@ -15,7 +15,6 @@ use crate::{
     controls::button::{draw_icon_button, icon_button_width},
     controls::text_field::move_below_last_item,
     drawing::draw_list::window_draw_list,
-    drawing::screen_rect::ScreenRect,
     feedback::backdrop::{Backdrop, BackdropArea},
     text::font_registry::FontScope,
     text::icons::Icon,
@@ -50,28 +49,33 @@ pub struct Dialog<'a> {
     close_tooltip: &'a str,
     /// Whether the close icon is shown.
     is_closable: bool,
-    /// The window the dialog dims and is centered in.
-    window: ScreenRect,
+    /// Top-left corner of the window the dialog dims and is centered in,
+    /// in screen coordinates.
+    window_position: [f32; 2],
+    /// Width and height of that window.
+    window_size: [f32; 2],
     /// Whether the dialog takes the focus in this frame.
     is_focused: bool,
 }
 
 impl<'a> Dialog<'a> {
-    /// A dialog titled `title` over `window`, with the close icon and its
-    /// `close_tooltip`.
+    /// A dialog titled `title` over the window at `window_position` with
+    /// `window_size`, with the close icon and its `close_tooltip`.
     #[must_use]
     pub const fn new(
         id: &'a str,
         title: &'a str,
         close_tooltip: &'a str,
-        window: ScreenRect,
+        window_position: [f32; 2],
+        window_size: [f32; 2],
     ) -> Self {
         Self {
             id,
             title,
             close_tooltip,
             is_closable: true,
-            window,
+            window_position,
+            window_size,
             is_focused: false,
         }
     }
@@ -109,16 +113,14 @@ impl<'a> Dialog<'a> {
         let is_backdrop_clicked = Backdrop::new(
             self.id,
             BackdropArea::Window {
-                window: self.window,
+                position: self.window_position,
+                size: self.window_size,
                 is_focused: self.is_focused,
             },
         )
         .clickable(self.is_closable)
         .draw(ui, theme, || {
-            let (card, value, is_close_clicked) =
-                self.draw_card(ui, theme, height, content_width, content);
-            drawn = Some((value, is_close_clicked));
-            Some(card)
+            drawn = Some(self.draw_card(ui, theme, height, content_width, content));
         });
         let (content, is_close_clicked) = drawn?;
         let is_escaped = self.is_closable && ui.is_key_pressed(Key::Escape);
@@ -129,8 +131,9 @@ impl<'a> Dialog<'a> {
     }
 
     /// Draws the card with the title, `content` and the close icon into the
-    /// current window and returns the card, the content's value and whether
-    /// the close icon was clicked.
+    /// current window and returns the content's value and whether the close
+    /// icon was clicked. The whole card counts as drawn content, so a click
+    /// on its padding is not a click on the backdrop.
     fn draw_card<R>(
         &self,
         ui: &Ui,
@@ -138,13 +141,14 @@ impl<'a> Dialog<'a> {
         height: &mut DialogHeight,
         content_width: impl FnOnce(f32) -> f32,
         content: impl FnOnce(f32) -> R,
-    ) -> (ScreenRect, R, bool) {
+    ) -> (R, bool) {
         let padding = theme.spacing.large;
         let window_size = ui.window_size();
         let width = content_width(window_size[0]).max(1.0);
         let card_height = height.0.unwrap_or(window_size[1] / 3.0);
-        let card = draw_card_background(ui, theme, [width + 2.0 * padding, card_height]);
-        ui.set_cursor_screen_pos([card.min[0] + padding, card.min[1] + padding]);
+        let size = [width + 2.0 * padding, card_height];
+        let card = draw_card_background(ui, theme, size);
+        ui.set_cursor_screen_pos([card[0] + padding, card[1] + padding]);
         let value = ui.group(|| {
             {
                 let close_width = if self.is_closable {
@@ -159,23 +163,34 @@ impl<'a> Dialog<'a> {
             move_below_last_item(ui, theme.spacing.medium);
             content(width)
         });
-        *height = DialogHeight(Some(ui.item_rect_max()[1] - card.min[1] + padding));
-        let is_close_clicked = self.is_closable && self.draw_close(ui, theme, card, padding);
-        (card, value, is_close_clicked)
+        *height = DialogHeight(Some(ui.item_rect_max()[1] - card[1] + padding));
+        let is_close_clicked = self.is_closable && self.draw_close(ui, theme, card, size, padding);
+        // Reserve the card itself, so the backdrop measures all of it.
+        ui.set_cursor_screen_pos(card);
+        ui.dummy(size);
+        (value, is_close_clicked)
     }
 
-    /// Draws the close icon at the top right of `card`, inside its `padding`
-    /// and centered on the first line of the title, and returns whether it
-    /// was clicked. The cursor stays where it was.
-    fn draw_close(&self, ui: &Ui, theme: &Theme, card: ScreenRect, padding: f32) -> bool {
+    /// Draws the close icon at the top right of the card at `card` (top-left
+    /// corner) with `size`, inside its `padding` and centered on the first
+    /// line of the title, and returns whether it was clicked. The cursor
+    /// stays where it was.
+    fn draw_close(
+        &self,
+        ui: &Ui,
+        theme: &Theme,
+        card: [f32; 2],
+        size: [f32; 2],
+        padding: f32,
+    ) -> bool {
         let cursor = ui.cursor_screen_pos();
         let title_height = {
             let _title = FontScope::push(ui, TextStyle::Heading3.font());
             ui.text_line_height()
         };
         ui.set_cursor_screen_pos([
-            card.max[0] - padding - icon_button_width(ui, Icon::X),
-            card.min[1] + padding + (title_height - ui.frame_height()) / 2.0,
+            card[0] + size[0] - padding - icon_button_width(ui, Icon::X),
+            card[1] + padding + (title_height - ui.frame_height()) / 2.0,
         ]);
         let is_clicked = draw_icon_button(ui, theme, Icon::X, self.close_tooltip);
         ui.set_cursor_screen_pos(cursor);
@@ -184,25 +199,25 @@ impl<'a> Dialog<'a> {
 }
 
 /// Draws an empty card of `size` centered in the current window and returns
-/// where it was drawn.
-fn draw_card_background(ui: &Ui, theme: &Theme, size: [f32; 2]) -> ScreenRect {
+/// its top-left corner.
+fn draw_card_background(ui: &Ui, theme: &Theme, size: [f32; 2]) -> [f32; 2] {
     let position = ui.window_pos();
     let window = ui.window_size();
     let min = [
         position[0] + ((window[0] - size[0]) / 2.0).max(0.0),
         position[1] + ((window[1] - size[1]) / 2.0).max(0.0),
     ];
-    let card = ScreenRect::from_position_size(min, size);
+    let max = [min[0] + size[0], min[1] + size[1]];
     let draw_list = window_draw_list(ui);
     draw_list
-        .add_rect(card.min, card.max, theme.surface.panel.to_array())
+        .add_rect(min, max, theme.surface.panel.to_array())
         .filled(true)
         .rounding(theme.radius.large)
         .build();
     draw_list
-        .add_rect(card.min, card.max, theme.border.subtle.to_array())
+        .add_rect(min, max, theme.border.subtle.to_array())
         .thickness(theme.border.width.max(1.0))
         .rounding(theme.radius.large)
         .build();
-    card
+    min
 }
