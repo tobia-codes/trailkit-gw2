@@ -34,7 +34,7 @@ use super::{
     storage::{receive_loaded_notes, restart_storage_worker_if_asked},
 };
 use crate::{
-    main_window::{HistoryStep, minimum_window_width, title_bar_texts},
+    main_window::{HistoryStep, MemoWindow, minimum_window_width, title_bar_texts},
     options_tab::{VERSION_LINE, draw_options_tab},
 };
 
@@ -213,31 +213,7 @@ fn draw_main_window(
                 Text::NotesInaccessible.get(language),
             ),
             NotesState::Ready(window) => {
-                if ESCAPE_CAUGHT.swap(false, Ordering::Relaxed) {
-                    window.handle_escape(ui);
-                }
-                if SEARCH_KEY_PRESSED.swap(false, Ordering::Relaxed) {
-                    window.toggle_search_by_key();
-                }
-                if FIND_KEY_PRESSED.swap(false, Ordering::Relaxed) {
-                    window.toggle_find_by_key();
-                }
-                match FIND_STEP.swap(FIND_STEP_NONE, Ordering::Relaxed) {
-                    FIND_STEP_NEXT => window.step_find(true),
-                    FIND_STEP_PREVIOUS => window.step_find(false),
-                    _ => {}
-                }
-                if DELETE_KEY_PRESSED.swap(false, Ordering::Relaxed) {
-                    window.delete_selected_by_key(language);
-                }
-                match HISTORY_STEP.swap(HISTORY_STEP_NONE, Ordering::Relaxed) {
-                    HISTORY_STEP_UNDO => window.step_history_by_key(HistoryStep::Undo, language),
-                    HISTORY_STEP_REDO => window.step_history_by_key(HistoryStep::Redo, language),
-                    _ => {}
-                }
-                if TEXT_SIZE_RESET_PRESSED.swap(false, Ordering::Relaxed) {
-                    window.reset_text_size_by_key(ui);
-                }
+                apply_caught_keys(ui, window, language);
                 window.draw(ui, language, theme);
             }
         },
@@ -262,6 +238,36 @@ fn draw_main_window(
             window.takes_text_size_reset_key() && visible,
             Ordering::Relaxed,
         );
+    }
+}
+
+/// Applies the keys the window message callback caught for `window` since the
+/// last frame (M79, M135, M174, M175, M198, M199), before the window draws.
+fn apply_caught_keys(ui: &nexus::imgui::Ui, window: &mut MemoWindow, language: Language) {
+    if ESCAPE_CAUGHT.swap(false, Ordering::Relaxed) {
+        window.handle_escape(ui);
+    }
+    if SEARCH_KEY_PRESSED.swap(false, Ordering::Relaxed) {
+        window.toggle_search_by_key();
+    }
+    if FIND_KEY_PRESSED.swap(false, Ordering::Relaxed) {
+        window.toggle_find_by_key();
+    }
+    match FIND_STEP.swap(FIND_STEP_NONE, Ordering::Relaxed) {
+        FIND_STEP_NEXT => window.step_find(true),
+        FIND_STEP_PREVIOUS => window.step_find(false),
+        _ => {}
+    }
+    if DELETE_KEY_PRESSED.swap(false, Ordering::Relaxed) {
+        window.delete_selected_by_key(language);
+    }
+    match HISTORY_STEP.swap(HISTORY_STEP_NONE, Ordering::Relaxed) {
+        HISTORY_STEP_UNDO => window.step_history_by_key(HistoryStep::Undo, language),
+        HISTORY_STEP_REDO => window.step_history_by_key(HistoryStep::Redo, language),
+        _ => {}
+    }
+    if TEXT_SIZE_RESET_PRESSED.swap(false, Ordering::Relaxed) {
+        window.reset_text_size_by_key(ui);
     }
 }
 

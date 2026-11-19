@@ -48,3 +48,16 @@ it does nothing in game (same cause as test 25 step 4); retest after that bugfix
 2. Turn the mouse wheel one step up, then two steps down with **Ctrl** held.
    **Expected:** 106 %, then 94 %.
 3. Press **Ctrl+0** again. **Expected:** 100 %.
+
+## Test 35 — Enter in dialogs without a text field (M56, M152, 2026-11-19)
+
+No design change. Nexus hands Enter to ImGui only while a text field is
+active; these dialogs have none, so Enter may go to the game instead (found
+while checking every shortcut on `bugfix/memo-shortcut-keys`).
+
+1. Right-click a group with at least one note › *Delete*. The question
+   "delete group?" appears. Press **Enter**. **Expected:** the group goes to
+   the trash (the undo toast shows); the game's chat does not open.
+2. Open a note in the editor, type a letter, then click another note in the
+   list. The unsaved changes dialog appears. Press **Enter**. **Expected:**
+   the change is saved and the other note opens; the game's chat does not open.
