@@ -38,29 +38,6 @@ branch for memo's shortcut keys:
    cursor), press Ctrl+Z. **Expected:** the note goes back to its old place,
    its group opens and it is selected; the game opens nothing.
 
-## Test 29 — deleting a link at once (M207, 2026-11-18)
-
-**Crash once (2026-11-19, not reproducible):** while deleting inside `Wiki`
-(step 4) the debug DLL hit `Assertion failed! imgui.h:1629 i >= 0 && i < Size`
-(an ImVector index out of range); nothing in the memo log. Retrying the same
-steps did not crash, nor did window tests deleting in a link label with and
-without preview. If it comes back: press **Ignore**, note cursor placement
-(mouse/arrows/selection), key, preview on/off and whether a tooltip showed.
-
-No visible design change. Open a note, click **Edit** and type
-`Vorher [Wiki](https://wiki.guildwars2.com) nachher`.
-
-1. Put the cursor directly behind `)` and press Backspace. **Before:** only
-   `)` went away. **Now:** the whole link is gone; Ctrl+Z brings it back.
-2. Put the cursor directly before `[` and press Delete. **Expected:** the whole
-   link is gone; Ctrl+Z brings it back.
-3. Put the cursor between `]` and `(`, press Backspace. **Expected:** the whole
-   link is gone; Ctrl+Z brings it back.
-4. Put the cursor inside `Wiki`, then inside the address, and press Backspace.
-   **Expected:** one character goes away each time, the rest stays a link.
-5. Type a bare `https://wiki.guildwars2.com`, press Backspace at its end.
-   **Expected:** one character goes away.
-
 ## Test 30 — link dialog and pasted addresses (M208, M209, 2026-11-18)
 
 Approved design: https://claude.ai/artifact/SgWHJ1mMKSTArQMEVaqACm
