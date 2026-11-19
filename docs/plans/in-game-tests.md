@@ -30,68 +30,13 @@ is ready when the user is back at the PC.
 
 ## Test 25 — migrated notes and collapsed groups (M201–M203, 2026-11-18)
 
-No visible design change; checks that existing notes survive the
-`notes.json` version 2 migration. Before deploying, note which groups are
-collapsed and which notes are daily/weekly reset notes.
+Steps 1–3, 5 and 6 passed (2026-11-18/19). **Step 4 failed (2026-11-19):** Ctrl+Z
+never reaches memo (the game opened Contacts); retest after the `bugfix/`
+branch for memo's shortcut keys:
 
-1. Deploy (Setup step 1), open memo. **Expected:** all notes, groups and the
-   trash are there. **Once only:** every group is expanded (the old expand
-   state is not carried over, M201).
-2. Hover a reset note's calendar badge, and open the dropdown behind its
-   title. **Expected:** daily/weekly notes keep their kind; a note without
-   a reset shows **No reset** (Deutsch: **Kein Reset**, M204). Check a box in a daily note: it stays checked
-   until the next daily reset, as before.
-3. Collapse a group (click its arrow), reload memo (Setup step 5).
-   **Expected:** the group is still collapsed. Before: same behavior, but
-   it was stored in `notes.json`; now `ui_state.json` holds
-   `collapsed_groups`.
-4. With that group collapsed: create a note in it (right-click the group,
-   new note in its context menu), drag another note into it, then press
-   Ctrl+Z.
-   **Expected:** each time the group opens to show the entry, as before.
-5. Delete a note inside the collapsed group, open the trash, restore it.
-   **Expected:** the group opens and shows the restored note.
-6. In the memo folder (`addons/trailkit/memo/`), check
-   `backups/notes.v1.bak.json` exists (copy of the old file) and
-   `notes.json` shows `"schema_version": 2` and `"reset_schedule"` instead of
-   `"kind"`.
-
-## Test 26 — "No reset" label (M204, 2026-11-18)
-
-Approved design: https://claude.ai/artifact/HKKD3uQMPHy3cSyXxLgUZz
-
-1. Deploy (Setup step 1), open memo and select a note that has no reset.
-   **Before:** the box next to its title said "Normal". **Now:** it says
-   **No reset**.
-2. Open that box. **Expected:** No reset (checked), Daily reset, Weekly
-   reset.
-3. Right-click the note in the list › **Reset type**. **Expected:** the same
-   three entries, No reset checked.
-4. Set the Nexus language to Deutsch, drag the window as narrow as it goes.
-   **Expected:** the box says **Kein Reset**, the list shows Kein Reset,
-   Täglicher Reset and Wöchentlicher Reset, nothing is cut off.
-
-## Test 27 — dropping onto groups (M205, 2026-11-18)
-
-Approved design: https://claude.ai/artifact/MsEL3kqnjuRrTA3eSehcWb
-
-Needs a group with at least two notes and a note outside it. Ctrl+Z undoes
-each move.
-
-1. Drag the outside note onto the **middle** of the open group's row.
-   **Before:** the upper half placed it above the group. **Now:** the whole
-   row gets a frame; on release the note is the group's last entry.
-2. Drag it to the group row's **top edge**. **Expected:** a line above the
-   group; the note lands above the group.
-3. Drag it to the row's **bottom edge**. **Expected:** an indented line below
-   the title; the note becomes the group's first entry.
-4. Drag it between two entries of the group. **Expected:** an indented line
-   there, and the note lands exactly there.
-5. Collapse the group and repeat on its row. **Expected:** top edge = above,
-   middle = frame and into the group (it opens), bottom edge = below it.
-6. Rest on the middle of the collapsed group for about a second, without
-   releasing. **Expected:** it opens, the frame stays; on release the note is
-   its last entry.
+4. Collapse a group, drag another note into it, click a list entry (no text
+   cursor), press Ctrl+Z. **Expected:** the note goes back to its old place,
+   its group opens and it is selected; the game opens nothing.
 
 ## Test 28 — Backspace removes a list marker (M206, 2026-11-18)
 
@@ -201,7 +146,8 @@ shared `Dialog` and `Backdrop` of trailkit-ui.
 
 ## Test 34 — text size percent counts from the default (M213, 2026-11-19)
 
-No design change besides the number in the tooltip.
+No design change besides the number in the tooltip. **Ctrl+0 failed (2026-11-19):**
+it does nothing in game (same cause as test 25 step 4); retest after that bugfix.
 
 1. Hover memo, press **Ctrl+0**. **Expected:** the tooltip says
    **Textgröße: 100 %** (before: 112,5 %); the text is the default size.
