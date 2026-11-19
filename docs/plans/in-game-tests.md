@@ -40,6 +40,13 @@ branch for memo's shortcut keys:
 
 ## Test 29 — deleting a link at once (M207, 2026-11-18)
 
+**Crash once (2026-11-19, not reproducible):** while deleting inside `Wiki`
+(step 4) the debug DLL hit `Assertion failed! imgui.h:1629 i >= 0 && i < Size`
+(an ImVector index out of range); nothing in the memo log. Retrying the same
+steps did not crash, nor did window tests deleting in a link label with and
+without preview. If it comes back: press **Ignore**, note cursor placement
+(mouse/arrows/selection), key, preview on/off and whether a tooltip showed.
+
 No visible design change. Open a note, click **Edit** and type
 `Vorher [Wiki](https://wiki.guildwars2.com) nachher`.
 

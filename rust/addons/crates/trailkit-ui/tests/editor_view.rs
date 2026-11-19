@@ -215,3 +215,48 @@ fn a_focus_lost_from_outside_stays_lost_until_a_click_in_the_editor() {
     }
     assert!(editor.is_focused(), "a click in the editor gives it back");
 }
+
+/// Windows virtual-key codes the editor reads.
+const KEY_BACKSPACE: u32 = 0x08;
+/// Moves the cursor to the start of the line.
+const KEY_HOME: u32 = 0x24;
+/// Moves the cursor one character to the right.
+const KEY_RIGHT: u32 = 0x27;
+
+#[test]
+fn deleting_inside_a_link_label_keeps_drawing() {
+    let mut harness = UiHarness::new(SIZE);
+    let mut editor = TextEditor::new("Vorher [Wiki](https://wiki.guildwars2.com) nachher");
+    let idle = FrameInput::default();
+    harness.settle(2, &idle, |ui| {
+        draw(ui, &mut editor, ThemeKind::Dark);
+    });
+    let press = |key: u32| FrameInput {
+        keys: vec![key],
+        ..FrameInput::default()
+    };
+    harness.frame(&press(KEY_HOME), |ui| {
+        draw(ui, &mut editor, ThemeKind::Dark);
+    });
+    // Behind "Vorher [Wiki".
+    for _ in 0.."Vorher [Wiki".len() {
+        harness.frame(&press(KEY_RIGHT), |ui| {
+            draw(ui, &mut editor, ThemeKind::Dark);
+        });
+        harness.frame(&idle, |ui| {
+            draw(ui, &mut editor, ThemeKind::Dark);
+        });
+    }
+    for _ in 0.."Wiki".len() {
+        harness.frame(&press(KEY_BACKSPACE), |ui| {
+            draw(ui, &mut editor, ThemeKind::Dark);
+        });
+        harness.frame(&idle, |ui| {
+            draw(ui, &mut editor, ThemeKind::Dark);
+        });
+    }
+    assert_eq!(
+        editor.text(),
+        "Vorher [](https://wiki.guildwars2.com) nachher"
+    );
+}

@@ -2,6 +2,7 @@
 //! `cargo xtask ui-test` (`--update` rewrites `tests/snapshots/`).
 
 mod data_safety;
+mod editing;
 mod find_in_note;
 mod note_list;
 mod save_errors;
