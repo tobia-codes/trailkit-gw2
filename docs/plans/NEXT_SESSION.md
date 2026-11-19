@@ -1,7 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-18 (session 44; memo links, dialogs, shared form rules). Current state and
-next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
+Last updated: 2026-11-19 (session 45, phone; shared dialog and backdrop). Current state and next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
 
@@ -20,16 +19,18 @@ the user confirms it (user requests 2026-11-13, 2026-11-16); an empty list means
 via `PUT .../pulls/{n}/ccr/auto_merge` (`merge_method=merge`); branch deletion is blocked (the user deletes). Push does not set
 the upstream (narrow fetch refspec): set `branch.<b>.remote/merge` by hand for the stop hook. `cargo xwin clippy` works.
 
-**On the Mac (no game, no WSL):** `git fetch origin && git switch develop && git pull --ff-only`; deploy, `ui-test` and in-game
-tests wait for the Windows PC; check `source ~/.cargo/env` and a first `cargo test` there; snapshots via the PR's Windows CI.
+**On the Mac (no game, no WSL):** `git fetch origin && git switch develop && git pull --ff-only`; deploy, `ui-test` and in-game tests wait for the Windows PC; check `source ~/.cargo/env` and a first `cargo test` there; snapshots via the PR's Windows CI.
 
 **Session 44 (2026-11-18, PC), continue on `feature/memo-extensible-data-model`, draft PR #152 (pushed, NOT merged, no auto-merge).** Done there: data model M201–M203,
 "No reset" M204, drop zones M205, Backspace on list markers and links M206/M207, link dialog M208, bare links and e-mails M209/M211, right-click menu of links and chips M210,
 `TextField` + `TextStyle::Label` (R139), no disabled buttons without approval (R140), close icon on dialogs (R141), wrapped tooltips (R142), link icons `LinkKind` (R143), measured spacing `tokens.md` §5.1 (R144).
-**On the phone next (no game, one question per message, mock first):** 1. existing disabled buttons: find arrows, event button, log export active and explaining on click? Recommended yes; the lock in the save-failed dialog stays.
-2. shared input core for `SearchField` and `TextField`? Recommended yes. 3. slash menu BL23: check Notion's behavior, then mock. 4. splits for the length hints (`markdown.rs`, `editor.rs`, `dialogs.rs`, `i18n.rs`, `actions.rs`, `buffer.rs`, `states.rs`).
+**Session 45 (2026-11-19, phone):** R145 shared `Dialog` + `Backdrop` implemented (in-game test 33). Decided, not implemented: R140 buttons per mock
+https://claude.ai/artifact/2DJ1oU6jPCpswHgnaSm3W1: find arrows active (empty: focus the field; no hits: flash "No results"), log export active (click re-checks, then
+the hint), event button **hidden** until the event picker exists (variant A); add the export hint sentence to the mock first. Open: Q2 rule "a hint of an element sits
+`space.sm` directly below it" (tokens §5.1, export info then moves above the hint sentence); R145 Escape and R146 (report shared/new components) decided.
+**On the phone next (no game, one question per message, mock first):** 2. shared input core for `SearchField` and `TextField`? Recommended yes. 3. slash menu BL23: check Notion's behavior, then mock. 4. splits for the length hints (`markdown.rs`, `editor.rs`, `dialogs.rs`, `i18n.rs`, `actions.rs`, `buffer.rs`, `states.rs`).
 Backlog from this session: BL20 in-game browser, BL21 achievement addon, BL22 achievement notes, BL24 item icons. Mocks: link dialog https://claude.ai/artifact/SgWHJ1mMKSTArQMEVaqACm, menu https://claude.ai/artifact/T75AGbpSsUuT4K4yTwpSTs.
-**Back on the PC:** `git fetch origin && git switch feature/memo-extensible-data-model && git pull --ff-only`, `cargo xtask deploy trailkit-memo`, finish in-game tests 25 (from step 4), 26, 27 (from step 2), 28–32, then ask for the merge OK.
+**Back on the PC:** `git fetch origin && git switch feature/memo-extensible-data-model && git pull --ff-only`, `cargo xtask deploy trailkit-memo`, finish in-game tests 25 (from step 4), 26, 27 (from step 2), 28–33, then ask for the merge OK.
 **Next: data pipeline** (`rust/tools/trailkit-datagen`): the failing GemExchange job below (review item 3 done, D42), then tests for `archive.rs`, `wvw.rs`,
 `gem_exchange.rs`, `gw2_api.rs`. Coverage 2026-11-18 before #146: addons 89 % of lines, memo app 70 %, datagen 52 %.
 **Then test gaps:** extract and test the Escape/close logic of `nexus_bridge/render.rs` like `key_routing.rs`; window actions (new group, format, preview, compact view, open folder, clear search); Ctrl+Y/Ctrl+Shift+Z keys. `xtask` last. Prove new tests with injected faults.
@@ -37,7 +38,7 @@ Backlog from this session: BL20 in-game browser, BL21 achievement addon, BL22 ac
 **Coverage on demand, not in CI** (`llvm-tools` installed): `RUSTFLAGS="-C instrument-coverage" CARGO_TARGET_DIR=target/coverage cargo xwin test --no-run`, run each binary from its crate with `LLVM_PROFILE_FILE`/`TRAILKIT_SNAPSHOT_ROOT` via `WSLENV` (`/p`), `llvm-profdata merge`, `llvm-cov export`; then delete `rust/*.profraw` and the 2.8 GB build.
 
 **Open, in this order:**
-1. **In-game tests:** tests 25–32 after deploying the branch above. After that pipeline work: Q501 toast visibility needs an R87 mockup; BL18 text size in core settings needs grilling.
+1. **In-game tests:** tests 25–33 after deploying the branch above. After that pipeline work: Q501 toast visibility needs an R87 mockup; BL18 text size in core settings needs grilling.
    Propose splits via grilling for length hints: `shared/i18n.rs`, `get`, `slices/editor/editor.rs`, `draw_find_bar`, `draw_main_window`, `actions.rs`.
    Q436 (menu divider) stays open. The user kept the current find marks (current filled, others framed; section 5 of the mockup was declined).
    **Favorites** on `feature/memo-favorites` (M188–M191 decided): open Q407, Q408, Q416–Q419, then mockup (R87) and implementation.
@@ -48,7 +49,6 @@ Backlog from this session: BL20 in-game browser, BL21 achievement addon, BL22 ac
 
 **Open (grill):** an unknown tree node `type` (e.g. a future `guild_note`) still stops older builds from loading `notes.json`; `settings.json`/`ui_state.json` do not keep unknown fields (M202 covers notes only).
 **Decided, not scheduled:** Q340 backups with restore after settings and export/import (M28); Q329 `cargo bloat` at release prep.
-
 **Lessons:** measure before fixing; remove probes by editing; mockups first (R87); snapshot checks need a (draft) PR.
 
 **Deferred by the user (2026-11-12): one theme character for addons and the coming React website.** No code yet. Mockups:
@@ -59,7 +59,7 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M212+, R145+, B46+, BL25+, questions from 515**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M212+, R147+, B46+, BL25+, questions from 515**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
 4. **Search cache:** `rust/addons/trailkit-memo/src/main_window/search.rs::update_search` calls `SearchQuery::parse` before checking the

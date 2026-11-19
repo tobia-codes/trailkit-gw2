@@ -101,6 +101,10 @@ into `shared/` (within an addon) or `rust/addons/crates/` (across addons; R116 f
 change. Nothing is shared "in case we need it later". Shared UI always comes
 from [`rust/addons/crates/trailkit-ui`](rust/addons/crates/trailkit-ui/README.md).
 
+Agents report this openly (R146): every mockup and every change lists the
+shared components it uses and what it builds new, with the reason no shared
+component fit, so a second copy is noticed before it is written.
+
 ## 4. Rust code rules
 
 - **Type everything (rule 8).** Prefer newtype ids (`NoteId`, `ItemId`),

@@ -72,6 +72,8 @@ Shared rules for Codex and Claude Code. `CLAUDE.md` imports this file;
    Extract at the second real use, replacing all copies in the same change,
    never speculatively. Shared UI comes from `rust/addons/crates/trailkit-ui`; addon text
    uses the `TextStyle` roles of `tokens.md` §7.1, never hand-pushed styles.
+   **Report reuse (R146):** every visual proposal and every change names the
+   shared components used and what was built new, and why no shared one fit.
 8. **Type everything.** Prefer typed/newtype IDs, enums, serde structs and
    checked `sqlx::query!`; untyped JSON belongs only at boundaries.
    Make invalid states unrepresentable.
