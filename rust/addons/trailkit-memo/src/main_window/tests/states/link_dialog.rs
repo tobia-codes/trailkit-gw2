@@ -3,7 +3,7 @@
 use super::*;
 
 /// The link button of the editor toolbar.
-const LINK_BUTTON: [f32; 2] = [320.0, 64.0];
+const LINK_BUTTON: [f32; 2] = [302.0, 64.0];
 
 /// The link button at the narrowest window, in the toolbar's second row.
 const MINIMUM_LINK_BUTTON: [f32; 2] = [36.0, 96.0];

@@ -44,3 +44,12 @@ Approved design: https://claude.ai/artifact/VXdbvqSVZhTnbjrMPKRbyN (round 2,
 4. Drag the window as narrow as it goes and open the question again.
    **Expected:** unchanged: the card fits the window, buttons stack when they
    do not fit.
+
+## Test 37 — editor toolbar starts flush with the title (2026-11-19)
+
+Approved design: https://claude.ai/artifact/J1XAZS3YtcqqFHbYXFLLc5.
+
+1. Open a note in the editor. **Expected:** the H1 button starts on one line
+   with the title field below it (before: about 18 px further right).
+2. Drag the window narrow until the toolbar wraps. **Expected:** H1 in the
+   first row and the link icon in the second row start on the same line.
