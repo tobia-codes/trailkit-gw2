@@ -31,6 +31,7 @@ ignores Escape and backdrop clicks, Q5) for memo dialogs, link dialog and window
 **Decided, not implemented** (M212, R140, mock https://claude.ai/artifact/2DJ1oU6jPCpswHgnaSm3W1): find arrows active (empty: focus the field; no hits: "No results" flashes),
 log export active (click re-checks, then the info), event button **hidden** until the event picker exists (variant A). The mock lacks the export hint sentence. **Next, in order (one question at a time):** 1. **Q2 open:** tokens §5.1 rule "a hint of an element sits `space.sm` directly below it" (recommended yes; then the export info moves directly under the button, the hint sentence after it) → update the mock (R87 OK) → implement the R140 buttons + help texts + in-game test. 2. shared input core for `SearchField` and `TextField`? Recommended yes. 3. slash menu BL23: check Notion's behavior, then mock. 4. splits for the length hints (`markdown.rs`, `editor.rs`, `i18n.rs`, `actions.rs`, `buffer.rs`, `states.rs`).
 Backlog from this session: BL20 in-game browser, BL21 achievement addon, BL22 achievement notes, BL24 item icons. Mocks: link dialog https://claude.ai/artifact/SgWHJ1mMKSTArQMEVaqACm, menu https://claude.ai/artifact/T75AGbpSsUuT4K4yTwpSTs.
+**Session 46 (2026-11-19, PC):** merged `develop` into the branch; M213 text size percent from the default (in-game test 34); in-game test 25 step 4 failed: Ctrl+Z/Ctrl+Y never reach memo (not in `key_routing.rs`, the game opens Contacts) → `bugfix/` after this branch; tooltip of the hidden "New note" button shows through the window menu (sibling child windows hover by creation order, guess) → `bugfix/`. Decided R147 icon sizes by text role (0.78, chips too) → `feature/ui-icon-sizes` after the merge.
 **Back on the PC:** `git fetch origin && git switch feature/memo-extensible-data-model && git pull --ff-only`, `cargo xtask deploy trailkit-memo`, check the PR's Windows snapshot CI (shared dialog must look unchanged), finish in-game tests 25 (from step 4), 26, 27 (from step 2), 28–33, then ask for the merge OK.
 **Next: data pipeline** (`rust/tools/trailkit-datagen`): the failing GemExchange job below (review item 3 done, D42), then tests for `archive.rs`, `wvw.rs`,
 `gem_exchange.rs`, `gw2_api.rs`. Coverage 2026-11-18 before #146: addons 89 % of lines, memo app 70 %, datagen 52 %.
@@ -60,7 +61,7 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M214+, R147+, B46+, BL25+, questions from 515**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M214+, R148+, B46+, BL25+, questions from 515**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
 4. **Search cache:** `rust/addons/trailkit-memo/src/main_window/search.rs::update_search` calls `SearchQuery::parse` before checking the
