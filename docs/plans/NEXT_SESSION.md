@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-19 (session 45, phone; shared dialog and backdrop). Current state and next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
+Last updated: 2026-11-19 (session 46, PC; in-game tests of PR #152, layout decisions R147–R150). Current state and next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
 
@@ -10,7 +10,6 @@ Last updated: 2026-11-19 (session 45, phone; shared dialog and backdrop). Curren
 
 ## ▶ Resume here
 
-**Active work branch: `feature/memo-extensible-data-model` (draft PR #152).** Start every session with `git fetch origin && git switch feature/memo-extensible-data-model && git pull --ff-only`, then read this file again there: that copy is the current handoff. Remove this line when the branch is merged.
 
 **First, if [`in-game-tests.md`](in-game-tests.md) lists tests, ask the user: can you test in game now?** Remove each item once
 the user confirms it (user requests 2026-11-13, 2026-11-16); an empty list means no question. A failed test becomes a `bugfix/` branch.
@@ -23,16 +22,14 @@ the upstream (narrow fetch refspec): set `branch.<b>.remote/merge` by hand for t
 
 **On the Mac (no game, no WSL):** `git fetch origin && git switch develop && git pull --ff-only`; deploy, `ui-test` and in-game tests wait for the Windows PC; check `source ~/.cargo/env` and a first `cargo test` there; snapshots via the PR's Windows CI.
 
-**Session 44 (2026-11-18, PC), continue on `feature/memo-extensible-data-model`, draft PR #152 (pushed, NOT merged, no auto-merge).** Done there: data model M201–M203,
-"No reset" M204, drop zones M205, Backspace on list markers and links M206/M207, link dialog M208, bare links and e-mails M209/M211, right-click menu of links and chips M210,
-`TextField` + `TextStyle::Label` (R139), no disabled buttons without approval (R140), close icon on dialogs (R141), wrapped tooltips (R142), link icons `LinkKind` (R143), measured spacing `tokens.md` §5.1 (R144).
-**Session 45 (2026-11-19, phone), pushed to draft PR #152 (`7bb3c7d`, `64a4aa9`, `c80a7be`; no CI checks listed on `c80a7be` yet, check on the PC):** R145 shared `trailkit-ui` `feedback::dialog::Dialog` + `feedback::backdrop::Backdrop` (backdrop measures its content itself, Q7; close icon on by default, off also
-ignores Escape and backdrop clicks, Q5) for memo dialogs, link dialog and window menu (in-game test 33); R146 report shared/new components (`AGENTS.md` rule 7).
 **Decided, not implemented** (M212, R140, mock https://claude.ai/artifact/2DJ1oU6jPCpswHgnaSm3W1): find arrows active (empty: focus the field; no hits: "No results" flashes),
-log export active (click re-checks, then the info), event button **hidden** until the event picker exists (variant A). The mock lacks the export hint sentence. **Next, in order (one question at a time):** 1. **Q2 open:** tokens §5.1 rule "a hint of an element sits `space.sm` directly below it" (recommended yes; then the export info moves directly under the button, the hint sentence after it) → update the mock (R87 OK) → implement the R140 buttons + help texts + in-game test. 2. shared input core for `SearchField` and `TextField`? Recommended yes. 3. slash menu BL23: check Notion's behavior, then mock. 4. splits for the length hints (`markdown.rs`, `editor.rs`, `i18n.rs`, `actions.rs`, `buffer.rs`, `states.rs`).
-Backlog from this session: BL20 in-game browser, BL21 achievement addon, BL22 achievement notes, BL24 item icons. Mocks: link dialog https://claude.ai/artifact/SgWHJ1mMKSTArQMEVaqACm, menu https://claude.ai/artifact/T75AGbpSsUuT4K4yTwpSTs.
-**Session 46 (2026-11-19, PC):** merged `develop` into the branch; M213 text size percent from the default (in-game test 34); in-game test 25 step 4 failed: Ctrl+Z/Ctrl+Y never reach memo (not in `key_routing.rs`, the game opens Contacts) → `bugfix/` after this branch; tooltip of the hidden "New note" button shows through the window menu (sibling child windows hover by creation order, guess) → `bugfix/`. Decided R147 icon sizes by text role (0.78, chips too) and R148 one spacing scale + `Stack` + one divider, R150 dialog titles `Heading2` → together on `feature/ui-layout-rules` after the merge, mock first. One unreproduced debug crash `imgui.h:1629` (ImVector index) while deleting in a link label (2026-11-19; retry and window tests pass): if it recurs, press Ignore and note cursor placement, key, preview and tooltip.
-**Back on the PC:** `git fetch origin && git switch feature/memo-extensible-data-model && git pull --ff-only`, `cargo xtask deploy trailkit-memo`, check the PR's Windows snapshot CI (shared dialog must look unchanged), finish in-game tests 25 (from step 4), 26, 27 (from step 2), 28–33, then ask for the merge OK.
+log export active (click re-checks, then the info), event button **hidden** until the event picker exists (variant A). The mock lacks the export hint sentence. **R140 buttons, after the bugfixes below (one question at a time):** 1. **Q2 open:** tokens §5.1 rule "a hint of an element sits `space.sm` directly below it" (recommended yes; then the export info moves directly under the button, the hint sentence after it) → update the mock (R87 OK) → implement the R140 buttons + help texts + in-game test. 2. shared input core for `SearchField` and `TextField`? Recommended yes. 3. slash menu BL23: check Notion's behavior, then mock. 4. splits for the length hints (`markdown.rs`, `editor.rs`, `i18n.rs`, `actions.rs`, `buffer.rs`, `states.rs`).
+**Sessions 44–46 (2026-11-18/19), merged via PR #152:** memo data model M201–M204, drop zones, Backspace on markers/links, link dialog, bare links/e-mails, right-click menu (M205–M211),
+R139–R146 (TextField, no disabled buttons, dialog close icon, wrapped tooltips, link icons, measured form spacing, shared `Dialog`/`Backdrop`, report reuse), M213 text size percent, R149 one link underline. All in-game tests passed except the two below.
+**Next, in order:** 1. `bugfix/memo-shortcut-keys`: Ctrl+Z/Ctrl+Y/Ctrl+Shift+Z and Ctrl+0 never reach memo outside text input (not in `nexus_bridge/key_routing.rs`; the game gets them and opens Contacts) → route them like Delete/Ctrl+F; retest in-game tests 25 step 4 and 34.
+2. `bugfix/ui-tooltip-through-overlay`: `is_item_hovered` in this ImGui checks only the root window (`imgui.cpp:3117`), so buttons under the window menu show tooltips → one shared hover check in `trailkit-ui` for every tooltip, test with the menu over a button.
+3. `feature/ui-layout-rules`: R147 icon size by text role (0.78), R148 one spacing scale + `Stack` + one divider + dropdown list `space.xs` below its field, R150 dialog titles `Heading2`, BL25 numbered list button: one mock (R87) first.
+Also open: length hint `draw_spans` (`inline_text.rs`, 80 lines) for the split grilling; one unreproduced debug crash `imgui.h:1629` while deleting in a link label (if it recurs: Ignore, note cursor placement, key, preview, tooltip).
 **Next: data pipeline** (`rust/tools/trailkit-datagen`): the failing GemExchange job below (review item 3 done, D42), then tests for `archive.rs`, `wvw.rs`,
 `gem_exchange.rs`, `gw2_api.rs`. Coverage 2026-11-18 before #146: addons 89 % of lines, memo app 70 %, datagen 52 %.
 **Then test gaps:** extract and test the Escape/close logic of `nexus_bridge/render.rs` like `key_routing.rs`; window actions (new group, format, preview, compact view, open folder, clear search); Ctrl+Y/Ctrl+Shift+Z keys. `xtask` last. Prove new tests with injected faults.
