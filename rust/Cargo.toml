@@ -61,6 +61,16 @@ dbg_macro = "warn"
 todo = "warn"
 mod_module_files = "warn"
 
+# R151: optimize external packages and the snapshot test tools in debug and
+# test builds. The CPU rasterizer and PNG comparison of the snapshot tests ran
+# unoptimized (`cargo xtask ui-test` 415 s → 33 s, CI test step about 11 →
+# 2 min); our own crates stay at opt-level 0 with debug assertions.
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.dev.package.trailkit-ui-testing]
+opt-level = 3
+
 [profile.release]
 lto = "thin"
 codegen-units = 1
