@@ -27,3 +27,16 @@ is ready when the user is back at the PC.
    bottom-right corner as far left as it goes.
 5. Reload memo: Nexus menu › Addons › trailkit-memo › unload,
    then load again.
+
+## Test 36 — dialogs have a maximum width (R153, 2026-11-19)
+
+Approved design: https://claude.ai/artifact/VXdbvqSVZhTnbjrMPKRbyN (variant A).
+
+1. Make the memo window wide (about 1000 px or more). Right-click a group
+   with notes › *Delete*. **Expected:** the card is about as wide as the link
+   dialog (Ctrl+K in the editor); the question wraps into two lines instead
+   of running across the window (before: one long line, card nearly as wide
+   as the window).
+2. Drag the window as narrow as it goes and open the question again.
+   **Expected:** unchanged from before: the card fits the window, buttons stack
+   when they do not fit.
