@@ -55,6 +55,28 @@ fn link_menu_states() {
     );
 }
 
+/// Links of several words, the second one long enough to wrap when narrow.
+const WORD_LINKS: &str = "Vorher im [das ist ein tester](https://wiki.guildwars2.com) nachsehen. Siehe [Guide für die wöchentlichen Raid-Bosse](https://example.com/raids) und danach weiter.";
+
+/// The sample with multi-word links in its note.
+fn word_links_note() -> Fixture {
+    with_body(WORD_LINKS, |_| {})
+}
+
+/// A link is underlined in one line through its spaces, broken only where it
+/// wraps (R149).
+#[test]
+fn links_of_several_words_have_one_underline() {
+    assert_state("link-words", WIDE, word_links_note, &[]);
+    assert_state_in(
+        Language::German,
+        "min-de-link-words",
+        MINIMUM,
+        word_links_note,
+        &[],
+    );
+}
+
 #[test]
 fn copying_from_the_menu_confirms_it() {
     let web_link = [265.0, 155.0];

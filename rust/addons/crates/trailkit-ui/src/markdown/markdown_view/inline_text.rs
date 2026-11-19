@@ -32,6 +32,10 @@ struct LineCursor {
     /// Whether the next element stays on this line, as a link's first word
     /// does after its icon; a word too long for it breaks in place.
     keeps_line: bool,
+    /// Right end and line top of the last drawn word of the current link:
+    /// the next word of the same link on that line continues its underline
+    /// through the space between them. `None` outside a link.
+    link_underline_end: Option<[f32; 2]>,
 }
 
 impl LineCursor {
@@ -83,6 +87,7 @@ pub(super) fn draw_spans(
         y: ui.cursor_screen_pos()[1] + leading,
         line_height,
         keeps_line: false,
+        link_underline_end: None,
     };
     let mut action = None;
     let mut hits: Vec<Range<usize>> = Vec::new();
@@ -103,6 +108,7 @@ pub(super) fn draw_spans(
         );
         let _font = FontScope::push(ui, role);
         let clicked = if let Some(chip) = &span.chip {
+            cursor.link_underline_end = None;
             let _id = ui.push_id(i32::try_from(index).unwrap_or(i32::MAX));
             draw_chat_link(
                 ui,
@@ -117,6 +123,9 @@ pub(super) fn draw_spans(
             // Parts of one link in different styles share one icon.
             let starts_link = span.style.link.is_some()
                 && (index == 0 || spans[index - 1].style.link != span.style.link);
+            if starts_link || span.style.link.is_none() {
+                cursor.link_underline_end = None;
+            }
             let icon_click = if starts_link {
                 let _id = ui.push_id(i32::try_from(index).unwrap_or(i32::MAX));
                 draw_link_icon(ui, span, bounds, theme, &mut cursor)
@@ -266,6 +275,15 @@ fn draw_wrapped_text(
         let word_offset = token_offset;
         token_offset += token.len();
         cursor.wrap_before(ui.calc_text_size(word)[0], bounds);
+        if !word.is_empty() && span.style.link.is_some() {
+            // One line under the whole link, through its spaces (R149).
+            if let Some([end, line_top]) = cursor.link_underline_end
+                && line_top == cursor.y
+                && end < cursor.x
+            {
+                draw_link_underline(ui, theme, end, cursor.x, cursor.y + ui.text_line_height());
+            }
+        }
         if !word.is_empty() {
             let word_hits = WordHits {
                 ranges: hits,
@@ -280,6 +298,9 @@ fn draw_wrapped_text(
             }
             current_hit_y = current_hit_y.or(clicked.current_hit_y);
             action = action.or(clicked.action);
+            if span.style.link.is_some() {
+                cursor.link_underline_end = Some([cursor.x, cursor.y]);
+            }
         }
         let trailing_spaces = &token[word.len()..];
         if cursor.x > bounds.left {
@@ -406,12 +427,13 @@ fn draw_piece(ui: &Ui, piece: &str, span: &Span, theme: &Theme) -> Option<Markdo
     };
     ui.text_colored(theme.text.link.to_array(), piece);
     let [min, max] = [ui.item_rect_min(), ui.item_rect_max()];
-    window_draw_list(ui)
-        .add_line(
-            [min[0], max[1]],
-            [max[0], max[1]],
-            theme.text.link.to_array(),
-        )
-        .build();
+    draw_link_underline(ui, theme, min[0], max[0], max[1]);
     finish_link_item(ui, span, theme, url)
+}
+
+/// Draws a link's underline from `left` to `right` at the text bottom `y`.
+fn draw_link_underline(ui: &Ui, theme: &Theme, left: f32, right: f32, y: f32) {
+    window_draw_list(ui)
+        .add_line([left, y], [right, y], theme.text.link.to_array())
+        .build();
 }

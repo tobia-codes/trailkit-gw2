@@ -59,7 +59,7 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M214+, R149+, B46+, BL26+, questions from 515**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M214+, R150+, B46+, BL26+, questions from 515**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
 4. **Search cache:** `rust/addons/trailkit-memo/src/main_window/search.rs::update_search` calls `SearchQuery::parse` before checking the

@@ -94,3 +94,16 @@ it does nothing in game (same cause as test 25 step 4); retest after that bugfix
 2. Turn the mouse wheel one step up, then two steps down with **Ctrl** held.
    **Expected:** 106 %, then 94 %.
 3. Press **Ctrl+0** again. **Expected:** 100 %.
+
+## Test 35 — one underline per link (R149, 2026-11-19)
+
+Approved design: https://claude.ai/artifact/BYrmZuZwPSeTaiw1idKVop
+
+1. Put `Vorher im [das ist ein tester](https://wiki.guildwars2.com) nachsehen.`
+   into a note and save. **Before:** each word had its own underline with gaps.
+   **Now:** one line runs under `das ist ein tester`, through the spaces; the
+   icon in front stays without line, `nachsehen.` has none.
+2. Drag the window narrow until the link wraps. **Expected:** the line ends at
+   the line end and starts again on the next line.
+3. A link with a **bold** part, e.g. `[ein **fetter** Link](https://a.de)`.
+   **Expected:** one line under all of it.

@@ -183,6 +183,9 @@ fn draw_dialog_content(
         draw_dialog_status(ui, theme, status, left);
     }
     move_below_last_item(ui, theme.spacing.large);
+    // Whole pixels keep the button edges crisp.
+    let [x, y] = ui.cursor_screen_pos();
+    ui.set_cursor_screen_pos([x, y.round()]);
     let answer = draw_dialog_buttons(ui, theme, content, [left, content_width], stacked);
     answer.or_else(|| {
         content
@@ -246,7 +249,7 @@ fn draw_dialog_buttons(
             ui.same_line();
         }
         ui.set_cursor_screen_pos([
-            left + content_width - right_group,
+            (left + content_width - right_group).round(),
             ui.cursor_screen_pos()[1],
         ]);
         for (index, button) in content.buttons.iter().enumerate() {
