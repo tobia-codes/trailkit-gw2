@@ -143,6 +143,8 @@ pub struct MemoWindow {
     /// Whether an ImGui text input has the keyboard this frame; Nexus then
     /// passes every key to ImGui, so the input handles its own shortcuts.
     text_input_active: bool,
+    /// Whether the open dialog had the focus in the last frame.
+    dialog_focused: bool,
     /// The user settings; the window changes the text scale (M57, M79).
     settings: Settings,
     /// The text scale the fonts are built for; follows
@@ -256,6 +258,7 @@ impl MemoWindow {
             window_rect: None,
             window_focused: false,
             text_input_active: false,
+            dialog_focused: false,
             applied_text_scale: settings.text_scale,
             text_scale_changed_at: None,
             settings,

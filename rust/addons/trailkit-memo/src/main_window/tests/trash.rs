@@ -105,6 +105,33 @@ fn deleting_a_group_with_notes_asks_first() {
 }
 
 #[test]
+fn caught_enter_answers_the_delete_question_only_while_it_belongs_to_it() {
+    let document = sample_document();
+    let (raids, _) = raids_and_weekly(&document);
+    let (mut memo, _worker, _directory) = memo_window(document, UiState::default());
+    memo.apply(&WindowAction::Delete(raids), Language::English);
+    memo.confirm_dialog_by_key(Language::English);
+    assert!(
+        memo.confirmation.is_some(),
+        "the game keeps Enter without focus"
+    );
+    memo.dialog_focused = true;
+    memo.text_input_active = true;
+    assert!(
+        !memo.takes_dialog_enter_key(),
+        "Nexus hands Enter to the input"
+    );
+    memo.text_input_active = false;
+    memo.confirm_dialog_by_key(Language::English);
+    assert!(memo.confirmation.is_none());
+    assert_eq!(outline(&memo), "Shopping list, Dailies");
+    assert!(
+        !memo.takes_dialog_enter_key(),
+        "without a dialog Enter stays with the game"
+    );
+}
+
+#[test]
 fn the_edited_note_cannot_be_deleted() {
     let document = sample_document();
     let (raids, weekly) = raids_and_weekly(&document);

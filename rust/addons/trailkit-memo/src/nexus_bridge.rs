@@ -246,6 +246,13 @@ static TEXT_SIZE_RESET_ARMED: AtomicBool = AtomicBool::new(false);
 /// Set when Ctrl+0 was caught; the render callback resets the text size.
 static TEXT_SIZE_RESET_PRESSED: AtomicBool = AtomicBool::new(false);
 
+/// Whether Enter answers memo's open dialog (in-game test 35). Written by the
+/// render callback, false while it does not draw.
+static DIALOG_ENTER_ARMED: AtomicBool = AtomicBool::new(false);
+
+/// Set when Enter was caught for the dialog; the render callback answers it.
+static DIALOG_ENTER_PRESSED: AtomicBool = AtomicBool::new(false);
+
 /// Gives every key memo catches back to the game until the render callback
 /// arms them again (M79, M135, M174, M175, M198, M199).
 fn disarm_window_keys() {
@@ -256,6 +263,7 @@ fn disarm_window_keys() {
         &DELETE_KEY_ARMED,
         &UNDO_KEYS_ARMED,
         &TEXT_SIZE_RESET_ARMED,
+        &DIALOG_ENTER_ARMED,
     ] {
         armed.store(false, Ordering::Relaxed);
     }
@@ -514,6 +522,7 @@ fn route_window_message(message: u32, key: WPARAM, details: LPARAM) -> u32 {
         delete: DELETE_KEY_ARMED.load(Ordering::Relaxed),
         undo: UNDO_KEYS_ARMED.load(Ordering::Relaxed),
         text_size_reset: TEXT_SIZE_RESET_ARMED.load(Ordering::Relaxed),
+        dialog_enter: DIALOG_ENTER_ARMED.load(Ordering::Relaxed),
     };
     let key_message = KeyMessage {
         message,
@@ -539,6 +548,7 @@ fn route_window_message(message: u32, key: WPARAM, details: LPARAM) -> u32 {
         KeySignal::Undo => HISTORY_STEP.store(HISTORY_STEP_UNDO, Ordering::Relaxed),
         KeySignal::Redo => HISTORY_STEP.store(HISTORY_STEP_REDO, Ordering::Relaxed),
         KeySignal::ResetTextSize => TEXT_SIZE_RESET_PRESSED.store(true, Ordering::Relaxed),
+        KeySignal::ConfirmDialog => DIALOG_ENTER_PRESSED.store(true, Ordering::Relaxed),
     }
     if signal.consumes_key() {
         MESSAGE_CONSUMED

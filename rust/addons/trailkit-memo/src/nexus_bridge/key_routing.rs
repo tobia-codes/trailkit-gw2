@@ -8,7 +8,8 @@ use std::time::Instant;
 
 use windows::Win32::UI::{
     Input::KeyboardAndMouse::{
-        VIRTUAL_KEY, VK_0, VK_CONTROL, VK_DELETE, VK_F, VK_F3, VK_SHIFT, VK_Y, VK_Z,
+        VIRTUAL_KEY, VK_0, VK_CONTROL, VK_DELETE, VK_F, VK_F3, VK_NUMPAD0, VK_RETURN, VK_SHIFT,
+        VK_Y, VK_Z,
     },
     WindowsAndMessaging::{WM_KEYDOWN, WM_KEYUP},
 };
@@ -41,6 +42,8 @@ pub(super) struct ArmedKeys {
     pub(super) undo: bool,
     /// Ctrl+0 resets the text size (M79).
     pub(super) text_size_reset: bool,
+    /// Enter answers the open dialog (M56, M152, M180).
+    pub(super) dialog_enter: bool,
 }
 
 /// What a key message asks the window to do.
@@ -62,6 +65,8 @@ pub(super) enum KeySignal {
     Redo,
     /// Reset the text size.
     ResetTextSize,
+    /// Answer the open dialog as Enter does.
+    ConfirmDialog,
 }
 
 impl KeySignal {
@@ -96,6 +101,8 @@ pub(super) fn route_key(
     double_shift.other_key();
     if is_key(VK_DELETE) && armed.delete {
         Some(KeySignal::Delete)
+    } else if is_key(VK_RETURN) && armed.dialog_enter {
+        Some(KeySignal::ConfirmDialog)
     } else if is_key(VK_F3) && armed.find_step {
         Some(if is_down(VK_SHIFT) {
             KeySignal::FindPrevious
@@ -123,7 +130,7 @@ fn route_ctrl_shortcut(key: usize, armed: ArmedKeys, shift: bool) -> Option<KeyS
         })
     } else if is_key(VK_Y) && armed.undo {
         Some(KeySignal::Redo)
-    } else if is_key(VK_0) && armed.text_size_reset {
+    } else if (is_key(VK_0) || is_key(VK_NUMPAD0)) && armed.text_size_reset {
         Some(KeySignal::ResetTextSize)
     } else {
         None
@@ -144,6 +151,7 @@ mod tests {
         delete: true,
         undo: true,
         text_size_reset: true,
+        dialog_enter: true,
     };
 
     /// A key message without auto repeat.
@@ -218,8 +226,21 @@ mod tests {
         let signal = press(VK_0, ALL_ARMED, &[VK_CONTROL]);
         assert_eq!(signal, Some(KeySignal::ResetTextSize));
         assert!(signal.is_some_and(KeySignal::consumes_key));
+        assert_eq!(
+            press(VK_NUMPAD0, ALL_ARMED, &[VK_CONTROL]),
+            Some(KeySignal::ResetTextSize),
+            "the number pad's 0 too"
+        );
         assert_eq!(press(VK_0, ALL_ARMED, &[]), None);
         assert_eq!(press(VK_0, ArmedKeys::default(), &[VK_CONTROL]), None);
+    }
+
+    #[test]
+    fn enter_answers_the_dialog_only_while_armed() {
+        let signal = press(VK_RETURN, ALL_ARMED, &[]);
+        assert_eq!(signal, Some(KeySignal::ConfirmDialog));
+        assert!(signal.is_some_and(KeySignal::consumes_key));
+        assert_eq!(press(VK_RETURN, ArmedKeys::default(), &[]), None);
     }
 
     /// Taps Shift at `start + at_ms` and returns what its press asked for.

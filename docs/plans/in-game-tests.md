@@ -48,12 +48,15 @@ it does nothing in game (same cause as test 25 step 4); retest after that bugfix
 2. Turn the mouse wheel one step up, then two steps down with **Ctrl** held.
    **Expected:** 106 %, then 94 %.
 3. Press **Ctrl+0** again. **Expected:** 100 %.
+4. Press **Ctrl** and the **0 on the number pad** (2026-11-19: only the 0
+   above the letters worked; now caught too). **Expected:** 100 %.
 
 ## Test 35 — Enter in dialogs without a text field (M56, M152, 2026-11-19)
 
 No design change. Nexus hands Enter to ImGui only while a text field is
-active; these dialogs have none, so Enter may go to the game instead (found
-while checking every shortcut on `bugfix/memo-shortcut-keys`).
+active; these dialogs have none. **Failed 2026-11-19:** Enter did nothing in
+the dialog and opened the game's chat; memo now catches Enter while a dialog
+that Enter answers is open — retest both steps.
 
 1. Right-click a group with at least one note › *Delete*. The question
    "delete group?" appears. Press **Enter**. **Expected:** the group goes to

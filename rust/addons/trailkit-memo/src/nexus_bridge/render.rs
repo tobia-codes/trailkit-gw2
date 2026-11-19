@@ -22,12 +22,13 @@ use trailkit_ui::{
 };
 
 use super::{
-    CLOSE_REQUESTED, DELETE_KEY_ARMED, DELETE_KEY_PRESSED, ESCAPE_CAUGHT, FIND_KEY_ARMED,
-    FIND_KEY_PRESSED, FIND_STEP, FIND_STEP_ARMED, FIND_STEP_NEXT, FIND_STEP_NONE,
-    FIND_STEP_PREVIOUS, HELP, HELP_OPEN, HISTORY_STEP, HISTORY_STEP_NONE, HISTORY_STEP_REDO,
-    HISTORY_STEP_UNDO, LANGUAGE, NEXUS_LINK, NOTES, NotesState, SEARCH_KEY_ARMED,
-    SEARCH_KEY_PRESSED, TEXT_SIZE_RESET_ARMED, TEXT_SIZE_RESET_PRESSED, TITLE_BAR, UNDO_KEYS_ARMED,
-    UNSAVED_CHANGES, VISIBLE, WINDOW_TAKES_ESCAPE, WINDOW_TITLE, disarm_window_keys,
+    CLOSE_REQUESTED, DELETE_KEY_ARMED, DELETE_KEY_PRESSED, DIALOG_ENTER_ARMED,
+    DIALOG_ENTER_PRESSED, ESCAPE_CAUGHT, FIND_KEY_ARMED, FIND_KEY_PRESSED, FIND_STEP,
+    FIND_STEP_ARMED, FIND_STEP_NEXT, FIND_STEP_NONE, FIND_STEP_PREVIOUS, HELP, HELP_OPEN,
+    HISTORY_STEP, HISTORY_STEP_NONE, HISTORY_STEP_REDO, HISTORY_STEP_UNDO, LANGUAGE, NEXUS_LINK,
+    NOTES, NotesState, SEARCH_KEY_ARMED, SEARCH_KEY_PRESSED, TEXT_SIZE_RESET_ARMED,
+    TEXT_SIZE_RESET_PRESSED, TITLE_BAR, UNDO_KEYS_ARMED, UNSAVED_CHANGES, VISIBLE,
+    WINDOW_TAKES_ESCAPE, WINDOW_TITLE, disarm_window_keys,
     guard::{RunState, draft_kept, run_state, take_help_request, try_lock_after_panic},
     help::MemoHelp,
     is_gameplay, settings,
@@ -229,15 +230,17 @@ fn draw_main_window(
     apply_close_request(notes, open);
     if let NotesState::Ready(window) = &*notes {
         let visible = VISIBLE.load(Ordering::Relaxed);
-        SEARCH_KEY_ARMED.store(window.takes_search_key() && visible, Ordering::Relaxed);
-        FIND_KEY_ARMED.store(window.takes_find_key() && visible, Ordering::Relaxed);
-        FIND_STEP_ARMED.store(window.takes_find_step_key() && visible, Ordering::Relaxed);
-        DELETE_KEY_ARMED.store(window.takes_delete_key() && visible, Ordering::Relaxed);
-        UNDO_KEYS_ARMED.store(window.takes_undo_keys() && visible, Ordering::Relaxed);
-        TEXT_SIZE_RESET_ARMED.store(
-            window.takes_text_size_reset_key() && visible,
-            Ordering::Relaxed,
-        );
+        for (armed, takes_key) in [
+            (&SEARCH_KEY_ARMED, window.takes_search_key()),
+            (&FIND_KEY_ARMED, window.takes_find_key()),
+            (&FIND_STEP_ARMED, window.takes_find_step_key()),
+            (&DELETE_KEY_ARMED, window.takes_delete_key()),
+            (&UNDO_KEYS_ARMED, window.takes_undo_keys()),
+            (&TEXT_SIZE_RESET_ARMED, window.takes_text_size_reset_key()),
+            (&DIALOG_ENTER_ARMED, window.takes_dialog_enter_key()),
+        ] {
+            armed.store(takes_key && visible, Ordering::Relaxed);
+        }
     }
 }
 
@@ -268,6 +271,9 @@ fn apply_caught_keys(ui: &nexus::imgui::Ui, window: &mut MemoWindow, language: L
     }
     if TEXT_SIZE_RESET_PRESSED.swap(false, Ordering::Relaxed) {
         window.reset_text_size_by_key(ui);
+    }
+    if DIALOG_ENTER_PRESSED.swap(false, Ordering::Relaxed) {
+        window.confirm_dialog_by_key(language);
     }
 }
 

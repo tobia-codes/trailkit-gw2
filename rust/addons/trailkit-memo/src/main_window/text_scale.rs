@@ -18,9 +18,10 @@ const TEXT_SCALE_APPLY_DELAY_SECONDS: f64 = 0.4;
 /// How long the text size percentage stays visible after a change (M80).
 const TEXT_SCALE_INDICATOR_SECONDS: f64 = 1.5;
 
-/// Windows virtual-key code of `0` (Nexus feeds ImGui with virtual-key
-/// codes; Ctrl+0 resets the text size, M79).
-const VIRTUAL_KEY_0: i32 = 0x30;
+/// Windows virtual-key codes of `0` in the number row and on the number pad
+/// (Nexus feeds ImGui with virtual-key codes; Ctrl+0 resets the text size,
+/// M79).
+const VIRTUAL_KEYS_0: [i32; 2] = [0x30, 0x60];
 
 impl MemoWindow {
     /// Ctrl+mouse wheel over the window makes the text larger or smaller,
@@ -37,7 +38,11 @@ impl MemoWindow {
         );
         let scale = if hovered && io.mouse_wheel != 0.0 {
             self.settings.text_scale.stepped(io.mouse_wheel.signum())
-        } else if self.window_focused && ui.is_key_index_pressed(VIRTUAL_KEY_0) {
+        } else if self.window_focused
+            && VIRTUAL_KEYS_0
+                .iter()
+                .any(|&key| ui.is_key_index_pressed(key))
+        {
             TextScale::DEFAULT
         } else {
             return;
