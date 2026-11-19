@@ -31,7 +31,7 @@ Das Menü führt dich zu den Bereichen von memo:
 - **Notizliste ausblenden** gibt der Notiz die ganze Breite; **Notizliste einblenden** holt die Liste zurück. memo merkt sich deine Wahl.
 - **Kompakte Ansicht** (Pfeile-Button, oben links in der Notiz): blendet die Leiste mit *Bearbeiten* und das Typ-Feld aus, damit die Notiz mehr Platz bekommt. Der Button hinter dem Titel beendet sie wieder. Andere Notizen auswählen und Kästchen abhaken geht weiter; eine Notiz bearbeiten (auch per Doppelklick) oder eine neue anlegen beendet die kompakte Ansicht. memo merkt sie sich. Zusammen mit ausgeblendeter Notizliste bleibt nur die Notiz übrig.
 - **Kleines Fenster:** Das Fenster wird nicht schmaler, als Notizliste und Notiz nebeneinander brauchen, die Liste verschwindet also nie von selbst, sie wird nur schmaler. Größerer Text macht diese Mindestbreite größer.
-- **Textgröße:** Halte **Strg** und drehe das Mausrad über dem Fenster, um den ganzen Text größer oder kleiner zu machen; **Strg+0** stellt die Standardgröße wieder her. Die aktuelle Größe erscheint in Prozent neben der Maus. memo merkt sich die Größe; sie baut auf der UI-Schriftgröße auf, die du in Nexus eingestellt hast.
+- **Textgröße:** Halte **Strg** und drehe das Mausrad über dem Fenster, um den ganzen Text größer oder kleiner zu machen; **Strg+0** stellt die Standardgröße wieder her. Die aktuelle Größe erscheint in Prozent neben der Maus; die Standardgröße ist 100 %. memo merkt sich die Größe; sie baut auf der UI-Schriftgröße auf, die du in Nexus eingestellt hast.
 
 ### Hilfe und Probleme
 

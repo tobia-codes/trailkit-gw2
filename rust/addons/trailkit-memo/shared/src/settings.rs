@@ -75,6 +75,13 @@ impl TextScale {
     pub fn stepped(self, steps: f32) -> Self {
         Self((self.factor() + steps * Self::STEP).clamp(Self::MINIMUM, Self::MAXIMUM))
     }
+
+    /// The size as a whole percentage of [`TextScale::DEFAULT`], as the text
+    /// size tooltip shows it (M213): the default is 100 %, one step about 6 %.
+    #[must_use]
+    pub fn percent_of_default(self) -> f32 {
+        (self.factor() / Self::DEFAULT.0 * 100.0).round()
+    }
 }
 
 impl Default for TextScale {
@@ -142,6 +149,15 @@ mod tests {
     #[test]
     fn const_default_matches_derived_default() {
         assert_eq!(Settings::DEFAULT, Settings::default());
+    }
+
+    #[test]
+    fn text_size_percent_counts_from_the_default() {
+        assert!((TextScale::DEFAULT.percent_of_default() - 100.0).abs() < f32::EPSILON);
+        let percent = |steps: f32| TextScale::DEFAULT.stepped(steps).percent_of_default();
+        assert!((percent(1.0) - 106.0).abs() < f32::EPSILON);
+        assert!((percent(-1.0) - 94.0).abs() < f32::EPSILON);
+        assert!((TextScale(1.0).percent_of_default() - 89.0).abs() < f32::EPSILON);
     }
 
     #[test]

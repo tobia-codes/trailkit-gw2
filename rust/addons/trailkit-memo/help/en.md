@@ -31,7 +31,7 @@ The menu takes you to the different parts of memo:
 - **Hide note list** gives the note the full width; **Show note list** brings the list back. memo remembers your choice.
 - **Compact view** (arrows button, top left of the note): hides the toolbar with *Edit* and the kind box, so the note gets more room. The button behind the title ends it again. You can still choose other notes and tick checkboxes; editing a note (also by double-click) or creating a new one ends the compact view. memo remembers it. Together with a hidden note list only the note is left.
 - **Small window:** the window cannot get narrower than the note list and the note need side by side, so the list never disappears by itself; it only gets narrower. Text at a larger size makes this minimum wider.
-- **Text size:** hold **Ctrl** and turn the mouse wheel over the window to make all text larger or smaller; **Ctrl+0** goes back to the default. The current size shows next to the mouse in percent. memo remembers the size; it builds on the UI font size set in Nexus.
+- **Text size:** hold **Ctrl** and turn the mouse wheel over the window to make all text larger or smaller; **Ctrl+0** goes back to the default. The current size shows next to the mouse in percent; the default size is 100%. memo remembers the size; it builds on the UI font size set in Nexus.
 
 ### Help and problems
 

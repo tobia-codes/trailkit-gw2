@@ -198,3 +198,13 @@ shared `Dialog` and `Backdrop` of trailkit-ui.
 4. Open the window menu (title bar menu button). **Expected:** the dimmed
    backdrop over the content looks as before; a click on a row runs it, a
    click on the dimmed strip beside the menu closes it.
+
+## Test 34 — text size percent counts from the default (M213, 2026-11-19)
+
+No design change besides the number in the tooltip.
+
+1. Hover memo, press **Ctrl+0**. **Expected:** the tooltip says
+   **Textgröße: 100 %** (before: 112,5 %); the text is the default size.
+2. Turn the mouse wheel one step up, then two steps down with **Ctrl** held.
+   **Expected:** 106 %, then 94 %.
+3. Press **Ctrl+0** again. **Expected:** 100 %.
