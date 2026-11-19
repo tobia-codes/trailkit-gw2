@@ -50,9 +50,13 @@ Each rule has an id (`area-name`) so reviews can cite it.
   do not reliably cover input fields in ImGui 1.80).
 - `overlay-dialog-layout` — A dialog has a heading (Heading3), a close icon
   at the top right (R141), a short question, explanation or form, and one
-  button row (see `lay-one-primary`). The close icon, Escape and a click on
+  button row (see `lay-one-primary`). Draw it with the shared `Dialog` and
+  dim with the shared `Backdrop` (R145). The close icon, Escape and a click on
   the dimmed area choose the harmless answer (e.g.
-  "Keep editing"), never one that saves or discards.
+  "Keep editing"), never one that saves or discards. A dialog without the
+  close icon (`.closable(false)`) ignores Escape and backdrop clicks too,
+  so it must end by itself (a running action) or always offer an active
+  button that leads out (R145).
   Card: `bg.panel`, 1 px `border` frame, `space.lg` padding, min ≈ 28
   characters wide, max 90 % of the window, text wraps. Button row:
   right-aligned with the primary button last (right); a delete question's

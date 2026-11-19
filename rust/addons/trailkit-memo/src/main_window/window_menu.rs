@@ -2,9 +2,11 @@
 //! opens a panel over the full content height with a dimmed backdrop. It holds
 //! the ways to the notes, the search and the trash, and hides the note list.
 
-use nexus::imgui::{ChildWindow, MouseButton, StyleVar, Ui};
+use nexus::imgui::{StyleVar, Ui};
 use trailkit_ui::drawing::draw_list::window_draw_list;
 use trailkit_ui::{
+    drawing::screen_rect::ScreenRect,
+    feedback::backdrop::{Backdrop, BackdropArea},
     layout::pane::draw_pane,
     layout::separator::draw_compact_separator,
     lists::selection_bar::draw_row_state,
@@ -107,48 +109,35 @@ impl MemoWindow {
             return;
         }
         ui.set_cursor_screen_pos(start);
-        // The backdrop takes the clicks. ImGui renders a child's background
-        // into the parent's draw list, below the panes drawn before, so the
-        // dimming is a rectangle in the backdrop's own list.
-        let Some(_backdrop) = ChildWindow::new("window_menu_backdrop")
-            .size(size)
-            .scrollable(false)
-            .scroll_bar(false)
-            .movable(false)
-            .draw_background(false)
-            .begin(ui)
-        else {
-            return;
-        };
-        let backdrop_start = ui.window_pos();
-        window_draw_list(ui)
-            .add_rect(
-                backdrop_start,
-                [backdrop_start[0] + size[0], backdrop_start[1] + size[1]],
-                theme.surface.modal_overlay.to_array(),
-            )
-            .filled(true)
-            .rounding(theme.radius.large)
-            .build();
-
         let rows = self.window_menu_rows(language);
-        let width = window_menu_width(ui, theme, &rows).min(size[0] * WINDOW_MENU_MAXIMUM_FRACTION);
         let mut chosen = None;
-        draw_pane(ui, theme, "window_menu", [width, 0.0], || {
-            let _spacing = ui.push_style_var(StyleVar::ItemSpacing([0.0, theme.list.item_spacing]));
-            for row in &rows {
-                if row.separated {
-                    draw_compact_separator(ui, theme);
-                }
-                if draw_window_menu_row(ui, theme, row) {
-                    chosen = Some(row.action.clone());
-                }
-            }
-        });
+        let is_backdrop_clicked =
+            Backdrop::new("window_menu_backdrop", BackdropArea::Region { size })
+                .clickable(true)
+                .draw(ui, theme, || {
+                    let width = window_menu_width(ui, theme, &rows)
+                        .min(size[0] * WINDOW_MENU_MAXIMUM_FRACTION);
+                    draw_pane(ui, theme, "window_menu", [width, 0.0], || {
+                        let _spacing = ui
+                            .push_style_var(StyleVar::ItemSpacing([0.0, theme.list.item_spacing]));
+                        for row in &rows {
+                            if row.separated {
+                                draw_compact_separator(ui, theme);
+                            }
+                            if draw_window_menu_row(ui, theme, row) {
+                                chosen = Some(row.action.clone());
+                            }
+                        }
+                    })?;
+                    Some(ScreenRect {
+                        min: ui.item_rect_min(),
+                        max: ui.item_rect_max(),
+                    })
+                });
         if let Some(action) = chosen {
             self.window_menu_open = false;
             self.actions.push(action);
-        } else if ui.is_window_hovered() && ui.is_mouse_clicked(MouseButton::Left) {
+        } else if is_backdrop_clicked {
             self.window_menu_open = false;
         }
     }

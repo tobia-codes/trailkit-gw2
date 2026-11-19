@@ -15,6 +15,7 @@ use trailkit_ui::{
     controls::button::{
         ButtonState, draw_icon_button_with_state, draw_icon_toggle, icon_button_width,
     },
+    drawing::screen_rect::ScreenRect,
     editor::view::TextEditor,
     layout::pane::draw_pane,
     layout::splitter::draw_vertical_splitter,
@@ -578,13 +579,21 @@ impl Editor {
         }
     }
 
-    /// Draws the open link dialog into the current, dimmed window and applies
-    /// its result.
-    pub fn draw_link_dialog(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+    /// Draws the open link dialog, if any, over `window` (the editor's window
+    /// on the screen; `is_focused` brings the dialog back to the front) and
+    /// applies its result.
+    pub fn draw_link_dialog(
+        &mut self,
+        ui: &Ui,
+        language: Language,
+        theme: &Theme,
+        window: ScreenRect,
+        is_focused: bool,
+    ) {
         let Some(dialog) = self.link_dialog.as_mut() else {
             return;
         };
-        let outcome = dialog.draw(ui, language, theme);
+        let outcome = dialog.draw(ui, language, theme, window, is_focused);
         let edit = match &outcome {
             LinkDialogOutcome::Open => return,
             LinkDialogOutcome::Cancelled => None,

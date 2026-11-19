@@ -1,15 +1,15 @@
 //! The dialog that inserts or edits a link (memo plan M208): text and address
-//! in labelled fields on a card centered in the dimmed window, opened from the
-//! link button and Ctrl+K. The app draws the dimmed window around it.
+//! in labelled fields of a shared dialog over the editor's window, opened
+//! from the link button and Ctrl+K.
 
-use nexus::imgui::{Key, MouseButton, StyleVar, Ui};
+use nexus::imgui::{StyleVar, Ui};
 use trailkit_memo_shared::i18n::{Language, LocalizedText, Text, text_field_texts};
 use trailkit_ui::{
     controls::button::{Button, ButtonKind, draw_popup_icon_button},
     controls::text_field::{TextField, move_below_last_item},
-    feedback::dialog_frame::{dialog_close_width, draw_dialog_close, draw_dialog_frame},
+    drawing::screen_rect::ScreenRect,
+    feedback::dialog::{Dialog, DialogHeight},
     text::icons::Icon,
-    text::{TextStyle, draw_text_wrapped},
     theme::Theme,
 };
 
@@ -26,9 +26,6 @@ const CONTENT_WIDTH_IN_FONT_SIZES: f32 = 24.0;
 
 /// The largest share of the window width the card may take.
 const MAXIMUM_WINDOW_FRACTION: f32 = 0.9;
-
-/// Height assumed for the card until it was drawn once.
-const FIRST_HEIGHT_IN_FONT_SIZES: f32 = 15.0;
 
 /// How many frames a field asks for the keyboard focus; ImGui may drop a
 /// request while the dialog appears.
@@ -69,8 +66,8 @@ pub(crate) struct LinkDialog {
     is_address_active: bool,
     /// Whether the user tried to confirm, so a missing address is shown.
     confirm_attempted: bool,
-    /// Height of the card in the last frame.
-    height: Option<f32>,
+    /// Height of the dialog in the last frame.
+    height: DialogHeight,
 }
 
 impl LinkDialog {
@@ -84,7 +81,7 @@ impl LinkDialog {
             focus_requests: 0,
             is_address_active: false,
             confirm_attempted: false,
-            height: None,
+            height: DialogHeight::default(),
         }
     }
 
@@ -93,39 +90,53 @@ impl LinkDialog {
         &self.draft
     }
 
-    /// Draws the card centered in the current window. Escape or a click on
-    /// the dimmed area cancels.
-    pub(crate) fn draw(&mut self, ui: &Ui, language: Language, theme: &Theme) -> LinkDialogOutcome {
-        let font_size = ui.current_font_size();
-        let padding = theme.spacing.large;
-        let window_width = ui.window_size()[0];
-        let width = (font_size * CONTENT_WIDTH_IN_FONT_SIZES)
-            .min(window_width * MAXIMUM_WINDOW_FRACTION - 2.0 * padding)
-            .max(1.0);
-        let height = self
-            .height
-            .unwrap_or(font_size * FIRST_HEIGHT_IN_FONT_SIZES);
-        let frame = draw_dialog_frame(ui, theme, [width + 2.0 * padding, height]);
-        let spacing = theme.spacing.small;
-        let _spacing = ui.push_style_var(StyleVar::ItemSpacing([spacing, spacing]));
-        ui.set_cursor_screen_pos([frame.min[0] + padding, frame.min[1] + padding]);
-        let mut outcome = LinkDialogOutcome::Open;
-        ui.group(|| outcome = self.draw_content(ui, language, theme, width));
-        self.height = Some(ui.item_rect_max()[1] - frame.min[1] + padding);
-
-        let is_backdrop_click = !frame.contains(ui.io().mouse_pos)
-            && ui.is_window_hovered()
-            && ui.is_mouse_clicked(MouseButton::Left);
-        let is_closed =
-            draw_dialog_close(ui, theme, frame, padding, Text::CloseWindow.get(language));
-        if ui.is_key_pressed(Key::Escape) || is_backdrop_click || is_closed {
-            LinkDialogOutcome::Cancelled
+    /// Draws the dialog over `window`, the editor's window on the screen.
+    /// The close icon, Escape or a click on the dimmed area cancels.
+    pub(crate) fn draw(
+        &mut self,
+        ui: &Ui,
+        language: Language,
+        theme: &Theme,
+        window: ScreenRect,
+        is_focused: bool,
+    ) -> LinkDialogOutcome {
+        let title = if self.draft.is_existing {
+            EditorText::LinkEditTitle
         } else {
-            outcome
+            EditorText::LinkInsertTitle
+        };
+        let mut height = self.height;
+        let response = Dialog::new(
+            "###trailkit-memo-link-dialog",
+            title.get(language),
+            Text::CloseWindow.get(language),
+            window,
+        )
+        .focused(is_focused)
+        .draw(
+            ui,
+            theme,
+            &mut height,
+            |window_width| {
+                let padding = theme.spacing.large;
+                (ui.current_font_size() * CONTENT_WIDTH_IN_FONT_SIZES)
+                    .min(window_width * MAXIMUM_WINDOW_FRACTION - 2.0 * padding)
+            },
+            |width| {
+                let spacing = theme.spacing.small;
+                let _spacing = ui.push_style_var(StyleVar::ItemSpacing([spacing, spacing]));
+                self.draw_content(ui, language, theme, width)
+            },
+        );
+        self.height = height;
+        match response {
+            Some(response) if response.is_closed => LinkDialogOutcome::Cancelled,
+            Some(response) => response.content,
+            None => LinkDialogOutcome::Open,
         }
     }
 
-    /// Draws the title, the fields and the buttons, `width` wide.
+    /// Draws the fields and the buttons below the title, `width` wide.
     fn draw_content(
         &mut self,
         ui: &Ui,
@@ -133,17 +144,6 @@ impl LinkDialog {
         theme: &Theme,
         width: f32,
     ) -> LinkDialogOutcome {
-        let title = if self.draft.is_existing {
-            EditorText::LinkEditTitle
-        } else {
-            EditorText::LinkInsertTitle
-        };
-        {
-            let title_width = (width - dialog_close_width(ui, theme)).max(1.0);
-            let _wrap = ui.push_text_wrap_pos_with_pos(ui.cursor_pos()[0] + title_width);
-            draw_text_wrapped(ui, theme, TextStyle::Heading3, title.get(language));
-        }
-        move_below_last_item(ui, theme.spacing.medium);
         let wanted = (self.focus_requests < MAX_FOCUS_REQUESTS).then_some(self.focus);
         let error = normalized_address(&self.address)
             .err()
