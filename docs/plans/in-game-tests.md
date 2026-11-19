@@ -38,25 +38,6 @@ branch for memo's shortcut keys:
    cursor), press Ctrl+Z. **Expected:** the note goes back to its old place,
    its group opens and it is selected; the game opens nothing.
 
-## Test 33 — shared dialog and backdrop (R145, 2026-11-19)
-
-No visible design change; every dialog and the window menu now use the
-shared `Dialog` and `Backdrop` of trailkit-ui.
-
-1. Edit a note, then click another note: the **unsaved changes** dialog
-   appears. **Expected:** it looks as before (title, close icon top right,
-   question, buttons) and only the memo window is dimmed. Close it once each
-   with the close icon, Escape and a click on the dimmed area: every time you
-   keep editing. Enter saves.
-2. In the editor, press Ctrl+K. **Expected:** the **Insert link** dialog
-   looks as before; the close icon, Escape and a click on the dimmed area
-   cancel it, Insert still inserts.
-3. Delete a note from the trash to get the delete question. **Expected:** as
-   before; clicking the dimmed area cancels.
-4. Open the window menu (title bar menu button). **Expected:** the dimmed
-   backdrop over the content looks as before; a click on a row runs it, a
-   click on the dimmed strip beside the menu closes it.
-
 ## Test 34 — text size percent counts from the default (M213, 2026-11-19)
 
 No design change besides the number in the tooltip. **Ctrl+0 failed (2026-11-19):**
