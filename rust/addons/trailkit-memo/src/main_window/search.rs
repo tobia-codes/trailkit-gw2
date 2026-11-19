@@ -88,7 +88,7 @@ impl MemoWindow {
         self.trash.visible = false;
         self.ui_state.search_visible = true;
         self.ui_state.note_list_hidden = false;
-        self.saver.save_ui_state(self.ui_state);
+        self.saver.save_ui_state(&self.ui_state);
         self.search_field.request_focus();
     }
 
@@ -97,7 +97,7 @@ impl MemoWindow {
     pub(super) fn hide_search_field(&mut self) {
         self.search_field.clear(false);
         self.ui_state.search_visible = false;
-        self.saver.save_ui_state(self.ui_state);
+        self.saver.save_ui_state(&self.ui_state);
     }
 
     /// Brings the search index and results up to date with the field text,

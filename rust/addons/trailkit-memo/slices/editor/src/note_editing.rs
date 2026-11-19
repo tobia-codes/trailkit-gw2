@@ -407,7 +407,7 @@ fn floor_char_boundary(text: &str, index: usize) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use trailkit_memo_shared::note_tree::NoteKind;
+    use trailkit_memo_shared::note_tree::ResetSchedule;
 
     /// Applies `command` to `text` with `selection` and returns the new text
     /// and selection.
@@ -547,7 +547,11 @@ mod tests {
 
     #[test]
     fn session_detects_changes() {
-        let note = Note::new("Title".to_owned(), NoteKind::Normal, Timestamp::UNIX_EPOCH);
+        let note = Note::new(
+            "Title".to_owned(),
+            ResetSchedule::Never,
+            Timestamp::UNIX_EPOCH,
+        );
         let mut session = EditSession::start(&note);
         assert!(!session.has_changes());
         session.body.push('x');

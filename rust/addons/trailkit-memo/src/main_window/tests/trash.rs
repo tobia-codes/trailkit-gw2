@@ -26,14 +26,14 @@ pub(super) fn document_with_trash(days_ago: [i64; 2]) -> NotesDocument {
     let mut group = Group::new("Fractals".to_owned());
     group
         .children
-        .push(Node::Note(note("Daily T4", "", NoteKind::Normal)));
+        .push(Node::Note(note("Daily T4", "", ResetSchedule::Never)));
     group
         .children
-        .push(Node::Note(note("CMs", "", NoteKind::Normal)));
+        .push(Node::Note(note("CMs", "", ResetSchedule::Never)));
     let old = note(
         "Old shopping list",
         "- [ ] Mithril ore\n- [x] Ectos",
-        NoteKind::Normal,
+        ResetSchedule::Never,
     );
     document.trash = [
         (Node::Note(old), days_ago[0]),
@@ -45,6 +45,7 @@ pub(super) fn document_with_trash(days_ago: [i64; 2]) -> NotesDocument {
         deleted_at: now - SignedDuration::from_hours(24 * days),
         former_parent: None,
         former_index: 0,
+        unknown_fields: Default::default(),
     })
     .collect();
     document

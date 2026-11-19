@@ -177,6 +177,24 @@ pub const fn chip_text(text: ChipText, language: Language) -> &'static str {
         ChipText::ClickToCopy => "Click to copy",
         ChipText::Copied if german => "Kopiert",
         ChipText::Copied => "Copied",
+        ChipText::OpenLink if german => "Link öffnen",
+        ChipText::OpenLink => "Open link",
+        ChipText::CopyLinkAddress if german => "Link-Adresse kopieren",
+        ChipText::CopyLinkAddress => "Copy link address",
+        ChipText::WriteEmail if german => "E-Mail schreiben",
+        ChipText::WriteEmail => "Write email",
+        ChipText::CopyEmailAddress if german => "E-Mail-Adresse kopieren",
+        ChipText::CopyEmailAddress => "Copy email address",
+        ChipText::CopyChatLink if german => "Chat-Link kopieren",
+        ChipText::CopyChatLink => "Copy chat link",
+        ChipText::OpenInWiki if german => "Im Wiki öffnen",
+        ChipText::OpenInWiki => "Open in wiki",
+        ChipText::WikiSearchUrl if german => {
+            "https://wiki-de.guildwars2.com/index.php?title=Spezial%3ASuche&search="
+        }
+        ChipText::WikiSearchUrl => {
+            "https://wiki.guildwars2.com/index.php?title=Special%3ASearch&search="
+        }
     }
 }
 
@@ -185,6 +203,8 @@ pub const fn chip_text(text: ChipText, language: Language) -> &'static str {
 pub enum Text {
     /// Title of the main window.
     MainWindowTitle,
+    /// Mark behind the label of every optional form field (R139).
+    FieldOptional,
     /// Tooltip of the title bar chevron while the window is expanded (R71).
     CollapseWindow,
     /// Tooltip of the title bar chevron while the window is collapsed.
@@ -257,9 +277,21 @@ pub enum Text {
     TextSize,
 }
 
+/// The texts all form fields of memo share, translated once (R139).
+#[cfg(windows)]
+#[must_use]
+pub fn text_field_texts(
+    language: Language,
+) -> trailkit_ui::controls::text_field::TextFieldTexts<'static> {
+    trailkit_ui::controls::text_field::TextFieldTexts {
+        optional: Text::FieldOptional.get(language),
+    }
+}
+
 impl LocalizedText for Text {
     const ALL: &'static [Self] = &[
         Self::MainWindowTitle,
+        Self::FieldOptional,
         Self::CollapseWindow,
         Self::ExpandWindow,
         Self::CloseWindow,
@@ -312,6 +344,7 @@ impl LocalizedText for Text {
 
     fn get(self, language: Language) -> &'static str {
         match (self, language) {
+            (Self::FieldOptional, Language::English | Language::German) => "(optional)",
             (Self::MainWindowTitle, Language::English) => "Notes",
             (Self::MainWindowTitle, Language::German) => "Notizen",
             (Self::CollapseWindow, Language::English) => "Collapse",

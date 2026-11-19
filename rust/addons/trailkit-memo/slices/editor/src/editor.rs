@@ -30,6 +30,8 @@ use trailkit_ui::{
 
 use crate::{
     i18n::EditorText,
+    link_dialog::{LinkDialog, LinkDialogOutcome},
+    link_edit::{link_draft, link_edit},
     note_editing::{ActiveFormats, EditSession, FormatCommand, active_formats, format_edit},
 };
 
@@ -42,6 +44,9 @@ const VIRTUAL_KEY_B: i32 = 0x42;
 
 /// Windows virtual-key code of `I`.
 const VIRTUAL_KEY_I: i32 = 0x49;
+
+/// Windows virtual-key code of `K` (Ctrl+K opens the link dialog, M208).
+const VIRTUAL_KEY_K: i32 = 0x4B;
 
 /// Windows virtual-key code of `S` (Ctrl+S saves, M93).
 const VIRTUAL_KEY_S: i32 = 0x53;
@@ -169,6 +174,10 @@ pub struct Editor {
     active: Option<(u64, Range<usize>, ActiveFormats)>,
     /// Find hits in the body while the find bar is open (M198).
     find: Option<BodyFind>,
+    /// The open link dialog (M208).
+    link_dialog: Option<LinkDialog>,
+    /// Whether the link dialog opens in the next drawn frame.
+    link_dialog_requested: bool,
 }
 
 /// Find hits in the body, cached per text revision and phrase (M198).
@@ -197,6 +206,8 @@ impl Editor {
             title_focus_pending: false,
             active: None,
             find: None,
+            link_dialog: None,
+            link_dialog_requested: false,
         }
     }
 
@@ -309,8 +320,13 @@ impl Editor {
         self.body.unfocus();
     }
 
-    /// Applies a formatting command to the body at its selection (M53).
+    /// Applies a formatting command to the body at its selection (M53); the
+    /// link command opens the link dialog instead (M208).
     pub fn format(&mut self, command: FormatCommand) {
+        if command == FormatCommand::Link {
+            self.link_dialog_requested = true;
+            return;
+        }
         let edit = format_edit(self.body.text(), self.body.selection(), command);
         self.body
             .apply_edit(edit.range, &edit.replacement, edit.selection);
@@ -473,8 +489,11 @@ impl Editor {
                 self.format(FormatCommand::Bold);
             } else if ui.is_key_index_pressed(VIRTUAL_KEY_I) {
                 self.format(FormatCommand::Italic);
+            } else if ui.is_key_index_pressed(VIRTUAL_KEY_K) {
+                self.format(FormatCommand::Link);
             }
         }
+        self.update_link_dialog(ui, input.is_dialog_open);
         // Preview (M60, M72): editor and preview always stay side by side,
         // however narrow; the minimum only keeps the splitter usable.
         let available = ui.content_region_avail()[0];
@@ -517,9 +536,7 @@ impl Editor {
                 // checkboxes do not toggle. It marks search hits (M122).
                 let mut highlight = input.search.map(SearchHighlight::new);
                 match draw_markdown(ui, preview, theme, input.chips, highlight.as_mut()) {
-                    Some(
-                        action @ (MarkdownAction::OpenLink(_) | MarkdownAction::ChatLinkCopied(_)),
-                    ) => {
+                    Some(action @ (MarkdownAction::OpenLink(_) | MarkdownAction::Copied(_))) => {
                         actions.push(EditorAction::Markdown(action));
                     }
                     Some(MarkdownAction::ToggleTask(_)) | None => {}
@@ -527,5 +544,73 @@ impl Editor {
             });
         }
         output
+    }
+
+    /// Opens the link dialog if asked to and keeps the keyboard away from the
+    /// body while it is open; a dialog of the app closes it (M208).
+    fn update_link_dialog(&mut self, ui: &Ui, is_dialog_open: bool) {
+        if std::mem::take(&mut self.link_dialog_requested) && !is_dialog_open {
+            let clipboard = ui.clipboard_text();
+            let draft = link_draft(
+                self.body.text(),
+                self.body.selection(),
+                clipboard.as_deref(),
+            );
+            self.link_dialog = Some(LinkDialog::new(draft));
+        }
+        if is_dialog_open {
+            self.link_dialog = None;
+        } else if self.link_dialog.is_some() {
+            self.body.unfocus();
+        }
+    }
+
+    /// Whether the link dialog is open.
+    #[must_use]
+    pub const fn is_link_dialog_open(&self) -> bool {
+        self.link_dialog.is_some()
+    }
+
+    /// Closes the link dialog without a change and returns to the body.
+    pub fn cancel_link_dialog(&mut self) {
+        if self.link_dialog.take().is_some() {
+            self.body.focus();
+        }
+    }
+
+    /// Draws the open link dialog, if any, over `window` (position and size
+    /// of the editor's window on the screen; `is_focused` brings the dialog
+    /// back to the front) and applies its result.
+    pub fn draw_link_dialog(
+        &mut self,
+        ui: &Ui,
+        language: Language,
+        theme: &Theme,
+        window: [[f32; 2]; 2],
+        is_focused: bool,
+    ) {
+        let Some(dialog) = self.link_dialog.as_mut() else {
+            return;
+        };
+        let outcome = dialog.draw(ui, language, theme, window, is_focused);
+        let edit = match &outcome {
+            LinkDialogOutcome::Open => return,
+            LinkDialogOutcome::Cancelled => None,
+            LinkDialogOutcome::Submitted { text, address } => {
+                Some(link_edit(dialog.draft(), text, address))
+            }
+            LinkDialogOutcome::Removed => Some(format_edit(
+                self.body.text(),
+                dialog.draft().range.clone(),
+                FormatCommand::Link,
+            )),
+        };
+        self.link_dialog = None;
+        if let Some(edit) = edit {
+            self.body
+                .apply_edit(edit.range, &edit.replacement, edit.selection);
+            self.sync_body();
+        }
+        self.body.focus();
     }
 }

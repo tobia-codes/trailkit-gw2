@@ -8,6 +8,7 @@
 use std::ops::Range;
 
 use crate::chat_link::chat_code_around;
+use crate::markdown::inline_links;
 
 /// At most this many undo steps are kept.
 const MAXIMUM_UNDO_STEPS: usize = 200;
@@ -221,10 +222,26 @@ impl TextBuffer {
     }
 
     /// Deletes the selection, or one step in `direction` if nothing is
-    /// selected (Backspace / Delete, with Ctrl a word).
+    /// selected (Backspace / Delete, with Ctrl a word). Backspace directly
+    /// behind a list marker removes the whole marker with its indentation
+    /// and keeps the item's text (M206). A character step that would delete
+    /// one of a link's `[`, `](` or `)` removes the whole link (M207).
     pub fn delete(&mut self, direction: Direction, step: Step) {
         if self.has_selection() {
             self.replace(self.selection(), "", EditKind::Other);
+            return;
+        }
+        if direction == Direction::Backward
+            && step == Step::Character
+            && let Some(marker) = self.list_marker_before_cursor()
+        {
+            self.replace(marker, "", EditKind::Other);
+            return;
+        }
+        if step == Step::Character
+            && let Some(link) = self.link_broken_by_deleting(direction)
+        {
+            self.replace(link, "", EditKind::Other);
             return;
         }
         let other_end = self.position_after(direction, step);
@@ -238,6 +255,29 @@ impl TextBuffer {
             EditKind::Other
         };
         self.replace(range, "", kind);
+    }
+
+    /// The range of the list marker that ends exactly at the cursor, if any.
+    fn list_marker_before_cursor(&self) -> Option<Range<usize>> {
+        let start = line_start(&self.text, self.cursor);
+        let line = &self.text[start..line_end(&self.text, self.cursor)];
+        let marker = list_marker(line)?;
+        (marker.text == self.text[start..self.cursor]).then_some(start..self.cursor)
+    }
+
+    /// The range of the inline link whose structure the character next to
+    /// the cursor in `direction` belongs to, if any.
+    fn link_broken_by_deleting(&self, direction: Direction) -> Option<Range<usize>> {
+        let deleted = match direction {
+            Direction::Backward => previous_char_start(&self.text, self.cursor)?,
+            Direction::Forward => self.cursor,
+        };
+        let start = line_start(&self.text, deleted);
+        let line = &self.text[start..line_end(&self.text, deleted)];
+        let link = inline_links(line)
+            .into_iter()
+            .find(|link| link.is_structure_at(deleted - start))?;
+        Some(start + link.range.start..start + link.range.end)
     }
 
     /// Enter: inserts a line break and continues a markdown list item
@@ -582,6 +622,123 @@ mod tests {
         let mut plain = TextBuffer::new("");
         type_text(&mut plain, "text\nmore");
         assert_eq!(plain.text(), "text\nmore");
+    }
+
+    #[test]
+    fn backspace_behind_a_list_marker_removes_the_whole_marker() {
+        for (text, expected) in [
+            ("- [ ] ", ""),
+            ("- [x] item", "item"),
+            ("- [X] item", "item"),
+            ("- item", "item"),
+            ("* item", "item"),
+            ("+ item", "item"),
+            ("12. item", "item"),
+            ("  - [ ] item", "item"),
+            ("first\n- [ ] item\nlast", "first\nitem\nlast"),
+        ] {
+            let line_start = text.find('\n').map_or(0, |index| index + 1);
+            let marker_length = text[line_start..]
+                .find("item")
+                .unwrap_or(text.len() - line_start);
+            let mut buffer = TextBuffer::new(text);
+            buffer.select(line_start + marker_length, line_start + marker_length);
+            buffer.delete(Direction::Backward, Step::Character);
+            assert_eq!(buffer.text(), expected, "in {text:?}");
+            assert_eq!(buffer.cursor(), line_start, "in {text:?}");
+            assert!(buffer.undo(), "in {text:?}");
+            assert_eq!(buffer.text(), text, "in {text:?}");
+        }
+    }
+
+    #[test]
+    fn backspace_elsewhere_in_a_list_item_deletes_one_character() {
+        for (text, cursor, expected) in [
+            ("- [ ] item", 10, "- [ ] ite"),
+            ("- [ ] item", 7, "- [ ] tem"),
+            ("- [ ] item", 3, "-  ] item"),
+            ("- [", 3, "- "),
+            ("plain", 5, "plai"),
+        ] {
+            let mut buffer = TextBuffer::new(text);
+            buffer.select(cursor, cursor);
+            buffer.delete(Direction::Backward, Step::Character);
+            assert_eq!(buffer.text(), expected, "in {text:?} at {cursor}");
+        }
+    }
+
+    #[test]
+    fn delete_and_ctrl_backspace_keep_their_steps_behind_a_marker() {
+        let mut forward = TextBuffer::new("- item");
+        forward.select(2, 2);
+        forward.delete(Direction::Forward, Step::Character);
+        assert_eq!(forward.text(), "- tem");
+        let mut word = TextBuffer::new("- [ ] item");
+        word.select(6, 6);
+        word.delete(Direction::Backward, Step::Word);
+        assert!(word.text().starts_with('-'), "{:?}", word.text());
+    }
+
+    /// `a [Wiki](https://x.y) b`: `[` at 2, `](` at 7 and 8, `)` at 20.
+    const LINE_WITH_LINK: &str = "a [Wiki](https://x.y) b";
+
+    #[test]
+    fn deleting_a_character_of_the_link_structure_removes_the_whole_link() {
+        for (direction, cursors) in [
+            (Direction::Backward, [3, 8, 9, 21]),
+            (Direction::Forward, [2, 7, 8, 20]),
+        ] {
+            for cursor in cursors {
+                let mut buffer = TextBuffer::new(LINE_WITH_LINK);
+                buffer.select(cursor, cursor);
+                buffer.delete(direction, Step::Character);
+                assert_eq!(buffer.text(), "a  b", "{direction:?} at {cursor}");
+                assert_eq!(buffer.cursor(), 2, "{direction:?} at {cursor}");
+                assert!(buffer.undo());
+                assert_eq!(buffer.text(), LINE_WITH_LINK);
+            }
+        }
+    }
+
+    #[test]
+    fn link_text_and_target_are_edited_character_by_character() {
+        for (direction, cursor, expected) in [
+            (Direction::Backward, 5, "a [Wki](https://x.y) b"),
+            (Direction::Forward, 3, "a [iki](https://x.y) b"),
+            (Direction::Backward, 20, "a [Wiki](https://x.) b"),
+            (Direction::Forward, 9, "a [Wiki](ttps://x.y) b"),
+            (Direction::Backward, 2, "a[Wiki](https://x.y) b"),
+            (Direction::Forward, 21, "a [Wiki](https://x.y)b"),
+        ] {
+            let mut buffer = TextBuffer::new(LINE_WITH_LINK);
+            buffer.select(cursor, cursor);
+            buffer.delete(direction, Step::Character);
+            assert_eq!(buffer.text(), expected, "{direction:?} at {cursor}");
+        }
+    }
+
+    #[test]
+    fn only_the_link_of_the_current_line_is_removed() {
+        let mut buffer = TextBuffer::new("[a](b)\n[c](d)\n[e](f)");
+        buffer.select(13, 13);
+        buffer.delete(Direction::Backward, Step::Character);
+        assert_eq!(buffer.text(), "[a](b)\n\n[e](f)");
+        assert_eq!(buffer.cursor(), 7);
+    }
+
+    #[test]
+    fn brackets_that_are_no_link_are_deleted_one_by_one() {
+        for (text, cursor, expected) in [
+            ("[a] b", 3, "[a b"),
+            ("[a](", 4, "[a]"),
+            ("`[a](b)`", 7, "`[a](b`"),
+            ("https://x.y", 11, "https://x."),
+        ] {
+            let mut buffer = TextBuffer::new(text);
+            buffer.select(cursor, cursor);
+            buffer.delete(Direction::Backward, Step::Character);
+            assert_eq!(buffer.text(), expected, "in {text:?}");
+        }
     }
 
     #[test]

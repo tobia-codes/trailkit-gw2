@@ -27,3 +27,24 @@ is ready when the user is back at the PC.
    bottom-right corner as far left as it goes.
 5. Reload memo: Nexus menu › Addons › trailkit-memo › unload,
    then load again.
+
+## Test 25 — migrated notes and collapsed groups (M201–M203, 2026-11-18)
+
+Steps 1–3, 5 and 6 passed (2026-11-18/19). **Step 4 failed (2026-11-19):** Ctrl+Z
+never reaches memo (the game opened Contacts); retest after the `bugfix/`
+branch for memo's shortcut keys:
+
+4. Collapse a group, drag another note into it, click a list entry (no text
+   cursor), press Ctrl+Z. **Expected:** the note goes back to its old place,
+   its group opens and it is selected; the game opens nothing.
+
+## Test 34 — text size percent counts from the default (M213, 2026-11-19)
+
+No design change besides the number in the tooltip. **Ctrl+0 failed (2026-11-19):**
+it does nothing in game (same cause as test 25 step 4); retest after that bugfix.
+
+1. Hover memo, press **Ctrl+0**. **Expected:** the tooltip says
+   **Textgröße: 100 %** (before: 112,5 %); the text is the default size.
+2. Turn the mouse wheel one step up, then two steps down with **Ctrl** held.
+   **Expected:** 106 %, then 94 %.
+3. Press **Ctrl+0** again. **Expected:** 100 %.

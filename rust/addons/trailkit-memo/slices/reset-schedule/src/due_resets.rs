@@ -1,7 +1,7 @@
 //! Unticking the tasks of reset notes whose reset passed (M88–M90).
 
 use jiff::Timestamp;
-use trailkit_memo_shared::note_tree::{NoteId, NoteKind, NotesDocument};
+use trailkit_memo_shared::note_tree::{NoteId, NotesDocument, ResetSchedule};
 use trailkit_ui::markdown::uncheck_all_tasks;
 
 use crate::schedule::ResetTimes;
@@ -17,9 +17,10 @@ pub fn apply_due_resets(
 ) -> bool {
     let mut changed = false;
     document.for_each_note_mut(|note| {
-        let (Some(period), Some(last_reset_applied_at)) =
-            (note.kind.period(), note.kind.last_reset_applied_at())
-        else {
+        let (Some(period), Some(last_reset_applied_at)) = (
+            note.reset_schedule.period(),
+            note.reset_schedule.last_reset_applied_at(),
+        ) else {
             return;
         };
         if !period.is_due(last_reset_applied_at, now) || is_being_edited(note.id) {
@@ -28,7 +29,7 @@ pub fn apply_due_resets(
         if let Some(body) = uncheck_all_tasks(&note.body) {
             note.body = body;
         }
-        note.kind = NoteKind::with_period(Some(period), now);
+        note.reset_schedule = ResetSchedule::with_period(Some(period), now);
         changed = true;
     });
     changed
@@ -49,12 +50,12 @@ mod tests {
     fn due_resets_uncheck_tasks_except_while_editing() {
         let mut weekly = Note::new(
             "Weekly clears".to_owned(),
-            NoteKind::WeeklyReset {
+            ResetSchedule::Weekly {
                 last_reset_applied_at: noon(),
             },
             noon(),
         );
-        let mut ideas = Note::new("Ideas".to_owned(), NoteKind::Normal, noon());
+        let mut ideas = Note::new("Ideas".to_owned(), ResetSchedule::Never, noon());
         "- [x] boss\n".clone_into(&mut weekly.body);
         "- [x] boss\n".clone_into(&mut ideas.body);
         let (weekly_id, ideas_id) = (weekly.id, ideas.id);
@@ -75,7 +76,7 @@ mod tests {
         assert!(apply_due_resets(&mut document, next_week, |_| false));
         let note = document.note(weekly_id).expect("sample note");
         assert_eq!(note.body, "- [ ] boss\n");
-        assert_eq!(note.kind.last_reset_applied_at(), Some(next_week));
+        assert_eq!(note.reset_schedule.last_reset_applied_at(), Some(next_week));
         assert_eq!(note.updated_at, noon());
         // Normal notes are never reset; a second run finds nothing due.
         assert_eq!(

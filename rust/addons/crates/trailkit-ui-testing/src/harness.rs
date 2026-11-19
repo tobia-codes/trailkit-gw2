@@ -79,6 +79,23 @@ pub struct FrameInput {
     pub mouse_wheel: f32,
 }
 
+/// A clipboard of its own, so tests never read the machine's clipboard.
+#[derive(Debug, Default)]
+struct TestClipboard {
+    /// The last copied text.
+    text: Option<String>,
+}
+
+impl nexus::imgui::ClipboardBackend for TestClipboard {
+    fn get(&mut self) -> Option<String> {
+        self.text.clone()
+    }
+
+    fn set(&mut self, value: &str) {
+        self.text = Some(value.to_owned());
+    }
+}
+
 /// A headless ImGui context with the trailkit fonts.
 pub struct UiHarness {
     /// The ImGui context (dropped before the lock is released).
@@ -102,6 +119,7 @@ impl UiHarness {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let mut context = Context::create();
         context.set_ini_filename(None);
+        context.set_clipboard_backend(TestClipboard::default());
         {
             let io = context.io_mut();
             io.display_size = size;

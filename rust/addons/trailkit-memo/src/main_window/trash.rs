@@ -3,6 +3,8 @@
 //! the trash view's actions, Ctrl+Z / Ctrl+Y and the hourly purge. Drawing
 //! the trash and the toast lives in `trash_pane`.
 
+use std::collections::BTreeSet;
+
 use jiff::{SignedDuration, Timestamp};
 use nexus::imgui::Ui;
 use trailkit_ui::feedback::toast::Toast;
@@ -10,7 +12,7 @@ use trailkit_ui::feedback::toast::Toast;
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText},
     list_filter::ListFilter,
-    note_tree::{NodeId, TrashEntry, TreeNode},
+    note_tree::{GroupId, NodeId, TrashEntry, TreeNode},
     undo::UndoStep,
 };
 use trailkit_memo_trash::{i18n::TrashText, labels, trash_view::TrashAction};
@@ -140,7 +142,11 @@ impl MemoWindow {
     fn selection_after_removing(&self, node: NodeId) -> Option<Option<NodeId>> {
         let selected = self.ui_state.selected?;
         let mut rows = Vec::new();
-        visible_rows(&self.document.root, &mut rows);
+        visible_rows(
+            &self.document.root,
+            &self.ui_state.collapsed_groups,
+            &mut rows,
+        );
         let start = rows.iter().position(|row| *row == node)?;
         let mut inside = Vec::new();
         if let Some(entry) = self.tree_node(node) {
@@ -170,7 +176,7 @@ impl MemoWindow {
             None => {
                 self.ui_state.selected = None;
                 self.ui_state.shown_note = None;
-                self.saver.save_ui_state(self.ui_state);
+                self.saver.save_ui_state(&self.ui_state);
             }
         }
     }
@@ -181,6 +187,7 @@ impl MemoWindow {
         self.toast = None;
         if let Some(step) = self.undo.undo(&mut self.document, Timestamp::now()) {
             let (UndoStep::Delete(node) | UndoStep::Move { node, .. }) = step;
+            self.expand_parent_of(node);
             self.change_selected(node);
             self.save_notes();
         }
@@ -193,11 +200,10 @@ impl MemoWindow {
             Some(UndoStep::Delete(node)) => self.selection_after_removing(node),
             _ => None,
         };
-        if self
-            .undo
-            .redo(&mut self.document, Timestamp::now())
-            .is_some()
-        {
+        if let Some(step) = self.undo.redo(&mut self.document, Timestamp::now()) {
+            if let UndoStep::Move { node, .. } = step {
+                self.expand_parent_of(node);
+            }
             if let Some(selection) = next_selection {
                 self.change_selection(selection);
             }
@@ -259,7 +265,7 @@ impl MemoWindow {
         self.trash.visible = true;
         if self.ui_state.note_list_hidden {
             self.ui_state.note_list_hidden = false;
-            self.saver.save_ui_state(self.ui_state);
+            self.saver.save_ui_state(&self.ui_state);
         }
     }
 
@@ -284,6 +290,7 @@ impl MemoWindow {
             WindowAction::Trash(TrashAction::Restore(node)) => {
                 let next = self.trash_neighbour(*node);
                 if self.document.restore_from_trash(*node) {
+                    self.expand_parent_of(*node);
                     self.trash.selected = next;
                     self.save_notes();
                 }
@@ -397,19 +404,22 @@ impl MemoWindow {
             self.trash.selected = None;
         }
         self.forget_drafts(&purged);
+        if self.ui_state.forget_missing_groups(&self.document) {
+            self.saver.save_ui_state(&self.ui_state);
+        }
         self.save_notes();
     }
 }
 
 /// Collects the rows of `nodes` as the list shows them: groups, and the
-/// children of expanded groups.
-fn visible_rows(nodes: &[TreeNode], rows: &mut Vec<NodeId>) {
+/// children of groups not in `collapsed_groups`.
+fn visible_rows(nodes: &[TreeNode], collapsed_groups: &BTreeSet<GroupId>, rows: &mut Vec<NodeId>) {
     for node in nodes {
         rows.push(node.id());
         if let TreeNode::Group(group) = node
-            && group.expanded
+            && !collapsed_groups.contains(&group.id)
         {
-            visible_rows(&group.children, rows);
+            visible_rows(&group.children, collapsed_groups, rows);
         }
     }
 }

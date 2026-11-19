@@ -1,5 +1,5 @@
 //! Controls: buttons and their busy state, the spinner, dropdowns,
-//! menu entries and tooltips (ROADMAP R134).
+//! menu entries, labelled text fields and tooltips (ROADMAP R134).
 
 pub mod busy;
 #[cfg(windows)]
@@ -10,5 +10,7 @@ pub mod dropdown;
 pub mod menu;
 #[cfg(windows)]
 pub mod spinner;
+#[cfg(windows)]
+pub mod text_field;
 #[cfg(windows)]
 pub mod tooltip;

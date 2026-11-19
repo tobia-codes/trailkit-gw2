@@ -7,7 +7,7 @@ use std::{fs, sync::Arc, time::Duration};
 use jiff::{Timestamp, tz::Offset};
 use trailkit_log::{LogConfig, log_files, start};
 use trailkit_memo_shared::{
-    note_tree::{Note, NoteKind, NotesDocument, TreeNode},
+    note_tree::{Note, NotesDocument, ResetSchedule, TreeNode},
     settings::TextScale,
     storage_worker::{SavingAllowed, SettingsSummary, StorageWorker, WorkerTiming},
 };
@@ -40,10 +40,17 @@ fn a_normal_session_is_three_lines() -> Result<(), Box<dyn std::error::Error>> {
 
     let data = directory.addon_data(memo);
     fs::create_dir_all(&data)?;
-    let note = || Note::new(SECRET_TITLE.to_owned(), NoteKind::Normal, Timestamp::now());
+    let note = || {
+        Note::new(
+            SECRET_TITLE.to_owned(),
+            ResetSchedule::Never,
+            Timestamp::now(),
+        )
+    };
     DocumentStore::new(&data).save(&NotesDocument {
         root: vec![TreeNode::Note(note()), TreeNode::Note(note())],
         trash: Vec::new(),
+        unknown_fields: Default::default(),
     })?;
 
     let (worker, loaded) = StorageWorker::spawn(
@@ -64,6 +71,7 @@ fn a_normal_session_is_three_lines() -> Result<(), Box<dyn std::error::Error>> {
     worker.saver().save_notes(Arc::new(NotesDocument {
         root: vec![TreeNode::Note(note())],
         trash: Vec::new(),
+        unknown_fields: Default::default(),
     }));
     drop(worker);
     drop(session);

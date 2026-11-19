@@ -247,7 +247,7 @@ impl MemoWindow {
             self.ui_state.preview_split_fraction = fraction;
         }
         if output.split_released {
-            self.saver.save_ui_state(self.ui_state);
+            self.saver.save_ui_state(&self.ui_state);
         }
     }
 
@@ -292,7 +292,7 @@ impl MemoWindow {
                     true,
                 );
             } else if let Some(note) = note {
-                chosen_kind = draw_kind_dropdown(ui, theme, language, note.kind);
+                chosen_kind = draw_kind_dropdown(ui, theme, language, note.reset_schedule);
             }
         };
         let trailing_size = if compact {
@@ -342,7 +342,7 @@ impl MemoWindow {
             });
         }
         if output.scroll_changed {
-            self.saver.save_ui_state(self.ui_state);
+            self.saver.save_ui_state(&self.ui_state);
         }
         if finding {
             let shown = note.map(|note| note.id);

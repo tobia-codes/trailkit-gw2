@@ -126,7 +126,8 @@ Build once, use everywhere. Planned:
   (`Ready`, `Busy` = spinner, `Disabled { reason }` = `text.disabled`
   label, no hover, reason tooltip with a neutral `ban` icon via
   `tooltip::draw_reason_tooltip`); `draw_button`, `draw_primary_button` …
-  are short forms. Icon buttons: `draw_icon_button_with_state`. Disabled
+  are short forms. Icon buttons: `draw_icon_button_with_state`. **A button
+  is only disabled with the user's explicit approval (R140).** Disabled
   menu entries use the same reason tooltip. Drive `Busy` with
   `busy::BusyState` (at least 0.6 s); on popups and toasts
   `draw_popup_icon_button` (hover on `bg.active`)
@@ -136,6 +137,17 @@ Build once, use everywhere. Planned:
 - `Tree` with drag & drop (groups / subgroups / items)
 - Empty state — **exists** (Q283): `empty_state::draw_empty_state` with
   `EmptyState` (optional icon, title, hint, buttons with one primary)
+- Dialog card — **exists**: `feedback::dialog_frame::draw_dialog_frame`, centered
+  in the window that dims the addon window (`overlay-dialog-layout`);
+  `draw_dialog_close` gives every dialog its close icon at the top right (R141)
+- Text field — **exists** (R139): `controls::text_field::TextField`, the
+  label above the input in `TextStyle::Label`, `.optional(true)` adds the mark
+  the addon translated once (`TextFieldTexts`), plus placeholder and focus;
+  `draw_field_error` is the one look of a field error (`draw_status_line`). Helper text, disabled and secret fields
+  are added with their first real use
+- Links — **exist** (R143): `markdown::LinkKind` picks the icon from the
+  address, the markdown view and `Button::opens_link` draw it before the text;
+  right-clicking a link or chip opens the shared menu of `markdown::link_menu`
 - Text and icons — **exist** (R96): `text::draw_text`, `draw_text_wrapped`,
   `draw_truncated_text`, `draw_icon`; borderless inputs use
   `StyleScope::transparent_frame`

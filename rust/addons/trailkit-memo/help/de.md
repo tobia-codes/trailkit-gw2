@@ -31,7 +31,7 @@ Das Menü führt dich zu den Bereichen von memo:
 - **Notizliste ausblenden** gibt der Notiz die ganze Breite; **Notizliste einblenden** holt die Liste zurück. memo merkt sich deine Wahl.
 - **Kompakte Ansicht** (Pfeile-Button, oben links in der Notiz): blendet die Leiste mit *Bearbeiten* und das Typ-Feld aus, damit die Notiz mehr Platz bekommt. Der Button hinter dem Titel beendet sie wieder. Andere Notizen auswählen und Kästchen abhaken geht weiter; eine Notiz bearbeiten (auch per Doppelklick) oder eine neue anlegen beendet die kompakte Ansicht. memo merkt sie sich. Zusammen mit ausgeblendeter Notizliste bleibt nur die Notiz übrig.
 - **Kleines Fenster:** Das Fenster wird nicht schmaler, als Notizliste und Notiz nebeneinander brauchen, die Liste verschwindet also nie von selbst, sie wird nur schmaler. Größerer Text macht diese Mindestbreite größer.
-- **Textgröße:** Halte **Strg** und drehe das Mausrad über dem Fenster, um den ganzen Text größer oder kleiner zu machen; **Strg+0** stellt die Standardgröße wieder her. Die aktuelle Größe erscheint in Prozent neben der Maus. memo merkt sich die Größe; sie baut auf der UI-Schriftgröße auf, die du in Nexus eingestellt hast.
+- **Textgröße:** Halte **Strg** und drehe das Mausrad über dem Fenster, um den ganzen Text größer oder kleiner zu machen; **Strg+0** stellt die Standardgröße wieder her. Die aktuelle Größe erscheint in Prozent neben der Maus; die Standardgröße ist 100 %. memo merkt sich die Größe; sie baut auf der UI-Schriftgröße auf, die du in Nexus eingestellt hast.
 
 ### Hilfe und Probleme
 
@@ -54,7 +54,7 @@ Deine Notizen stehen in einer Liste, die du sortieren und in Gruppen ordnen kann
 
 ### Sortieren und verschieben
 
-- **Sortieren:** Ziehe eine Notiz oder Gruppe an eine neue Stelle. Eine Linie zeigt, wo sie landet; auf der unteren Hälfte einer offenen Gruppe wird sie deren erster Eintrag, unter dem letzten Eintrag kommt sie ans Ende der Liste. Auf der Mitte einer geschlossenen Gruppe landet sie an deren Ende; bleibst du kurz darauf, öffnet sich die Gruppe. Ein rotes Verbotszeichen heißt: Dort geht es nicht hin (eine Gruppe kann nicht in sich selbst). Am oberen oder unteren Rand scrollt die Liste. Escape bricht ab.
+- **Sortieren:** Ziehe eine Notiz oder Gruppe an eine neue Stelle. Eine Linie zeigt, wo sie landet. Am oberen Rand einer Gruppe kommt sie über die Gruppe; am unteren Rand kommt sie unter eine geschlossene Gruppe oder wird erster Eintrag einer offenen. Unter dem letzten Eintrag kommt sie ans Ende der Liste. Lege sie auf der Mitte einer Gruppe ab, die dann einen Rahmen bekommt, um sie ans Ende der Gruppe zu setzen; bleibst du kurz darauf, öffnet sich eine geschlossene Gruppe. Ein rotes Verbotszeichen heißt: Dort geht es nicht hin (eine Gruppe kann nicht in sich selbst). Am oberen oder unteren Rand scrollt die Liste. Escape bricht ab.
 - **Verschieben nach:** Rechtsklick › *Verschieben nach* › *Oberste Ebene* oder eine Gruppe verschiebt den Eintrag an deren Ende, ohne zu ziehen.
 
 ### Gruppen
@@ -71,7 +71,7 @@ Du schreibst Notizen in Markdown, mit Buttons für die Formatierung.
 
 ### Der Editor
 
-Klicke oben rechts in einer Notiz auf **Bearbeiten** oder doppelklicke die Notiz. Du bearbeitest Titel und Text in Markdown; die Buttons in der Leiste darüber (in Gruppen wie in Word) fügen Überschriften (H1, H2 – ein Klick auf die andere Ebene wechselt sie, auf dieselbe entfernt sie), **Fett**, *Kursiv*, Aufzählungen, Checkboxen und Links ein (auch **Strg+B** und **Strg+I**); ein erneuter Klick entfernt die Formatierung wieder (auch Links). Die Buttons der Formatierung an der Cursorposition leuchten auf. Der Event-Button benötigt trailkit-core.
+Klicke oben rechts in einer Notiz auf **Bearbeiten** oder doppelklicke die Notiz. Du bearbeitest Titel und Text in Markdown; die Buttons in der Leiste darüber (in Gruppen wie in Word) fügen Überschriften (H1, H2 – ein Klick auf die andere Ebene wechselt sie, auf dieselbe entfernt sie), **Fett**, *Kursiv*, Aufzählungen und Checkboxen ein (auch **Strg+B** und **Strg+I**); ein erneuter Klick entfernt die Formatierung wieder. Der Link-Button oder **Strg+K** öffnet einen kleinen Dialog für Text und Adresse des Links. Die Buttons der Formatierung an der Cursorposition leuchten auf. Der Event-Button benötigt trailkit-core.
 
 - Der **Augen**-Button zeigt eine Vorschau der formatierten Notiz neben dem Text; ziehe den Spalt dazwischen, um die Breiten zu ändern. memo merkt sich beides.
 - **Beim Bearbeiten** macht die Notizliste dem Editor Platz und kommt zurück, sobald du speicherst oder abbrichst. Hattest du sie selbst ausgeblendet, bleibt sie ausgeblendet. Klicke ins Spiel, um den Chat oder deine Tasten zu nutzen; ein Klick in den Text und du schreibst weiter.
@@ -79,13 +79,17 @@ Klicke oben rechts in einer Notiz auf **Bearbeiten** oder doppelklicke die Notiz
 ### Checkboxen und Links
 
 - **Checkboxen** in einer Notiz kannst du direkt abhaken, ohne den Editor.
-- **Links** öffnen sich im Browser (nur `http://` und `https://`), E-Mail-Adressen in deinem Mailprogramm; fahre mit der Maus darüber, um das Ziel zu sehen.
+- **Links** öffnen sich im Browser (nur `http://` und `https://`), E-Mail-Adressen in deinem Mailprogramm; das Icon vor dem Link zeigt, was sich öffnet; fahre mit der Maus darüber, um das Ziel zu sehen, sofern der Link es nicht schon anzeigt.
+- **Link einfügen:** Markiere bei Bedarf Text, klicke auf den Link-Button oder drücke **Strg+K**, gib die Adresse ein und drücke Enter. Der Text ist optional, `https://` wird ergänzt, wenn es fehlt, und eine Adresse aus der Zwischenablage ist schon eingetragen. Steht der Cursor in einem Link, änderst du ihn dort oder entfernst den Link und behältst seinen Text.
+- **Rechtsklick auf einen Link** öffnet ihn oder kopiert seine Adresse.
+- **Adresse einfügen:** Ein einfaches `https://…` oder eine E-Mail-Adresse in deinem Text wird von selbst zum anklickbaren Link.
 
 ### Chat-Links
 
 Chat-Links aus dem Spiel (`[&…]`, z. B. eine Wegmarke oder ein Gegenstand) erscheinen als Chips mit Symbol, Art und ID; Münzen zeigen ihren Betrag. Die Farbe zeigt die Gruppe: Kupfer für Orte, Blau für Fertigkeiten, Eigenschaften und Builds, Grün für Gegenstände, Violett für Erfolge, NPC-Texte und Spieler. Namen (statt IDs) kommen mit trailkit-core.
 
 - Klicke auf einen Chip, um den Code zu kopieren (eine kurze Meldung unten im Fenster bestätigt es), und füge ihn dann im Spiel-Chat ein. Fahre mit der Maus darüber, um den Code zu sehen.
+- Ein Rechtsklick auf einen Chip kopiert seinen Chat-Link oder öffnet ihn im Wiki, wenn es dort eine Seite geben kann.
 - Ein Chip mit **!** hat einen beschädigten Code; der Tooltip sagt, warum.
 - Füge im Editor einen Code in den Text ein, und er wird zum Chip. Der Cursor springt über einen Chip, und die Rücktaste löscht ihn ganz; um ihn zu ändern, lösche ihn und füge den neuen Code ein.
 
@@ -102,7 +106,7 @@ Tägliche und wöchentliche Notizen entfernen ihre Häkchen beim Reset des Spiel
 
 ### Die Art wählen
 
-Wähle die Art einer Notiz im Feld neben ihrem Titel (*Normal*, *Täglicher Reset*, *Wöchentlicher Reset*) oder per Rechtsklick in der Liste › *Reset-Art*. Beim täglichen bzw. wöchentlichen Reset des Spiels werden alle Häkchen in so einer Notiz entfernt – praktisch für Dailies und wöchentliche Raids. Stellst du eine Notiz auf täglich oder wöchentlich um, bleiben ihre Häkchen bis zum nächsten Reset.
+Wähle die Art einer Notiz im Feld neben ihrem Titel (*Kein Reset*, *Täglicher Reset*, *Wöchentlicher Reset*) oder per Rechtsklick in der Liste › *Reset-Art*. Beim täglichen bzw. wöchentlichen Reset des Spiels werden alle Häkchen in so einer Notiz entfernt – praktisch für Dailies und wöchentliche Raids. Stellst du eine Notiz auf täglich oder wöchentlich um, bleiben ihre Häkchen bis zum nächsten Reset.
 
 ### Wann Notizen zurückgesetzt werden
 
@@ -180,10 +184,13 @@ Das sind die Tasten, die memo nutzt, sortiert danach, wo sie wirken.
 ### Editor
 
 - **Strg+B** – fett
+- **Strg+K** – Link einfügen oder ändern
 - **Strg+I** – kursiv
 - **Strg+S** – speichern
 - **Strg+Z** – dein Tippen rückgängig machen
 - **Rücktaste** – neben einem Chat-Link-Chip: den ganzen Chip löschen
+- **Rücktaste** – direkt hinter einem Listen- oder Checkbox-Marker: den ganzen Marker entfernen, der Text bleibt
+- **Rücktaste** / **Entf** – an einer Klammer, die zu einem Link gehört: den ganzen Link löschen
 
 ## Wo deine Notizen gespeichert werden
 

@@ -19,7 +19,7 @@ use trailkit_memo_editor::{
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText, Text},
     note_tree::{
-        Group, GroupId, InsertionPoint, NodeId, Note, NoteId, NoteKind, ResetPeriod,
+        Group, GroupId, InsertionPoint, NodeId, Note, NoteId, ResetPeriod, ResetSchedule,
         TreeNode as Node,
     },
     settings::UnsavedChanges,
@@ -220,7 +220,7 @@ impl MemoWindow {
             || matches!(action, WindowAction::NewNote(_) | WindowAction::NewGroup(_));
         if self.ui_state.compact_note_view && leaves_compact {
             self.ui_state.compact_note_view = false;
-            self.saver.save_ui_state(self.ui_state);
+            self.saver.save_ui_state(&self.ui_state);
         }
     }
 
@@ -277,17 +277,11 @@ impl MemoWindow {
                 self.change_selected(NodeId::Group(*group));
                 self.toggle_group(*group);
             }
-            WindowAction::SetExpanded(group, expanded) => {
-                if let Some(group) = self.document.group_mut(*group)
-                    && group.expanded != *expanded
-                {
-                    group.expanded = *expanded;
-                    self.save_notes();
-                }
-            }
+            WindowAction::SetExpanded(group, expanded) => self.set_expanded(*group, *expanded),
             WindowAction::Move(node, point) => {
                 let from = self.document.place(*node);
                 if self.document.move_node(*node, *point) {
+                    self.expand_parent_of(*node);
                     // Moves are undoable (M114, M135).
                     if let (Some(from), Some(to)) = (from, self.document.place(*node)) {
                         self.undo.record(UndoStep::Move {
@@ -310,11 +304,12 @@ impl MemoWindow {
                 let point = self.insertion_point(*point);
                 let note = Note::new(
                     Text::NewNote.get(language).to_owned(),
-                    NoteKind::Normal,
+                    ResetSchedule::Never,
                     now,
                 );
                 let id = NodeId::Note(note.id);
                 self.document.insert(point, Node::Note(note));
+                self.expand_parent_of(id);
                 self.change_selected(id);
                 self.start_rename_of_new(id, Text::NewNote.get(language));
                 self.save_notes();
@@ -325,6 +320,7 @@ impl MemoWindow {
                 let group = Group::new(Text::NewGroup.get(language).to_owned());
                 let id = NodeId::Group(group.id);
                 self.document.insert(point, Node::Group(group));
+                self.expand_parent_of(id);
                 self.change_selected(id);
                 self.start_rename_of_new(id, Text::NewGroup.get(language));
                 self.save_notes();
@@ -387,7 +383,7 @@ impl MemoWindow {
             }
             WindowAction::TogglePreview => {
                 self.ui_state.preview_visible = !self.ui_state.preview_visible;
-                self.saver.save_ui_state(self.ui_state);
+                self.saver.save_ui_state(&self.ui_state);
             }
             WindowAction::RestoreDraft(id) => {
                 if self.editor.is_none()
@@ -428,7 +424,7 @@ impl MemoWindow {
             WindowAction::ClearSearch => self.search_field.clear(false),
             WindowAction::ToggleNoteList => {
                 self.ui_state.note_list_hidden = !self.ui_state.note_list_hidden;
-                self.saver.save_ui_state(self.ui_state);
+                self.saver.save_ui_state(&self.ui_state);
             }
             WindowAction::ShowSearch => self.show_search_field(),
             WindowAction::HideSearch => self.hide_search_field(),
@@ -440,7 +436,7 @@ impl MemoWindow {
             }
             WindowAction::ToggleCompactNoteView => {
                 self.ui_state.compact_note_view = !self.ui_state.compact_note_view;
-                self.saver.save_ui_state(self.ui_state);
+                self.saver.save_ui_state(&self.ui_state);
             }
             WindowAction::Markdown(MarkdownAction::ToggleTask(marker)) => {
                 let Some(id) = self.ui_state.shown_note else {
@@ -456,7 +452,7 @@ impl MemoWindow {
                 }
             }
             WindowAction::Markdown(MarkdownAction::OpenLink(url)) => open_link(url),
-            WindowAction::Markdown(MarkdownAction::ChatLinkCopied(_)) => {
+            WindowAction::Markdown(MarkdownAction::Copied(_)) => {
                 self.toast = Some(WindowToast {
                     toast: Toast::new(chip_text(ChipText::Copied, language).to_owned()),
                     kind: WindowToastKind::Message,
@@ -482,9 +478,24 @@ impl MemoWindow {
             if !self.collapsed_in_search.remove(&group) {
                 self.collapsed_in_search.insert(group);
             }
-        } else if let Some(group) = self.document.group_mut(group) {
-            group.expanded = !group.expanded;
-            self.save_notes();
+        } else {
+            self.set_expanded(group, !self.ui_state.is_expanded(group));
+        }
+    }
+
+    /// Expands or collapses `group` outside a search and saves the window
+    /// state on a change (M201).
+    pub(super) fn set_expanded(&mut self, group: GroupId, expanded: bool) {
+        if self.ui_state.set_expanded(group, expanded) {
+            self.saver.save_ui_state(&self.ui_state);
+        }
+    }
+
+    /// Expands the group holding `node`, so a node that was just created,
+    /// moved or restored is visible (M201).
+    pub(super) fn expand_parent_of(&mut self, node: NodeId) {
+        if let Some(Some(group)) = self.document.parent(node) {
+            self.set_expanded(group, true);
         }
     }
 
@@ -503,7 +514,7 @@ impl MemoWindow {
             self.note_view
                 .show_other_note(self.search.current.is_some());
         }
-        self.saver.save_ui_state(self.ui_state);
+        self.saver.save_ui_state(&self.ui_state);
     }
 
     /// Selects and shows `note` and makes its row visible (M185): a search
@@ -522,15 +533,10 @@ impl MemoWindow {
         let mut expanded_any = false;
         for group in self.document.ancestors(node) {
             self.collapsed_in_search.remove(&group);
-            if let Some(group) = self.document.group_mut(group)
-                && !group.expanded
-            {
-                group.expanded = true;
-                expanded_any = true;
-            }
+            expanded_any |= self.ui_state.set_expanded(group, true);
         }
         if expanded_any {
-            self.save_notes();
+            self.saver.save_ui_state(&self.ui_state);
         }
         self.change_selected(node);
         self.note_list.reveal(node);
@@ -549,7 +555,7 @@ impl MemoWindow {
         // The rename happens in the list, so it must be shown.
         if self.ui_state.note_list_hidden {
             self.ui_state.note_list_hidden = false;
-            self.saver.save_ui_state(self.ui_state);
+            self.saver.save_ui_state(&self.ui_state);
         }
         self.note_list.start_rename(node, title.to_owned());
     }

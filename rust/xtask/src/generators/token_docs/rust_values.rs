@@ -33,12 +33,13 @@ const NESTED_TYPE: &str = "ChipCategoryColors";
 
 /// Groups shared by both themes as one constant: `Theme` field, constant
 /// and Rust type.
-const SHARED_GROUPS: [(&str, &str, &str); 7] = [
+const SHARED_GROUPS: [(&str, &str, &str); 8] = [
     ("spacing", "SPACING", "Spacing"),
     ("list", "LIST_LAYOUT", "ListLayout"),
     ("pane", "PANE_LAYOUT", "PaneLayout"),
     ("button", "BUTTON_LAYOUT", "ButtonLayout"),
     ("menu", "MENU_LAYOUT", "MenuLayout"),
+    ("tooltip", "TOOLTIP_LAYOUT", "TooltipLayout"),
     ("radius", "RADII", "Radii"),
     ("typography", "TYPOGRAPHY", "Typography"),
 ];

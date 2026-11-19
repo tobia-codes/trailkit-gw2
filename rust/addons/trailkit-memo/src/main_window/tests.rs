@@ -2,6 +2,7 @@
 //! `cargo xtask ui-test` (`--update` rewrites `tests/snapshots/`).
 
 mod data_safety;
+mod editing;
 mod find_in_note;
 mod note_list;
 mod save_errors;
@@ -26,7 +27,7 @@ use trailkit_ui_testing::{
 
 use super::*;
 use trailkit_memo_shared::{
-    note_tree::{Group, NoteKind, ResetPeriod, TreeNode as Node},
+    note_tree::{Group, ResetPeriod, ResetSchedule, TreeNode as Node},
     storage_worker::{SaveConnection, SavingAllowed, SettingsSummary, StorageWorker, WorkerTiming},
 };
 
@@ -39,8 +40,8 @@ fn fixed_time() -> Timestamp {
 }
 
 /// A note with `title`, `body` and `kind`.
-fn note(title: &str, body: &str, kind: NoteKind) -> Note {
-    let mut note = Note::new(title.to_owned(), kind, fixed_time());
+fn note(title: &str, body: &str, reset_schedule: ResetSchedule) -> Note {
+    let mut note = Note::new(title.to_owned(), reset_schedule, fixed_time());
     note.body = body.to_owned();
     note
 }
@@ -51,7 +52,7 @@ fn sample_document() -> NotesDocument {
     raids.children.push(Node::Note(note(
         "Weekly clears",
         "- [x] Spirit Vale\n- [ ] Salvation Pass",
-        NoteKind::WeeklyReset {
+        ResetSchedule::Weekly {
             last_reset_applied_at: fixed_time(),
         },
     )));
@@ -60,18 +61,19 @@ fn sample_document() -> NotesDocument {
             Node::Note(note(
                 "Shopping list",
                 "## Ectos\n- [x] **250** Globs of Ectoplasm\n- [ ] Mystic Coins\nCheck the [wiki](https://wiki.guildwars2.com) first.",
-                NoteKind::Normal,
+                ResetSchedule::Never,
             )),
             Node::Note(note(
                 "Dailies",
                 "- [ ] Wizard's Vault",
-                NoteKind::DailyReset {
+                ResetSchedule::Daily {
                     last_reset_applied_at: fixed_time(),
                 },
             )),
             Node::Group(raids),
         ],
         trash: Vec::new(),
+        unknown_fields: Default::default(),
     }
 }
 
@@ -210,7 +212,7 @@ fn wide_window_in_both_themes() {
         (ThemeKind::Dark, "memo-wide-dark"),
         (ThemeKind::Light, "memo-wide-light"),
     ] {
-        let (mut memo, _worker, _directory) = memo_window(document.clone(), ui_state);
+        let (mut memo, _worker, _directory) = memo_window(document.clone(), ui_state.clone());
         assert_window(&mut memo, [640.0, 360.0], theme, name);
     }
 }
@@ -446,7 +448,10 @@ fn kind_dropdown_lists_the_kinds_and_changes_the_note() {
     let image = harness.settle(2, &at([300.0, 300.0], false), &mut draw_light);
     // The chip takes the color of the daily badge (M104).
     assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-daily-chip-light", &image);
-    let kind = memo.document.note(note).map(|note| note.kind.period());
+    let kind = memo
+        .document
+        .note(note)
+        .map(|note| note.reset_schedule.period());
     assert_eq!(kind, Some(Some(ResetPeriod::Daily)));
 }
 
@@ -485,16 +490,27 @@ fn weekly_note(document: &NotesDocument) -> Option<NodeId> {
     })
 }
 
-/// The saved expand state of every root group of `document`.
-fn expanded_flags(document: &NotesDocument) -> Vec<bool> {
+/// The saved expand state of every root group of `document` (M201).
+fn expanded_flags(document: &NotesDocument, ui_state: &UiState) -> Vec<bool> {
     document
         .root
         .iter()
         .filter_map(|node| match node {
-            Node::Group(group) => Some(group.expanded),
+            Node::Group(group) => Some(ui_state.is_expanded(group.id)),
             Node::Note(_) => None,
         })
         .collect()
+}
+
+/// `ui_state` with every root group of `document` collapsed (M201).
+fn with_root_groups_collapsed(document: &NotesDocument, ui_state: UiState) -> UiState {
+    let mut ui_state = ui_state;
+    for node in &document.root {
+        if let Node::Group(group) = node {
+            ui_state.set_expanded(group.id, false);
+        }
+    }
+    ui_state
 }
 
 #[test]

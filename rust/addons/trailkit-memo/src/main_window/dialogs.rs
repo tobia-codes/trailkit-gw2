@@ -1,18 +1,17 @@
 //! In-window dialogs and problem hints of the memo main window: the
-//! dialog card, the unsaved-changes question (M70), the delete questions
+//! dialog content, the unsaved-changes question (M70), the delete questions
 //! (M134, M146) and storage problems.
 
 pub(super) mod closing;
 pub(super) mod save_status;
 
-use nexus::imgui::{Condition, Key, MouseButton, StyleColor, StyleVar, Ui, Window, WindowFlags};
-use trailkit_ui::drawing::draw_list::window_draw_list;
+use nexus::imgui::{Key, Ui};
 use trailkit_ui::{
     controls::button::{Button, ButtonKind, ButtonState},
+    controls::text_field::move_below_last_item,
+    feedback::dialog::{Dialog, DialogHeight},
     feedback::status_card::{CardDetail, CardStatus, StatusCard, draw_status_card},
     feedback::status_line::{Status, draw_status_line},
-    text::font_registry::FontScope,
-    text::fonts::FontRole,
     text::{TextStyle, draw_text_wrapped},
     theme::Theme,
 };
@@ -75,18 +74,6 @@ impl MemoWindow {
     }
 }
 
-/// Where the dialog card was drawn and what the user chose.
-pub(super) struct DialogCard {
-    /// Top-left corner (screen).
-    pub(super) min: [f32; 2],
-    /// Bottom-right corner (screen).
-    pub(super) max: [f32; 2],
-    /// The measured height, for centering in the next frame.
-    pub(super) height: f32,
-    /// The chosen answer, if any.
-    pub(super) answer: Option<WindowAction>,
-}
-
 /// Minimum content width of a dialog card in average characters.
 pub(super) const DIALOG_MINIMUM_CHARACTERS: f32 = 28.0;
 
@@ -121,7 +108,10 @@ pub(super) struct DialogContent<'a> {
     pub(super) apart: Option<DialogButton<'a>>,
     /// The buttons at the right end, the main one last.
     pub(super) buttons: Vec<DialogButton<'a>>,
-    /// The harmless answer: Escape and a click on the dimmed area.
+    /// Tooltip of the close icon at the top right (R141).
+    pub(super) close: &'a str,
+    /// The harmless answer: the close icon, Escape and a click on the dimmed
+    /// area.
     pub(super) escape: WindowAction,
     /// The answer of Enter, if Enter answers at all.
     pub(super) enter: Option<WindowAction>,
@@ -146,83 +136,63 @@ fn draw_dialog_button(ui: &Ui, theme: &Theme, button: &DialogButton<'_>, size: [
     button_of(button, size[0]).draw(ui, theme)
 }
 
-/// Draws a dialog card centered in the current window (M54, M56, M70,
-/// `overlay-dialog-layout`): `bg.panel` with a `border` frame and
-/// `space.lg` padding; heading, wrapped question, then the button set apart
-/// on the left and the others at the right end, stacked full width (main
-/// button first, the one set apart last) when they do not fit.
-/// `last_height` is the card height measured in the previous frame.
-pub(super) fn draw_dialog_card(
+/// The width of a dialog's content in a window `window_width` wide: the
+/// question or the button row, at least [`DIALOG_MINIMUM_CHARACTERS`] and at
+/// most [`DIALOG_MAXIMUM_FRACTION`] of the window.
+fn dialog_content_width(
     ui: &Ui,
     theme: &Theme,
     content: &DialogContent<'_>,
-    last_height: Option<f32>,
-) -> DialogCard {
-    let spacing = ui.clone_style().item_spacing;
+    window_width: f32,
+) -> f32 {
     let padding = theme.spacing.large;
-    let window_position = ui.window_pos();
-    let window_size = ui.window_size();
-    let right_group = right_group_width(ui, theme, content);
+    let maximum_content = (window_width * DIALOG_MAXIMUM_FRACTION - 2.0 * padding).max(1.0);
+    dialog_row_width(ui, theme, content)
+        .max(ui.calc_text_size(content.question)[0])
+        .max(ui.calc_text_size("n")[0] * DIALOG_MINIMUM_CHARACTERS)
+        .min(maximum_content)
+}
+
+/// The width the buttons take in one row: the one set apart, a gap, and the
+/// buttons at the right end.
+fn dialog_row_width(ui: &Ui, theme: &Theme, content: &DialogContent<'_>) -> f32 {
     let apart_width = content.apart.as_ref().map_or(0.0, |button| {
         dialog_button_width(ui, theme, button) + theme.spacing.extra_large
     });
-    let row_width = apart_width + right_group;
-    let maximum_content = (window_size[0] * DIALOG_MAXIMUM_FRACTION - 2.0 * padding).max(1.0);
-    let content_width = row_width
-        .max(ui.calc_text_size(content.question)[0])
-        .max(ui.calc_text_size("n")[0] * DIALOG_MINIMUM_CHARACTERS)
-        .min(maximum_content);
-    let stacked = row_width > content_width;
-    let width = content_width + 2.0 * padding;
-    let height = last_height.unwrap_or(window_size[1] / 3.0);
-    let min = [
-        window_position[0] + ((window_size[0] - width) / 2.0).max(0.0),
-        window_position[1] + ((window_size[1] - height) / 2.0).max(0.0),
-    ];
-    let max = [min[0] + width, min[1] + height];
-    let draw_list = window_draw_list(ui);
-    draw_list
-        .add_rect(min, max, theme.surface.panel.to_array())
-        .filled(true)
-        .rounding(theme.radius.large)
-        .build();
-    draw_list
-        .add_rect(min, max, theme.border.subtle.to_array())
-        .thickness(theme.border.width.max(1.0))
-        .rounding(theme.radius.large)
-        .build();
-    let left = min[0] + padding;
-    ui.set_cursor_screen_pos([left, min[1] + padding]);
+    apart_width + right_group_width(ui, theme, content)
+}
+
+/// Draws the content of a dialog below its title, `content_width` wide (M54,
+/// M56, M70, `overlay-dialog-layout`): the wrapped question, the status line,
+/// then the button set apart on the left and the others at the right end,
+/// stacked full width (main button first, the one set apart last) when they
+/// do not fit. Returns the answer of a clicked button or of Enter.
+fn draw_dialog_content(
+    ui: &Ui,
+    theme: &Theme,
+    content: &DialogContent<'_>,
+    content_width: f32,
+) -> Option<WindowAction> {
+    let left = ui.cursor_screen_pos()[0];
+    let stacked = dialog_row_width(ui, theme, content) > content_width;
     {
-        let _wrap = ui.push_text_wrap_pos_with_pos(left - window_position[0] + content_width);
-        draw_text_wrapped(ui, theme, TextStyle::Heading3, content.title);
-    }
-    {
-        // Every new line starts at the window padding; move into the card.
-        ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
-        let _wrap = ui.push_text_wrap_pos_with_pos(left - window_position[0] + content_width);
+        let _wrap = ui.push_text_wrap_pos_with_pos(ui.cursor_pos()[0] + content_width);
         draw_text_wrapped(ui, theme, TextStyle::Body, content.question);
     }
     if let Some(status) = content.status {
         draw_dialog_status(ui, theme, status, left);
     }
-    ui.dummy([0.0, theme.spacing.small]);
-    let mut answer = draw_dialog_buttons(ui, theme, content, [left, content_width], stacked);
-    if ui.is_key_pressed(Key::Escape) {
-        answer = Some(content.escape.clone());
-    } else if let Some(enter) = &content.enter
-        && ui.is_key_pressed(Key::Enter)
-    {
-        answer = Some(enter.clone());
-    }
-    // The last item adds item spacing below itself; the card ends there plus padding.
-    let measured = ui.cursor_screen_pos()[1] - spacing[1] - min[1] + padding;
-    DialogCard {
-        min,
-        max,
-        height: measured,
-        answer,
-    }
+    move_below_last_item(ui, theme.spacing.large);
+    // Whole pixels keep the button edges crisp.
+    let [x, y] = ui.cursor_screen_pos();
+    ui.set_cursor_screen_pos([x, y.round()]);
+    let answer = draw_dialog_buttons(ui, theme, content, [left, content_width], stacked);
+    answer.or_else(|| {
+        content
+            .enter
+            .clone()
+            .filter(|_| ui.is_key_pressed(Key::Enter))
+    })
 }
 
 /// Draws the `danger` status line of a dialog card at `left` (screen x):
@@ -279,7 +249,7 @@ fn draw_dialog_buttons(
             ui.same_line();
         }
         ui.set_cursor_screen_pos([
-            left + content_width - right_group,
+            (left + content_width - right_group).round(),
             ui.cursor_screen_pos()[1],
         ]);
         for (index, button) in content.buttons.iter().enumerate() {
@@ -300,6 +270,7 @@ fn draw_dialog_buttons(
 pub(super) fn unsaved_changes_dialog(language: Language) -> DialogContent<'static> {
     DialogContent {
         title: Text::UnsavedChangesTitle.get(language),
+        close: Text::CloseWindow.get(language),
         question: Text::UnsavedChangesQuestion.get(language),
         status: None,
         apart: Some(DialogButton {
@@ -355,6 +326,7 @@ pub(super) fn save_failed_dialog(
     };
     DialogContent {
         title: SaveText::SaveFailed.get(language),
+        close: Text::CloseWindow.get(language),
         question: SaveText::DiscardDeletesChanges.get(language),
         status: (prompt.failed_again && !saving).then(|| SaveText::FailedAgain.get(language)),
         apart: Some(DialogButton {
@@ -390,6 +362,7 @@ fn confirmation_dialog<'a>(
 ) -> DialogContent<'a> {
     DialogContent {
         title: &confirmation.title,
+        close: Text::CloseWindow.get(language),
         question: &confirmation.text,
         status: None,
         apart: None,
@@ -431,48 +404,49 @@ impl MemoWindow {
         } else if let Some(confirmation) = &self.confirmation {
             confirmation_dialog(confirmation, language)
         } else {
-            self.dialog_height = None;
+            self.dialog_height = DialogHeight::default();
+            self.draw_link_dialog(ui, language, theme);
             return;
         };
-        let _body_font = FontScope::push(ui, FontRole::Body);
-        let Some(window_rect) = self.window_rect else {
+        let Some([position, size]) = self.window_rect else {
             return;
         };
-        let _background =
-            ui.push_style_color(StyleColor::WindowBg, theme.surface.modal_overlay.to_array());
-        let _border = ui.push_style_var(StyleVar::WindowBorderSize(0.0));
-        let mut answer = None;
-        let mut measured = self.dialog_height;
-        Window::new("###trailkit-memo-dialog")
-            .position(window_rect[0], Condition::Always)
-            .size(window_rect[1], Condition::Always)
-            .flags(
-                WindowFlags::NO_DECORATION
-                    | WindowFlags::NO_MOVE
-                    | WindowFlags::NO_SAVED_SETTINGS
-                    | WindowFlags::NO_NAV,
-            )
-            .focused(self.window_focused)
-            .build(ui, || {
-                let card = draw_dialog_card(ui, theme, &content, measured);
-                measured = Some(card.height);
-                answer = card.answer;
-                // A click on the dimmed area picks the harmless answer
-                // (`overlay-dialog-layout`).
-                let mouse = ui.io().mouse_pos;
-                let on_card = (card.min[0]..=card.max[0]).contains(&mouse[0])
-                    && (card.min[1]..=card.max[1]).contains(&mouse[1]);
-                if answer.is_none()
-                    && !on_card
-                    && ui.is_window_hovered()
-                    && ui.is_mouse_clicked(MouseButton::Left)
-                {
-                    answer = Some(content.escape.clone());
-                }
-            });
-        self.dialog_height = measured;
+        let response = Dialog::new(
+            "###trailkit-memo-dialog",
+            content.title,
+            content.close,
+            position,
+            size,
+        )
+        .focused(self.window_focused)
+        .draw(
+            ui,
+            theme,
+            &mut self.dialog_height,
+            |window_width| dialog_content_width(ui, theme, &content, window_width),
+            |content_width| draw_dialog_content(ui, theme, &content, content_width),
+        );
+        let answer = response.and_then(|response| {
+            if response.is_closed {
+                Some(content.escape.clone())
+            } else {
+                response.content
+            }
+        });
         if let Some(answer) = answer {
             self.apply(&answer, language);
+        }
+    }
+
+    /// Draws the link dialog of the editor, if open, over the dimmed window
+    /// like the other dialogs (M208).
+    fn draw_link_dialog(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+        let Some(window) = self.window_rect else {
+            return;
+        };
+        let is_focused = self.window_focused;
+        if let Some(editor) = self.editor.as_mut() {
+            editor.draw_link_dialog(ui, language, theme, window, is_focused);
         }
     }
 }

@@ -79,13 +79,21 @@ impl MemoWindow {
         true
     }
 
-    /// Whether Escape belongs to the window instead of closing it: a menu or
-    /// dropdown popup is open, the window menu is open (M166), the find bar
+    /// Whether the editor shows its link dialog.
+    fn is_link_dialog_open(&self) -> bool {
+        self.editor
+            .as_ref()
+            .is_some_and(trailkit_memo_editor::editor::Editor::is_link_dialog_open)
+    }
+
+    /// Whether Escape belongs to the window instead of closing it: the link
+    /// dialog (M208) or a menu or dropdown popup is open, the window menu is open (M166), the find bar
     /// is open (M198), or the search takes it (M124). Nexus hides the window on Escape; the bridge then
     /// shows it again and calls [`Self::handle_escape`].
     #[must_use]
     pub fn takes_escape(&self) -> bool {
-        self.popup_open
+        self.is_link_dialog_open()
+            || self.popup_open
             || self.window_menu_open
             || self.find_bar_shown()
             || self.search_takes_escape()
@@ -96,7 +104,11 @@ impl MemoWindow {
     /// search. Call it
     /// before drawing the window content, so the popup closes this frame.
     pub fn handle_escape(&mut self, ui: &Ui) {
-        if std::mem::take(&mut self.popup_open) {
+        if self.is_link_dialog_open() {
+            if let Some(editor) = self.editor.as_mut() {
+                editor.cancel_link_dialog();
+            }
+        } else if std::mem::take(&mut self.popup_open) {
             close_open_popups(ui);
         } else if self.window_menu_open {
             self.window_menu_open = false;

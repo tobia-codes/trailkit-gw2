@@ -12,10 +12,11 @@
 //! [`MarkdownAction`] for the caller to apply.
 
 mod inline_text;
+mod link_menu;
 
 use nexus::imgui::{MouseCursor, Ui};
 
-use self::inline_text::draw_spans;
+use self::{inline_text::draw_spans, link_menu::draw_link_menu};
 use crate::{
     chat_link::chat_link_chip::ChipContext,
     drawing::draw_list::window_draw_list,
@@ -137,10 +138,9 @@ pub enum MarkdownAction {
     ToggleTask(TaskMarker),
     /// A web or e-mail link was clicked; open it with [`open_link`].
     OpenLink(String),
-    /// A chat-link chip was clicked and its code copied to the clipboard
-    /// (memo plan M75); show "Copied" by passing it as
-    /// [`ChipContext::copied`] for a moment.
-    ChatLinkCopied(String),
+    /// A chip was clicked, or a copy entry of the right-click menu chosen, and
+    /// this text is on the clipboard (memo plan M75, M210): confirm it.
+    Copied(String),
 }
 
 /// Horizontal layout of one block: where text starts and where it must wrap.
@@ -232,7 +232,7 @@ pub fn draw_markdown(
         action = action.or(clicked);
     }
     ui.dummy([0.0, 0.0]);
-    action
+    action.or(draw_link_menu(ui, theme, chips))
 }
 
 /// Draws one `block` on the current line with the document's `layout`;

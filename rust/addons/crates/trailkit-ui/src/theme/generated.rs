@@ -38,6 +38,7 @@ impl Theme {
         pane: components::PANE_LAYOUT,
         button: components::BUTTON_LAYOUT,
         menu: components::MENU_LAYOUT,
+        tooltip: components::TOOLTIP_LAYOUT,
         radius: radius::RADII,
         typography: typography::TYPOGRAPHY,
     };
@@ -66,6 +67,7 @@ impl Theme {
         pane: components::PANE_LAYOUT,
         button: components::BUTTON_LAYOUT,
         menu: components::MENU_LAYOUT,
+        tooltip: components::TOOLTIP_LAYOUT,
         radius: radius::RADII,
         typography: typography::TYPOGRAPHY,
     };

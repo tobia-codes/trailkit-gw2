@@ -13,7 +13,7 @@ mod drag_and_drop;
 mod rename;
 mod rows;
 
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
 
 use nexus::imgui::{MouseButton, Ui};
 use trailkit_memo_shared::{
@@ -91,6 +91,8 @@ pub struct NoteListInput<'a> {
     pub document: &'a NotesDocument,
     /// The selected note or group.
     pub selected: Option<NodeId>,
+    /// The groups the user collapsed (M201); all others are expanded.
+    pub collapsed_groups: &'a BTreeSet<GroupId>,
     /// The note open in the editor: it and the groups holding it cannot be
     /// deleted (M141).
     pub edited: Option<NoteId>,
@@ -160,6 +162,8 @@ struct RowContext<'frame, 'input> {
     document: &'input NotesDocument,
     /// The selected note or group.
     selected: Option<NodeId>,
+    /// The groups the user collapsed (M201).
+    collapsed_groups: &'input BTreeSet<GroupId>,
     /// The note open in the editor (M141).
     edited: Option<NoteId>,
     /// The note or group being dragged; it is drawn faded (M106).
@@ -266,6 +270,7 @@ impl NoteList {
         let NoteListInput {
             document,
             selected,
+            collapsed_groups,
             edited,
             search,
             mut extras,
@@ -275,6 +280,7 @@ impl NoteList {
         let mut context = RowContext {
             document,
             selected,
+            collapsed_groups,
             edited,
             dragged: self
                 .drag

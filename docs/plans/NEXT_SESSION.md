@@ -1,7 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-18 (session 43; find in note, data-safety tests, README packages). Current state and
-next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
+Last updated: 2026-11-19 (session 46, PC; in-game tests of PR #152, layout decisions R147–R150). Current state and next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
 
@@ -11,7 +10,6 @@ next steps only; decisions belong in plans, lasting facts in skills. Keep under 
 
 ## ▶ Resume here
 
-**Active work branch: `feature/memo-extensible-data-model` (draft PR #152).** Start every session with `git fetch origin && git switch feature/memo-extensible-data-model && git pull --ff-only`, then read this file again there: that copy is the current handoff. Remove this line when the branch is merged.
 
 **First, if [`in-game-tests.md`](in-game-tests.md) lists tests, ask the user: can you test in game now?** Remove each item once
 the user confirms it (user requests 2026-11-13, 2026-11-16); an empty list means no question. A failed test becomes a `bugfix/` branch.
@@ -24,15 +22,22 @@ the upstream (narrow fetch refspec): set `branch.<b>.remote/merge` by hand for t
 
 **On the Mac (no game, no WSL):** `git fetch origin && git switch develop && git pull --ff-only`; deploy, `ui-test` and in-game tests wait for the Windows PC; check `source ~/.cargo/env` and a first `cargo test` there; snapshots via the PR's Windows CI.
 
-**Session 43 (2026-11-18, PC), all on `develop`:** #144 M194–M197; #145 find in note, Shift twice (M198, M199); #146 stopped-worker fix, 22 data-safety
-tests; #147 README **Packages** (R138: update with every dependency change). All in-game tests passed; the list is empty.
+**Decided, not implemented** (M212, R140, mock https://claude.ai/artifact/2DJ1oU6jPCpswHgnaSm3W1): find arrows active (empty: focus the field; no hits: "No results" flashes),
+log export active (click re-checks, then the info), event button **hidden** until the event picker exists (variant A). The mock lacks the export hint sentence. **R140 buttons, after the bugfixes below (one question at a time):** 1. **Q2 open:** tokens §5.1 rule "a hint of an element sits `space.sm` directly below it" (recommended yes; then the export info moves directly under the button, the hint sentence after it) → update the mock (R87 OK) → implement the R140 buttons + help texts + in-game test. 2. shared input core for `SearchField` and `TextField`? Recommended yes. 3. slash menu BL23: check Notion's behavior, then mock. 4. splits for the length hints (`markdown.rs`, `editor.rs`, `i18n.rs`, `actions.rs`, `buffer.rs`, `states.rs`).
+**Sessions 44–46 (2026-11-18/19), merged via PR #152:** memo data model M201–M204, drop zones, Backspace on markers/links, link dialog, bare links/e-mails, right-click menu (M205–M211),
+R139–R146 (TextField, no disabled buttons, dialog close icon, wrapped tooltips, link icons, measured form spacing, shared `Dialog`/`Backdrop`, report reuse), M213 text size percent, R149 one link underline. All in-game tests passed except the two below.
+**Next, in order:** 1. `bugfix/memo-shortcut-keys`: Ctrl+Z/Ctrl+Y/Ctrl+Shift+Z and Ctrl+0 never reach memo outside text input (not in `nexus_bridge/key_routing.rs`; the game gets them and opens Contacts) → route them like Delete/Ctrl+F; retest in-game tests 25 step 4 and 34.
+2. `bugfix/ui-tooltip-through-overlay`: `is_item_hovered` in this ImGui checks only the root window (`imgui.cpp:3117`), so buttons under the window menu show tooltips → one shared hover check in `trailkit-ui` for every tooltip, test with the menu over a button.
+3. `feature/ui-layout-rules`: R147 icon size by text role (0.78), R148 one spacing scale + `Stack` + one divider + dropdown list `space.xs` below its field, R150 dialog titles `Heading2`, BL25 numbered list button: one mock (R87) first.
+Also open: length hint `draw_spans` (`inline_text.rs`, 80 lines) for the split grilling; one unreproduced debug crash `imgui.h:1629` while deleting in a link label (if it recurs: Ignore, note cursor placement, key, preview, tooltip).
 **Next: data pipeline** (`rust/tools/trailkit-datagen`): the failing GemExchange job below (review item 3 done, D42), then tests for `archive.rs`, `wvw.rs`,
 `gem_exchange.rs`, `gw2_api.rs`. Coverage 2026-11-18 before #146: addons 89 % of lines, memo app 70 %, datagen 52 %.
 **Then test gaps:** extract and test the Escape/close logic of `nexus_bridge/render.rs` like `key_routing.rs`; window actions (new group, format, preview, compact view, open folder, clear search); Ctrl+Y/Ctrl+Shift+Z keys. `xtask` last. Prove new tests with injected faults.
+**Coverage tooling — open question (2026-11-18):** A `cargo xtask coverage` + docs in agent-reference/CONTRIBUTING (recommended), B docs only, C try `cargo-llvm-cov`; ask the user. Until then the manual steps:
 **Coverage on demand, not in CI** (`llvm-tools` installed): `RUSTFLAGS="-C instrument-coverage" CARGO_TARGET_DIR=target/coverage cargo xwin test --no-run`, run each binary from its crate with `LLVM_PROFILE_FILE`/`TRAILKIT_SNAPSHOT_ROOT` via `WSLENV` (`/p`), `llvm-profdata merge`, `llvm-cov export`; then delete `rust/*.profraw` and the 2.8 GB build.
 
 **Open, in this order:**
-1. **In-game tests:** none open. After that pipeline work: Q501 toast visibility needs an R87 mockup; BL18 text size in core settings needs grilling.
+1. **In-game tests:** tests 25–33 after deploying the branch above. After that pipeline work: Q501 toast visibility needs an R87 mockup; BL18 text size in core settings needs grilling.
    Propose splits via grilling for length hints: `shared/i18n.rs`, `get`, `slices/editor/editor.rs`, `draw_find_bar`, `draw_main_window`, `actions.rs`.
    Q436 (menu divider) stays open. The user kept the current find marks (current filled, others framed; section 5 of the mockup was declined).
    **Favorites** on `feature/memo-favorites` (M188–M191 decided): open Q407, Q408, Q416–Q419, then mockup (R87) and implementation.
@@ -41,11 +46,7 @@ tests; #147 README **Packages** (R138: update with every dependency change). All
    All addons: more languages without growing the DLLs (BACKLOG BL15; reworks the `get` tables kept whole in Q392).
 3. Last: chat translation addon feasibility (BL16, research first); then the queue below and the review items, one at a time.
 
-**Memo data model (M200–M203, 2026-11-18, phone), not implemented:** keep `notes.json`; `expanded` to `ui_state.json`; forward-compatible
-fields (unknown fields/values kept, M202); `kind` → `reset_schedule` (`never`/`daily`/`weekly`) with a migration step. Before the first release.
-**Decided, not scheduled:** Q340 backups with restore after settings and export/import (M28); Q329 `cargo bloat` at release prep.
-
-**Lessons:** measure before fixing; remove probes by editing; mockups first (R87); snapshot checks need a (draft) PR.
+**Open (grill):** an unknown tree node `type` (e.g. a future `guild_note`) still stops older builds from loading `notes.json`; `settings.json`/`ui_state.json` do not keep unknown fields (M202 covers notes only). **Decided, not scheduled:** Q340 backups with restore after settings and export/import (M28); Q329 `cargo bloat` at release prep. **Lessons:** measure before fixing; remove probes by editing; mockups first (R87); snapshot checks need a (draft) PR.
 
 **Deferred by the user (2026-11-12): one theme character for addons and the coming React website.** No code yet. Mockups:
 https://claude.ai/artifact/SFFrXawiqYD6HouhdihGdv (latest: Papier A–D). Wanted: GW2-reminiscent, own character, dark, very subtle
@@ -55,12 +56,9 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M204+, R139+, B46+, BL20+, questions from 515**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M214+, R151+, B46+, BL27+, questions from 515**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
-1. **Storage failures:** done (memo M180, 2026-11-10).
-2. **Pre-push protection:** done (Q460–Q462, R48, 2026-11-16).
-3. **WvW snapshot validity:** done (D42, 2026-11-18): no file and a failed run once the region's matches have ended.
 4. **Search cache:** `rust/addons/trailkit-memo/src/main_window/search.rs::update_search` calls `SearchQuery::parse` before checking the
    cache, allocating for unchanged queries every frame. Check unchanged inputs first; no benchmark was run.
 5. **Docs/skills accuracy:** READMEs done (R91). Still wrong: `nexus-addon-dev/references/addon-structure.md`
@@ -84,7 +82,7 @@ Next ids: **M204+, R139+, B46+, BL20+, questions from 515**. Deferred: GW2 build
 
 Triggers/consequences: [agent reference](../agent-reference.md#recurring-checks).
 - **Dependencies (R130):** checked and updated 2026-11-17 (26 patch updates on `chore/dependency-patch-updates`, in-game test 19; jiff 1.0 open; nexus-rs current; `cargo audit`: no vulnerabilities, unmaintained `instant` and `paste` via nexus-rs). Next due 2026-11-24.
-- **Wiki:** Nov 6 review got HTTP 403; public recovery/login status not confirmed; keep Wayback.
+- **Wiki:** public again on Nov 18 (`Event_timers` HTTP 200, no login redirect). Next event-data work: switch back from Wayback per `data/events/README.md`.
 - **C-703/25 P:** Nov 15 check on CURIA: still pending, no hearing, no AG opinion, DPF in force. Order of June 4, 2026 (ECLI:EU:C:2026:465). Recheck on CURIA when triggered:
   https://juris.curia.europa.eu/juris/liste.jsf?language=en&num=C-703%2F25
 - **WvW reset snapshots (checked 2026-11-07):** both Nov 6 EU (ran 22:12 UTC, +4.8 h) and Nov 7 NA (07:16 UTC,

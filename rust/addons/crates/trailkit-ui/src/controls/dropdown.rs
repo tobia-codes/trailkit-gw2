@@ -16,7 +16,8 @@ use crate::{
     color::Color,
     controls::button::draw_label,
     controls::menu::{
-        draw_fitted_popup, draw_menu_row_highlight, draw_menu_row_label, place_next_popup,
+        draw_fitted_popup, draw_menu_row_highlight, draw_menu_row_label, menu_row_content_right,
+        place_next_popup,
     },
     text::font_registry::FontScope,
     text::fonts::FontRole,
@@ -174,7 +175,7 @@ fn draw_option_list(
                 draw_icon(
                     ui,
                     Icon::CHECK,
-                    row_max[0] - theme.menu.row_padding_x - icon_width(ui),
+                    menu_row_content_right(ui, theme) - icon_width(ui),
                     [row_min[1], row_max[1] - extra],
                     packed(theme.accent.text),
                 );

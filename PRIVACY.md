@@ -41,6 +41,13 @@ cannot see who checked.
 - You are not obliged to allow this. Without it, Nexus cannot install
   updates. There is no automated decision-making or profiling.
 
+## Opening the wiki
+
+- **Open in wiki** on a chat-link chip opens the Guild Wars 2 wiki in your
+  browser, only when you choose it. The wiki then receives the chat code of
+  that chip and, like every website you visit, your IP address. Its operators'
+  privacy policy applies.
+
 ## Reporting a problem
 
 - **Report a problem** opens a form on GitHub in your browser. Only the

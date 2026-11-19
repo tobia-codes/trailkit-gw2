@@ -5,10 +5,12 @@
 //! and a broken state file is harmless. Window position and size are kept by
 //! ImGui itself.
 
+use std::collections::BTreeSet;
+
 use serde::{Deserialize, Serialize};
 use trailkit_storage::{SchemaVersion, VersionedDocument};
 
-use crate::note_tree::{NodeId, NoteId};
+use crate::note_tree::{GroupId, NodeId, NoteId, NotesDocument};
 
 /// Default content width of the note list in average characters (`n`),
 /// the regular pane minimum (M40, M74).
@@ -32,7 +34,7 @@ pub enum HelpWindowTab {
 /// The restorable state of the main window and the help window.
 ///
 /// A field missing from the file falls back to its default.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct UiState {
     /// The selected note or group.
@@ -66,6 +68,10 @@ pub struct UiState {
     /// Content width of the help window's topic list in average body
     /// characters (R101 Q314).
     pub help_topic_list_characters: f32,
+    /// The groups the user collapsed in the note list (M201); every other
+    /// group is expanded, so a new group starts expanded. Sorted, so the
+    /// file does not change without a real change.
+    pub collapsed_groups: BTreeSet<GroupId>,
 }
 
 impl Default for UiState {
@@ -86,6 +92,7 @@ impl Default for UiState {
             help_tab: HelpWindowTab::Help,
             help_topic: 0,
             help_topic_list_characters: DEFAULT_HELP_TOPIC_LIST_CHARACTERS,
+            collapsed_groups: BTreeSet::new(),
         }
     }
 }
@@ -106,6 +113,34 @@ impl UiState {
         } else {
             DEFAULT_NOTE_LIST_CHARACTERS
         }
+    }
+
+    /// Whether `group` is expanded in the note list (M201).
+    #[must_use]
+    pub fn is_expanded(&self, group: GroupId) -> bool {
+        !self.collapsed_groups.contains(&group)
+    }
+
+    /// Expands or collapses `group`; returns whether this changed anything,
+    /// so the caller saves only on a real change.
+    pub fn set_expanded(&mut self, group: GroupId, expanded: bool) -> bool {
+        if expanded {
+            self.collapsed_groups.remove(&group)
+        } else {
+            self.collapsed_groups.insert(group)
+        }
+    }
+
+    /// Forgets collapsed groups that are neither in the tree nor in the
+    /// trash of `document` (purged or never loaded); returns whether any
+    /// was forgotten.
+    pub fn forget_missing_groups(&mut self, document: &NotesDocument) -> bool {
+        let before = self.collapsed_groups.len();
+        self.collapsed_groups.retain(|&group| {
+            let node = NodeId::Group(group);
+            document.contains(node) || document.trash_entry(node).is_some()
+        });
+        self.collapsed_groups.len() != before
     }
 
     /// The editor/preview split, clamped to a usable range (protects against
@@ -169,6 +204,43 @@ mod tests {
                     < f32::EPSILON
             );
         }
+    }
+
+    #[test]
+    fn groups_are_expanded_until_collapsed() -> serde_json::Result<()> {
+        let group = GroupId::new_unique();
+        let mut state = UiState::default();
+        assert!(state.is_expanded(group));
+        assert!(state.set_expanded(group, false));
+        assert!(!state.set_expanded(group, false), "no change");
+        assert!(!state.is_expanded(group));
+        let json = serde_json::to_string(&state)?;
+        assert_eq!(serde_json::from_str::<UiState>(&json)?, state);
+        assert!(state.set_expanded(group, true));
+        assert!(state.is_expanded(group));
+        Ok(())
+    }
+
+    #[test]
+    fn forgets_collapsed_groups_that_no_longer_exist() {
+        use crate::note_tree::{Group, TreeNode};
+        let kept = Group::new("Kept".to_owned());
+        let trashed = Group::new("Trashed".to_owned());
+        let (kept_id, trashed_id, gone_id) = (kept.id, trashed.id, GroupId::new_unique());
+        let mut document = NotesDocument::default();
+        document.append(None, TreeNode::Group(kept));
+        document.append(None, TreeNode::Group(trashed));
+        assert!(document.move_to_trash(NodeId::Group(trashed_id), jiff::Timestamp::UNIX_EPOCH));
+        let mut state = UiState {
+            collapsed_groups: BTreeSet::from([kept_id, trashed_id, gone_id]),
+            ..UiState::default()
+        };
+        assert!(state.forget_missing_groups(&document));
+        assert_eq!(
+            state.collapsed_groups,
+            BTreeSet::from([kept_id, trashed_id])
+        );
+        assert!(!state.forget_missing_groups(&document));
     }
 
     #[test]

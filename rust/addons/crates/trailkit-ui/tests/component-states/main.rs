@@ -43,6 +43,7 @@ use trailkit_ui_testing::{
 };
 
 mod notifications;
+mod text_field;
 mod title_bar;
 
 /// Both themes with the suffix of their snapshot names.

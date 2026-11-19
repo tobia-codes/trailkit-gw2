@@ -12,7 +12,7 @@ pub enum ResetText {
     /// Context menu submenu and dropdown tooltip for the note kind (M86).
     ResetType,
     /// Note kind option: no reset.
-    KindNormal,
+    KindNoReset,
     /// Note kind option: daily reset.
     KindDaily,
     /// Note kind option: weekly reset.
@@ -22,7 +22,7 @@ pub enum ResetText {
 impl LocalizedText for ResetText {
     const ALL: &'static [Self] = &[
         Self::ResetType,
-        Self::KindNormal,
+        Self::KindNoReset,
         Self::KindDaily,
         Self::KindWeekly,
     ];
@@ -36,7 +36,8 @@ impl LocalizedText for ResetText {
         match (self, language) {
             (Self::ResetType, Language::English) => "Reset type",
             (Self::ResetType, Language::German) => "Reset-Art",
-            (Self::KindNormal, Language::English | Language::German) => "Normal",
+            (Self::KindNoReset, Language::English) => "No reset",
+            (Self::KindNoReset, Language::German) => "Kein Reset",
             (Self::KindDaily, Language::English) => "Daily reset",
             (Self::KindDaily, Language::German) => "Täglicher Reset",
             (Self::KindWeekly, Language::English) => "Weekly reset",

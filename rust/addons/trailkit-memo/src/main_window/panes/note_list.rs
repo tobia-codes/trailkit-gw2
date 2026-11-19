@@ -111,11 +111,11 @@ impl MemoWindow {
                 clear_search_to_move: SearchText::ClearSearchToMove.get(language),
             },
         });
-        let badge = |note: &Note| reset_badge(note.kind);
+        let badge = |note: &Note| reset_badge(note.reset_schedule);
         // The same kind and countdown as the note toolbar (M95), formatted
         // only while the badge is hovered.
         let mut badge_tooltip = |ui: &Ui, note: &Note| {
-            let Some(period) = note.kind.period() else {
+            let Some(period) = note.reset_schedule.period() else {
                 return;
             };
             let lines = reset_tooltip_lines(period, language, Timestamp::now());
@@ -137,6 +137,7 @@ impl MemoWindow {
             NoteListInput {
                 document: &self.document,
                 selected: self.ui_state.selected,
+                collapsed_groups: &self.ui_state.collapsed_groups,
                 edited: self.editor.as_ref().map(|editor| editor.session().note),
                 search,
                 extras: NoteRowExtras {
@@ -170,7 +171,7 @@ pub(in crate::main_window) fn draw_reset_type_submenu(
         return;
     };
     for (period, text) in KIND_OPTIONS {
-        let is_current = note.kind.period() == period;
+        let is_current = note.reset_schedule.period() == period;
         if draw_menu_item(ui, theme, text.get(language), is_current) && !is_current {
             actions.push(WindowAction::SetResetPeriod(note.id, period));
         }

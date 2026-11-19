@@ -10,6 +10,8 @@
 //!   never leaves a half-written document behind.
 //! - Older versions are migrated forward step by step; a copy of the original
 //!   file is kept before anything is saved in the new format.
+//! - Fields a newer version added without a version bump are kept
+//!   unchanged when saving ([`UnknownFields`], memo plan M202).
 //! - A file with a *newer* `schema_version` is never overwritten: the caller
 //!   gets [`LoadOutcome::ReadOnly`] and must not save.
 //! - An unreadable file is never overwritten either: it is moved into the
@@ -27,6 +29,7 @@ mod document_store;
 mod file_name;
 mod safety_copies;
 mod trailkit_directory;
+mod unknown_fields;
 
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
@@ -34,6 +37,7 @@ pub use atomic_write::{WriteError, WriteStage, write_atomically};
 pub use document_store::{DocumentStore, LoadOutcome, ReadOnlyReason, StorageError};
 pub use file_name::FileName;
 pub use trailkit_directory::{AddonName, TRAILKIT_DIRECTORY_NAME, TrailkitDirectory};
+pub use unknown_fields::UnknownFields;
 
 /// Name of the subfolder (next to the live files) that holds every safety copy.
 pub const BACKUPS_DIRECTORY_NAME: &str = "backups";
@@ -67,8 +71,11 @@ pub type DocumentFields = serde_json::Map<String, serde_json::Value>;
 /// A document type that is persisted as one JSON file.
 ///
 /// The `schema_version` field is added and removed by [`DocumentStore`]; the
-/// type itself must not declare it. Unknown fields are ignored when reading
-/// (memo plan M32), so types must not use `#[serde(deny_unknown_fields)]`.
+/// type itself must not declare it. Types must not use
+/// `#[serde(deny_unknown_fields)]`: a newer version may add optional fields
+/// without a `schema_version` bump (memo plan M202). Objects holding user
+/// content keep such fields with [`UnknownFields`]; elsewhere they are
+/// ignored when reading.
 pub trait VersionedDocument: Serialize + DeserializeOwned {
     /// File name without extension, e.g. `"notes"` for `notes.json`.
     const FILE_STEM: &'static str;

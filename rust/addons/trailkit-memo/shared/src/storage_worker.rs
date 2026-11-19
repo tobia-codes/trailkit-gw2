@@ -266,9 +266,10 @@ impl StorageSaver {
         self.send(WorkerCommand::SaveSettings(settings));
     }
 
-    /// Queues the window state to be saved after the debounce delay.
-    pub fn save_ui_state(&self, ui_state: UiState) {
-        self.send(WorkerCommand::SaveUiState(ui_state));
+    /// Queues a copy of the window state to be saved after the debounce
+    /// delay.
+    pub fn save_ui_state(&self, ui_state: &UiState) {
+        self.send(WorkerCommand::SaveUiState(ui_state.clone()));
     }
 
     /// Queues the drafts to be saved (or the file deleted, if there are none)
@@ -434,7 +435,7 @@ mod tests {
     use super::*;
     use crate::{
         drafts::Draft,
-        note_tree::{Note, NoteId, NoteKind, TreeNode},
+        note_tree::{Note, NoteId, ResetSchedule, TreeNode},
         settings::QuickAccessIcon,
     };
 
@@ -464,10 +465,11 @@ mod tests {
         Arc::new(NotesDocument {
             root: vec![TreeNode::Note(Note::new(
                 title.to_owned(),
-                NoteKind::Normal,
+                ResetSchedule::Never,
                 Timestamp::now(),
             ))],
             trash: Vec::new(),
+            unknown_fields: Default::default(),
         })
     }
 
@@ -550,7 +552,7 @@ mod tests {
             note_scroll: 42.0,
             ..UiState::default()
         };
-        saver.save_ui_state(ui_state);
+        saver.save_ui_state(&ui_state);
 
         drop(worker);
 

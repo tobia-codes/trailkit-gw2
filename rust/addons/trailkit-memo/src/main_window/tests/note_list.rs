@@ -88,7 +88,7 @@ fn drag_rows(
 }
 
 #[test]
-fn dragging_a_note_into_an_expanded_group_moves_it_to_the_line() {
+fn dragging_a_note_onto_an_expanded_group_moves_it_to_the_end() {
     let document = sample_document();
     let ui_state = selected_first_with_search(&document);
     let (mut memo, _worker, _directory) = memo_window(document, ui_state);
@@ -96,11 +96,34 @@ fn dragging_a_note_into_an_expanded_group_moves_it_to_the_line() {
     let mut harness = UiHarness::new(size);
     {
         let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
-        // Lower half of the expanded "Raids" row = first place inside (M107).
+        // Middle of the expanded "Raids" row = into it, at the end (M205).
         let image = drag_rows(&mut harness, [100.0, 145.0], [100.0, 216.0], &mut draw_dark);
         assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-drag-into-group", &image);
         let release = FrameInput {
             mouse_position: [100.0, 216.0],
+            ..FrameInput::default()
+        };
+        harness.settle(2, &release, &mut draw_dark);
+    }
+    assert_eq!(
+        outline(&memo),
+        "Dailies, Raids[Weekly clears, Shopping list]"
+    );
+}
+
+#[test]
+fn dragging_a_note_to_the_bottom_edge_of_an_expanded_group_moves_it_to_the_start() {
+    let document = sample_document();
+    let ui_state = selected_first_with_search(&document);
+    let (mut memo, _worker, _directory) = memo_window(document, ui_state);
+    let size = [640.0, 360.0];
+    let mut harness = UiHarness::new(size);
+    {
+        let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
+        // Bottom quarter of the expanded "Raids" row = first place (M205).
+        drag_rows(&mut harness, [100.0, 145.0], [100.0, 222.0], &mut draw_dark);
+        let release = FrameInput {
+            mouse_position: [100.0, 222.0],
             ..FrameInput::default()
         };
         harness.settle(2, &release, &mut draw_dark);
@@ -139,18 +162,21 @@ fn a_group_cannot_be_dropped_into_itself() {
 /// is saved so), the note is selected and shown (M185).
 #[test]
 fn revealing_a_note_expands_its_group_and_selects_it() {
-    let mut document = sample_document();
-    for node in &mut document.root {
-        if let Node::Group(group) = node {
-            group.expanded = false;
-        }
-    }
+    let document = sample_document();
+    let ui_state = with_root_groups_collapsed(&document, UiState::default());
     let Some(NodeId::Note(weekly)) = weekly_note(&document) else {
         panic!("the sample has a weekly note in a group");
     };
-    let (mut window, _worker, _directory) = memo_window(document, UiState::default());
+    let (mut window, _worker, _directory) = memo_window(document, ui_state);
+    assert_eq!(
+        expanded_flags(&window.document, &window.ui_state),
+        vec![false]
+    );
     window.apply(&WindowAction::RevealNote(weekly), Language::English);
-    assert_eq!(expanded_flags(&window.document), vec![true]);
+    assert_eq!(
+        expanded_flags(&window.document, &window.ui_state),
+        vec![true]
+    );
     assert_eq!(window.ui_state.selected, Some(NodeId::Note(weekly)));
     assert_eq!(window.ui_state.shown_note, Some(weekly));
 }
@@ -162,7 +188,7 @@ fn only_the_tree_scrolls_below_the_fixed_list_header() {
         document.root.push(Node::Note(note(
             &format!("Note {number}"),
             "",
-            NoteKind::Normal,
+            ResetSchedule::Never,
         )));
     }
     let ui_state = selected_first_with_search(&document);
@@ -198,7 +224,7 @@ fn clicking_a_group_toggles_it_and_keeps_the_shown_note() {
     };
     let shown = first_note(&document);
     let (mut memo, _worker, _directory) = memo_window(document.clone(), selected_first(&document));
-    let is_expanded = |memo: &MemoWindow| memo.document.group(group).is_some_and(|g| g.expanded);
+    let is_expanded = |memo: &MemoWindow| memo.ui_state.is_expanded(group);
     let before = is_expanded(&memo);
     memo.apply(&WindowAction::ClickGroup(group), Language::English);
     assert_eq!(is_expanded(&memo), !before, "the click toggles (M172)");
@@ -222,11 +248,11 @@ fn clicking_a_group_during_a_search_changes_only_the_search() {
         memo_window(document.clone(), selected_first_with_search(&document));
     memo.search_field.text = "clears".to_owned();
     memo.update_search();
-    let saved = memo.document.group(group).is_some_and(|g| g.expanded);
+    let saved = memo.ui_state.is_expanded(group);
     memo.apply(&WindowAction::ClickGroup(group), Language::English);
     assert!(memo.collapsed_in_search.contains(&group));
     assert_eq!(
-        memo.document.group(group).is_some_and(|g| g.expanded),
+        memo.ui_state.is_expanded(group),
         saved,
         "the saved state stays (M124)"
     );

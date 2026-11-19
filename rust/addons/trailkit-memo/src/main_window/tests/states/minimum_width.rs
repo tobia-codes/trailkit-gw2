@@ -220,3 +220,20 @@ fn german_at_the_minimum_width() {
         &click(MINIMUM_GERMAN_KIND_FIELD),
     );
 }
+
+#[test]
+fn dragging_onto_a_group_at_the_minimum_width() {
+    let shopping_row = [MINIMUM_DAILIES_ROW[0], 106.0];
+    assert_state(
+        "min-drag-into-group",
+        MINIMUM_WINDOW,
+        selected,
+        &drag(shopping_row, MINIMUM_RAIDS_ROW),
+    );
+    assert_state(
+        "min-drag-into-collapsed-group",
+        MINIMUM_WINDOW,
+        collapsed_groups,
+        &drag(shopping_row, MINIMUM_RAIDS_ROW),
+    );
+}

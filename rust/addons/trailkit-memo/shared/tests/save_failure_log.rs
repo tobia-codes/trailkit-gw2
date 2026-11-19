@@ -8,7 +8,7 @@ use std::{fs, sync::Arc, time::Duration};
 use jiff::{Timestamp, tz::Offset};
 use trailkit_log::{LogConfig, log_files, start};
 use trailkit_memo_shared::{
-    note_tree::{Note, NoteKind, NotesDocument, TreeNode},
+    note_tree::{Note, NotesDocument, ResetSchedule, TreeNode},
     storage_worker::{SavingAllowed, SettingsSummary, StorageWorker, WorkerTiming},
 };
 use trailkit_storage::{AddonName, DocumentStore, TrailkitDirectory};
@@ -54,11 +54,16 @@ fn a_failed_save_is_logged_without_note_content() -> Result<(), Box<dyn std::err
         SettingsSummary::default(),
     )?;
     loaded.recv_timeout(Duration::from_secs(5))?;
-    let mut note = Note::new(SECRET_TITLE.to_owned(), NoteKind::Normal, Timestamp::now());
+    let mut note = Note::new(
+        SECRET_TITLE.to_owned(),
+        ResetSchedule::Never,
+        Timestamp::now(),
+    );
     note.body = SECRET_BODY.to_owned();
     worker.saver().save_notes(Arc::new(NotesDocument {
         root: vec![TreeNode::Note(note)],
         trash: Vec::new(),
+        unknown_fields: Default::default(),
     }));
     // Shutdown writes the pending save, which fails.
     drop(worker);

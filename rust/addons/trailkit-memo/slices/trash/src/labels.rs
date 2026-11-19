@@ -125,19 +125,20 @@ fn with_count(text: TrashText, count: i64, language: Language) -> String {
 mod tests {
     use super::*;
     use jiff::SignedDuration;
-    use trailkit_memo_shared::note_tree::{Note, NoteKind};
+    use trailkit_memo_shared::note_tree::{Note, ResetSchedule};
 
     /// A note deleted at the Unix epoch.
     fn entry() -> TrashEntry {
         TrashEntry {
             node: TreeNode::Note(Note::new(
                 "Old list".to_owned(),
-                NoteKind::Normal,
+                ResetSchedule::Never,
                 Timestamp::UNIX_EPOCH,
             )),
             deleted_at: Timestamp::UNIX_EPOCH,
             former_parent: None,
             former_index: 0,
+            unknown_fields: Default::default(),
         }
     }
 

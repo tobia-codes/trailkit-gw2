@@ -7,12 +7,16 @@
 //! per content change, never per frame; the Windows-only `markdown_view`
 //! draws the result.
 
+mod bare_urls;
+pub mod link_menu;
 #[cfg(windows)]
 pub mod markdown_view;
 
 use pulldown_cmark::{Event, HeadingLevel, LinkType, Options, Parser, Tag, TagEnd};
 
+use self::bare_urls::find_bare_links;
 use crate::chat_link::{ChatLinkChip, find_chat_codes};
+use crate::text::icons::Icon;
 
 /// A parsed markdown document, ready to draw.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -96,6 +100,8 @@ pub struct SpanStyle {
     /// Target of a clickable link; only `http(s)` and `mailto:` links are
     /// kept (M37, M183).
     pub link: Option<String>,
+    /// Code, raw HTML or link text, which never becomes a bare link.
+    pub is_literal: bool,
 }
 
 impl Span {
@@ -155,6 +161,113 @@ pub fn inline_ranges(source: &str) -> Vec<InlineRange> {
             Some(InlineRange { kind, range })
         })
         .collect()
+}
+
+/// Turns bare web and e-mail addresses in plain text spans into link spans
+/// (memo plan M209, M211). Code, raw HTML and the text of links stay as they are.
+fn split_bare_urls(spans: Vec<Span>) -> Vec<Span> {
+    if !spans
+        .iter()
+        .any(|span| span.text.contains("://") || span.text.contains('@'))
+    {
+        return spans;
+    }
+    let mut split = Vec::with_capacity(spans.len());
+    for span in spans {
+        if span.style.is_literal
+            || span.style.link.is_some()
+            || span.chip.is_some()
+            || span.is_line_break()
+        {
+            split.push(span);
+            continue;
+        }
+        let mut text_start = 0;
+        let plain = |text: &str| Span {
+            text: text.to_owned(),
+            style: span.style.clone(),
+            chip: None,
+        };
+        for found in find_bare_links(&span.text) {
+            if found.range.start > text_start {
+                split.push(plain(&span.text[text_start..found.range.start]));
+            }
+            let mut link = plain(&span.text[found.range.clone()]);
+            link.style.link = Some(found.target);
+            split.push(link);
+            text_start = found.range.end;
+        }
+        if text_start < span.text.len() {
+            split.push(plain(&span.text[text_start..]));
+        }
+    }
+    split
+}
+
+/// Where an inline link `[text](target)` is in the source.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct InlineLink {
+    /// The whole link, from `[` to the closing `)`.
+    pub range: std::ops::Range<usize>,
+    /// The byte offset of the `]` that ends the link text.
+    closing_bracket: usize,
+}
+
+impl InlineLink {
+    /// The link text between the brackets.
+    #[must_use]
+    pub fn text_range(&self) -> std::ops::Range<usize> {
+        self.range.start + 1..self.closing_bracket
+    }
+
+    /// The target between the parentheses, with a title if it has one.
+    #[must_use]
+    pub fn target_range(&self) -> std::ops::Range<usize> {
+        self.closing_bracket + 2..self.range.end - 1
+    }
+
+    /// Whether the byte at `offset` is one of the four characters that make
+    /// this a link: the opening `[`, the `](` pair or the closing `)`.
+    #[must_use]
+    pub fn is_structure_at(&self, offset: usize) -> bool {
+        offset == self.range.start
+            || offset == self.closing_bracket
+            || offset == self.closing_bracket + 1
+            || offset + 1 == self.range.end
+    }
+}
+
+/// Every inline link of `source`, in source order, as the renderer sees them:
+/// brackets in code spans or without a target are not links (memo plan M207).
+#[must_use]
+pub fn inline_links(source: &str) -> Vec<InlineLink> {
+    let mut links = Vec::new();
+    let mut open: Option<InlineLink> = None;
+    for (event, range) in Parser::new_ext(source, Options::ENABLE_TASKLISTS).into_offset_iter() {
+        match event {
+            Event::Start(Tag::Link {
+                link_type: LinkType::Inline,
+                ..
+            }) => {
+                open = Some(InlineLink {
+                    closing_bracket: range.start + 1,
+                    range,
+                });
+            }
+            Event::End(TagEnd::Link) => {
+                links.extend(
+                    open.take()
+                        .filter(|link| source[link.closing_bracket..].starts_with("](")),
+                );
+            }
+            _ => {
+                if let Some(link) = &mut open {
+                    link.closing_bracket = link.closing_bracket.max(range.end);
+                }
+            }
+        }
+    }
+    links
 }
 
 /// Returns `source` with the task checkbox at `marker` toggled, or `None` if
@@ -221,6 +334,44 @@ pub fn link_target_label(url: &str) -> &str {
     url.get(..MAIL_SCHEME.len())
         .filter(|scheme| scheme.eq_ignore_ascii_case(MAIL_SCHEME))
         .map_or(url, |_| &url[MAIL_SCHEME.len()..])
+}
+
+/// What opens when a link is used; it decides the link's icon (R143).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LinkKind {
+    /// A web page in the browser.
+    Web,
+    /// A new message in the mail program.
+    Mail,
+}
+
+impl LinkKind {
+    /// The kind of a link to `url`.
+    #[must_use]
+    pub fn of(url: &str) -> Self {
+        if link_target_label(url).len() == url.len() {
+            Self::Web
+        } else {
+            Self::Mail
+        }
+    }
+
+    /// The icon shown before every link of this kind.
+    #[must_use]
+    pub const fn icon(self) -> Icon {
+        match self {
+            Self::Web => Icon::EXTERNAL_LINK,
+            Self::Mail => Icon::MAIL,
+        }
+    }
+}
+
+/// What the tooltip of a link showing `text` says: where it goes, or nothing
+/// if `text` already is exactly that (memo plan M209).
+#[must_use]
+pub fn link_tooltip<'url>(text: &str, url: &'url str) -> Option<&'url str> {
+    let target = link_target_label(url);
+    (text != target).then_some(target)
 }
 
 /// The visible text of `document` for searching (memo plan M120): span
@@ -305,6 +456,8 @@ struct Builder {
     italic: u32,
     /// Target of the link being read, if it is a web link.
     link: Option<String>,
+    /// Depth of code, raw HTML and links, whose text is never a bare link.
+    literal: u32,
 }
 
 /// The kind of block currently being collected.
@@ -324,8 +477,11 @@ impl Builder {
         match event {
             Event::Start(tag) => self.start(tag),
             Event::End(tag) => self.end(tag),
-            Event::Text(text) | Event::Code(text) | Event::Html(text) | Event::InlineHtml(text) => {
+            Event::Text(text) => self.push_text(&text),
+            Event::Code(text) | Event::Html(text) | Event::InlineHtml(text) => {
+                self.literal += 1;
                 self.push_text(&text);
+                self.literal -= 1;
             }
             // A single line break shows as one, like the user typed it (memo
             // plan M63); blank lines still separate paragraphs.
@@ -352,6 +508,9 @@ impl Builder {
 
     /// Handles the start of a tag.
     fn start(&mut self, tag: Tag<'_>) {
+        if matches!(tag, Tag::CodeBlock(_)) {
+            self.literal += 1;
+        }
         match tag {
             Tag::Heading { level, .. } => {
                 self.flush();
@@ -392,6 +551,7 @@ impl Builder {
                 dest_url,
                 ..
             } => {
+                self.literal += 1;
                 // An e-mail autolink (`<a@b.de>`) carries the bare address.
                 let url = if link_type == LinkType::Email {
                     format!("{MAIL_SCHEME}{dest_url}")
@@ -408,7 +568,13 @@ impl Builder {
     fn end(&mut self, tag: TagEnd) {
         match tag {
             TagEnd::Heading(_) | TagEnd::Item => self.flush(),
-            TagEnd::Paragraph | TagEnd::CodeBlock | TagEnd::BlockQuote(_) | TagEnd::HtmlBlock => {
+            TagEnd::CodeBlock => {
+                self.literal = self.literal.saturating_sub(1);
+                if !matches!(self.pending, Some(PendingBlock::ListItem(_))) {
+                    self.flush();
+                }
+            }
+            TagEnd::Paragraph | TagEnd::BlockQuote(_) | TagEnd::HtmlBlock => {
                 if !matches!(self.pending, Some(PendingBlock::ListItem(_))) {
                     self.flush();
                 }
@@ -419,7 +585,10 @@ impl Builder {
             }
             TagEnd::Emphasis => self.italic = self.italic.saturating_sub(1),
             TagEnd::Strong => self.bold = self.bold.saturating_sub(1),
-            TagEnd::Link => self.link = None,
+            TagEnd::Link => {
+                self.link = None;
+                self.literal = self.literal.saturating_sub(1);
+            }
             _ => {}
         }
     }
@@ -435,6 +604,7 @@ impl Builder {
             bold: self.bold > 0,
             italic: self.italic > 0,
             link: self.link.clone(),
+            is_literal: self.literal > 0,
         };
         let is_break = text == "\n";
         if let Some(last) = self.spans.last_mut()
@@ -457,7 +627,7 @@ impl Builder {
         let Some(pending) = self.pending.take() else {
             return;
         };
-        let spans = split_chat_codes(std::mem::take(&mut self.spans));
+        let spans = split_bare_urls(split_chat_codes(std::mem::take(&mut self.spans)));
         let depth = u8::try_from(self.lists.len()).unwrap_or(u8::MAX);
         let block = match pending {
             PendingBlock::Heading(level) => Block::Heading { level, spans },
@@ -500,6 +670,103 @@ const fn heading_level(level: HeadingLevel) -> u8 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The link targets of the first block of `source`, with their text.
+    fn links_in(source: &str) -> Vec<(String, String)> {
+        let document = parse(source);
+        let (Block::Paragraph { spans, .. } | Block::ListItem { spans, .. }) = &document.blocks[0]
+        else {
+            panic!("expected text in {source:?}");
+        };
+        spans
+            .iter()
+            .filter_map(|span| Some((span.text.clone(), span.style.link.clone()?)))
+            .collect()
+    }
+
+    #[test]
+    fn the_address_decides_the_link_icon() {
+        assert_eq!(LinkKind::of("https://a.de"), LinkKind::Web);
+        assert_eq!(LinkKind::of("mailto:a@b.de"), LinkKind::Mail);
+        assert_eq!(LinkKind::of("MAILTO:a@b.de"), LinkKind::Mail);
+        assert_eq!(LinkKind::Web.icon(), Icon::EXTERNAL_LINK);
+        assert_eq!(LinkKind::Mail.icon(), Icon::MAIL);
+    }
+
+    #[test]
+    fn a_link_showing_its_own_target_needs_no_tooltip() {
+        assert_eq!(link_tooltip("https://a.de", "https://a.de"), None);
+        assert_eq!(link_tooltip("a@b.de", "mailto:a@b.de"), None);
+        assert_eq!(link_tooltip("Wiki", "https://a.de"), Some("https://a.de"));
+        assert_eq!(
+            link_tooltip("https://a.de/", "https://a.de"),
+            Some("https://a.de")
+        );
+    }
+
+    #[test]
+    fn bare_addresses_become_links_showing_the_address() {
+        let url = "https://wiki.guildwars2.com/wiki/Event_timers";
+        assert_eq!(
+            links_in(&format!("See {url}.")),
+            [(url.to_owned(), url.to_owned())]
+        );
+        assert_eq!(
+            links_in(&format!("- [ ] {url}")),
+            [(url.to_owned(), url.to_owned())]
+        );
+    }
+
+    #[test]
+    fn bare_email_addresses_become_mail_links() {
+        assert_eq!(
+            links_in("Write to bogus@example.com."),
+            [(
+                "bogus@example.com".to_owned(),
+                "mailto:bogus@example.com".to_owned()
+            )]
+        );
+        assert!(links_in("`bogus@example.com`").is_empty());
+    }
+
+    #[test]
+    fn code_and_existing_links_are_not_linked_again() {
+        assert!(links_in("`https://a.de` text").is_empty());
+        assert_eq!(
+            links_in("[https://a.de](https://b.de)"),
+            [("https://a.de".to_owned(), "https://b.de".to_owned())]
+        );
+        assert!(links_in("[https://a.de](ftp://b.de)").is_empty());
+    }
+
+    #[test]
+    fn inline_links_know_their_parts() {
+        let source = "a [text](https://b.c \"t\") d";
+        let links = inline_links(source);
+        assert_eq!(&source[links[0].text_range()], "text");
+        assert_eq!(&source[links[0].target_range()], "https://b.c \"t\"");
+    }
+
+    #[test]
+    fn inline_links_know_their_structure() {
+        let links = inline_links("a [*b* [c]](d(e) \"f\") g");
+        assert_eq!(links.len(), 1);
+        let link = &links[0];
+        assert_eq!(link.range, 2..21);
+        for offset in [2, 10, 11, 20] {
+            assert!(link.is_structure_at(offset), "at {offset}");
+        }
+        for offset in [3, 7, 9, 12, 19] {
+            assert!(!link.is_structure_at(offset), "at {offset}");
+        }
+    }
+
+    #[test]
+    fn brackets_that_are_no_links_are_not_reported() {
+        for source in ["[a] b", "[a](", "`[a](b)`", "[&AgEAAA==]", "<https://a.b>"] {
+            assert!(inline_links(source).is_empty(), "in {source:?}");
+        }
+    }
 
     /// A plain span.
     fn plain(text: &str) -> Span {

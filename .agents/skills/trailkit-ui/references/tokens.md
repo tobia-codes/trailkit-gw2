@@ -130,6 +130,22 @@ editor's formatting buttons that light up for the formatting at the cursor
   between two pixel rows blurs into a soft 2 px band. `draw_separator`
   snaps; custom-drawn lines must do the same.
 
+### 5.1 Forms and dialogs (R144)
+
+Measured between visible edges, not item boxes. `move_below_last_item` places
+the next element; `TextField` and `draw_dialog_frame` already follow this.
+
+| Where | Rule |
+| --- | --- |
+| Height of a text input | button height + `space.sm` |
+| Text in an input to its sides | at least `space.sm`, also when the text is too long |
+| Label to its input | `space.xs` |
+| Input or its error to the next label | `space.md` |
+| Dialog title to its content | `space.md` |
+| Last input, error or text to the button row | `space.lg` |
+| Inside a dialog card | `space.lg` |
+| Popup edge to a highlighted row | `space.sm` on all four sides |
+
 ## 6. Selection
 
 The selected row keeps the neutral `bg.active` fill (ImGui `Header`) and gets
@@ -157,7 +173,8 @@ every addon.
 | Object or page title | note title, group title in the trash preview | `Heading1` (`text.primary`) |
 | Section | settings or help sections | `Heading2` (`text.primary`) |
 | Subsection, dialog title | "Delete permanently?" | `Heading3` (`text.primary`) |
-| Content, labels, empty-state title | note body, "No notes yet" | `Body` (`text.primary`) |
+| Content, empty-state title | note body, "No notes yet" | `Body` (`text.primary`) |
+| Form field label | "Address" above its input | `Label` (bold, `text.primary`, R139) |
 | Emphasis | group name in a list | `BodyStrong` (`text.primary`) |
 | Info and metadata | info line ("deleted today · 30 days left"), counts, hints, placeholders ("Select an entry to view it.") | `Secondary` (`text.secondary`) |
 | Fine print | export lines, footnotes, keyboard shortcuts | `Small` (`text.secondary`) |
@@ -234,7 +251,8 @@ be in, in Dark **and** Light:
 
 - Interaction: rest, hover, pressed, selected, on/off, disabled, focused,
   open, dragged.
-- Content: empty, filled, long/scrolled, error or problem hint.
+- Content: empty, filled, long/scrolled, error or problem hint. A text input
+  always has empty, filled, too long, error, minimum width and German.
 - Size and language: every view, menu, dialog and hint also at the window's
   minimum width, and the longest texts in German, where nothing may run past or
   be clipped by its pane (`lay-responsive`; hovers excepted, they do not change
@@ -276,6 +294,10 @@ moves them, and `--update` stays green while a hover misses:
 - A killed `ui-test` can leave a test process running that overwrites images with
   old code. Stop it with `pkill -f '^/init .*debug/deps/'`; a pattern that also
   matches the calling shell's command line kills that shell.
+
+**Measure spacing (R144).** For a new or changed form, dialog or input, measure
+the pixel distances in its snapshot against §5.1 and look at the too-long state:
+matching a mockup is no proof, the mockup can be too tight as well.
 
 **Review.** Look at every new or changed snapshot, the whole element and not
 only what the change was about, and go through §9:

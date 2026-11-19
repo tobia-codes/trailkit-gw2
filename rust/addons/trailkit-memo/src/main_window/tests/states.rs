@@ -13,6 +13,8 @@ use super::{trash::document_with_trash, *};
 
 mod chip_tooltips;
 mod find_in_note;
+mod link_dialog;
+mod link_menu;
 mod minimum_width;
 mod save_errors;
 
@@ -200,6 +202,27 @@ fn survive_navigation(
 /// The sample with its first note selected.
 fn selected() -> Fixture {
     let document = sample_document();
+    let ui_state = selected_first(&document);
+    memo_window(document, ui_state)
+}
+
+/// The sample with its first note selected and its groups collapsed.
+fn collapsed_groups() -> Fixture {
+    let document = sample_document();
+    let ui_state = with_root_groups_collapsed(&document, selected_first(&document));
+    memo_window(document, ui_state)
+}
+
+/// The sample with its first note selected and three notes in its group.
+fn filled_group() -> Fixture {
+    let mut document = sample_document();
+    if let Some(Node::Group(raids)) = document.root.last_mut() {
+        for title in ["Fractals", "World bosses"] {
+            raids
+                .children
+                .push(Node::Note(note(title, "", ResetSchedule::Never)));
+        }
+    }
     let ui_state = selected_first(&document);
     memo_window(document, ui_state)
 }
@@ -407,11 +430,8 @@ pub(super) fn with_drafts_in_collapsed_group() -> Fixture {
     if let Some(NodeId::Note(weekly)) = weekly_note(&fixture.0.document) {
         fixture.0.drafts.drafts.push(draft_of(weekly));
     }
-    for node in &mut fixture.0.document.root {
-        if let Node::Group(group) = node {
-            group.expanded = false;
-        }
-    }
+    let window = &mut fixture.0;
+    window.ui_state = with_root_groups_collapsed(&window.document, window.ui_state.clone());
     fixture
 }
 
@@ -527,7 +547,7 @@ fn list_rows() {
             document.root.push(Node::Note(note(
                 &format!("Note {number}"),
                 "",
-                NoteKind::Normal,
+                ResetSchedule::Never,
             )));
         }
         let ui_state = selected_first(&document);
@@ -547,7 +567,31 @@ fn list_rows() {
         "drag-into-group",
         WIDE,
         selected,
-        &drag(SHOPPING_ROW, [100.0, 177.0]),
+        &drag(SHOPPING_ROW, [100.0, RAIDS_ROW[1]]),
+    );
+    assert_state(
+        "drag-group-first-entry",
+        WIDE,
+        selected,
+        &drag(SHOPPING_ROW, [100.0, 183.0]),
+    );
+    assert_state(
+        "drag-into-collapsed-group",
+        WIDE,
+        collapsed_groups,
+        &drag(SHOPPING_ROW, [100.0, RAIDS_ROW[1]]),
+    );
+    assert_state(
+        "drag-after-collapsed-group",
+        WIDE,
+        collapsed_groups,
+        &drag(SHOPPING_ROW, [100.0, 179.0]),
+    );
+    assert_state(
+        "drag-inside-group",
+        WIDE,
+        filled_group,
+        &drag(SHOPPING_ROW, [100.0, 226.0]),
     );
     assert_state(
         "drag-between",
@@ -572,6 +616,34 @@ fn note_content_hovers() {
     ] {
         assert_state(name, WIDE, selected, &hover(position));
     }
+    assert_state(
+        "hover-bare-link",
+        WIDE,
+        || with_body("https://wiki.guildwars2.com", |_| {}),
+        &hover([300.0, 157.0]),
+    );
+    assert_state(
+        "links-with-icons",
+        WIDE,
+        || {
+            with_body(
+                "A [web link](https://a.de), [mail](mailto:a@b.de) and a **[bold *mixed* link](https://b.de)** or bogus@example.com.\n\nhttps://wiki.guildwars2.com/wiki/Main_Page_with_a_long_address_that_wraps_around_the_line_end",
+                |_| {},
+            )
+        },
+        &hover(NOWHERE),
+    );
+    assert_state(
+        "hover-long-link",
+        WIDE,
+        || {
+            with_body(
+                "[wiki](https://www.google.com/search?q=Druids+groot+guild+wars+2&oq=Druids+groot+guild+wars+2&sourceid=chrome&source=chrome.ob&ie=UTF-8)",
+                |_| {},
+            )
+        },
+        &hover([232.0, 157.0]),
+    );
     assert_state("pressed-checkbox", WIDE, selected, &press([228.0, 225.0]));
 }
 
@@ -737,7 +809,7 @@ fn toast() {
     let copied = || {
         let mut fixture = selected();
         fixture.0.apply(
-            &WindowAction::Markdown(MarkdownAction::ChatLinkCopied("[&BDgAAAA=]".to_owned())),
+            &WindowAction::Markdown(MarkdownAction::Copied("[&BDgAAAA=]".to_owned())),
             Language::English,
         );
         fixture

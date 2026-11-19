@@ -66,7 +66,10 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut RowContext<'_, '_>) {
             search.filter.group_count(group.id),
             !search.collapsed.contains(&group.id),
         ),
-        None => (group.note_count(), group.expanded),
+        None => (
+            group.note_count(),
+            !context.collapsed_groups.contains(&group.id),
+        ),
     };
     let mut count_buffer = [0; 20];
     let count = format_count(note_count, &mut count_buffer);

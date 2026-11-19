@@ -101,6 +101,10 @@ into `shared/` (within an addon) or `rust/addons/crates/` (across addons; R116 f
 change. Nothing is shared "in case we need it later". Shared UI always comes
 from [`rust/addons/crates/trailkit-ui`](rust/addons/crates/trailkit-ui/README.md).
 
+Agents report this openly (R146): every mockup and every change lists the
+shared components it uses and what it builds new, with the reason no shared
+component fit, so a second copy is noticed before it is written.
+
 ## 4. Rust code rules
 
 - **Type everything (rule 8).** Prefer newtype ids (`NoteId`, `ItemId`),
@@ -210,8 +214,10 @@ before changing anything visible.
   they recover. Default: retry automatically a few times, then an error toast
   with "Try again", as memo does for saving (M180). Buttons whose action runs
   show a spinner for at least 0.6 s and cannot be clicked twice
-  (`trailkit_ui::controls::busy::BusyState`). A control that cannot be used now is
-  disabled and says why in its tooltip (`ButtonState::Disabled { reason }`).
+  (`trailkit_ui::controls::busy::BusyState`). **Buttons are not disabled** without
+  the maintainer's explicit approval for that button (R140): they stay active and
+  explain the problem when used. An approved one says why in its tooltip
+  (`ButtonState::Disabled { reason }`).
 - **Accessibility**: text contrast ≥ 4.5:1 in both themes, meaning never by
   color alone, icons always with a tooltip, destructive actions ask first.
 - **New icons**: add them to `Icon::ALL` and run `cargo xtask subset-fonts`.

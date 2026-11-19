@@ -31,7 +31,7 @@ The menu takes you to the different parts of memo:
 - **Hide note list** gives the note the full width; **Show note list** brings the list back. memo remembers your choice.
 - **Compact view** (arrows button, top left of the note): hides the toolbar with *Edit* and the kind box, so the note gets more room. The button behind the title ends it again. You can still choose other notes and tick checkboxes; editing a note (also by double-click) or creating a new one ends the compact view. memo remembers it. Together with a hidden note list only the note is left.
 - **Small window:** the window cannot get narrower than the note list and the note need side by side, so the list never disappears by itself; it only gets narrower. Text at a larger size makes this minimum wider.
-- **Text size:** hold **Ctrl** and turn the mouse wheel over the window to make all text larger or smaller; **Ctrl+0** goes back to the default. The current size shows next to the mouse in percent. memo remembers the size; it builds on the UI font size set in Nexus.
+- **Text size:** hold **Ctrl** and turn the mouse wheel over the window to make all text larger or smaller; **Ctrl+0** goes back to the default. The current size shows next to the mouse in percent; the default size is 100%. memo remembers the size; it builds on the UI font size set in Nexus.
 
 ### Help and problems
 
@@ -54,7 +54,7 @@ Your notes sit in a list that you can sort and organize in groups.
 
 ### Sorting and moving
 
-- **Reorder:** drag a note or group to a new place. A line shows where it lands; on the lower half of an open group it becomes the group's first entry, below the last entry it goes to the end of the list. Drop on the middle of a closed group to put it at its end; rest there a moment and the group opens. A red "no entry" sign means it cannot go there (a group cannot go into itself). Near the top or bottom edge the list scrolls. Escape cancels.
+- **Reorder:** drag a note or group to a new place. A line shows where it lands. At the top edge of a group it goes above the group; at the bottom edge it goes below a closed group or becomes the first entry of an open one. Below the last entry it goes to the end of the list. Drop on the middle of a group, which gets a frame, to put it at the group's end; rest there a moment and a closed group opens. A red "no entry" sign means it cannot go there (a group cannot go into itself). Near the top or bottom edge the list scrolls. Escape cancels.
 - **Move to:** right-click › *Move to* › *Top level* or a group moves the entry to the end of it, without dragging.
 
 ### Groups
@@ -71,7 +71,7 @@ You write notes in markdown, with buttons for the formatting.
 
 ### The editor
 
-Click **Edit** at the top right of a note, or double-click the note. You edit the title and the text in markdown; the buttons in the bar above (in groups, like in Word) insert headings (H1, H2 — clicking the other level switches it, the same level removes it), **bold**, *italic*, lists, checkboxes and links (also **Ctrl+B** and **Ctrl+I**); clicking a button again removes the formatting (also links). Buttons of the formatting at the cursor light up. The event button needs trailkit-core.
+Click **Edit** at the top right of a note, or double-click the note. You edit the title and the text in markdown; the buttons in the bar above (in groups, like in Word) insert headings (H1, H2 — clicking the other level switches it, the same level removes it), **bold**, *italic*, lists and checkboxes (also **Ctrl+B** and **Ctrl+I**); clicking a button again removes the formatting. The link button or **Ctrl+K** opens a small dialog for the link's text and address. Buttons of the formatting at the cursor light up. The event button needs trailkit-core.
 
 - The **eye** button shows a preview of the formatted note next to the text; drag the gap between them to change the widths. memo remembers both.
 - **While you edit** the note list makes way for the editor and comes back when you save or cancel. If you had hidden it yourself, it stays hidden. Click into the game to use the chat or your keys; click into the text to go on writing.
@@ -79,13 +79,17 @@ Click **Edit** at the top right of a note, or double-click the note. You edit th
 ### Checkboxes and links
 
 - **Checkboxes** in a note can be ticked directly, without the editor.
-- **Links** open in your browser (only `http://` and `https://`), e-mail addresses in your mail program; hover a link to see where it goes.
+- **Links** open in your browser (only `http://` and `https://`), e-mail addresses in your mail program; the icon before a link shows which; hover a link to see where it goes, unless it already shows its address.
+- **Add a link:** select text if you like, click the link button or press **Ctrl+K**, enter the address and press Enter. The text is optional, `https://` is added if it is missing, and an address from the clipboard is filled in. With the cursor in a link you change it there, or remove the link and keep its text.
+- **Right-click a link** to open it or copy its address.
+- **Paste an address:** a plain `https://…` or e-mail address in your text becomes a clickable link by itself.
 
 ### Chat links
 
 Chat links from the game (`[&…]`, e.g. a waypoint or an item) show as chips with an icon, the kind and the id; coins show their amount. The chip color shows the group: copper for places, blue for skills, traits and builds, green for items, violet for achievements, NPC texts and players. Names (instead of ids) will come with trailkit-core.
 
 - Click a chip to copy its code (a short message at the bottom of the window confirms it), then paste it into the game chat. Hover it to see the code.
+- Right-click a chip to copy its chat link or, where the wiki can have a page, open it in the wiki.
 - A chip with **!** has a broken code; the tooltip says why.
 - In the editor, paste a code into the text and it becomes a chip. The cursor jumps over a chip and Backspace deletes it whole; to change it, delete it and paste the new code.
 
@@ -102,7 +106,7 @@ Daily and weekly notes untick their checkboxes at the game's reset.
 
 ### Choosing the kind
 
-Choose the kind of a note in the box next to its title (*Normal*, *Daily reset*, *Weekly reset*), or right-click it in the list › *Reset type*. At the game's daily or weekly reset all checkboxes in such a note are unticked again — handy for dailies and weekly clears. A note you switch to daily or weekly keeps its ticks until the next reset.
+Choose the kind of a note in the box next to its title (*No reset*, *Daily reset*, *Weekly reset*), or right-click it in the list › *Reset type*. At the game's daily or weekly reset all checkboxes in such a note are unticked again — handy for dailies and weekly clears. A note you switch to daily or weekly keeps its ticks until the next reset.
 
 ### When notes reset
 
@@ -180,10 +184,13 @@ These are the keys memo uses, sorted by where they work.
 ### Editor
 
 - **Ctrl+B** – bold
+- **Ctrl+K** – add or change a link
 - **Ctrl+I** – italic
 - **Ctrl+S** – save
 - **Ctrl+Z** – undo your typing
 - **Backspace** – next to a chat link chip: delete the whole chip
+- **Backspace** – right after a list or checkbox marker: remove the whole marker, the text stays
+- **Backspace** / **Delete** – on a bracket or parenthesis that belongs to a link: delete the whole link
 
 ## Where your notes are stored
 

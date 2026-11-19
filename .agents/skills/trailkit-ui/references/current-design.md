@@ -47,7 +47,7 @@ Names follow `memo-state-<state>-<dark|light>.png` and
 | [=] Notes                                  v   x |  title bar
 +--------------+-----------------------------------+
 | [Search..  x]|  [<>]                ...   [Edit] |  search field only while shown
-| [ + ]  [ + ] |  Shopping list     [Normal  v]    |
+| [ + ]  [ + ] |  Shopping list    [No reset v]    |
 |--------------|-----------------------------------|
 | | Shopping   |  Ectos                            |  note list, fixed width
 |   Dailies  D |  [x] 250 Globs of Ectoplasm       |  note gets all extra room

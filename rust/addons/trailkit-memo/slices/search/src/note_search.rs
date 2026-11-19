@@ -206,20 +206,24 @@ mod tests {
     use jiff::Timestamp;
 
     use super::*;
-    use trailkit_memo_shared::note_tree::NoteKind;
+    use trailkit_memo_shared::note_tree::ResetSchedule;
 
     /// A note with `title` and `body`.
     fn note(title: &str, body: &str) -> Note {
-        let mut note = Note::new(title.to_owned(), NoteKind::Normal, Timestamp::UNIX_EPOCH);
+        let mut note = Note::new(
+            title.to_owned(),
+            ResetSchedule::Never,
+            Timestamp::UNIX_EPOCH,
+        );
         note.body = body.to_owned();
         note
     }
 
-    /// A collapsed group with `title` and `children`.
+    /// A group with `title` and `children` (search ignores whether it is
+    /// collapsed, M124).
     fn group(title: &str, children: Vec<TreeNode>) -> Group {
         let mut group = Group::new(title.to_owned());
         group.children = children;
-        group.expanded = false;
         group
     }
 
@@ -254,6 +258,7 @@ mod tests {
         let document = NotesDocument {
             root: vec![TreeNode::Note(mithril), TreeNode::Group(dailies)],
             trash: Vec::new(),
+            unknown_fields: Default::default(),
         };
         (document, ids)
     }

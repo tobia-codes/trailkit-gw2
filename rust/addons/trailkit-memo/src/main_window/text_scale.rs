@@ -69,7 +69,7 @@ impl MemoWindow {
                 theme,
                 label_with_percent(
                     Text::TextSize.get(language),
-                    self.settings.text_scale.factor() * 100.0,
+                    self.settings.text_scale.percent_of_default(),
                     language,
                 ),
             );

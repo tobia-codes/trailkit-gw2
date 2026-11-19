@@ -20,6 +20,7 @@ use jiff::Timestamp;
 use nexus::imgui::{Ui, WindowFocusedFlags};
 use trailkit_ui::{
     controls::menu::popup_drawn_this_frame,
+    feedback::dialog::DialogHeight,
     feedback::toast::Toast,
     help::help_window::{HelpTab, HelpWindowState},
     layout::pane::draw_pane,
@@ -145,9 +146,9 @@ pub struct MemoWindow {
     /// When the text scale last changed (ImGui time), while its percentage
     /// is shown or the change is not applied yet (M80).
     text_scale_changed_at: Option<f64>,
-    /// Height of the dialog card measured in the last frame (its content
+    /// Height of the dialog measured in the last frame (its content
     /// wraps, so the height is only known after drawing it once).
-    dialog_height: Option<f32>,
+    dialog_height: DialogHeight,
     /// Set once closing the window is allowed; read by the addon glue.
     close_approved: bool,
     /// Cached draft hint label (note, language, text), so it is not
@@ -230,6 +231,8 @@ impl MemoWindow {
         {
             ui_state.shown_note = None;
         }
+        // Saved with the next window state change.
+        ui_state.forget_missing_groups(&document);
         Self {
             document,
             problem,
@@ -254,7 +257,7 @@ impl MemoWindow {
             draft_hint: DraftHint::default(),
             draft_overview: DraftOverview::default(),
             unsaved_notes: Vec::new(),
-            dialog_height: None,
+            dialog_height: DialogHeight::default(),
             next_reset_check: None,
             search_field: SearchField::default(),
             find: FindInNote::default(),
@@ -369,7 +372,7 @@ impl MemoWindow {
         };
         self.ui_state.help_topic = state.topic;
         self.ui_state.help_topic_list_characters = state.topic_list_characters;
-        self.saver.save_ui_state(self.ui_state);
+        self.saver.save_ui_state(&self.ui_state);
     }
 
     /// The memo toggle of the title bar (R78): the window menu (M166). The

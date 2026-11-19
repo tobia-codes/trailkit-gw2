@@ -226,7 +226,7 @@ impl NoteList {
     }
 }
 
-/// Draws the drop line between rows or the highlight of a collapsed group
+/// Draws the drop line between rows or the highlight of a group
 /// (trailkit-ui skill §4) into the list's window.
 fn draw_drop_indicator(ui: &Ui, theme: &Theme, indicator: DropIndicator) {
     let draw_list = window_draw_list(ui);

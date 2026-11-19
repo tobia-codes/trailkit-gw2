@@ -28,10 +28,10 @@ The packages this project uses directly.
 | `jiff` | external | Date, time and time-zone types. | Stores note, draft and trash times. |
 | `log` | external | Common logging interface for Rust crates. | Writes storage and load events. |
 | `serde` | external | Framework for serializing and deserializing Rust types. | Defines memo's stored documents. |
+| `serde_json` | external | JSON support for `serde`. | Migrates `notes.json` between schema versions; checks stored JSON in tests. |
 | `thiserror` | external | Derives typed error enums. | Gives storage worker failures typed errors. |
 | `uuid` | external | Generates and stores UUIDs. | Creates stable note and group ids. |
 | `windows` | external, Windows only | Official Rust bindings for Windows APIs. | Converts UTC times to the local time shown to users. |
-| `serde_json` | external, tests only | JSON support for `serde`. | Checks stored JSON in tests. |
 | `tempfile` | external, tests only | Creates temporary files and folders. | Gives storage tests isolated folders. |
 
 ## Build and test

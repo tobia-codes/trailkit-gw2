@@ -18,6 +18,7 @@ use crate::{
     layout::page::{PageHead, draw_page},
     layout::pane::draw_pane,
     layout::separator::draw_separator,
+    markdown::LinkKind,
     text::fonts::FontRole,
     text::icons::Icon,
     text::text_layout::format_count,
@@ -73,7 +74,7 @@ pub(super) fn draw_problem_tab(
             draw_step(ui, theme, 2, texts.report_step, || {
                 let report = Button::new(texts.report_button)
                     .kind(ButtonKind::Primary)
-                    .opens_link();
+                    .opens_link(LinkKind::Web);
                 if report.draw(ui, theme) {
                     action = Some(HelpAction::ReportProblem);
                 }

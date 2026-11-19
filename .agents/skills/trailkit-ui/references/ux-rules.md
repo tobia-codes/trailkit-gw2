@@ -48,10 +48,15 @@ Each rule has an id (`area-name`) so reviews can cite it.
   ImGui's `BeginPopupModal` (whole-screen dim) is not used. Implementation:
   a borderless window exactly over the owning window (child-window scrims
   do not reliably cover input fields in ImGui 1.80).
-- `overlay-dialog-layout` — A dialog has a heading (Heading3), a short
-  question or explanation, and one button row (see `lay-one-primary`).
-  Escape and a click on the dimmed area choose the harmless answer (e.g.
-  "Keep editing"), never one that saves or discards.
+- `overlay-dialog-layout` — A dialog has a heading (Heading3), a close icon
+  at the top right (R141), a short question, explanation or form, and one
+  button row (see `lay-one-primary`). Draw it with the shared `Dialog` and
+  dim with the shared `Backdrop` (R145). The close icon, Escape and a click on
+  the dimmed area choose the harmless answer (e.g.
+  "Keep editing"), never one that saves or discards. A dialog without the
+  close icon (`.closable(false)`) ignores Escape and backdrop clicks too,
+  so it must end by itself (a running action) or always offer an active
+  button that leads out (R145).
   Card: `bg.panel`, 1 px `border` frame, `space.lg` padding, min ≈ 28
   characters wide, max 90 % of the window, text wraps. Button row:
   right-aligned with the primary button last (right); a delete question's
@@ -105,6 +110,10 @@ Each rule has an id (`area-name`) so reviews can cite it.
   meanwhile: `ButtonState::Disabled { reason }`, label in `text.disabled`, no
   hover, the reason in a tooltip with a neutral `ban` icon, never `danger`
   (it is no error; R93).
+- `ix-no-disabled-buttons` — **Buttons are not disabled** unless the user
+  explicitly approved that button (R140). A button stays active and, when its
+  action cannot run, says why on click, e.g. an error at the field. A busy
+  spinner (`ix-busy-buttons`) is no exception to ask for.
 - `ix-drag-threshold` — Drag starts only after a few pixels of movement;
   show a drop indicator line between items and highlight target groups;
   Escape cancels the drag.
@@ -124,19 +133,22 @@ Each rule has an id (`area-name`) so reviews can cite it.
 
 - `form-labels` — Every input has a visible label; placeholders are hints,
   never the only label.
+- `form-spacing` — Forms and dialogs follow the measured spacing of
+  `tokens.md` §5.1 (R144).
 - `form-helper-text` — Non-obvious options have one line of helper text below
   them (`text.secondary`).
 - `form-errors` — Errors appear directly at the field, state cause **and**
   fix ("Time must be HH:MM, e.g. 20:30"), and use `danger` + icon. Validate
   when the field loses focus, not on every keystroke.
-- `form-required` — Required fields are marked.
+- `form-required` — The exception is marked: usually a field that may stay
+  empty gets "(optional)" (`TextField::optional`, R139).
 - `form-live-apply` — Settings apply live (no "Apply" button), except
   destructive or import actions, which need explicit confirmation.
 - `form-unsaved` — Closing an editor with unsaved changes asks: save /
   discard / cancel.
 - `form-grouping` — Related settings are grouped under a section heading;
   advanced options are collapsed by default (progressive disclosure).
-- `form-disabled-why` — Disabled controls say *why* and *how to enable* them
+- `form-disabled-why` — Controls that are disabled with approval (R140) say *why* and *how to enable* them
   (tooltip or `DependencyHint`), e.g. "Requires trailkit-core".
 - `form-read-only` — Read-only values look different from disabled ones.
 - `form-secret` — Secret inputs (API key) are masked with a show/hide toggle
@@ -176,10 +188,10 @@ Each rule has an id (`area-name`) so reviews can cite it.
   Save = floppy disk `save`). Secondary text buttons and dialog buttons stay text only
   (memo M130).
 - `lay-button-icon-position` — An icon in a button stands **before** the label
-  and says what the button does. An icon **after** the label (`external-link`)
-  says that the click leaves the game, e.g. opens the browser (R100, Q303).
-  Only the button variant with a trailing icon may do that:
-  `Button::opens_link` in `trailkit-ui`. No other trailing icons in buttons; a
+  and says what the button does. Links and buttons that leave the game show
+  the icon of `markdown::LinkKind` before their text: `external-link` for the
+  browser, `mail` for the mail program (R143, replaces the trailing icon of
+  R100). Buttons use `Button::opens_link`. No trailing icons in buttons; a
   menu's submenu chevron and a dropdown's chevron are indicators of those
   components, not button icons.
 - `lay-button-min-width` — Every button with a text label is at least

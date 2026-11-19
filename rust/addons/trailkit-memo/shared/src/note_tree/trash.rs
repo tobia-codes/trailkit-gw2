@@ -94,6 +94,7 @@ impl NotesDocument {
             deleted_at: now,
             former_parent: place.parent,
             former_index: place.index,
+            unknown_fields: Default::default(),
         });
         true
     }
@@ -149,12 +150,9 @@ impl NotesDocument {
     }
 
     /// Inserts `node` at `place` (index clamped); a missing parent group
-    /// means the end of the root level. The parent group is expanded so the
-    /// entry is visible.
+    /// means the end of the root level. Expanding the parent so the entry is
+    /// visible is up to the caller (UI state, M201).
     fn insert_at(&mut self, place: Place, node: TreeNode) {
-        if let Some(parent) = place.parent.and_then(|parent| self.group_mut(parent)) {
-            parent.expanded = true;
-        }
         match self.children_mut(place.parent) {
             Some(children) => children.insert(place.index.min(children.len()), node),
             None => self.root.push(node),
@@ -165,12 +163,12 @@ impl NotesDocument {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::note_tree::{Group, GroupId, NoteKind, node::tests::noon};
+    use crate::note_tree::{Group, GroupId, ResetSchedule, node::tests::noon};
 
     /// A tree `[First, Raids[Weekly, Daily], Last]`; returns the document
     /// and the ids of `First`, `Raids` and `Weekly`.
     fn sample() -> (NotesDocument, NodeId, GroupId, NodeId) {
-        let note = |title: &str| Note::new(title.to_owned(), NoteKind::Normal, noon());
+        let note = |title: &str| Note::new(title.to_owned(), ResetSchedule::Never, noon());
         let first = note("First");
         let weekly = note("Weekly");
         let mut raids = Group::new("Raids".to_owned());
@@ -184,6 +182,7 @@ mod tests {
                 TreeNode::Note(note("Last")),
             ],
             trash: Vec::new(),
+            unknown_fields: Default::default(),
         };
         (document, first_id, raids_id, weekly_id)
     }

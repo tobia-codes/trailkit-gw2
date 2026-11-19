@@ -7,16 +7,19 @@
 //! Platform-independent so it can be unit-tested on any host (ROADMAP R23).
 
 mod ids;
+mod migration;
 mod node;
 mod trash;
 mod traversal;
 
 use jiff::Timestamp;
 use serde::{Deserialize, Serialize};
-use trailkit_storage::{SchemaVersion, VersionedDocument};
+use trailkit_storage::{
+    DocumentFields, MigrationError, SchemaVersion, UnknownFields, VersionedDocument,
+};
 
 pub use ids::{GroupId, NodeId, NoteId};
-pub use node::{Group, Note, NoteKind, ResetPeriod, TrashEntry, TreeNode};
+pub use node::{Group, Note, ResetPeriod, ResetSchedule, TrashEntry, TreeNode};
 pub use trash::TRASH_RETENTION;
 pub use traversal::Place;
 use traversal::{
@@ -58,11 +61,23 @@ pub struct NotesDocument {
     pub root: Vec<TreeNode>,
     /// Deleted notes and groups.
     pub trash: Vec<TrashEntry>,
+    /// Fields a newer version added, kept on save (M202).
+    #[serde(flatten)]
+    pub unknown_fields: UnknownFields,
 }
 
 impl VersionedDocument for NotesDocument {
     const FILE_STEM: &'static str = "notes";
-    const CURRENT_SCHEMA_VERSION: SchemaVersion = SchemaVersion::FIRST;
+    /// Version 2 renamed `kind` to `reset_schedule` (M203).
+    const CURRENT_SCHEMA_VERSION: SchemaVersion = SchemaVersion(2);
+
+    /// See [`migration::migrate_one_step`].
+    fn migrate_one_step(
+        from: SchemaVersion,
+        fields: DocumentFields,
+    ) -> Result<DocumentFields, MigrationError> {
+        migration::migrate_one_step(from, fields)
+    }
 }
 
 impl NotesDocument {
@@ -110,19 +125,17 @@ impl NotesDocument {
     }
 
     /// Appends `node` at the end of `parent`'s children (or the root level if
-    /// `parent` is `None` or no longer exists) and expands that parent.
+    /// `parent` is `None` or no longer exists). Expanding the parent is up to
+    /// the caller (UI state, M201).
     pub fn append(&mut self, parent: Option<GroupId>, node: TreeNode) {
         match parent.and_then(|parent| self.group_mut(parent)) {
-            Some(group) => {
-                group.expanded = true;
-                group.children.push(node);
-            }
+            Some(group) => group.children.push(node),
             None => self.root.push(node),
         }
     }
 
     /// Inserts `node` at `point`. A group or sibling that no longer exists
-    /// falls back to the end of the root level; a parent group is expanded.
+    /// falls back to the end of the root level.
     pub fn insert(&mut self, point: InsertionPoint, node: TreeNode) {
         let result = match point {
             InsertionPoint::End(parent) => {
@@ -131,7 +144,6 @@ impl NotesDocument {
             }
             InsertionPoint::Start(parent) => match self.group_mut(parent) {
                 Some(group) => {
-                    group.expanded = true;
                     group.children.insert(0, node);
                     Ok(())
                 }
@@ -172,8 +184,7 @@ impl NotesDocument {
         }
     }
 
-    /// Moves `node` with all its children to `point` (M106–M112); the
-    /// target group is expanded. Returns whether anything changed; an
+    /// Moves `node` with all its children to `point` (M106–M112). Returns whether anything changed; an
     /// unchanged or impossible move ([`Self::check_move`]) does nothing.
     pub fn move_node(&mut self, node: NodeId, point: InsertionPoint) -> bool {
         if self.check_move(node, point) != MoveCheck::Changes {
@@ -192,9 +203,6 @@ impl NotesDocument {
         } else {
             target.index
         };
-        if let Some(parent) = target.parent.and_then(|parent| self.group_mut(parent)) {
-            parent.expanded = true;
-        }
         match self.children_mut(target.parent) {
             Some(children) => children.insert(index.min(children.len()), moved),
             None => self.root.push(moved),
@@ -286,7 +294,7 @@ impl NotesDocument {
         }
     }
 
-    /// Changes the reset period of note `id` (`None` = normal note, M86).
+    /// Changes the reset period of note `id` (`None` = never reset, M86).
     /// A new reset period starts at `now` (M90); `updated_at` stays. Returns
     /// whether anything changed.
     pub fn set_reset_period(
@@ -296,10 +304,10 @@ impl NotesDocument {
         now: Timestamp,
     ) -> bool {
         self.note_mut(id).is_some_and(|note| {
-            if note.kind.period() == period {
+            if note.reset_schedule.period() == period {
                 return false;
             }
-            note.kind = NoteKind::with_period(period, now);
+            note.reset_schedule = ResetSchedule::with_period(period, now);
             true
         })
     }
@@ -340,20 +348,20 @@ mod tests {
         let mut group = Group::new("Raids".to_owned());
         group.children.push(TreeNode::Note(Note::new(
             "Weekly clears".to_owned(),
-            NoteKind::WeeklyReset {
+            ResetSchedule::Weekly {
                 last_reset_applied_at: noon(),
             },
             noon(),
         )));
         NotesDocument {
             root: vec![
-                TreeNode::Note(Note::new("Ideas".to_owned(), NoteKind::Normal, noon())),
+                TreeNode::Note(Note::new("Ideas".to_owned(), ResetSchedule::Never, noon())),
                 TreeNode::Group(group),
             ],
             trash: vec![TrashEntry {
                 node: TreeNode::Note(Note::new(
                     "Old".to_owned(),
-                    NoteKind::DailyReset {
+                    ResetSchedule::Daily {
                         last_reset_applied_at: noon(),
                     },
                     noon(),
@@ -361,7 +369,9 @@ mod tests {
                 deleted_at: noon(),
                 former_parent: None,
                 former_index: 0,
+                unknown_fields: Default::default(),
             }],
+            unknown_fields: Default::default(),
         }
     }
 
@@ -378,19 +388,36 @@ mod tests {
     }
 
     #[test]
-    fn kind_change_starts_a_new_period_and_keeps_updated_at() {
+    fn document_and_trash_keep_fields_of_a_newer_version() -> serde_json::Result<()> {
+        let stored = serde_json::json!({
+            "root": [],
+            "trash": [{
+                "node": {"type": "group", "id": "0190a9d4-0000-7000-8000-000000000002",
+                         "title": "G", "children": []},
+                "deleted_at": "2026-11-01T12:00:00Z", "former_parent": null,
+                "former_index": 0, "deleted_by": "device-a"
+            }],
+            "sort_mode": "manual"
+        });
+        let document: NotesDocument = serde_json::from_value(stored.clone())?;
+        assert_eq!(serde_json::to_value(&document)?, stored);
+        Ok(())
+    }
+
+    #[test]
+    fn reset_schedule_change_starts_a_new_period_and_keeps_updated_at() {
         let mut document = sample_document();
         let id = note_id(&document, "Ideas").expect("sample note");
         let later = "2026-11-01T18:00:00Z".parse().unwrap_or_default();
         assert!(document.set_reset_period(id, Some(ResetPeriod::Daily), later));
         assert!(!document.set_reset_period(id, Some(ResetPeriod::Daily), later));
         let note = document.note(id).expect("sample note");
-        assert_eq!(note.kind.last_reset_applied_at(), Some(later));
+        assert_eq!(note.reset_schedule.last_reset_applied_at(), Some(later));
         assert_eq!(note.updated_at, noon());
         assert!(document.set_reset_period(id, None, later));
         assert_eq!(
-            document.note(id).map(|note| note.kind),
-            Some(NoteKind::Normal)
+            document.note(id).map(|note| note.reset_schedule),
+            Some(ResetSchedule::Never)
         );
     }
 
@@ -398,7 +425,7 @@ mod tests {
     fn insert_after_a_nested_note_and_fall_back_to_the_root() {
         let mut document = sample_document();
         let weekly = note_id(&document, "Weekly clears").expect("sample note");
-        let new = Note::new("New".to_owned(), NoteKind::Normal, noon());
+        let new = Note::new("New".to_owned(), ResetSchedule::Never, noon());
         let new_id = new.id;
         document.insert(
             InsertionPoint::After(NodeId::Note(weekly)),
@@ -412,7 +439,7 @@ mod tests {
             Some(NodeId::Note(new_id))
         );
 
-        let orphan = Note::new("Orphan".to_owned(), NoteKind::Normal, noon());
+        let orphan = Note::new("Orphan".to_owned(), ResetSchedule::Never, noon());
         let orphan_id = orphan.id;
         document.insert(
             InsertionPoint::After(NodeId::Note(NoteId::new_unique())),
@@ -490,21 +517,19 @@ mod tests {
     }
 
     #[test]
-    fn append_goes_to_the_end_and_expands_the_parent() {
+    fn append_goes_to_the_end() {
         let mut document = sample_document();
-        let TreeNode::Group(group) = &mut document.root[1] else {
+        let TreeNode::Group(group) = &document.root[1] else {
             panic!("expected a group");
         };
-        group.expanded = false;
         let group_id = group.id;
-        let note = Note::new("New".to_owned(), NoteKind::Normal, noon());
+        let note = Note::new("New".to_owned(), ResetSchedule::Never, noon());
         let note_id = note.id;
 
         document.append(Some(group_id), TreeNode::Note(note));
         let TreeNode::Group(group) = &document.root[1] else {
             panic!("expected a group");
         };
-        assert!(group.expanded);
         assert_eq!(
             group.children.last().map(TreeNode::id),
             Some(NodeId::Note(note_id))
@@ -514,14 +539,13 @@ mod tests {
         assert_eq!(document.root.last().map(TreeNode::title), Some("Root"));
     }
 
-    /// The tree `A G1[B G2[C]] D` with G2 collapsed, plus the ids of
+    /// The tree `A G1[B G2[C]] D`, plus the ids of
     /// G1, G2, A, B and C.
     fn move_document() -> (NotesDocument, [GroupId; 2], [NoteId; 3]) {
-        let note = |title: &str| Note::new(title.to_owned(), NoteKind::Normal, noon());
+        let note = |title: &str| Note::new(title.to_owned(), ResetSchedule::Never, noon());
         let (a, b, c, d) = (note("A"), note("B"), note("C"), note("D"));
         let ids = [a.id, b.id, c.id];
         let mut inner = Group::new("G2".to_owned());
-        inner.expanded = false;
         inner.children.push(TreeNode::Note(c));
         let mut outer = Group::new("G1".to_owned());
         outer.children.push(TreeNode::Note(b));
@@ -530,23 +554,20 @@ mod tests {
         let document = NotesDocument {
             root: vec![TreeNode::Note(a), TreeNode::Group(outer), TreeNode::Note(d)],
             trash: Vec::new(),
+            unknown_fields: Default::default(),
         };
         (document, groups, ids)
     }
 
-    /// The tree as text, e.g. `A G1[B G2[C]] D`; a collapsed group is
-    /// marked with `-`.
+    /// The tree as text, e.g. `A G1[B G2[C]] D`.
     fn outline(nodes: &[TreeNode]) -> String {
         nodes
             .iter()
             .map(|node| match node {
                 TreeNode::Note(note) => note.title.clone(),
-                TreeNode::Group(group) => format!(
-                    "{}{}[{}]",
-                    group.title,
-                    if group.expanded { "" } else { "-" },
-                    outline(&group.children)
-                ),
+                TreeNode::Group(group) => {
+                    format!("{}[{}]", group.title, outline(&group.children))
+                }
             })
             .collect::<Vec<_>>()
             .join(" ")
@@ -557,11 +578,11 @@ mod tests {
         let (mut document, [outer, inner], [a, b, c]) = move_document();
         let [a, b, c] = [a, b, c].map(NodeId::Note);
         assert!(document.move_node(a, InsertionPoint::After(b)));
-        assert_eq!(outline(&document.root), "G1[B A G2-[C]] D");
+        assert_eq!(outline(&document.root), "G1[B A G2[C]] D");
         assert!(document.move_node(a, InsertionPoint::Start(outer)));
-        assert_eq!(outline(&document.root), "G1[A B G2-[C]] D");
+        assert_eq!(outline(&document.root), "G1[A B G2[C]] D");
         assert!(document.move_node(c, InsertionPoint::End(None)));
-        assert_eq!(outline(&document.root), "G1[A B G2-[]] D C");
+        assert_eq!(outline(&document.root), "G1[A B G2[]] D C");
         assert!(document.move_node(b, InsertionPoint::End(Some(inner))));
         assert_eq!(outline(&document.root), "G1[A G2[B]] D C");
         assert!(document.move_node(c, InsertionPoint::Before(NodeId::Group(outer))));
@@ -573,7 +594,7 @@ mod tests {
         let (mut document, _, [a, ..]) = move_document();
         let d = document.root[2].id();
         assert!(document.move_node(NodeId::Note(a), InsertionPoint::After(d)));
-        assert_eq!(outline(&document.root), "G1[B G2-[C]] D A");
+        assert_eq!(outline(&document.root), "G1[B G2[C]] D A");
     }
 
     #[test]
@@ -583,7 +604,7 @@ mod tests {
             NodeId::Group(inner),
             InsertionPoint::Before(NodeId::Note(a))
         ));
-        assert_eq!(outline(&document.root), "G2-[C] A G1[B] D");
+        assert_eq!(outline(&document.root), "G2[C] A G1[B] D");
     }
 
     #[test]
@@ -636,10 +657,10 @@ mod tests {
     fn insert_before_and_at_the_start() {
         let (mut document, [outer, _], [_, b, _]) = move_document();
         let note =
-            |title: &str| TreeNode::Note(Note::new(title.to_owned(), NoteKind::Normal, noon()));
+            |title: &str| TreeNode::Note(Note::new(title.to_owned(), ResetSchedule::Never, noon()));
         document.insert(InsertionPoint::Before(NodeId::Note(b)), note("X"));
         document.insert(InsertionPoint::Start(outer), note("Y"));
         document.insert(InsertionPoint::Start(GroupId::new_unique()), note("Z"));
-        assert_eq!(outline(&document.root), "A G1[Y X B G2-[C]] D Z");
+        assert_eq!(outline(&document.root), "A G1[Y X B G2[C]] D Z");
     }
 }

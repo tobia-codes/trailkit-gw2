@@ -42,6 +42,13 @@ diese Daten nicht und sehen nicht, wer geprüft hat.
   keine Updates installieren. Es gibt keine automatisierte Entscheidung und
   kein Profiling.
 
+## Wiki öffnen
+
+- **Im Wiki öffnen** an einem Chat-Link-Chip öffnet das Guild-Wars-2-Wiki in
+  deinem Browser, nur wenn du es auswählst. Das Wiki erhält dann den Chat-Code
+  dieses Chips und, wie jede besuchte Website, deine IP-Adresse. Es gilt die
+  Datenschutzerklärung der Betreiber.
+
 ## Ein Problem melden
 
 - **Problem melden** öffnet ein Formular auf GitHub in deinem Browser. Im

@@ -28,6 +28,26 @@ pub enum EditorText {
     ShowPreview,
     /// Tooltip of the preview button while the preview is shown (M60).
     HidePreview,
+    /// Title of the dialog for a new link (M208).
+    LinkInsertTitle,
+    /// Title of the dialog for an existing link (M208).
+    LinkEditTitle,
+    /// Label of the link text field (M208).
+    LinkText,
+    /// Label of the link address field (M208).
+    LinkAddress,
+    /// Button that inserts a new link (M208).
+    LinkInsert,
+    /// Button that saves a changed link (M208).
+    LinkSave,
+    /// Button that closes the link dialog (M208).
+    LinkCancel,
+    /// Tooltip of the button that turns a link into plain text (M208).
+    LinkRemove,
+    /// Why a link cannot be inserted without an address (M208).
+    LinkAddressMissing,
+    /// What is wrong with an unusable address and how to fix it (M208).
+    LinkAddressInvalid,
 }
 
 impl LocalizedText for EditorText {
@@ -43,10 +63,43 @@ impl LocalizedText for EditorText {
         Self::InsertEventRequiresCore,
         Self::ShowPreview,
         Self::HidePreview,
+        Self::LinkInsertTitle,
+        Self::LinkEditTitle,
+        Self::LinkText,
+        Self::LinkAddress,
+        Self::LinkInsert,
+        Self::LinkSave,
+        Self::LinkCancel,
+        Self::LinkRemove,
+        Self::LinkAddressMissing,
+        Self::LinkAddressInvalid,
     ];
 
     fn get(self, language: Language) -> &'static str {
         match (self, language) {
+            (Self::LinkInsertTitle, Language::English) => "Insert link",
+            (Self::LinkInsertTitle, Language::German) => "Link einfügen",
+            (Self::LinkEditTitle, Language::English) => "Edit link",
+            (Self::LinkEditTitle, Language::German) => "Link bearbeiten",
+            (Self::LinkText, Language::English | Language::German) => "Text",
+            (Self::LinkAddress, Language::English) => "Address",
+            (Self::LinkAddress, Language::German) => "Adresse",
+            (Self::LinkInsert, Language::English) => "Insert",
+            (Self::LinkInsert, Language::German) => "Einfügen",
+            (Self::LinkSave, Language::English) => "Save",
+            (Self::LinkSave, Language::German) => "Speichern",
+            (Self::LinkCancel, Language::English) => "Cancel",
+            (Self::LinkCancel, Language::German) => "Abbrechen",
+            (Self::LinkRemove, Language::English) => "Remove link, keep the text",
+            (Self::LinkRemove, Language::German) => "Link entfernen, Text behalten",
+            (Self::LinkAddressMissing, Language::English) => "Enter an address.",
+            (Self::LinkAddressMissing, Language::German) => "Gib eine Adresse ein.",
+            (Self::LinkAddressInvalid, Language::English) => {
+                "Enter a valid address, e.g. https://example.com."
+            }
+            (Self::LinkAddressInvalid, Language::German) => {
+                "Gib eine gültige Adresse ein, z. B. https://example.com."
+            }
             (Self::TitleHint, Language::English) => "Title",
             (Self::TitleHint, Language::German) => "Titel",
             (Self::FormatHeading1, Language::English) => "Heading 1",

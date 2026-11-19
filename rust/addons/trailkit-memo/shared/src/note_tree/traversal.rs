@@ -17,6 +17,10 @@ pub struct Place {
 /// Inserts `node` next to `sibling` (`offset` 0 = before, 1 = after) in
 /// whichever list of `nodes` (or their descendants) holds it; hands `node`
 /// back if `sibling` is missing.
+#[expect(
+    clippy::result_large_err,
+    reason = "the error hands the moved node back by value, like the Ok path"
+)]
 pub(super) fn insert_next_to(
     nodes: &mut Vec<TreeNode>,
     sibling: NodeId,
