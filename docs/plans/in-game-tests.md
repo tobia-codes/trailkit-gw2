@@ -38,23 +38,6 @@ branch for memo's shortcut keys:
    cursor), press Ctrl+Z. **Expected:** the note goes back to its old place,
    its group opens and it is selected; the game opens nothing.
 
-## Test 31 — right-click menu of links and chips (M210, 2026-11-18)
-
-Approved design: https://claude.ai/artifact/T75AGbpSsUuT4K4yTwpSTs
-
-Use a note with a web link, a `mailto:` link, an item or map point chip and a
-coin chip, in the reading view.
-
-1. Right-click the web link. **Expected:** Open link, Copy link address.
-   Copy it and paste it somewhere: the address arrives, "Copied" appears.
-2. Right-click the e-mail link. **Expected:** Write email, Copy email address;
-   the copied text has no `mailto:`.
-3. Right-click the item or map point chip. **Expected:** Copy chat link, Open
-   in wiki. The wiki opens in the browser with a search for the code.
-4. Right-click the coin chip. **Expected:** only Copy chat link.
-5. With Nexus in German, **Im Wiki öffnen** opens the German wiki.
-6. Open a menu and press Escape. **Expected:** only the menu closes.
-
 ## Test 32 — even popup spacing and e-mail links (R144, M211, 2026-11-18)
 
 1. Open any right-click menu and the reset type dropdown, hover the first and
