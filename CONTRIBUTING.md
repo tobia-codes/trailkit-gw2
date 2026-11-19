@@ -250,7 +250,7 @@ Run these before you push (`source ~/.cargo/env` first if cargo is not found):
 | `cargo clippy --all-targets -- -D warnings` | Lints, Linux build |
 | `cargo xwin clippy --target x86_64-pc-windows-msvc --all-targets -- -D warnings` | Lints of Windows-only addon code, which the Linux run skips |
 | `cargo test` | Unit tests, translations, generated docs up to date, README links |
-| `cargo xtask ui-test` | UI snapshots (Windows test binaries run through WSL, about 4 minutes) |
+| `cargo xtask ui-test` | UI snapshots (Windows test binaries run through WSL, about 30 seconds) |
 | `cargo xtask check-names` | Paths follow the naming conventions |
 | `cargo xtask check-file-length` | Advisory size hints for changed files, functions and folders |
 | `cargo deny check` | Dependency licenses and advisories |
