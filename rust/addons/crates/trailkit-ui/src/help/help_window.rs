@@ -26,6 +26,7 @@ use crate::{
     controls::button::ButtonState,
     feedback::status_line::Status,
     help::help_topics::{HelpTopic, parse_help_topics},
+    layout::stack::Stack,
     layout::title_bar::{TitleBarState, TitleBarTexts, draw_window},
     markdown::{MarkdownDocument, parse},
     text::font_registry::FontScope,
@@ -345,21 +346,27 @@ impl HelpWindow {
             &mut open,
             || {
                 let _body = FontScope::push(ui, FontRole::Body);
-                if let Some(chosen) = draw_tabs(ui, theme, &content.texts, state.tab) {
-                    state.tab = chosen;
-                    *state_changed = true;
-                }
-                match state.tab {
-                    HelpTab::Help => {
-                        if let Some(help) = help.as_ref() {
-                            *state_changed |=
-                                help_tab::draw_help_tab(ui, theme, help, state, content.chips);
+                // The panes start `space.sm` below the tabs, as panes keep
+                // it between each other (R148).
+                Stack::vertical(theme).build(ui, |stack| {
+                    if let Some(chosen) =
+                        stack.add(|| draw_tabs(ui, theme, &content.texts, state.tab))
+                    {
+                        state.tab = chosen;
+                        *state_changed = true;
+                    }
+                    stack.add(|| match state.tab {
+                        HelpTab::Help => {
+                            if let Some(help) = help.as_ref() {
+                                *state_changed |=
+                                    help_tab::draw_help_tab(ui, theme, help, state, content.chips);
+                            }
                         }
-                    }
-                    HelpTab::ReportProblem => {
-                        action = problem_tab::draw_problem_tab(ui, theme, content);
-                    }
-                }
+                        HelpTab::ReportProblem => {
+                            action = problem_tab::draw_problem_tab(ui, theme, content);
+                        }
+                    });
+                });
             },
         );
         self.open = open;
@@ -390,10 +397,6 @@ fn draw_tabs(
             clicked = Some(tab);
         }
     }
-    // The panes start `space.sm` below the tabs, as panes keep it between
-    // each other.
-    let item_spacing = ui.clone_style().item_spacing[1];
-    ui.dummy([0.0, (theme.spacing.small - 2.0 * item_spacing).max(0.0)]);
     clicked
 }
 
