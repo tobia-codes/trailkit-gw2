@@ -4,7 +4,7 @@
 //!
 //! ImGui draws its own check mark and submenu arrow; these entries use the
 //! Lucide `check` and `chevron-right` icons like the dropdown, and submenus
-//! open flush beside their parent instead of overlapping it.
+//! open `space.xs` beside their parent instead of overlapping it (memo M98).
 
 mod item;
 mod panel;
@@ -129,17 +129,41 @@ pub fn place_next_popup(position: [f32; 2], pivot_x: f32) {
 /// border, so all rows of every kind line up (R144).
 #[must_use]
 pub fn menu_row_highlight_rect(ui: &Ui, theme: &Theme) -> [[f32; 2]; 2] {
-    row_highlight_rect(ui, theme, [ui.item_rect_min(), ui.item_rect_max()])
+    row_highlight_rect(
+        theme,
+        MenuSpan::of_current_window(ui),
+        [ui.item_rect_min(), ui.item_rect_max()],
+    )
 }
 
-/// [`menu_row_highlight_rect`] for a row spanning `[min, max]`.
-fn row_highlight_rect(ui: &Ui, theme: &Theme, [min, max]: [[f32; 2]; 2]) -> [[f32; 2]; 2] {
+/// The horizontal extent of the menu window a row belongs to.
+#[derive(Debug, Clone, Copy)]
+struct MenuSpan {
+    /// The window's left edge (screen).
+    left: f32,
+    /// The window's width.
+    width: f32,
+}
+
+impl MenuSpan {
+    /// The span of the current window. Read it before `BeginMenu` for a
+    /// submenu row: while the submenu is open, it is the current window.
+    fn of_current_window(ui: &Ui) -> Self {
+        Self {
+            left: ui.window_pos()[0],
+            width: ui.window_size()[0],
+        }
+    }
+}
+
+/// [`menu_row_highlight_rect`] for a row spanning `[min, max]` in a menu
+/// window spanning `span`.
+fn row_highlight_rect(theme: &Theme, span: MenuSpan, [min, max]: [[f32; 2]; 2]) -> [[f32; 2]; 2] {
     let inset = theme.spacing.small + theme.border.width;
-    let left = ui.window_pos()[0];
     let half_gap = theme.spacing.extra_small / 2.0;
     [
-        [left + inset, min[1] + half_gap],
-        [left + ui.window_size()[0] - inset, max[1] - half_gap],
+        [span.left + inset, min[1] + half_gap],
+        [span.left + span.width - inset, max[1] - half_gap],
     ]
 }
 
@@ -148,7 +172,8 @@ pub(crate) fn menu_row_content_right(ui: &Ui, theme: &Theme) -> f32 {
     menu_row_highlight_rect(ui, theme)[1][0] - theme.spacing.small
 }
 
-/// Fills the highlight of the row spanning `[min, max]` with `color`.
+/// Fills the highlight of the row spanning `[min, max]` in a menu window
+/// spanning `span` with `color`.
 ///
 /// # Safety
 ///
@@ -156,12 +181,12 @@ pub(crate) fn menu_row_content_right(ui: &Ui, theme: &Theme) -> f32 {
 /// thread inside a frame.
 unsafe fn fill_menu_row(
     draw_list: *mut nexus::imgui::sys::ImDrawList,
-    ui: &Ui,
     theme: &Theme,
+    span: MenuSpan,
     row: [[f32; 2]; 2],
     color: Color,
 ) {
-    let [min, max] = row_highlight_rect(ui, theme, row);
+    let [min, max] = row_highlight_rect(theme, span, row);
     // SAFETY: guaranteed by the caller; the call only adds a rectangle.
     unsafe {
         nexus::imgui::sys::ImDrawList_AddRectFilled(
@@ -200,8 +225,8 @@ pub(crate) fn draw_menu_row_highlight(ui: &Ui, theme: &Theme, selected: bool) {
     unsafe {
         fill_menu_row(
             nexus::imgui::sys::igGetWindowDrawList(),
-            ui,
             theme,
+            MenuSpan::of_current_window(ui),
             [ui.item_rect_min(), ui.item_rect_max()],
             color,
         );
@@ -293,8 +318,8 @@ pub fn draw_menu_item(ui: &Ui, theme: &Theme, item: &MenuItem<'_>) -> bool {
 
 /// Begins a submenu entry with a Lucide `icon` before `label` and a chevron at
 /// its right end; returns a token while the submenu is open (draw its items,
-/// then drop the token). The submenu starts at the parent's right edge (memo
-/// M98).
+/// then drop the token). The submenu opens `space.xs` beside the parent, and
+/// the row keeps its hover fill while the submenu is open (memo M98).
 pub fn begin_submenu<'ui>(
     ui: &'ui Ui,
     theme: &Theme,
@@ -306,15 +331,19 @@ pub fn begin_submenu<'ui>(
     let right_edge = ui.window_content_region_max()[0] + ui.window_pos()[0];
     let bottom = y + ui.text_line_height();
     let middle = label_icon_middle(ui, y);
+    // The row keeps its highlight while its submenu is open, so the way back
+    // stays visible; read before `BeginMenu` makes the submenu current.
+    let parent = MenuSpan::of_current_window(ui);
     // SAFETY: called on the render thread inside a frame, so the current
     // (parent menu) window's draw list is valid for this frame.
     let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
     let token = {
         // ImGui lets a submenu overlap its parent by `ItemInnerSpacing.x`;
-        // only `BeginMenu` reads it. ImGui's own label and arrow are drawn
-        // transparent and replaced below.
-        let _flush = ui.push_style_var(StyleVar::ItemInnerSpacing([
-            0.0,
+        // only `BeginMenu` reads it. A negative overlap leaves `space.xs`
+        // between the two menus on either side. ImGui's own label and arrow
+        // are drawn transparent and replaced below.
+        let _apart = ui.push_style_var(StyleVar::ItemInnerSpacing([
+            -theme.spacing.extra_small,
             style.item_inner_spacing[1],
         ]));
         let _hidden = ui.push_style_color(StyleColor::Text, [0.0; 4]);
@@ -337,7 +366,7 @@ pub fn begin_submenu<'ui>(
         ];
         // SAFETY: render thread inside a frame; `draw_list` belongs to the
         // parent menu of this frame.
-        unsafe { fill_menu_row(draw_list, ui, theme, row, theme.surface.popup_hover) };
+        unsafe { fill_menu_row(draw_list, theme, parent, row, theme.surface.popup_hover) };
     }
     let begin = label.as_ptr().cast::<std::ffi::c_char>();
     // SAFETY: render thread inside a frame; `draw_list` belongs to the
