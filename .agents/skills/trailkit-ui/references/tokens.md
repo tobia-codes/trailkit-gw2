@@ -117,8 +117,10 @@ editor's formatting buttons that light up for the formatting at the cursor
   row, so a hovered or selected row sits 8 px under the line). It is the one
   element that brings its own space: in a `Stack` it replaces the stack's gap
   (`StackLayout::add_separator`). `draw_separator` for frames and rows;
-  `draw_separator_above_text` (`add_separator_above_text`) when text follows,
-  as the empty top of its first line counts as part of the gap.
+  `add_separator_above_text` when text follows, as the empty top of its
+  first line counts as part of the gap; where that empty top alone is taller
+  than `space.sm`, the text below is pulled up by the difference (a scroll
+  region does it inside itself, so scrolled text stops at the line).
 - Text buttons are at least `button.min_width` × font size wide (M131);
   measure rows with `button_width` / `icon_label_button_width`, never with
   `calc_text_size` + padding, or right-aligned rows drift.
