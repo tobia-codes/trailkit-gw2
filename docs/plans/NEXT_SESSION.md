@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-20 (session 48, PC; R148 spacing scale and Stack, R147 icon sizes, R155 help contents decided). Current state and next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
+Last updated: 2026-11-20 (session 49, PC; layout branch and new-row bugfix merged; R148 spacing scale and Stack, R147 icon sizes, R155 help contents decided). Current state and next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
 
@@ -26,13 +26,8 @@ log export active (click re-checks, then the info), event button **hidden** unti
 **Sessions 44–46 (2026-11-18/19), merged via PR #152:** memo data model M201–M204, drop zones, Backspace on markers/links, link dialog, bare links/e-mails, right-click menu (M205–M211),
 R139–R146 (TextField, no disabled buttons, dialog close icon, wrapped tooltips, link icons, measured form spacing, shared `Dialog`/`Backdrop`, report reuse), M213 text size percent, R149 one link underline. All in-game tests passed except the two below.
 **Done 2026-11-19 (PR of `bugfix/memo-shortcut-keys`):** memo catches Ctrl+Z/Y/Shift+Z, Ctrl+0 (number pad too) and Enter in dialogs; dialogs at most 20 font sizes wide (R153); editor toolbar flush with the title; CI 13 → ~4 min (R151, PR #154).
-**Active work branch: `feature/ui-layout-rules`** (2026-11-20, local commits only, nothing pushed; `git switch feature/ui-layout-rules`). Done on it, all tests green, deployed and OK in game: M214, R150, dropdown gap (`ea55211`); **R148**
-complete: one spacing scale (component spacing tokens removed), `layout::stack::Stack` (rounded positions), one divider with a fixed `space.sm` (Q528), ImGui `ItemSpacing` 0 with every gap explicit (Q529), markdown block gaps (Q530), status
-card leaves its gap to the caller, problem page and help topic list as stacks; **R147** complete: one interface icon size = body × `font.size.icon` 0.9 (Q536, Q537; only chips/link icons in text follow their line), icons on the capital
-middle of their text (`draw_icon_into` takes that line), square icon buttons as tall as text buttons, editor toolbar variant C (Q523, Q524). Mock: https://claude.ai/artifact/ScQ3VRbwZ7oJ3Q6Zcy2LT4. Decisions are in the R147/R148 rows. Next
-on it, in order: ~~1.~~ done (`0282485`): the note list header buttons use the shared `Button` (icon only, empty label), gaining the regular border and the capital-middle icon (user OK 2026-11-20, mock https://claude.ai/artifact/DuZrXXZKQP7fNZBLEfEtuL). ~~2.~~ done (`eb583f1`): md5 groups vs develop found twelve states that missed their element after R147/R148 (coordinates fixed);
-sample review of every element (Dark/Light, minimum, German) found nothing; side note from develop: the text field error wraps inside "example.com". 3. Deploy, in-game check, then ask for the merge OK (R74) and open the PR into `develop`.
-**After that branch (R155, Q531–Q534, order fixed):** a. unify menu entries: one `MenuItem` + `draw_menu_item` (icon, shortcut, check, tone, selected), memo's window menu rows use it; b. unify list rows: only `draw_list_row` (level,
+**Merged 2026-11-20 (user OK, PRs of `feature/ui-layout-rules` and `bugfix/memo-reveal-new-row`):** M214, R150, dropdown gap; **R148** one spacing scale, `layout::stack::Stack`, one divider (Q528), ImGui `ItemSpacing` 0 (Q529), markdown block gaps (Q530); **R147** one interface icon size (Q536, Q537), icons on the capital middle, square icon buttons (Q523, Q524); note list header buttons on the shared `Button` (mock https://claude.ai/artifact/DuZrXXZKQP7fNZBLEfEtuL); twelve snapshot states that missed their element after the layout change fixed; a new note or group scrolls into view (M185 reveal). All tested in game. Side note: the text field error wraps inside "example.com".
+**Next (R155, Q531–Q534, order fixed):** a. unify menu entries: one `MenuItem` + `draw_menu_item` (icon, shortcut, check, tone, selected), memo's window menu rows use it; b. unify list rows: only `draw_list_row` (level,
 chevron, markers, title marks, renaming), the memo note list moves off `TreeNode`, pixel-identical; row state, chevron and selection bar become `pub(crate)`; c. the help table of contents (sections of the selected topic, click scrolls), R87
 mock first. Also open: length hints for split grilling: `draw_spans` (`inline_text.rs`, 80), `states.rs` tests (819), `editor.rs` (481), `dialogs.rs` (403), `buffer.rs` (413); one unreproduced debug crash `imgui.h:1629` while deleting in a
 link label (if it recurs: Ignore, note cursor placement, key, preview, tooltip).
