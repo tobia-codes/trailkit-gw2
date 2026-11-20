@@ -17,10 +17,7 @@ mod link_menu;
 use crate::controls::hover::is_item_hovered;
 use nexus::imgui::{MouseCursor, Ui};
 
-use self::{
-    inline_text::{draw_spans, first_line_ink_top as spans_first_line_ink_top},
-    link_menu::draw_link_menu,
-};
+use self::{inline_text::draw_spans, link_menu::draw_link_menu};
 use crate::{
     chat_link::chat_link_chip::ChipContext,
     drawing::draw_list::window_draw_list,
@@ -28,7 +25,6 @@ use crate::{
     markdown::{Block, ListMarker, MarkdownDocument, TaskMarker},
     text::font_registry::FontScope,
     text::fonts::FontRole,
-    text::glyph_metrics::{glyph_bounds, icon_visible_box},
     text::icons::Icon,
     text::search_hits::HitMark,
     text::text_search::SearchQuery,
@@ -170,80 +166,17 @@ struct BlockLayout {
     marker_column: f32,
 }
 
-/// How far below the cursor [`draw_markdown`] would put the highest ink of
-/// the first line of `document`: the capitals of its text, or a task
-/// checkbox, chat-link chip or link icon that reaches higher (R148, Q525).
-/// The first line is wrapped exactly as drawing wraps it, but nothing is
-/// submitted to ImGui; call it where `document` will be drawn, so the width
-/// is the same.
-#[must_use]
-pub fn first_line_ink_top(
+/// Draws `document` at the cursor position and returns what the user
+/// clicked. `chips` supplies the texts of chat-link chips; `highlight`
+/// marks search hits.
+pub fn draw_markdown(
     ui: &Ui,
     document: &MarkdownDocument,
     theme: &Theme,
     chips: ChipContext<'_>,
-) -> f32 {
+    mut highlight: Option<&mut SearchHighlight<'_>>,
+) -> Option<MarkdownAction> {
     let _body_font = FontScope::push(ui, FontRole::Body);
-    let layout = block_layout(ui, theme);
-    let body_leading = theme.typography.leading_for(ui.current_font_size());
-    let capital_top = || glyph_bounds('H').map_or(0.0, |(top, _)| top);
-    let Some(block) = document.blocks.first() else {
-        return body_leading + capital_top();
-    };
-    match block {
-        Block::Heading { level, spans } => {
-            let style = TextStyle::heading(*level);
-            let _font = FontScope::push(ui, style.font());
-            let leading = theme.typography.leading_for(ui.current_font_size());
-            let bounds = LineBounds {
-                left: layout.left,
-                right: layout.right,
-            };
-            leading
-                + spans_first_line_ink_top(ui, spans, Some(style), bounds, theme, chips)
-                    .unwrap_or_else(capital_top)
-        }
-        Block::Paragraph { depth, spans } => {
-            let bounds = LineBounds {
-                left: layout.left + f32::from(*depth) * layout.indent,
-                right: layout.right,
-            };
-            body_leading
-                + spans_first_line_ink_top(ui, spans, None, bounds, theme, chips)
-                    .unwrap_or_else(capital_top)
-        }
-        Block::ListItem {
-            depth,
-            marker,
-            spans,
-        } => {
-            let left = layout.left + f32::from(depth.saturating_sub(1)) * layout.indent;
-            let bounds = LineBounds {
-                left: left + layout.marker_column,
-                right: layout.right,
-            };
-            let text = spans_first_line_ink_top(ui, spans, None, bounds, theme, chips)
-                .unwrap_or_else(capital_top);
-            // The task box is drawn at the text top like a letter.
-            let marker_top = match marker {
-                ListMarker::Task { .. } => {
-                    let _icons = FontScope::push(ui, FontRole::Icons);
-                    icon_visible_box(Icon::SQUARE.glyph(), ui.text_line_height())[1]
-                }
-                ListMarker::Bullet | ListMarker::Number(_) => text,
-            };
-            body_leading + text.min(marker_top)
-        }
-        // `draw_separator` leaves `space.sm` from the item above, which here
-        // is only the cursor.
-        Block::Rule => theme.spacing.small - ui.clone_style().item_spacing[1],
-    }
-}
-
-/// The horizontal layout of every block when the document starts at the
-/// cursor: the readable line length (M60) and the list marker column. Expects
-/// the body font pushed.
-fn block_layout(ui: &Ui, theme: &Theme) -> BlockLayout {
     let origin_x = ui.cursor_screen_pos()[0];
     let average_character_width = ui.calc_text_size("n")[0];
     let width = ui.content_region_avail()[0]
@@ -259,26 +192,12 @@ fn block_layout(ui: &Ui, theme: &Theme) -> BlockLayout {
     }
     .max(ui.calc_text_size("00.")[0])
         + theme.spacing.extra_small;
-    BlockLayout {
+    let layout = BlockLayout {
         left: origin_x,
         right: origin_x + width,
         indent,
         marker_column: marker_column.max(indent),
-    }
-}
-
-/// Draws `document` at the cursor position and returns what the user
-/// clicked. `chips` supplies the texts of chat-link chips; `highlight`
-/// marks search hits.
-pub fn draw_markdown(
-    ui: &Ui,
-    document: &MarkdownDocument,
-    theme: &Theme,
-    chips: ChipContext<'_>,
-    mut highlight: Option<&mut SearchHighlight<'_>>,
-) -> Option<MarkdownAction> {
-    let _body_font = FontScope::push(ui, FontRole::Body);
-    let layout = block_layout(ui, theme);
+    };
 
     let mut action = None;
     for (index, block) in document.blocks.iter().enumerate() {

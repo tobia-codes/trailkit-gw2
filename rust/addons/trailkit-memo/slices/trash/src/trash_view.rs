@@ -264,7 +264,7 @@ pub fn draw_group_preview(
                 &labels::info_line(entry, now, language),
             );
         });
-        stack.add_separator_above_label(theme, TextStyle::Secondary);
+        stack.add_separator(theme);
         stack.add(|| {
             draw_text(
                 ui,

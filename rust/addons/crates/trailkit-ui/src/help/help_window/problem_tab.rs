@@ -15,11 +15,10 @@ use crate::{
     controls::button::{Button, ButtonKind},
     feedback::status_card::{CardDetail, CardStatus, StatusCard, draw_status_card},
     feedback::status_line::draw_status_line,
-    layout::page::{FirstLine, PageHead, draw_page},
+    layout::page::{PageHead, draw_page},
     layout::pane::draw_pane,
     layout::separator::draw_separator,
     markdown::LinkKind,
-    text::fonts::FontRole,
     text::icons::Icon,
     text::text_layout::format_count,
     text::{TextStyle, draw_text, draw_text_wrapped},
@@ -39,7 +38,6 @@ pub(super) fn draw_problem_tab(
         title: texts.problem_tab,
         trailing: None,
         subtitle: Some(texts.problem_intro),
-        first_line: FirstLine::Running(FontRole::Heading3),
     };
     draw_pane(ui, theme, "problem", [0.0, 0.0], || {
         draw_page(ui, theme, "problem_body", head, || {

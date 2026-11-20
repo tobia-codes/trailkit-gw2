@@ -2,47 +2,22 @@
 //! measured to the visible edges of its neighbors, across the content width
 //! of the current window or pane (`lay-pane-padding`).
 //!
-//! The visible edge below the line is a frame's edge (buttons, fields), the
-//! fill of a list row, or the capital letters of text; the last needs
-//! `StackLayout::add_separator_above_text`, since a text line starts with
-//! empty space above its letters. ImGui 1.80's `Separator` spans the full
-//! window width, padding included, so it is never used.
+//! Below the line, text is measured from the top of its line box, as in CSS:
+//! the empty space above the letters is part of the text, so the gap stays
+//! the same fixed `space.sm` whatever the font or first line (Q528). ImGui
+//! 1.80's `Separator` spans the full window width, padding included, so it
+//! is never used.
 
 use crate::drawing::draw_list::window_draw_list;
 use nexus::imgui::Ui;
 
-use crate::{
-    text::font_registry::FontScope, text::fonts::FontRole, text::glyph_metrics::glyph_bounds,
-    theme::Theme,
-};
+use crate::theme::Theme;
 
 /// Draws the divider below the last item: `space.sm` from its edge to the
 /// line and from the line to the next item's edge, such as a button, a field
 /// or the fill of a list row.
 pub fn draw_separator(ui: &Ui, theme: &Theme) {
     draw_line(ui, theme);
-}
-
-/// How a text below the divider spaces its lines.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum LineSpacing {
-    /// Running text (Markdown): each line keeps the typography's leading
-    /// above its letters (1.5 × font size line height).
-    Running,
-    /// One label drawn with `draw_text`: ImGui's line, no extra leading.
-    Label,
-}
-
-/// How far below a text line's top its capital letters start in `font`:
-/// the leading of running text (none for a label) plus the font's own empty
-/// space above the capitals.
-pub(crate) fn capital_top(ui: &Ui, theme: &Theme, font: FontRole, spacing: LineSpacing) -> f32 {
-    let _font = FontScope::push(ui, font);
-    let leading = match spacing {
-        LineSpacing::Running => theme.typography.leading_for(ui.current_font_size()),
-        LineSpacing::Label => 0.0,
-    };
-    leading + glyph_bounds('H').map_or(0.0, |(top, _)| top)
 }
 
 /// Draws the line `space.sm` below the last item and leaves the cursor

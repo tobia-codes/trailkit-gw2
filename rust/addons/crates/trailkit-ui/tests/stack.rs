@@ -11,8 +11,6 @@ use nexus::imgui::{Condition, Ui, Window};
 use trailkit_ui::{
     drawing::style_scope::StyleScope,
     layout::stack::{Stack, StackLayout},
-    text::glyph_metrics::glyph_bounds,
-    text::{TextStyle, draw_text},
     theme::{Theme, ThemeKind},
 };
 use trailkit_ui_testing::harness::{FrameInput, UiHarness};
@@ -162,54 +160,5 @@ fn a_separator_brings_space_sm_on_both_sides_instead_of_the_gap() {
         next[0][1] - below[1][1],
         theme.spacing.extra_small,
         "after the element below, the stack's gap applies again"
-    );
-}
-
-#[test]
-fn a_separator_before_a_region_lets_it_start_at_the_line() {
-    let rects = record(|ui, theme, rects| {
-        Stack::vertical(theme).build(ui, |stack| {
-            add_button(ui, stack, rects, "Above");
-            stack.add_separator_before_region(theme);
-            rects
-                .borrow_mut()
-                .push([ui.item_rect_min(), ui.item_rect_max()]);
-            add_button(ui, stack, rects, "Region");
-        });
-    });
-    let theme = ThemeKind::Dark.theme();
-    let [above, line, region] = rects[..] else {
-        panic!("three rectangles, got {rects:?}");
-    };
-    assert_eq!(line[0][1] - above[1][1], theme.spacing.small);
-    assert_eq!(
-        region[0][1], line[1][1],
-        "the region starts right under the line"
-    );
-}
-
-#[test]
-fn a_separator_above_a_label_keeps_its_capitals_space_sm_away() {
-    let measured = std::cell::Cell::new(None);
-    record(|ui, theme, rects| {
-        Stack::vertical(theme).build(ui, |stack| {
-            add_button(ui, stack, rects, "Above");
-            stack.add_separator_above_label(theme, TextStyle::Secondary);
-            let line_bottom = ui.item_rect_max()[1];
-            stack.add(|| {
-                draw_text(ui, theme, TextStyle::Secondary, "Label");
-                let capital_top = {
-                    let _style = TextStyle::Secondary.push(ui, theme);
-                    glyph_bounds('H').map_or(0.0, |(top, _)| top)
-                };
-                measured.set(Some(ui.item_rect_min()[1] + capital_top - line_bottom));
-            });
-        });
-    });
-    let theme = ThemeKind::Dark.theme();
-    let gap = measured.get().expect("the label was drawn");
-    assert!(
-        (gap - theme.spacing.small).abs() <= 0.5,
-        "capitals {gap} px below the line"
     );
 }

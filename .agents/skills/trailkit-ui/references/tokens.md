@@ -112,18 +112,12 @@ editor's formatting buttons that light up for the formatting at the cursor
 - Regular buttons and dropdowns have a 1 px `border` frame (R85): their fill
   alone can vanish on `bg.window`. Primary and `danger` fills stand out alone.
 - **Dividers (R83, R148)** come from `separator`, never `ui.separator()`. There
-  is one divider: `space.sm` above and below, measured to the visible edges of
-  its neighbors (letters, an icon, a button or field edge, the fill of a list
-  row, so a hovered or selected row sits 8 px under the line). It is the one
-  element that brings its own space: in a `Stack` it replaces the stack's gap
-  (`StackLayout::add_separator`). `draw_separator` for frames and rows. Above
-  text the visible edge is the highest ink of its first line (Q525, Q526): the
-  capitals, or a task checkbox, chat-link chip or link icon that reaches
-  higher; `markdown_view::first_line_ink_top` measures it, wrapped exactly as
-  drawn. A page's scroll region starts at the line
-  (`add_separator_before_region`) and moves its first line to keep `space.sm`
-  (`page::FirstLine`), so scrolled text stops at the line. A single
-  `draw_text` label: `add_separator_above_label`.
+  is one divider: a fixed `space.sm` above and below, measured to the edge of
+  its neighbors' boxes: a button or field edge, the fill of a list row (a
+  hovered or selected row sits 8 px under the line), and for text the top of
+  its line box, as in CSS (Q528), so the empty space above the letters adds
+  to the gap. It is the one element that brings its own space: in a `Stack`
+  it replaces the stack's gap (`StackLayout::add_separator`).
 - Text buttons are at least `button.min_width` × font size wide (M131);
   measure rows with `button_width` / `icon_label_button_width`, never with
   `calc_text_size` + padding, or right-aligned rows drift.

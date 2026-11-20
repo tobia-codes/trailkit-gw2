@@ -12,11 +12,7 @@
 
 use nexus::imgui::Ui;
 
-use crate::{
-    layout::separator::{LineSpacing, capital_top, draw_rule},
-    text::TextStyle,
-    theme::Theme,
-};
+use crate::{layout::separator::draw_rule, theme::Theme};
 
 /// The direction a [`Stack`] lays its elements out in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -123,31 +119,6 @@ impl StackLayout<'_> {
     /// horizontal line.
     pub fn add_separator(&mut self, theme: &Theme) {
         self.add_rule(theme, theme.spacing.small);
-    }
-
-    /// Adds the divider with the next element starting right under the
-    /// line: an element that places its own first line `space.sm` below its
-    /// top edge, such as a scroll region that measures its text inside
-    /// (`layout::page`), so its clip edge stays at the line.
-    ///
-    /// # Panics
-    ///
-    /// In debug builds, if the stack is horizontal.
-    pub fn add_separator_before_region(&mut self, theme: &Theme) {
-        self.add_rule(theme, 0.0);
-    }
-
-    /// Adds the divider above a one-line label drawn with `draw_text` in
-    /// `style`, so its capital letters keep `space.sm` from the line; a
-    /// label has no leading, so its empty top is only the font's own.
-    ///
-    /// # Panics
-    ///
-    /// In debug builds, if the stack is horizontal.
-    pub fn add_separator_above_label(&mut self, theme: &Theme, style: TextStyle) {
-        let below =
-            theme.spacing.small - capital_top(self.ui, theme, style.font(), LineSpacing::Label);
-        self.add_rule(theme, below);
     }
 
     /// Adds the line `space.sm` after the previous element and makes `below`

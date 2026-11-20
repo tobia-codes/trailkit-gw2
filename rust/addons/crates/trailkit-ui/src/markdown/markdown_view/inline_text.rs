@@ -9,7 +9,6 @@ use nexus::imgui::{ImColor32, MouseButton, MouseCursor, StyleColor, Ui};
 use super::{LineBounds, MarkdownAction, SearchHighlight, link_menu::request_link_menu};
 use crate::{
     chat_link::ChatLinkChip,
-    chat_link::chat_link_chip::vertical_padding as chip_vertical_padding,
     chat_link::chat_link_chip::{ChipContext, chip_tooltip, chip_width, draw_chip},
     controls::dropdown::{draw_icon_into, icon_width},
     controls::tooltip::draw_tooltip,
@@ -18,20 +17,9 @@ use crate::{
     text::TextStyle,
     text::font_registry::FontScope,
     text::fonts::FontRole,
-    text::glyph_metrics::{glyph_bounds, icon_visible_box},
     text::search_hits::mark_search_hits,
     theme::Theme,
 };
-
-/// Whether a layout pass draws the spans or only measures their first line.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Pass {
-    /// Draw every element and report clicks.
-    Draw,
-    /// Submit nothing to ImGui; only track how far the first line's ink
-    /// reaches up, and stop after it.
-    Measure,
-}
 
 /// Where the next inline element of a block goes (screen coordinates).
 #[derive(Debug, Clone, Copy)]
@@ -49,26 +37,9 @@ struct LineCursor {
     /// the next word of the same link on that line continues its underline
     /// through the space between them. `None` outside a link.
     link_underline_end: Option<[f32; 2]>,
-    /// Text top of the block's first line.
-    first_line_y: f32,
-    /// In a measuring pass: the highest ink of the first line so far, as a
-    /// screen y (`f32::INFINITY` while nothing was placed).
-    first_line_ink: f32,
 }
 
 impl LineCursor {
-    /// Whether the cursor is still on the block's first line.
-    fn on_first_line(&self) -> bool {
-        self.y <= self.first_line_y
-    }
-
-    /// Records ink reaching up to `top` (screen y) if it is on the first line.
-    fn record_ink(&mut self, top: f32) {
-        if self.on_first_line() {
-            self.first_line_ink = self.first_line_ink.min(top);
-        }
-    }
-
     /// Moves to the start of the next line.
     fn new_line(&mut self, bounds: LineBounds) {
         self.x = bounds.left;
@@ -100,7 +71,7 @@ pub(super) fn draw_spans(
     bounds: LineBounds,
     theme: &Theme,
     chips: ChipContext<'_>,
-    highlight: Option<&mut SearchHighlight<'_>>,
+    mut highlight: Option<&mut SearchHighlight<'_>>,
 ) -> Option<MarkdownAction> {
     // Lines are `typography.line_height` apart; `y` is the text top, below
     // the leading of the line.
@@ -112,106 +83,22 @@ pub(super) fn draw_spans(
             theme.typography.leading_for(font_size),
         )
     };
-    let top = ui.cursor_screen_pos()[1] + leading;
     let mut cursor = LineCursor {
         x: bounds.left,
-        y: top,
+        y: ui.cursor_screen_pos()[1] + leading,
         line_height,
         keeps_line: false,
         link_underline_end: None,
-        first_line_y: top,
-        first_line_ink: f32::INFINITY,
     };
+    let mut action = None;
+    let mut hits: Vec<Range<usize>> = Vec::new();
     // The block's role sets the text color (Q276); links keep their own.
     let _color = ui.push_style_color(
         StyleColor::Text,
         heading.unwrap_or(TextStyle::Body).color(theme).to_array(),
     );
-    let layout = SpanLayout {
-        bounds,
-        theme,
-        chips,
-        pass: Pass::Draw,
-    };
-    let action = lay_out_spans(ui, spans, heading, layout, highlight, &mut cursor);
-    ui.set_cursor_screen_pos([bounds.left, cursor.y - leading + line_height]);
-    action
-}
 
-/// How far below its text top the first line of `spans` has its highest
-/// ink: the capitals of its text, or a chat-link chip or link icon that
-/// reaches higher. Wraps exactly like [`draw_spans`] between `bounds`, but
-/// submits nothing to ImGui; `None` if the first line holds nothing.
-pub(super) fn first_line_ink_top(
-    ui: &Ui,
-    spans: &[Span],
-    heading: Option<TextStyle>,
-    bounds: LineBounds,
-    theme: &Theme,
-    chips: ChipContext<'_>,
-) -> Option<f32> {
-    let line_height = {
-        let _font = FontScope::push(ui, heading.map_or(FontRole::Body, TextStyle::font));
-        theme.typography.line_height_for(ui.current_font_size())
-    };
-    let mut cursor = LineCursor {
-        x: bounds.left,
-        y: 0.0,
-        line_height,
-        keeps_line: false,
-        link_underline_end: None,
-        first_line_y: 0.0,
-        first_line_ink: f32::INFINITY,
-    };
-    let layout = SpanLayout {
-        bounds,
-        theme,
-        chips,
-        pass: Pass::Measure,
-    };
-    lay_out_spans(ui, spans, heading, layout, None, &mut cursor);
-    cursor
-        .first_line_ink
-        .is_finite()
-        .then_some(cursor.first_line_ink)
-}
-
-/// What every element of one block's layout pass shares.
-#[derive(Clone, Copy)]
-struct SpanLayout<'a> {
-    /// Where the lines start and wrap.
-    bounds: LineBounds,
-    /// The theme.
-    theme: &'a Theme,
-    /// Texts of chat-link chips.
-    chips: ChipContext<'a>,
-    /// Drawing or measuring.
-    pass: Pass,
-}
-
-/// Places `spans` at the `cursor` as [`draw_spans`] describes, drawing them
-/// or, in a measuring pass, only recording the first line's ink and stopping
-/// after it. Returns a link or chip click.
-fn lay_out_spans(
-    ui: &Ui,
-    spans: &[Span],
-    heading: Option<TextStyle>,
-    layout: SpanLayout<'_>,
-    mut highlight: Option<&mut SearchHighlight<'_>>,
-    cursor: &mut LineCursor,
-) -> Option<MarkdownAction> {
-    let SpanLayout {
-        bounds,
-        theme,
-        pass,
-        ..
-    } = layout;
-    let mut action = None;
-    let mut hits: Vec<Range<usize>> = Vec::new();
     for (index, span) in spans.iter().enumerate() {
-        if pass == Pass::Measure && !cursor.on_first_line() {
-            break;
-        }
         if span.is_line_break() {
             cursor.new_line(bounds);
             continue;
@@ -224,7 +111,15 @@ fn lay_out_spans(
         let clicked = if let Some(chip) = &span.chip {
             cursor.link_underline_end = None;
             let _id = ui.push_id(i32::try_from(index).unwrap_or(i32::MAX));
-            draw_chat_link(ui, chip, layout, highlight.as_deref_mut(), cursor)
+            draw_chat_link(
+                ui,
+                chip,
+                bounds,
+                theme,
+                chips,
+                highlight.as_deref_mut(),
+                &mut cursor,
+            )
         } else {
             // Parts of one link in different styles share one icon.
             let starts_link = span.style.link.is_some()
@@ -234,55 +129,41 @@ fn lay_out_spans(
             }
             let icon_click = if starts_link {
                 let _id = ui.push_id(i32::try_from(index).unwrap_or(i32::MAX));
-                draw_link_icon(ui, span, layout, cursor)
+                draw_link_icon(ui, span, bounds, theme, &mut cursor)
             } else {
                 None
             };
-            let text_click = if pass == Pass::Measure {
-                measure_wrapped_text(ui, span, bounds, cursor);
-                None
-            } else {
-                draw_wrapped_text(
-                    ui,
-                    span,
-                    bounds,
-                    theme,
-                    highlight.as_deref_mut(),
-                    &mut hits,
-                    cursor,
-                )
-            };
+            let text_click = draw_wrapped_text(
+                ui,
+                span,
+                bounds,
+                theme,
+                highlight.as_deref_mut(),
+                &mut hits,
+                &mut cursor,
+            );
             icon_click.or(text_click)
         };
         action = action.or(clicked);
     }
+    ui.set_cursor_screen_pos([bounds.left, cursor.y - leading + line_height]);
     action
 }
 
 /// Draws a chat link as a clickable chip at the `cursor`, wrapping first if
 /// it does not fit, frames it while it matches the search (M122) and advances
-/// the cursor. A click copies the code (M75) and is returned. A measuring
-/// pass records the pill's top instead, which reaches above the text.
+/// the cursor. A click copies the code (M75) and is returned.
 fn draw_chat_link(
     ui: &Ui,
     chip: &ChatLinkChip,
-    layout: SpanLayout<'_>,
+    bounds: LineBounds,
+    theme: &Theme,
+    chips: ChipContext<'_>,
     highlight: Option<&mut SearchHighlight<'_>>,
     cursor: &mut LineCursor,
 ) -> Option<MarkdownAction> {
-    let SpanLayout {
-        bounds,
-        theme,
-        chips,
-        pass,
-    } = layout;
     let width = chip_width(ui, chip, theme, chips);
     cursor.wrap_before(width, bounds);
-    if pass == Pass::Measure {
-        cursor.record_ink(cursor.y - chip_vertical_padding(ui, theme));
-        cursor.x += width;
-        return None;
-    }
     let [x, y] = [cursor.x, cursor.y];
     ui.set_cursor_screen_pos([x, y]);
     ui.invisible_button("##chip", [width, ui.text_line_height()]);
@@ -323,36 +204,20 @@ fn draw_chat_link(
 
 /// Draws the icon of the link `span` at the `cursor`, on one line with the
 /// link's first word: it shows what the click opens (R143) and acts like the
-/// link. Returns a click. A measuring pass records the icon's ink top.
+/// link. Returns a click.
 fn draw_link_icon(
     ui: &Ui,
     span: &Span,
-    layout: SpanLayout<'_>,
+    bounds: LineBounds,
+    theme: &Theme,
     cursor: &mut LineCursor,
 ) -> Option<MarkdownAction> {
-    let SpanLayout {
-        bounds,
-        theme,
-        pass,
-        ..
-    } = layout;
     let url = span.style.link.as_ref()?;
     let icon_size = icon_width(ui);
     let gap = theme.spacing.extra_small;
     let first_word = span.text.split(' ').next().unwrap_or_default();
     cursor.wrap_before(icon_size + gap + ui.calc_text_size(first_word)[0], bounds);
     let height = ui.text_line_height();
-    if pass == Pass::Measure {
-        // `draw_icon_into` centers the icon's ink on the line.
-        let ink = {
-            let _icons = FontScope::push(ui, FontRole::Icons);
-            icon_visible_box(LinkKind::of(url).icon().glyph(), ui.text_line_height())
-        };
-        cursor.record_ink(cursor.y + ((height - (ink[3] - ink[1])) / 2.0).round());
-        cursor.x += icon_size + gap;
-        cursor.keeps_line = true;
-        return None;
-    }
     ui.set_cursor_screen_pos([cursor.x, cursor.y]);
     ui.invisible_button("##link_icon", [icon_size + gap, height]);
     // SAFETY: on the render thread inside a frame, where ImGui has a current
@@ -449,50 +314,6 @@ fn draw_wrapped_text(
     action
 }
 
-/// Places the words of `span` like [`draw_wrapped_text`] without drawing
-/// them, recording the capitals' top for every word on the first line.
-fn measure_wrapped_text(ui: &Ui, span: &Span, bounds: LineBounds, cursor: &mut LineCursor) {
-    let capital_top = glyph_bounds('H').map_or(0.0, |(top, _)| top);
-    for token in span.text.split_inclusive(' ') {
-        let word = token.trim_end_matches(' ');
-        cursor.wrap_before(ui.calc_text_size(word)[0], bounds);
-        if !cursor.on_first_line() {
-            return;
-        }
-        if !word.is_empty() {
-            cursor.record_ink(cursor.y + capital_top);
-            place_pieces(ui, word, bounds, cursor, |_, _| {});
-        }
-        let trailing_spaces = &token[word.len()..];
-        if cursor.x > bounds.left {
-            cursor.x += ui.calc_text_size(trailing_spaces)[0];
-        }
-    }
-}
-
-/// Places `word` at the `cursor` piece by piece, breaking it between
-/// characters if it is wider than a whole line, and calls `place` with each
-/// piece and its screen position before the cursor moves past it.
-fn place_pieces(
-    ui: &Ui,
-    word: &str,
-    bounds: LineBounds,
-    cursor: &mut LineCursor,
-    mut place: impl FnMut(&str, [f32; 2]),
-) {
-    let mut rest = word;
-    while !rest.is_empty() {
-        let available = bounds.right - cursor.x;
-        let piece = fitting_prefix(ui, rest, available, cursor.x <= bounds.left);
-        place(piece, [cursor.x, cursor.y]);
-        cursor.x += ui.calc_text_size(piece)[0];
-        rest = &rest[piece.len()..];
-        if !rest.is_empty() {
-            cursor.new_line(bounds);
-        }
-    }
-}
-
 /// Search hits of a span, seen from one word of it.
 #[derive(Debug, Clone, Copy)]
 struct WordHits<'ranges> {
@@ -528,11 +349,16 @@ fn draw_word(
     hits: WordHits<'_>,
 ) -> WordOutcome {
     let mut outcome = WordOutcome::default();
+    let mut rest = word;
     let mut piece_offset = hits.offset;
-    place_pieces(ui, word, bounds, cursor, |piece, position| {
+    while !rest.is_empty() {
+        let available = bounds.right - cursor.x;
+        let piece = fitting_prefix(ui, rest, available, cursor.x <= bounds.left);
+        let piece_width = ui.calc_text_size(piece)[0];
+        let position = [cursor.x, cursor.y];
         ui.set_cursor_screen_pos(position);
         let clicked = draw_piece(ui, piece, span, theme);
-        outcome.action = outcome.action.take().or(clicked);
+        outcome.action = outcome.action.or(clicked);
         if let Some(highlight) = hits.highlight {
             let mut piece_hits = Vec::new();
             for (index, range) in hits.ranges.iter().enumerate() {
@@ -541,17 +367,22 @@ fn draw_word(
                 };
                 let (mark, is_current) = highlight.mark_at(index);
                 if is_current && range.start >= piece_offset {
-                    outcome.current_hit_y = Some(position[1]);
+                    outcome.current_hit_y = Some(cursor.y);
                 }
                 piece_hits.push((local, mark));
             }
             if !piece_hits.is_empty() {
                 mark_search_hits(ui, theme, piece, piece_hits, position);
-                outcome.first_hit_y = outcome.first_hit_y.or(Some(position[1]));
+                outcome.first_hit_y = outcome.first_hit_y.or(Some(cursor.y));
             }
         }
+        cursor.x += piece_width;
         piece_offset += piece.len();
-    });
+        rest = &rest[piece.len()..];
+        if !rest.is_empty() {
+            cursor.new_line(bounds);
+        }
+    }
     outcome
 }
 

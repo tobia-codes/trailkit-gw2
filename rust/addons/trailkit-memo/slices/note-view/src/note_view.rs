@@ -3,8 +3,6 @@
 //! the title stays in place (M81), drawn with the shared page head of
 //! `trailkit-ui` (R101). Search hits are marked (M122).
 
-use std::sync::Arc;
-
 use nexus::imgui::{MouseButton, Ui};
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText},
@@ -12,7 +10,7 @@ use trailkit_memo_shared::{
 };
 use trailkit_ui::{
     chat_link::chat_link_chip::ChipContext,
-    layout::page::{FirstLine, PageHead, TitleTrailing, draw_page},
+    layout::page::{PageHead, TitleTrailing, draw_page},
     markdown::markdown_view::{MarkdownAction, SearchHighlight, draw_markdown},
     markdown::{self, MarkdownDocument},
     text::text_search::SearchQuery,
@@ -29,9 +27,8 @@ struct ParsedNote {
     note: NoteId,
     /// The body the document was parsed from.
     source: String,
-    /// The parsed body, shared with the page head that measures its first
-    /// line while the view draws it.
-    document: Arc<MarkdownDocument>,
+    /// The parsed body.
+    document: MarkdownDocument,
 }
 
 /// What the view shows this frame.
@@ -161,7 +158,7 @@ impl NoteView {
             self.parsed = Some(ParsedNote {
                 note: note.id,
                 source: note.body.clone(),
-                document: Arc::new(markdown::parse(&note.body)),
+                document: markdown::parse(&note.body),
             });
         }
 
@@ -169,21 +166,6 @@ impl NoteView {
         if editable && ui.is_window_hovered() && ui.is_mouse_double_clicked(MouseButton::Left) {
             output.actions.push(NoteViewAction::StartEditing);
         }
-        // An empty note shows the Secondary hint instead of markdown.
-        let document = self
-            .parsed
-            .as_ref()
-            .filter(|parsed| !parsed.document.blocks.is_empty())
-            .map(|parsed| Arc::clone(&parsed.document));
-        let first_line =
-            document
-                .as_deref()
-                .map_or(FirstLine::Label(TextStyle::Secondary), |document| {
-                    FirstLine::Markdown {
-                        document,
-                        chips: input.chips,
-                    }
-                });
         // A read-only note keeps its title role; the info line says its
         // state (Q280, `tokens.md` §7.1 rule 1). Title and separator stay at
         // the top; only the content scrolls (M81).
@@ -191,7 +173,6 @@ impl NoteView {
             title: &note.title,
             trailing: input.title_trailing,
             subtitle: input.read_only.map(|read_only| read_only.subtitle),
-            first_line,
         };
         draw_page(ui, theme, "note_body", head, || {
             self.draw_content(
