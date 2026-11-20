@@ -22,10 +22,10 @@ fn searching() -> Fixture {
 /// Center of the search field at the minimum width.
 const MINIMUM_SEARCH_FIELD: [f32; 2] = [55.0, 68.0];
 /// Center of the kind dropdown at the minimum width.
-const MINIMUM_KIND_FIELD: [f32; 2] = [180.0, 145.0];
+const MINIMUM_KIND_FIELD: [f32; 2] = [180.0, 129.0];
 /// Center of the kind dropdown at the minimum width in German, where the
 /// longer toolbar moves the title and the dropdown one line down.
-const MINIMUM_GERMAN_KIND_FIELD: [f32; 2] = [200.0, 177.0];
+const MINIMUM_GERMAN_KIND_FIELD: [f32; 2] = [200.0, 129.0];
 /// Center of the note toolbar's `⋯` button at the minimum width.
 const MINIMUM_NOTE_MENU_BUTTON: [f32; 2] = [212.0, 65.0];
 /// Center of the "Dailies" row at the minimum width.

@@ -378,7 +378,7 @@ fn dropdown_states_match_snapshots() {
             // Releasing on the field clicks it, which opens the list.
             harness.settle(1, &mouse(field, false), &mut draw);
             assert_state(&mut harness, names("open"), &mouse(away, false), &mut draw);
-            for (state, offset) in [("hover-selected", 32.0), ("hover-option", 56.0)] {
+            for (state, offset) in [("hover-selected", 39.0), ("hover-option", 75.0)] {
                 let position = [field[0], field[1] + offset];
                 assert_state(
                     &mut harness,
@@ -528,7 +528,7 @@ fn list_row_states_match_snapshots() {
         assert_state(
             &mut harness,
             ("list-row", "hover-truncated", theme_name),
-            &mouse([60.0, 150.0], false),
+            &mouse([60.0, 112.0], false),
             &mut draw,
         );
     }

@@ -25,8 +25,8 @@ fn on_second_row(position: [f32; 2]) -> Vec<FrameInput> {
 
 #[test]
 fn link_menu_states() {
-    let web_link = [265.0, 155.0];
-    let mail_link = [335.0, 155.0];
+    let web_link = [265.0, 147.0];
+    let mail_link = [335.0, 147.0];
     assert_state("link-menu", WIDE, links_note, &right_click(web_link));
     assert_state(
         "link-menu-hover",
@@ -44,7 +44,7 @@ fn link_menu_states() {
         "min-de-link-menu",
         MINIMUM,
         selected,
-        &right_click([235.0, 313.0]),
+        &right_click([233.0, 267.0]),
     );
     assert_state_in(
         Language::German,
@@ -79,7 +79,7 @@ fn links_of_several_words_have_one_underline() {
 
 #[test]
 fn copying_from_the_menu_confirms_it() {
-    let web_link = [265.0, 155.0];
+    let web_link = [265.0, 147.0];
     let row = [web_link[0] + 30.0, web_link[1] + SECOND_ROW];
     let mut steps = right_click(web_link);
     steps.extend(click(row));

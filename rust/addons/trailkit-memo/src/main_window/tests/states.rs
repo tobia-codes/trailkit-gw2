@@ -524,7 +524,7 @@ fn list_rows() {
         ("hover-row", DAILIES_ROW),
         ("hover-group", RAIDS_ROW),
         ("hover-group-arrow", [36.0, RAIDS_ROW[1]]),
-        ("hover-child-row", [100.0, 202.0]),
+        ("hover-child-row", [100.0, 189.0]),
         ("hover-badge-count", [184.0, RAIDS_ROW[1]]),
     ] {
         assert_state(name, WIDE, selected, &hover(position));
