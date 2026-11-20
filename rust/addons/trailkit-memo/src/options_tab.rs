@@ -13,6 +13,7 @@ use trailkit_memo_shared::i18n::{Language, LocalizedText as _, Text};
 use trailkit_ui::{
     controls::button::Button,
     layout::pane::draw_pane,
+    layout::stack::Stack,
     text::font_registry::FontScope,
     text::fonts::FontRole,
     text::icons::Icon,
@@ -36,16 +37,23 @@ pub fn draw_options_tab(ui: &Ui, theme: &Theme, language: Language, version_line
     let _body = FontScope::push(ui, FontRole::Body);
     let height = pane_height(ui, theme);
     draw_pane(ui, theme, PANE_ID, [0.0, height], || {
-        draw_text(
-            ui,
-            theme,
-            TextStyle::Heading2,
-            Text::MainWindowTitle.get(language),
-        );
-        draw_text(ui, theme, TextStyle::Secondary, version_line);
-        Button::new(HelpText::OpenHelp.get(language))
-            .icon(Icon::CIRCLE_HELP)
-            .draw(ui, theme)
+        // Title, version and button `space.sm` apart (R148).
+        Stack::vertical(theme).build(ui, |stack| {
+            stack.add(|| {
+                draw_text(
+                    ui,
+                    theme,
+                    TextStyle::Heading2,
+                    Text::MainWindowTitle.get(language),
+                );
+            });
+            stack.add(|| draw_text(ui, theme, TextStyle::Secondary, version_line));
+            stack.add(|| {
+                Button::new(HelpText::OpenHelp.get(language))
+                    .icon(Icon::CIRCLE_HELP)
+                    .draw(ui, theme)
+            })
+        })
     })
     .unwrap_or(false)
 }
@@ -61,8 +69,8 @@ fn pane_height(ui: &Ui, theme: &Theme) -> f32 {
         let _secondary = TextStyle::Secondary.push(ui, theme);
         ui.text_line_height()
     };
-    let spacing = ui.clone_style().item_spacing[1];
-    2.0 * theme.spacing.small + title + version + ui.frame_height() + 2.0 * spacing
+    let gap = theme.spacing.small;
+    2.0 * theme.spacing.small + title + version + ui.frame_height() + 2.0 * gap
 }
 
 #[cfg(test)]

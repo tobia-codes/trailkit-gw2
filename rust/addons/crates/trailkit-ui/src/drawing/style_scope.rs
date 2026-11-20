@@ -91,7 +91,9 @@ const STYLE_VARS: [fn(&Theme) -> StyleVar; 14] = [
     |_| StyleVar::FrameBorderSize(0.0),
     |theme| StyleVar::WindowPadding([theme.spacing.medium, theme.spacing.medium]),
     |theme| StyleVar::FramePadding([theme.spacing.small, theme.spacing.extra_small]),
-    |theme| StyleVar::ItemSpacing([theme.spacing.small, theme.spacing.small]),
+    // No implicit gap between items: every gap is set where it is drawn,
+    // through `layout::stack::Stack` or an explicit spacing (R148, Q529).
+    |_| StyleVar::ItemSpacing([0.0, 0.0]),
 ];
 
 /// A theme applied to the shared ImGui context; restores the previous style

@@ -21,6 +21,7 @@ use nexus::imgui::{
 use crate::{
     controls::button::{draw_icon_button, draw_icon_toggle, draw_label, icon_button_width},
     controls::dropdown::packed,
+    layout::stack::Stack,
     text::font_registry::FontScope,
     text::fonts::FontRole,
     text::icons::Icon,
@@ -129,17 +130,20 @@ pub fn draw_window<Label: AsRef<str>>(
         if !state.collapsed {
             state.expanded_size = ui.window_size();
         }
-        let row = draw_title_row(ui, theme, texts, toggles, state, open);
-        clicked_toggle = row.toggle;
-        if row.collapse_clicked {
-            if state.collapsed {
-                state.restore_size = Some(state.expanded_size);
+        // The content starts `space.sm` below the title row (R148).
+        Stack::vertical(theme).build(ui, |stack| {
+            let row = stack.add(|| draw_title_row(ui, theme, texts, toggles, state, open));
+            clicked_toggle = row.toggle;
+            if row.collapse_clicked {
+                if state.collapsed {
+                    state.restore_size = Some(state.expanded_size);
+                }
+                state.collapsed = !state.collapsed;
             }
-            state.collapsed = !state.collapsed;
-        }
-        if !state.collapsed {
-            content();
-        }
+            if !state.collapsed {
+                stack.add(content);
+            }
+        });
     });
     clicked_toggle
 }
@@ -263,7 +267,11 @@ fn draw_title_row(
         // Nothing was drawn on the left yet: keep the row's height.
         ui.dummy([0.0, row_height]);
     }
-    ui.same_line_with_pos(right - buttons_width);
+    // Absolute, not `same_line_with_pos`: inside a stack's group that one
+    // counts from the group's left edge, not the window's.
+    ui.same_line_with_spacing(0.0, 0.0);
+    let y = ui.cursor_screen_pos()[1];
+    ui.set_cursor_screen_pos([ui.window_pos()[0] + right - buttons_width, y]);
     for (index, toggle) in shown(TogglePlacement::Trailing) {
         if draw_icon_toggle(ui, theme, toggle.icon, toggle.tooltip, toggle.active) {
             clicks.toggle = Some(index);

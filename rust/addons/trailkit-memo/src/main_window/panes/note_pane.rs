@@ -129,7 +129,7 @@ impl MemoWindow {
         language: Language,
         theme: &Theme,
     ) {
-        let spacing = ui.clone_style().item_spacing[0];
+        let spacing = theme.spacing.small;
         if self.editor.is_some() {
             let cancel = Text::Cancel.get(language);
             // While "Save" waits for the disk it shows "Saving…" (Q158).
@@ -142,11 +142,11 @@ impl MemoWindow {
             let width = button_width(ui, theme, cancel)
                 + spacing
                 + icon_label_button_width(ui, theme, save);
-            move_to_toolbar_end(ui, width);
+            move_to_toolbar_end(ui, theme, width);
             if draw_button(ui, theme, cancel) {
                 self.actions.push(WindowAction::CancelEditing);
             }
-            ui.same_line();
+            ui.same_line_with_spacing(0.0, spacing);
             let state = if saving {
                 ButtonState::Busy
             } else {
@@ -169,12 +169,13 @@ impl MemoWindow {
             let edit = Text::EditNote.get(language);
             move_to_toolbar_end(
                 ui,
+                theme,
                 icon_button_width(ui, Icon::ELLIPSIS)
                     + spacing
                     + icon_label_button_width(ui, theme, edit),
             );
             self.draw_note_menu_button(ui, language, theme);
-            ui.same_line();
+            ui.same_line_with_spacing(0.0, spacing);
             if draw_primary_button_with_icon(ui, theme, Icon::PENCIL, edit) {
                 self.actions.push(WindowAction::StartEditing);
             }

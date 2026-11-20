@@ -15,6 +15,7 @@ use trailkit_ui::{
     controls::button::{
         ButtonState, draw_icon_button_with_state, draw_icon_toggle, icon_button_width,
     },
+    controls::text_field::move_below_last_item,
     editor::view::TextEditor,
     layout::pane::draw_pane,
     layout::splitter::draw_vertical_splitter,
@@ -378,7 +379,7 @@ impl Editor {
     ) -> Option<ToolbarAction> {
         let active = self.active_formats();
         let mut clicked = None;
-        let spacing = ui.clone_style().item_spacing[0];
+        let spacing = theme.spacing.small;
         let mut id = 0;
         for (group_index, group) in FORMAT_GROUPS.iter().enumerate() {
             let width = group
@@ -393,7 +394,7 @@ impl Editor {
             }
             for (index, (icon, tooltip, command)) in group.iter().enumerate() {
                 if index > 0 {
-                    ui.same_line();
+                    ui.same_line_with_spacing(0.0, spacing);
                 }
                 id += 1;
                 let _id = ui.push_id(id);
@@ -481,6 +482,8 @@ impl Editor {
     ) -> EditorOutput {
         let mut output = EditorOutput::default();
         self.draw_title_input(ui, language, theme, input.is_dialog_open);
+        // The text area starts `space.sm` below the title field (R148).
+        move_below_last_item(ui, theme.spacing.small);
 
         if input.is_dialog_open {
             self.body.unfocus();

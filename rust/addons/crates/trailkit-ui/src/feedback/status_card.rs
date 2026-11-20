@@ -117,6 +117,8 @@ pub fn draw_status_card(ui: &Ui, theme: &Theme, card: &StatusCard<'_>) -> Status
     };
     let mut bottom = ui.item_rect_max()[1];
     if let Some(detail) = card.detail {
+        // The detail, like the buttons, starts `space.sm` below (R148).
+        ui.set_cursor_screen_pos([text_left, bottom + theme.spacing.small]);
         draw_detail(ui, theme, detail, text_left, inner_right);
         bottom = ui.item_rect_max()[1];
     }
@@ -169,9 +171,8 @@ pub fn draw_status_card(ui: &Ui, theme: &Theme, card: &StatusCard<'_>) -> Status
     }
     // One item over the whole card, so the layout continues below it,
     // `spacing.medium` away like below the separator the card replaces.
-    let gap_below = theme.spacing.medium - ui.clone_style().item_spacing[1];
     ui.set_cursor_screen_pos([left, top]);
-    ui.dummy([right - left, card_bottom - top + gap_below.max(0.0)]);
+    ui.dummy([right - left, card_bottom - top + theme.spacing.medium]);
     outcome
 }
 
@@ -233,7 +234,8 @@ fn draw_buttons(
     [left, right]: [f32; 2],
     bottom: &mut f32,
 ) -> Option<usize> {
-    let spacing = ui.clone_style().item_spacing;
+    // `space.sm` between buttons, side by side or stacked (R148).
+    let spacing = [theme.spacing.small, theme.spacing.small];
     let row_width = buttons
         .iter()
         .map(|button| button.measure(ui, theme) + spacing[0])

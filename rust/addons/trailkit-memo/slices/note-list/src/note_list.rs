@@ -16,7 +16,7 @@ mod rows;
 use std::collections::{BTreeSet, HashSet};
 use trailkit_ui::controls::hover::is_item_hovered;
 
-use nexus::imgui::{MouseButton, Ui};
+use nexus::imgui::{MouseButton, StyleVar, Ui};
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText, Text},
     list_filter::ListFilter,
@@ -300,7 +300,13 @@ impl NoteList {
             extras: &mut extras,
             reveal: &mut self.reveal,
         };
-        rows::draw_nodes(ui, &document.root, &mut context);
+        {
+            // Rows are `space.xs` apart (R148). The tree nests its rows inside
+            // ImGui tree nodes, so the gap is set for the list here, like a
+            // menu sets it for its rows; the drag bands count with it.
+            let _rows = ui.push_style_var(StyleVar::ItemSpacing([0.0, theme.spacing.extra_small]));
+            rows::draw_nodes(ui, &document.root, &mut context);
+        }
         let pressed = context.pressed;
         self.start_press(ui, theme, pressed, search.as_ref());
         self.track_drag(ui, theme, style.indent_spacing, document, &mut output);

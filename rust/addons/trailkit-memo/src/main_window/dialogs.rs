@@ -12,6 +12,7 @@ use trailkit_ui::{
     feedback::dialog::{Dialog, DialogHeight, maximum_content_width},
     feedback::status_card::{CardDetail, CardStatus, StatusCard, draw_status_card},
     feedback::status_line::{Status, draw_status_line},
+    layout::stack::Stack,
     text::{TextStyle, draw_text_wrapped},
     theme::Theme,
 };
@@ -200,7 +201,7 @@ fn draw_dialog_status(ui: &Ui, theme: &Theme, status: &str, left: f32) {
 
 /// The width of the buttons at the right end of a dialog card.
 fn right_group_width(ui: &Ui, theme: &Theme, content: &DialogContent<'_>) -> f32 {
-    let spacing = ui.clone_style().item_spacing[0];
+    let spacing = theme.spacing.small;
     content
         .buttons
         .iter()
@@ -222,27 +223,40 @@ fn draw_dialog_buttons(
     let mut answer = None;
     let right_group = right_group_width(ui, theme, content);
     if stacked {
+        // Stacked buttons are `space.sm` apart; the one set apart keeps
+        // `space.xl` from them (R148).
         let full = [content_width, 0.0];
-        for button in content.buttons.iter().rev() {
-            ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
-            if draw_dialog_button(ui, theme, button, full) {
-                answer = Some(button.answer.clone());
-            }
-        }
-        if let Some(button) = &content.apart {
-            ui.dummy([0.0, theme.spacing.small]);
-            ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
-            if draw_dialog_button(ui, theme, button, full) {
-                answer = Some(button.answer.clone());
-            }
-        }
+        ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
+        Stack::vertical(theme)
+            .gap(theme.spacing.extra_large)
+            .build(ui, |outer| {
+                outer.add(|| {
+                    Stack::vertical(theme).build(ui, |stack| {
+                        for button in content.buttons.iter().rev() {
+                            stack.add(|| {
+                                if draw_dialog_button(ui, theme, button, full) {
+                                    answer = Some(button.answer.clone());
+                                }
+                            });
+                        }
+                    });
+                });
+                if let Some(button) = &content.apart {
+                    outer.add(|| {
+                        if draw_dialog_button(ui, theme, button, full) {
+                            answer = Some(button.answer.clone());
+                        }
+                    });
+                }
+            });
     } else {
+        let spacing = theme.spacing.small;
         ui.set_cursor_screen_pos([left, ui.cursor_screen_pos()[1]]);
         if let Some(button) = &content.apart {
             if draw_dialog_button(ui, theme, button, [0.0, 0.0]) {
                 answer = Some(button.answer.clone());
             }
-            ui.same_line();
+            ui.same_line_with_spacing(0.0, spacing);
         }
         ui.set_cursor_screen_pos([
             (left + content_width - right_group).round(),
@@ -250,7 +264,7 @@ fn draw_dialog_buttons(
         ]);
         for (index, button) in content.buttons.iter().enumerate() {
             if index > 0 {
-                ui.same_line();
+                ui.same_line_with_spacing(0.0, spacing);
             }
             if draw_dialog_button(ui, theme, button, [0.0, 0.0]) {
                 answer = Some(button.answer.clone());

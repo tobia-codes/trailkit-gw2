@@ -3,10 +3,11 @@
 //! [`TextStyle::Body`], an optional hint in [`TextStyle::Secondary`] and
 //! optional buttons with one primary, centered as one block.
 
-use nexus::imgui::{StyleVar, Ui};
+use nexus::imgui::Ui;
 
 use crate::{
     controls::button::{button_width, draw_button, draw_primary_button},
+    controls::text_field::move_below_last_item,
     text::font_registry::FontScope,
     text::fonts::FontRole,
     text::icons::Icon,
@@ -65,6 +66,8 @@ pub fn draw_empty_state(
     let [left, top] = ui.cursor_screen_pos();
     let height = block_height(ui, theme, state);
     ui.set_cursor_screen_pos([left, top + ((available[1] - height) / 2.0).max(0.0)]);
+    // Icon, title and hint are `space.sm` apart, the buttons `space.xl`
+    // below the texts (R148).
     if let Some(icon) = state.icon {
         let width = {
             let _icons = FontScope::push(ui, FontRole::Icons);
@@ -73,51 +76,47 @@ pub fn draw_empty_state(
         };
         indent_to_center(ui, width, available[0]);
         draw_icon(ui, icon, theme.text.disabled);
+        move_below_last_item(ui, theme.spacing.small);
     }
     draw_centered_paragraph(ui, theme, TextStyle::Body, state.title, available[0]);
     if let Some(hint) = state.hint {
+        move_below_last_item(ui, theme.spacing.small);
         draw_centered_paragraph(ui, theme, TextStyle::Secondary, hint, available[0]);
     }
     state.buttons.and_then(|buttons| {
-        ui.dummy([0.0, theme.spacing.small]);
+        move_below_last_item(ui, theme.spacing.extra_large);
         draw_buttons(ui, theme, buttons, available[0])
     })
 }
 
-/// The estimated height of `state`'s block (see [`draw_empty_state`]).
+/// The estimated height of `state`'s block (see [`draw_empty_state`]): one
+/// title line, two hint lines and two stacked buttons.
 fn block_height(ui: &Ui, theme: &Theme, state: &EmptyState<'_>) -> f32 {
     let line = ui.text_line_height();
-    let line_with_spacing = ui.text_line_height_with_spacing();
-    let spacing = line_with_spacing - line;
+    let gap = theme.spacing.small;
     let icon = if state.icon.is_some() {
-        line_with_spacing
+        line + gap
     } else {
         0.0
     };
     let hint = if state.hint.is_some() {
-        2.0 * line + spacing
+        gap + 2.0 * line
     } else {
         0.0
     };
     let buttons = if state.buttons.is_some() {
-        theme.spacing.small + 2.0 * ui.frame_height_with_spacing()
+        theme.spacing.extra_large + 2.0 * ui.frame_height() + gap
     } else {
         0.0
     };
-    icon + line_with_spacing + hint + buttons
+    icon + line + hint + buttons
 }
 
-/// Draws `text` in `style`, each wrapped line centered in `width` at the
-/// line height, followed by the item spacing as one block.
+/// Draws `text` in `style`, each wrapped line centered in `width` right
+/// below the one before.
 fn draw_centered_paragraph(ui: &Ui, theme: &Theme, style: TextStyle, text: &str, width: f32) {
-    let spacing = ui.clone_style().item_spacing;
-    {
-        let _style = style.push(ui, theme);
-        let _tight = ui.push_style_var(StyleVar::ItemSpacing([spacing[0], 0.0]));
-        centered_text(ui, text, width);
-    }
-    let [x, y] = ui.cursor_pos();
-    ui.set_cursor_pos([x, y + spacing[1]]);
+    let _style = style.push(ui, theme);
+    centered_text(ui, text, width);
 }
 
 /// Draws `buttons` centered in `width`, side by side with the primary one
@@ -153,6 +152,7 @@ fn draw_buttons(
         action = Some(EmptyStateAction::Primary);
     }
     if !fits_one_row && let Some((label, secondary)) = secondary {
+        move_below_last_item(ui, spacing);
         indent_to_center(ui, secondary, width);
         if draw_button(ui, theme, label) {
             action = Some(EmptyStateAction::Secondary);

@@ -79,7 +79,12 @@ pub fn draw_tooltip_with_border(ui: &Ui, theme: &Theme, border: Color, content: 
         let shift = line_box_excess(ui);
         let [left, top] = ui.cursor_screen_pos();
         ui.set_cursor_screen_pos([left, top - shift]);
-        content();
+        {
+            // Lines of a tooltip are `space.sm` apart, set here for every
+            // tooltip like a menu sets its rows' gap (R148, Q529).
+            let _lines = ui.push_style_var(StyleVar::ItemSpacing([0.0, theme.spacing.small]));
+            content();
+        }
         // The content moved up, so the tooltip must not end higher with it:
         // an empty item reaches as far down as the content did before moving.
         let bottom = ui.item_rect_max()[1] + shift;

@@ -128,12 +128,19 @@ pub fn draw_trash_entries(
         draw_empty_state(ui, theme, &state);
         return None;
     }
+    // Rows are `space.xs` apart (R148).
     let mut action = None;
-    for entry in trash.iter().rev() {
-        if let Some(clicked) = draw_entry_row(ui, language, theme, entry, selected, now) {
-            action = Some(clicked);
-        }
-    }
+    Stack::vertical(theme)
+        .gap(theme.spacing.extra_small)
+        .build(ui, |stack| {
+            for entry in trash.iter().rev() {
+                if let Some(clicked) =
+                    stack.add(|| draw_entry_row(ui, language, theme, entry, selected, now))
+                {
+                    action = Some(clicked);
+                }
+            }
+        });
     action
 }
 
@@ -225,7 +232,7 @@ pub fn draw_preview_toolbar(
     let width = icon_button_width(ui, Icon::TRASH_2)
         + spacing
         + icon_label_button_width(ui, theme, restore);
-    move_to_toolbar_end(ui, width);
+    move_to_toolbar_end(ui, theme, width);
     let mut action = None;
     if draw_danger_icon_button(
         ui,
