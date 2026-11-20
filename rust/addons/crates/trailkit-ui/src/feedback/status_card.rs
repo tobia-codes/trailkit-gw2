@@ -85,8 +85,8 @@ pub struct StatusCardOutcome {
     pub closed: bool,
 }
 
-/// Draws `card` at the cursor across the available width and moves the
-/// cursor `spacing.medium` below it.
+/// Draws `card` at the cursor across the available width and leaves the
+/// cursor directly below it; the gap to what follows is the caller's (R148).
 ///
 /// The fill goes into a lower draw-list channel after the content is laid
 /// out, so the card has its final height in the first frame. Must not be
@@ -169,10 +169,9 @@ pub fn draw_status_card(ui: &Ui, theme: &Theme, card: &StatusCard<'_>) -> Status
         );
         sys::ImDrawList_ChannelsMerge(draw_list);
     }
-    // One item over the whole card, so the layout continues below it,
-    // `spacing.medium` away like below the separator the card replaces.
+    // One item over the whole card, so the layout continues below it.
     ui.set_cursor_screen_pos([left, top]);
-    ui.dummy([right - left, card_bottom - top + theme.spacing.medium]);
+    ui.dummy([right - left, card_bottom - top]);
     outcome
 }
 

@@ -13,6 +13,7 @@ use trailkit_ui::{
         icon_label_button_width,
     },
     controls::menu::place_next_popup,
+    controls::text_field::move_below_last_item,
     layout::stack::{Stack, StackLayout},
     layout::toolbar::move_to_toolbar_end,
     text::icons::Icon,
@@ -307,6 +308,8 @@ impl MemoWindow {
                 }
                 None => {}
             }
+            // The note keeps `space.md` from the hint above it (R148).
+            move_below_last_item(ui, theme.spacing.medium);
         }
         let compact = self.ui_state.compact_note_view;
         let mut chosen_kind = None;
