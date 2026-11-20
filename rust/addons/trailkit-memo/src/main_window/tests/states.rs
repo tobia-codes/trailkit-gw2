@@ -31,6 +31,10 @@ const MENU_ROW_X: f32 = 60.0;
 
 /// Center of the "Shopping list" row (selected in most fixtures).
 const SHOPPING_ROW: [f32; 2] = [100.0, 106.0];
+/// The "New note" button above the list.
+const NEW_NOTE_BUTTON: [f32; 2] = [62.0, 65.0];
+/// The "New group" button above the list.
+const NEW_GROUP_BUTTON: [f32; 2] = [154.0, 65.0];
 /// Center of the "Dailies" row.
 const DAILIES_ROW: [f32; 2] = [100.0, 138.0];
 /// Center of the "Raids" group row.
@@ -582,9 +586,41 @@ fn list_rows() {
             ..FrameInput::default()
         }],
     );
-    // A new note at the end of a long list scrolls into view with its
-    // rename field (M185).
-    assert_state("new-note-long-list", WIDE, long_list, &click([62.0, 65.0]));
+    // Without a selection a new note goes to the end of a long list and
+    // scrolls into view with its rename field (M185, M215).
+    let long_list_unselected = || {
+        let (mut memo, worker, directory) = long_list();
+        memo.ui_state.selected = None;
+        (memo, worker, directory)
+    };
+    assert_state(
+        "new-note-long-list",
+        WIDE,
+        long_list_unselected,
+        &click(NEW_NOTE_BUTTON),
+    );
+    // With a note selected, a new note goes right after it (M215).
+    assert_state(
+        "new-note-after-selection",
+        WIDE,
+        selected,
+        &click(NEW_NOTE_BUTTON),
+    );
+    // With a group selected, a new group goes into it as its last entry.
+    let group_selected = || {
+        let (mut memo, worker, directory) = selected();
+        memo.ui_state.selected = memo.document.root.iter().find_map(|node| match node {
+            Node::Group(group) => Some(NodeId::Group(group.id)),
+            Node::Note(_) => None,
+        });
+        (memo, worker, directory)
+    };
+    assert_state(
+        "new-group-in-selected-group",
+        WIDE,
+        group_selected,
+        &click(NEW_GROUP_BUTTON),
+    );
     assert_state(
         "drag-into-group",
         WIDE,

@@ -543,11 +543,10 @@ impl MemoWindow {
     }
 
     /// Resolves where a new entry goes: `point` from a context menu (M96),
-    /// or for the toolbar buttons the end of the selected group (M43).
+    /// or for the toolbar buttons next to the selection (M215): into a
+    /// selected group, after a selected note, else at the end.
     pub(super) fn insertion_point(&self, point: Option<InsertionPoint>) -> InsertionPoint {
-        point.unwrap_or_else(|| {
-            InsertionPoint::End(self.document.insertion_parent(self.ui_state.selected))
-        })
+        point.unwrap_or_else(|| self.document.insertion_point(self.ui_state.selected))
     }
 
     /// Puts a just-created note or group into rename mode (M43) and scrolls
