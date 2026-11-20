@@ -2,6 +2,7 @@
 //! badges and search hits, row interaction and the inline rename input.
 
 use std::borrow::Cow;
+use trailkit_ui::controls::hover::is_item_hovered;
 use trailkit_ui::controls::tooltip::draw_tooltip;
 use trailkit_ui::drawing::draw_list::window_draw_list;
 
@@ -105,7 +106,7 @@ fn draw_group(ui: &Ui, group: &Group, context: &mut RowContext<'_, '_>) {
         count,
     );
     let is_open = token.is_some();
-    let is_hovered = ui.is_item_hovered();
+    let is_hovered = is_item_hovered(ui);
     // The first click of a double-click toggled the group: the second, which
     // starts the rename, turns it back. The arrow's second click already did.
     let turn_back =
@@ -244,7 +245,7 @@ fn draw_note_row(ui: &Ui, note: &Note, context: &mut RowContext<'_, '_>) {
     record_row(ui, node, RowKind::Note, row_start[0], context);
     // Ask the tree node itself: it spans the whole row, and once a click
     // makes it the active item, `is_window_hovered` would report false.
-    let is_row_hovered = ui.is_item_hovered();
+    let is_row_hovered = is_item_hovered(ui);
     let is_renaming = context
         .rename
         .as_ref()

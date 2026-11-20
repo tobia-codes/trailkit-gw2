@@ -27,3 +27,19 @@ is ready when the user is back at the PC.
    bottom-right corner as far left as it goes.
 5. Reload memo: Nexus menu › Addons › trailkit-memo › unload,
    then load again.
+
+## Test 38 — no tooltips through the window menu (2026-11-20)
+
+No design change; a fix. Before, a button under the open window menu still
+showed its tooltip and hover fill (snapshot `memo-state-window-menu-hover-selected`
+even captured the "New note" tooltip).
+
+1. Open the window menu (the ☰ at the top left). Move the mouse over its
+   entries, especially over *Notes* and *Search*, where the buttons above the
+   note list lie underneath. **Expected:** only the menu entry under the mouse
+   is highlighted; no tooltip such as "New note" appears.
+2. Close the menu and hover the "New note" button. **Expected:** its tooltip
+   shows as before.
+3. Right-click a note › hover *Reset* so the submenu opens, then move onto a
+   submenu entry. **Expected:** no row of the main menu behind the submenu
+   lights up.

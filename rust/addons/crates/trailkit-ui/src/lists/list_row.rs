@@ -8,6 +8,7 @@
 //! note list) are tree nodes and stay in their slice; they share only the
 //! row state through [`draw_row_state`].
 
+use crate::controls::hover::is_item_hovered;
 use crate::drawing::draw_list::window_draw_list;
 use std::borrow::Cow;
 
@@ -63,7 +64,7 @@ pub struct ListRowResponse {
 
 /// Draws `row` across the remaining content width at the cursor and returns
 /// its response. After the call the row's selectable is the last item, so
-/// the caller can ask [`Ui::is_item_hovered`] or open a context menu.
+/// the caller can ask [`is_item_hovered`](crate::controls::hover::is_item_hovered) or open a context menu.
 ///
 /// The row is one line high, two with a detail line.
 pub fn draw_list_row(ui: &Ui, theme: &Theme, row: &ListRow<'_>) -> ListRowResponse {
@@ -87,7 +88,7 @@ pub fn draw_list_row(ui: &Ui, theme: &Theme, row: &ListRow<'_>) -> ListRowRespon
     let rect = [[left, top], [left + size[0], top + size[1]]];
     draw_row_state_in(ui, theme, row.selected, rect);
     let title_truncated = draw_row_texts(ui, theme, row, rect);
-    if title_truncated && ui.is_item_hovered() {
+    if title_truncated && is_item_hovered(ui) {
         draw_tooltip(ui, theme, row.title);
     }
     ListRowResponse {

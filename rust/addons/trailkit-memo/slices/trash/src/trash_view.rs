@@ -8,6 +8,7 @@ use trailkit_memo_shared::{
     i18n::{Language, LocalizedText},
     note_tree::{NodeId, TrashEntry, TreeNode},
 };
+use trailkit_ui::controls::hover::is_item_hovered;
 use trailkit_ui::{
     controls::button::{
         draw_danger_button, draw_danger_icon_button, draw_icon_button,
@@ -170,7 +171,7 @@ fn draw_entry_row(
         },
     );
     let mut action = response.clicked.then_some(TrashAction::Select(id));
-    if ui.is_item_hovered() && ui.is_mouse_clicked(MouseButton::Right) {
+    if is_item_hovered(ui) && ui.is_mouse_clicked(MouseButton::Right) {
         action = Some(TrashAction::Select(id));
         ui.open_popup("trash_context");
     }

@@ -4,6 +4,7 @@
 //! Lucide `check` and `chevron-right` icons like the dropdown, and submenus
 //! open flush beside their parent instead of overlapping it.
 
+use crate::controls::hover::{is_item_hovered, is_item_hovered_with_flags};
 use std::cell::Cell;
 
 use crate::controls::tooltip::draw_reason_tooltip;
@@ -180,7 +181,7 @@ unsafe fn fill_menu_row(
 pub(crate) fn draw_menu_row_highlight(ui: &Ui, theme: &Theme, selected: bool) {
     let color = if ui.is_item_active() {
         theme.surface.pressed
-    } else if ui.is_item_hovered() {
+    } else if is_item_hovered(ui) {
         theme.surface.popup_hover
     } else if selected {
         theme.surface.active
@@ -342,7 +343,7 @@ fn draw_icon_menu_item(
         draw_menu_row_label([x, origin[1]], theme.text.secondary, shortcut);
     }
     if let Some(reason) = disabled_tooltip
-        && ui.is_item_hovered_with_flags(ItemHoveredFlags::ALLOW_WHEN_DISABLED)
+        && is_item_hovered_with_flags(ui, ItemHoveredFlags::ALLOW_WHEN_DISABLED)
     {
         draw_reason_tooltip(ui, theme, reason);
     }
@@ -381,7 +382,7 @@ pub fn begin_submenu<'ui>(
     // While the submenu is open the current window is the submenu, so the
     // row's rect cannot be read from the last item: it is the same rect
     // ImGui gives a selectable, reaching half the item spacing outwards.
-    if token.is_some() || ui.is_item_hovered() {
+    if token.is_some() || is_item_hovered(ui) {
         let half_spacing = [
             (style.item_spacing[0] * 0.5).floor(),
             (style.item_spacing[1] * 0.5).floor(),

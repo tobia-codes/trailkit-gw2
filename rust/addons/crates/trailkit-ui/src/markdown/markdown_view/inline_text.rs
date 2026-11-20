@@ -1,6 +1,7 @@
 //! Inline text of a markdown block: words with wrapping, links, chat-link
 //! chips and search hits (memo plan M19, M37, M75, M122).
 
+use crate::controls::hover::is_item_hovered;
 use std::ops::Range;
 
 use nexus::imgui::{ImColor32, MouseButton, MouseCursor, StyleColor, Ui};
@@ -166,7 +167,7 @@ fn draw_chat_link(
     let [x, y] = [cursor.x, cursor.y];
     ui.set_cursor_screen_pos([x, y]);
     ui.invisible_button("##chip", [width, ui.text_line_height()]);
-    let hovered = ui.is_item_hovered();
+    let hovered = is_item_hovered(ui);
     let clicked = ui.is_item_clicked();
     draw_chip(ui, window_draw_list(ui), chip, [x, y], theme, chips);
     if let Some(highlight) = highlight
@@ -238,7 +239,7 @@ fn draw_link_icon(
 /// Gives the last drawn item the behavior of the link to `url`: the hand
 /// cursor, the tooltip and the click.
 fn finish_link_item(ui: &Ui, span: &Span, theme: &Theme, url: &str) -> Option<MarkdownAction> {
-    if ui.is_item_hovered() {
+    if is_item_hovered(ui) {
         ui.set_mouse_cursor(Some(MouseCursor::Hand));
         if let Some(target) = crate::markdown::link_tooltip(&span.text, url) {
             draw_tooltip(ui, theme, target);

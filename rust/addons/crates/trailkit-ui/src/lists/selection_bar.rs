@@ -12,6 +12,7 @@
 //! pixel, so a 3 px bar drawn with `rounding` stays square; the round ends
 //! are drawn as circles instead.
 
+use crate::controls::hover::is_item_hovered;
 use crate::drawing::draw_list::window_draw_list;
 use nexus::imgui::{ColorStackToken, StyleColor, Ui};
 
@@ -71,7 +72,7 @@ pub fn hide_square_row_highlight<'ui>(ui: &'ui Ui) -> [ColorStackToken<'ui>; 3] 
 fn draw_row_highlight_in(ui: &Ui, theme: &Theme, selected: bool, [min, max]: [[f32; 2]; 2]) {
     let color = if selected || ui.is_item_active() {
         theme.surface.active
-    } else if ui.is_item_hovered() {
+    } else if is_item_hovered(ui) {
         theme.surface.hover
     } else {
         return;

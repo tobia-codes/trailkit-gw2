@@ -318,6 +318,10 @@ Project contract (to be finalized in `docs/plans/addons/trailkit-core.md`):
   `IsItemHovered` is true for them once the item has ended.
 - A tree node's triangle takes the text color: push a transparent `Text` while pushing
   the node, then draw chevron and title yourself.
+- `IsItemHovered` compares only root windows (`imgui.cpp` 3117): an item under an
+  overlay child of its own window (memo's window menu) counts as hovered and shows
+  its tooltip. Clicks are fine. Use `trailkit_ui::controls::hover::is_item_hovered`;
+  clippy bans the ImGui call.
 - `IsWindowHovered` is false while any item is active: use
   `ALLOW_WHEN_BLOCKED_BY_ACTIVE_ITEM`. `is_mouse_hovering_rect` ignores windows above
   it: combine it with the item's hover.

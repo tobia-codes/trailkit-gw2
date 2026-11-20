@@ -8,6 +8,7 @@
 //! option is cut with "…" in the field and wraps on two lines in the list
 //! (R128).
 
+use crate::controls::hover::is_item_hovered;
 use crate::controls::tooltip::{draw_tooltip, draw_tooltip_with};
 use crate::text::{TextStyle, draw_text, draw_text_wrapped};
 use nexus::imgui::{ImColor32, Selectable, Style, StyleColor, Ui};
@@ -67,7 +68,7 @@ pub fn draw_dropdown(
 
     // Filled and hovered like a button (`StyleScope` colors).
     let clicked = ui.button_with_size("##selected_content", [width, ui.frame_height()]);
-    let is_hovered = ui.is_item_hovered();
+    let is_hovered = is_item_hovered(ui);
     let bounds = [ui.item_rect_min(), ui.item_rect_max()];
     if clicked {
         ui.open_popup(OPTION_LIST_ID);

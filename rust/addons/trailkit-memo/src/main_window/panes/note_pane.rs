@@ -4,6 +4,7 @@
 //! (M102) and the draft hint.
 
 use nexus::imgui::Ui;
+use trailkit_ui::controls::hover::is_item_hovered;
 use trailkit_ui::controls::tooltip::draw_tooltip;
 use trailkit_ui::{
     controls::button::{
@@ -130,7 +131,7 @@ impl MemoWindow {
             if save_button.draw(ui, theme) {
                 self.actions.push(WindowAction::FinishEditing);
             }
-            if !saving && ui.is_item_hovered() {
+            if !saving && is_item_hovered(ui) {
                 draw_tooltip(ui, theme, Text::SaveTooltip.get(language));
             }
         } else if self.selected_note().is_some() {

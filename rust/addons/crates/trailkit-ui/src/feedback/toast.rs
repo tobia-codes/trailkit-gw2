@@ -8,6 +8,7 @@
 //! a spinner and a close button. It is drawn as a child window, so it lies
 //! above the window's content and takes the clicks there.
 
+use crate::controls::hover::is_item_hovered;
 use crate::controls::tooltip::draw_tooltip;
 use crate::drawing::draw_list::window_draw_list;
 use nexus::imgui::{ChildWindow, ImColor32, Ui, WindowHoveredFlags};
@@ -403,7 +404,7 @@ fn draw_toast_actions(
             clicked = Some(index);
         }
         if let Some(tooltip) = action.tooltip
-            && ui.is_item_hovered()
+            && is_item_hovered(ui)
         {
             draw_tooltip(ui, theme, tooltip);
         }

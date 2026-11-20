@@ -14,6 +14,7 @@
 mod inline_text;
 mod link_menu;
 
+use crate::controls::hover::is_item_hovered;
 use nexus::imgui::{MouseCursor, Ui};
 
 use self::{inline_text::draw_spans, link_menu::draw_link_menu};
@@ -348,7 +349,7 @@ fn draw_list_marker(
             let clicked = ui.invisible_button("task", target_size);
             let fill = if ui.is_item_active() {
                 Some(theme.surface.active)
-            } else if ui.is_item_hovered() {
+            } else if is_item_hovered(ui) {
                 ui.set_mouse_cursor(Some(MouseCursor::Hand));
                 Some(theme.surface.hover)
             } else {

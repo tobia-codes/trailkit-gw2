@@ -29,6 +29,7 @@ use nexus::imgui::{ColorStackToken, StyleColor, Ui};
 use crate::{color::Color, text::fonts::FontRole, theme::Theme};
 #[cfg(windows)]
 use crate::{
+    controls::hover::is_item_hovered,
     controls::tooltip::draw_tooltip,
     text::font_registry::FontScope,
     text::glyph_metrics::{capital_middle, icon_visible_box},
@@ -164,7 +165,7 @@ pub fn draw_truncated_text(
         matches!(shown, std::borrow::Cow::Owned(_))
     };
     // The tooltip uses the regular tooltip font, not the text's style.
-    if truncated && ui.is_item_hovered() {
+    if truncated && is_item_hovered(ui) {
         draw_tooltip(ui, theme, text);
     }
     truncated
