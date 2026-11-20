@@ -89,7 +89,8 @@ Names follow `memo-state-<state>-<dark|light>.png` and
   renames; the chevron toggles at once.
 - **Indent guides** (R156): a 1 px `border.subtle` line below each expanded group's
   chevron down to its last descendant; fills and the selection bar of nested rows start
-  right of the lines.
+  `space.xs` right of the nearest line.
+- **A click on an empty spot of the list selects nothing**; the note stays shown (M216).
 - **Ctrl+F toggles the search.** The field's `x` clears text first and closes an empty
   field (M176).
 - **Popup menus have room** (`menu.*` tokens, M177): an icon in every command row, none in

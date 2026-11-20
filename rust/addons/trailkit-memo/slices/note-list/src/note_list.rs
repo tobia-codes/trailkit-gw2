@@ -111,6 +111,9 @@ pub struct NoteListInput<'a> {
 pub enum NoteListAction {
     /// Select a note or group.
     Select(NodeId),
+    /// A click on an empty spot of the list: nothing is selected any more;
+    /// the shown note stays (M216).
+    ClearSelection,
     /// A click on a group's row, once the double-click time passed without
     /// a second click: select it and toggle it (M172).
     ClickGroup(GroupId),
@@ -318,13 +321,16 @@ impl NoteList {
         }
         self.start_press(ui, theme, pressed, search.as_ref());
         self.track_drag(ui, theme, style.indent_spacing, document, &mut output);
-        // Right-click on an empty spot of the list (M96): create at the end
-        // of the root level.
-        if ui.is_window_hovered()
-            && !ui.is_any_item_hovered()
-            && ui.is_mouse_clicked(MouseButton::Right)
-        {
-            ui.open_popup("list_context");
+        // A click on an empty spot of the list: a left click clears the
+        // selection (M216), a right click offers creating at the end of the
+        // root level (M96).
+        if ui.is_window_hovered() && !ui.is_any_item_hovered() {
+            if ui.is_mouse_clicked(MouseButton::Left) && selected.is_some() {
+                output.actions.push(NoteListAction::ClearSelection);
+            }
+            if ui.is_mouse_clicked(MouseButton::Right) {
+                ui.open_popup("list_context");
+            }
         }
         trailkit_ui::controls::menu::draw_popup(ui, theme, "list_context", || {
             context_menu::draw_create_menu_items(

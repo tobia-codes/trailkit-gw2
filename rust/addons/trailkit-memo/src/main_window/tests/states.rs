@@ -12,6 +12,7 @@ use trailkit_ui::markdown::markdown_view::MarkdownAction;
 use super::{trash::document_with_trash, *};
 
 mod chip_tooltips;
+mod empty_spot;
 mod find_in_note;
 mod indent_guides;
 mod link_dialog;

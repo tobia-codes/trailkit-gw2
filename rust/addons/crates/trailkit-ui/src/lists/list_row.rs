@@ -164,8 +164,9 @@ pub fn draw_list_row(ui: &Ui, theme: &Theme, row: &ListRow<'_>) -> ListRowRespon
         reason = "a tree is never deep enough to lose precision"
     )]
     let content_left = left + row.level as f32 * style.indent_spacing;
-    // The fill leaves the indentation with its guides free (R156).
-    draw_row_state_in(ui, theme, row.selected, rect, content_left);
+    // The fill leaves the guides free, `space.xs` right of the nearest (R156).
+    let fill_left = guides::fill_left(ui, theme, left, row.level);
+    draw_row_state_in(ui, theme, row.selected, rect, fill_left);
     let is_hovered = is_row_hovered(ui, rect);
     // Content follows ImGui's style alpha, e.g. a dragged row (memo M106);
     // the fill keeps the row's place visible.

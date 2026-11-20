@@ -37,6 +37,8 @@ use super::{MemoWindow, WindowToast, WindowToastKind};
 pub(super) enum WindowAction {
     /// Select a note or group.
     Select(NodeId),
+    /// Select nothing; the shown note stays (M216).
+    ClearSelection,
     /// Select and show a note and make its row visible: expand the groups
     /// around it, end a search hiding it, scroll the list (M185).
     RevealNote(NoteId),
@@ -172,6 +174,7 @@ impl MemoWindow {
         }
         match action {
             WindowAction::Select(_)
+            | WindowAction::ClearSelection
             | WindowAction::RevealNote(_)
             | WindowAction::ClickGroup(_)
             | WindowAction::SetExpanded(..)
@@ -272,6 +275,7 @@ impl MemoWindow {
     fn apply_tree_action(&mut self, action: &WindowAction, language: Language, now: Timestamp) {
         match action {
             WindowAction::Select(node) => self.change_selected(*node),
+            WindowAction::ClearSelection => self.clear_selection(),
             WindowAction::RevealNote(note) => self.reveal_note(*note),
             WindowAction::ClickGroup(group) => {
                 self.change_selected(NodeId::Group(*group));
@@ -496,6 +500,14 @@ impl MemoWindow {
     pub(super) fn expand_parent_of(&mut self, node: NodeId) {
         if let Some(Some(group)) = self.document.parent(node) {
             self.set_expanded(group, true);
+        }
+    }
+
+    /// Selects nothing (M216): the list shows no selection and new entries
+    /// go to the end; the shown note stays, as with a selected group (M173).
+    fn clear_selection(&mut self) {
+        if self.ui_state.selected.take().is_some() {
+            self.saver.save_ui_state(&self.ui_state);
         }
     }
 
