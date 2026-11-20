@@ -16,7 +16,7 @@ use trailkit_ui::{
     },
     controls::menu::{MenuItemTone, draw_menu_item_with_icon, draw_popup},
     layout::empty_state::{EmptyState, draw_empty_state},
-    layout::separator::{draw_compact_separator, draw_separator, draw_separator_above_rows},
+    layout::separator::draw_separator,
     layout::toolbar::move_to_toolbar_end,
     lists::list_row::{ListRow, ListRowDetail, draw_list_row},
     text::icons::Icon,
@@ -95,7 +95,7 @@ pub fn draw_trash_header(
         ui.set_cursor_screen_pos([left, top]);
         ui.dummy([0.0, row_height]);
     }
-    draw_separator_above_rows(ui, theme);
+    draw_separator(ui, theme);
     action
 }
 
@@ -197,7 +197,7 @@ fn draw_entry_menu(ui: &Ui, language: Language, theme: &Theme, id: NodeId) -> Op
     ) {
         action = Some(TrashAction::Restore(id));
     }
-    draw_compact_separator(ui, theme);
+    draw_separator(ui, theme);
     let label = format!("{} …", TrashText::DeletePermanently.get(language));
     if draw_menu_item_with_icon(ui, theme, Icon::TRASH_2, &label, MenuItemTone::Danger, None) {
         action = Some(TrashAction::DeletePermanently(id));

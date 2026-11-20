@@ -21,7 +21,7 @@ use self::{inline_text::draw_spans, link_menu::draw_link_menu};
 use crate::{
     chat_link::chat_link_chip::ChipContext,
     drawing::draw_list::window_draw_list,
-    layout::separator::draw_compact_separator,
+    layout::separator::draw_separator,
     markdown::{Block, ListMarker, MarkdownDocument, TaskMarker},
     text::font_registry::FontScope,
     text::fonts::FontRole,
@@ -282,7 +282,7 @@ fn draw_block(
             marker_click.or(text_click)
         }
         Block::Rule => {
-            draw_compact_separator(ui, theme);
+            draw_separator(ui, theme);
             None
         }
     }

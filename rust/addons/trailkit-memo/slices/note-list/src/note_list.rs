@@ -25,8 +25,8 @@ use trailkit_memo_shared::{
 };
 use trailkit_ui::{
     controls::button::icon_button_width, controls::tooltip::draw_tooltip,
-    layout::separator::draw_separator_above_rows, text::font_registry::FontScope,
-    text::fonts::FontRole, text::icons::Icon, text::text_search::SearchQuery, theme::Theme,
+    layout::separator::draw_separator, text::font_registry::FontScope, text::fonts::FontRole,
+    text::icons::Icon, text::text_search::SearchQuery, theme::Theme,
 };
 
 use self::{
@@ -254,7 +254,7 @@ impl NoteList {
                 clicked_action = Some(action);
             }
         }
-        draw_separator_above_rows(ui, theme);
+        draw_separator(ui, theme);
         clicked_action
     }
 

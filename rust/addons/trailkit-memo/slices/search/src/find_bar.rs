@@ -12,7 +12,7 @@ use trailkit_ui::{
         ButtonState, draw_icon_button, draw_icon_button_with_state, icon_button_width,
     },
     drawing::draw_list::window_draw_list,
-    layout::separator::draw_compact_separator,
+    layout::separator::draw_separator,
     text::TextStyle,
     text::icons::Icon,
     text::text_layout::body_characters_width,
@@ -154,6 +154,6 @@ pub fn draw_find_bar(
 
     let spacing = ui.clone_style().item_spacing[1];
     ui.set_cursor_screen_pos([start[0], row_top + field_height + spacing]);
-    draw_compact_separator(ui, theme);
+    draw_separator(ui, theme);
     response
 }

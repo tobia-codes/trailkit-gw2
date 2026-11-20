@@ -111,14 +111,14 @@ editor's formatting buttons that light up for the formatting at the cursor
 - Every window, pane, popup and dialog has the 1 px `border.subtle` outline.
 - Regular buttons and dropdowns have a 1 px `border` frame (R85): their fill
   alone can vanish on `bg.window`. Primary and `danger` fills stand out alone.
-- **Dividers (R83)** come from `separator`, never `ui.separator()`, and have the
-  same gap above and below, measured to the visible content (letters, an icon,
-  a button edge); the fill of a hovered row may come closer:
-  - **Section, `spacing.medium` 12:** `draw_separator` (buttons, fields),
-    `draw_separator_above_rows` (fill of the first row `space.xs` away),
-    `draw_separator_above_text` (the text's own leading counts as gap).
-  - **Compact, `spacing.small` 8:** `draw_compact_separator`, inside a tight
-    group: menus, a rule in a note's body.
+- **Dividers (R83, R148)** come from `separator`, never `ui.separator()`. There
+  is one divider: `space.sm` above and below, measured to the visible edges of
+  its neighbors (letters, an icon, a button or field edge, the fill of a list
+  row, so a hovered or selected row sits 8 px under the line). It is the one
+  element that brings its own space: in a `Stack` it replaces the stack's gap
+  (`StackLayout::add_separator`). `draw_separator` for frames and rows;
+  `draw_separator_above_text` (`add_separator_above_text`) when text follows,
+  as the empty top of its first line counts as part of the gap.
 - Text buttons are at least `button.min_width` × font size wide (M131);
   measure rows with `button_width` / `icon_label_button_width`, never with
   `calc_text_size` + padding, or right-aligned rows drift.

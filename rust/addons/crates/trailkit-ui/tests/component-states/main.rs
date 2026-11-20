@@ -26,7 +26,7 @@ use trailkit_ui::{
     feedback::status_line::{Status, draw_status_line},
     layout::empty_state::{EmptyState, EmptyStateButtons, draw_empty_state},
     layout::pane::draw_pane,
-    layout::separator::draw_compact_separator,
+    layout::separator::draw_separator,
     layout::splitter::draw_vertical_splitter,
     layout::title_bar::{
         TitleBarState, TitleBarTexts, TitleBarToggle, TogglePlacement,
@@ -234,7 +234,7 @@ fn draw_sample_menu(ui: &Ui, theme: &Theme, opened: &Cell<bool>) {
             draw_menu_item(ui, theme, "Normal", true);
             draw_menu_item(ui, theme, "Daily reset", false);
         }
-        draw_compact_separator(ui, theme);
+        draw_separator(ui, theme);
         draw_menu_item_with_icon(
             ui,
             theme,

@@ -11,6 +11,7 @@ use nexus::imgui::{Condition, Ui, Window};
 use trailkit_ui::{
     drawing::style_scope::StyleScope,
     layout::stack::{Stack, StackLayout},
+    text::fonts::FontRole,
     theme::{Theme, ThemeKind},
 };
 use trailkit_ui_testing::harness::{FrameInput, UiHarness};
@@ -133,4 +134,56 @@ fn a_nested_stack_counts_as_one_element() {
         theme.spacing.small
     );
     assert_eq!(below[0][0], start[0]);
+}
+
+#[test]
+fn a_separator_brings_space_sm_on_both_sides_instead_of_the_gap() {
+    let rects = record(|ui, theme, rects| {
+        Stack::vertical(theme)
+            .gap(theme.spacing.extra_small)
+            .build(ui, |stack| {
+                add_button(ui, stack, rects, "Above");
+                stack.add_separator(theme);
+                rects
+                    .borrow_mut()
+                    .push([ui.item_rect_min(), ui.item_rect_max()]);
+                add_button(ui, stack, rects, "Below");
+                add_button(ui, stack, rects, "Next");
+            });
+    });
+    let theme = ThemeKind::Dark.theme();
+    let [above, line, below, next] = rects[..] else {
+        panic!("four rectangles, got {rects:?}");
+    };
+    assert_eq!(line[0][1] - above[1][1], theme.spacing.small);
+    assert_eq!(below[0][1] - line[1][1], theme.spacing.small);
+    assert_eq!(
+        next[0][1] - below[1][1],
+        theme.spacing.extra_small,
+        "after the element below, the stack's gap applies again"
+    );
+}
+
+#[test]
+fn a_separator_above_text_counts_the_empty_top_of_the_line() {
+    let rects = record(|ui, theme, rects| {
+        Stack::vertical(theme).build(ui, |stack| {
+            add_button(ui, stack, rects, "Above");
+            stack.add_separator_above_text(theme, FontRole::Body);
+            rects
+                .borrow_mut()
+                .push([ui.item_rect_min(), ui.item_rect_max()]);
+            add_button(ui, stack, rects, "Text");
+        });
+    });
+    let theme = ThemeKind::Dark.theme();
+    let [above, line, text] = rects[..] else {
+        panic!("three rectangles, got {rects:?}");
+    };
+    assert_eq!(line[0][1] - above[1][1], theme.spacing.small);
+    let below = text[0][1] - line[1][1];
+    assert!(
+        below < theme.spacing.small,
+        "the text's empty top replaces part of the gap, got {below}"
+    );
 }

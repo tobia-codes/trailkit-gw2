@@ -7,7 +7,7 @@ use trailkit_ui::drawing::draw_list::window_draw_list;
 use trailkit_ui::{
     feedback::backdrop::{Backdrop, BackdropArea},
     layout::pane::draw_pane,
-    layout::separator::draw_compact_separator,
+    layout::separator::draw_separator,
     lists::selection_bar::draw_row_state,
     text::font_registry::FontScope,
     text::fonts::FontRole,
@@ -123,7 +123,7 @@ impl MemoWindow {
                         ]));
                         for row in &rows {
                             if row.separated {
-                                draw_compact_separator(ui, theme);
+                                draw_separator(ui, theme);
                             }
                             if draw_window_menu_row(ui, theme, row) {
                                 chosen = Some(row.action.clone());
