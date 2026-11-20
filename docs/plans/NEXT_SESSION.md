@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-20 (session 49, PC; layout branch and new-row bugfix merged; R148 spacing scale and Stack, R147 icon sizes, R155 help contents decided). Current state and next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
+Last updated: 2026-11-20 (session 49, PC; R147/R148, R155 a+b, R156 merged; M215/M216 on `feature/insert-after-selection`). Current state and next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
 
@@ -27,9 +27,14 @@ log export active (click re-checks, then the info), event button **hidden** unti
 R139–R146 (TextField, no disabled buttons, dialog close icon, wrapped tooltips, link icons, measured form spacing, shared `Dialog`/`Backdrop`, report reuse), M213 text size percent, R149 one link underline. All in-game tests passed except the two below.
 **Done 2026-11-19 (PR of `bugfix/memo-shortcut-keys`):** memo catches Ctrl+Z/Y/Shift+Z, Ctrl+0 (number pad too) and Enter in dialogs; dialogs at most 20 font sizes wide (R153); editor toolbar flush with the title; CI 13 → ~4 min (R151, PR #154).
 **Merged 2026-11-20 (user OK, PRs of `feature/ui-layout-rules` and `bugfix/memo-reveal-new-row`):** M214, R150, dropdown gap; **R148** one spacing scale, `layout::stack::Stack`, one divider (Q528), ImGui `ItemSpacing` 0 (Q529), markdown block gaps (Q530); **R147** one interface icon size (Q536, Q537), icons on the capital middle, square icon buttons (Q523, Q524); note list header buttons on the shared `Button` (mock https://claude.ai/artifact/DuZrXXZKQP7fNZBLEfEtuL); twelve snapshot states that missed their element after the layout change fixed; a new note or group scrolls into view (M185 reveal). All tested in game. Side note: the text field error wraps inside "example.com".
-**Next (R155, Q531–Q534, order fixed):** ~~a.~~ merged 2026-11-20 (PR of `feature/shared-menu-item`): one `MenuItem`, `draw_menu_item` in popups, `draw_menu_panel` for memo's window menu (R155-1 A); submenus 4 px apart with their row kept highlighted (M98); lesson: md5 groups miss a hover that lands on a wrong row, so measure positions after layout changes; ~~b.~~ merged 2026-11-20 (PR of `feature/shared-list-row`): the note list draws through `draw_list_row`; a dragged row fades as a whole (M106); a double-click renames a group without toggling it (M172); open: the tree indent is ImGui's 21 px, not `space.lg` (R148); **R156 indent guides** merged 2026-11-20 (PR of `feature/indent-guides`): drawn by the shared `draw_list_row` from `level`, so the help contents of R155 c get them too; **active work branch `feature/insert-after-selection`** (local; `git switch feature/insert-after-selection`): new entries go next to the selection (M215), in-game check and merge OK pending; c. the help table of contents (sections of the selected topic, click scrolls), R87
-mock first. Also open: length hints for split grilling: `draw_spans` (`inline_text.rs`, 80), `states.rs` tests (863), `editor.rs` (481), `dialogs.rs` (403), `buffer.rs` (413); one unreproduced debug crash `imgui.h:1629` while deleting in a
-link label (if it recurs: Ignore, note cursor placement, key, preview, tooltip).
+**Session 49 (2026-11-20, PC), merged:** R155 a one `MenuItem` (`draw_menu_item` in popups, `draw_menu_panel` for memo's window menu), submenus 4 px apart with their row kept highlighted (M98);
+R155 b the note list draws through `draw_list_row` (a dragged row fades as a whole, M106; a double-click renames a group without toggling it, M172); R156 indent guides (`border.subtle`, drawn by
+`draw_list_row` from `level`). Lesson: md5 groups miss a hover that lands on a wrong row, so measure positions in the PNG after layout changes.
+**Active work branch: `feature/insert-after-selection`** (pushed, no PR yet; `git fetch origin && git switch feature/insert-after-selection`): new entries go next to the selection (M215), a click on an
+empty spot selects nothing (M216), nested fills start `space.xs` right of the nearest guide (R156). All tests green, deployed; **pending: the in-game checks in [`in-game-tests.md`](in-game-tests.md), then the
+user's merge OK** (R74), then PR into `develop` with auto-merge and remove this line. Open: the tree indent is ImGui's 21 px, not `space.lg` (R148).
+**Next: R155 c** help table of contents (sections as `level: 1` rows below the selected topic, click scrolls; R87 proposal first; the help list uses `Stack`, guides reach into ImGui's `ItemSpacing` gap).
+Also open: length hints for split grilling: `draw_spans` (`inline_text.rs`, 80), `states.rs` tests (863), `editor.rs` (481), `dialogs.rs` (403), `buffer.rs` (413); one unreproduced debug crash `imgui.h:1629` while deleting in a link label (if it recurs: Ignore, note cursor placement, key, preview, tooltip).
 **Next: data pipeline** (`rust/tools/trailkit-datagen`): the failing GemExchange job below (review item 3 done, D42); no more datagen unit tests, the backend tests cover it later (R152). Coverage 2026-11-18 before #146: addons 89 % of lines, memo app 70 %, datagen 52 %.
 **Then test gaps:** extract and test the Escape/close logic of `nexus_bridge/render.rs` like `key_routing.rs`; window actions (new group, format, preview, compact view, open folder, clear search); Ctrl+Y/Ctrl+Shift+Z keys. `xtask` last. Prove new tests with injected faults.
 **Coverage tooling (R152, option A):** build `cargo xtask coverage` from the manual steps below and document it in agent-reference/CONTRIBUTING. **Coverage on demand, not in CI** (`llvm-tools` installed): `RUSTFLAGS="-C instrument-coverage" CARGO_TARGET_DIR=target/coverage cargo xwin test --no-run`, run each binary from its crate with `LLVM_PROFILE_FILE`/`TRAILKIT_SNAPSHOT_ROOT` via `WSLENV` (`/p`), `llvm-profdata merge`, `llvm-cov export`; then delete `rust/*.profraw` and the 2.8 GB build.
@@ -54,7 +59,7 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M216+, R157+, B46+, BL27+, questions from 538**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M217+, R157+, B46+, BL27+, questions from 538**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
 4. **Search cache:** `rust/addons/trailkit-memo/src/main_window/search.rs::update_search` calls `SearchQuery::parse` before checking the
