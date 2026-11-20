@@ -241,10 +241,12 @@ impl NoteList {
             for (index, (icon, tooltip, action)) in buttons.into_iter().enumerate() {
                 stack.add(|| {
                     let _id = ui.push_id(i32::try_from(index).unwrap_or_default());
+                    // As tall as a text button, whatever the icon size (Q524).
+                    let height = ui.frame_height();
                     let clicked = {
                         let _icons = FontScope::push(ui, FontRole::Icons);
                         let mut buffer = [0; 4];
-                        ui.button_with_size(icon.as_str(&mut buffer), [width, 0.0])
+                        ui.button_with_size(icon.as_str(&mut buffer), [width, height])
                     };
                     if is_item_hovered(ui) {
                         draw_tooltip(ui, theme, tooltip.get(language));
