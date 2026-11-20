@@ -166,17 +166,21 @@ impl NoteList {
         theme: &Theme,
         document: &NotesDocument,
     ) -> Option<NoteListAction> {
+        if let Some(action) = self.take_due_group_click(ui) {
+            return Some(action);
+        }
         if let Some((node, pressed_at)) = self.search_press
             && !ui.is_mouse_down(MouseButton::Left)
         {
             self.search_press = None;
             return (distance(ui.io().mouse_pos, pressed_at) < DRAG_THRESHOLD)
-                .then(|| click_action(node));
+                .then(|| self.click_action(ui, node));
         }
         let drag = self.drag.as_mut()?;
         if !ui.is_mouse_down(MouseButton::Left) {
+            let node = drag.node;
             let action = if !drag.is_dragging {
-                Some(click_action(drag.node))
+                Some(self.click_action(ui, node))
             } else if drag.check == MoveCheck::Changes
                 && let Some(target) = drag.target
             {
@@ -268,12 +272,28 @@ fn scroll_near_edges(ui: &Ui, theme: &Theme) {
     ui.set_scroll_y((ui.scroll_y() + step).clamp(0.0, ui.scroll_max_y()));
 }
 
-/// What a click (press and release in place) on the row `node` does: a group
-/// toggles (M172), a note is selected.
-const fn click_action(node: NodeId) -> NoteListAction {
-    match node {
-        NodeId::Group(group) => NoteListAction::ClickGroup(group),
-        NodeId::Note(_) => NoteListAction::Select(node),
+impl NoteList {
+    /// What a click (press and release in place) on the row `node` does: it
+    /// selects the row. A group also toggles (M172), but only once the
+    /// double-click time has passed without a second click, so a
+    /// double-click renames it without flickering open and closed.
+    fn click_action(&mut self, ui: &Ui, node: NodeId) -> NoteListAction {
+        if let NodeId::Group(group) = node {
+            self.pending_group_click = Some((group, ui.time()));
+        }
+        NoteListAction::Select(node)
+    }
+
+    /// The toggle of a group clicked once, when the double-click time has
+    /// passed since (M172).
+    fn take_due_group_click(&mut self, ui: &Ui) -> Option<NoteListAction> {
+        let (group, clicked_at) = self.pending_group_click?;
+        let waited = ui.time() - clicked_at;
+        if waited < f64::from(ui.io().mouse_double_click_time) {
+            return None;
+        }
+        self.pending_group_click = None;
+        Some(NoteListAction::ClickGroup(group))
     }
 }
 

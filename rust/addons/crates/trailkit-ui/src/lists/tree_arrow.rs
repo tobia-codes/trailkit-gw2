@@ -1,10 +1,7 @@
-//! The expand arrow of tree rows: a Lucide chevron in `text.disabled`
-//! instead of ImGui's filled triangle (trailkit-ui skill §4, ROADMAP R71).
-//!
-//! ImGui draws its triangle in the text color of the tree node. A row that
-//! wants the chevron pushes a transparent text color while it pushes the
-//! node (so the triangle is invisible), draws its title itself and then
-//! calls [`draw_tree_arrow`] over the same spot.
+//! The expand arrow of list rows with children: a Lucide chevron in
+//! `text.disabled` instead of ImGui's filled triangle (trailkit-ui skill §4,
+//! ROADMAP R71), drawn by [`super::list_row`] where ImGui would put its
+//! triangle.
 
 use nexus::imgui::Ui;
 
@@ -12,16 +9,16 @@ use crate::{
     controls::dropdown::{draw_icon_into, icon_width, packed},
     text::glyph_metrics::capital_middle,
     text::icons::Icon,
-    theme::Theme,
 };
 
-/// Draws the chevron of a tree row whose top-left corner is `row_min`:
+/// Draws the chevron of a tree row whose top-left corner is `row_min` in
+/// `color` (RGBA, `text.disabled` faded like the row):
 /// pointing down when `is_open`, right otherwise. It sits where ImGui puts
 /// its triangle: `frame_padding` in from the row's corner, in a square of
 /// the font size, centered on the row's frame height.
 pub fn draw_tree_arrow(
     ui: &Ui,
-    theme: &Theme,
+    color: [f32; 4],
     is_open: bool,
     row_min: [f32; 2],
     frame_padding: [f32; 2],
@@ -39,5 +36,6 @@ pub fn draw_tree_arrow(
     // SAFETY: called on the render thread inside a frame, where ImGui has a
     // current window and returns its draw list.
     let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
-    draw_icon_into(draw_list, ui, icon, x, middle, packed(theme.text.disabled));
+    let color = packed(crate::color::Color::from_array(color));
+    draw_icon_into(draw_list, ui, icon, x, middle, color);
 }

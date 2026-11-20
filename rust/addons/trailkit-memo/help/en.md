@@ -59,7 +59,7 @@ Your notes sit in a list that you can sort and organize in groups.
 
 ### Groups
 
-Groups have bold names and show how many notes they contain on the right. Click anywhere on a group's row to open or close it; the note you are reading stays on the right.
+Groups have bold names and show how many notes they contain on the right. Click anywhere on a group's row to open or close it; the arrow does it at once, the rest of the row a moment later, so a double-click renames the group without closing it. The note you are reading stays on the right.
 
 ### Deleting
 

@@ -111,7 +111,8 @@ pub struct NoteListInput<'a> {
 pub enum NoteListAction {
     /// Select a note or group.
     Select(NodeId),
-    /// A click on a group's row: select it and toggle it (M172).
+    /// A click on a group's row, once the double-click time passed without
+    /// a second click: select it and toggle it (M172).
     ClickGroup(GroupId),
     /// A group was expanded or collapsed.
     SetExpanded(GroupId, bool),
@@ -158,6 +159,9 @@ pub struct NoteList {
     /// A row to scroll into the middle of the list when it is drawn next
     /// (M185).
     reveal: Option<NodeId>,
+    /// A group clicked once and when: it toggles once the double-click time
+    /// has passed, unless a double-click renames it instead (M172).
+    pending_group_click: Option<(GroupId, f64)>,
 }
 
 /// Everything the row drawing functions need besides the nodes.
@@ -301,13 +305,17 @@ impl NoteList {
             reveal: &mut self.reveal,
         };
         {
-            // Rows are `space.xs` apart (R148). The tree nests its rows inside
-            // ImGui tree nodes, so the gap is set for the list here, like a
-            // menu sets it for its rows; the drag bands count with it.
+            // Rows are `space.xs` apart (R148). The rows of every depth are
+            // drawn one after another, so the gap is set for the list here,
+            // like a menu sets it for its rows; the drag bands count with it.
             let _rows = ui.push_style_var(StyleVar::ItemSpacing([0.0, theme.spacing.extra_small]));
-            rows::draw_nodes(ui, &document.root, &mut context);
+            rows::draw_nodes(ui, &document.root, 0, &mut context);
         }
         let pressed = context.pressed;
+        // A double-click renames: the toggle of its first click is dropped.
+        if ui.is_mouse_double_clicked(MouseButton::Left) {
+            self.pending_group_click = None;
+        }
         self.start_press(ui, theme, pressed, search.as_ref());
         self.track_drag(ui, theme, style.indent_spacing, document, &mut output);
         // Right-click on an empty spot of the list (M96): create at the end

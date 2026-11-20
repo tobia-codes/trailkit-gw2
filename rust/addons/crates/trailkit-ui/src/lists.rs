@@ -1,9 +1,9 @@
-//! List and tree rows: the list row, the selection bar and the tree arrow
-//! (ROADMAP R134).
+//! List and tree rows (ROADMAP R134, R155): the list row is the one public
+//! row; the selection bar and the tree arrow are its parts.
 
 #[cfg(windows)]
 pub mod list_row;
 #[cfg(windows)]
-pub mod selection_bar;
+pub(crate) mod selection_bar;
 #[cfg(windows)]
-pub mod tree_arrow;
+pub(crate) mod tree_arrow;

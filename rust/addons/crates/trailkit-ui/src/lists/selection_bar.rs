@@ -63,11 +63,11 @@ pub fn hide_square_row_highlight<'ui>(ui: &'ui Ui) -> [ColorStackToken<'ui>; 3] 
 
 /// Draws the hover or selection fill of the row `[min, max]` (screen) of
 /// the last drawn item with `radius.md` corners (R71): `bg.active` while
-/// selected or pressed, `bg.hover` while hovered.
+/// selected or pressed, `bg.hover` while the mouse is on the row itself.
 fn draw_row_highlight_in(ui: &Ui, theme: &Theme, selected: bool, [min, max]: [[f32; 2]; 2]) {
     let color = if selected || ui.is_item_active() {
         theme.surface.active
-    } else if is_item_hovered(ui) {
+    } else if is_row_hovered(ui, [min, max]) {
         theme.surface.hover
     } else {
         return;
@@ -77,6 +77,13 @@ fn draw_row_highlight_in(ui: &Ui, theme: &Theme, selected: bool, [min, max]: [[f
         .filled(true)
         .rounding(theme.radius.medium)
         .build();
+}
+
+/// Whether the mouse is on the row `[min, max]` (screen) of the last drawn
+/// item. A selectable takes hover half the item spacing beyond its row, so
+/// the gap between list rows would belong to a row; it belongs to none.
+pub(crate) fn is_row_hovered(ui: &Ui, [min, max]: [[f32; 2]; 2]) -> bool {
+    is_item_hovered(ui) && ui.is_mouse_hovering_rect(min, max)
 }
 
 /// Draws the state of a row after its item (R71, Q306): the hover, pressed
