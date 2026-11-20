@@ -70,8 +70,14 @@ enum Piece<'a> {
     Icon(Icon, Color),
     /// A run of text.
     Text(&'a str, Color),
-    /// A small filled circle (coin), in this color.
-    Dot(Color),
+    /// A small filled circle (coin) after its amount, `space.xs` from it;
+    /// `before_next` adds `space.sm` before the next amount (R148, Q521).
+    Dot {
+        /// The coin color.
+        color: Color,
+        /// Whether another amount follows in the same chip.
+        before_next: bool,
+    },
 }
 
 /// The icon of a link kind.
@@ -127,16 +133,21 @@ fn for_each_piece(
                 (copper / 100 % 100, theme.coin.silver),
                 (copper % 100, theme.coin.copper),
             ];
-            let mut shown = false;
+            // Zero amounts are left out; zero coins still show "0" copper.
+            let last_shown = parts
+                .iter()
+                .rposition(|(amount, _)| *amount != 0)
+                .unwrap_or(parts.len() - 1);
             for (index, (amount, color)) in parts.into_iter().enumerate() {
-                let is_last = index == parts.len() - 1;
-                if amount == 0 && !(is_last && !shown) {
+                if amount == 0 && index != last_shown {
                     continue;
                 }
                 let mut buffer = [0; 10];
                 visit(Piece::Text(format_number(amount, &mut buffer), primary));
-                visit(Piece::Dot(color));
-                shown = true;
+                visit(Piece::Dot {
+                    color,
+                    before_next: index != last_shown,
+                });
             }
         }
         Ok(link) => {
@@ -178,8 +189,15 @@ fn piece_width(ui: &Ui, piece: &Piece<'_>, theme: &Theme, icons: IconPlacement) 
             ui.calc_text_size(icon.as_str(&mut buffer))[0] * icons.scale + theme.spacing.extra_small
         }
         Piece::Text(text, _) => ui.calc_text_size(text)[0],
-        // A little air before the dot, more after it (before the next amount).
-        Piece::Dot(_) => dot_radius(ui) * 2.0 + theme.spacing.extra_small * 1.5,
+        // A little air before the dot, more after it before the next amount.
+        Piece::Dot { before_next, .. } => {
+            let after = if *before_next {
+                theme.spacing.small
+            } else {
+                0.0
+            };
+            theme.spacing.extra_small + dot_radius(ui) * 2.0 + after
+        }
     }
 }
 
@@ -291,12 +309,12 @@ pub fn draw_chip(
             Piece::Text(text, color) => {
                 draw_list.add_text([x, position[1]], color.to_array(), text);
             }
-            Piece::Dot(color) => {
+            Piece::Dot { color, .. } => {
                 let radius = dot_radius(ui);
                 draw_list
                     .add_circle(
                         [
-                            x + theme.spacing.extra_small / 2.0 + radius,
+                            x + theme.spacing.extra_small + radius,
                             position[1] + height / 2.0,
                         ],
                         radius,
