@@ -203,37 +203,33 @@ pub fn draw_markdown(
     for (index, block) in document.blocks.iter().enumerate() {
         let _id = ui.push_id(i32::try_from(index).unwrap_or(i32::MAX));
         // Items of one list stand close together; every other block boundary
-        // gets the paragraph gap (memo plan M66).
+        // gets the paragraph gap `space.lg`, a heading `space.xl` above it
+        // (memo plan M66, Q530).
         let continues_list = matches!(block, Block::ListItem { .. })
             && index
                 .checked_sub(1)
                 .and_then(|previous| document.blocks.get(previous))
                 .is_some_and(|previous| matches!(previous, Block::ListItem { .. }));
         if index > 0 && !continues_list {
-            ui.dummy([0.0, theme.spacing.small]);
+            let gap = if matches!(block, Block::Heading { .. }) {
+                theme.spacing.extra_large
+            } else {
+                theme.spacing.large
+            };
+            ui.dummy([0.0, gap]);
         }
-        let clicked = draw_block(
-            ui,
-            block,
-            index > 0,
-            layout,
-            theme,
-            chips,
-            highlight.as_deref_mut(),
-        );
+        let clicked = draw_block(ui, block, layout, theme, chips, highlight.as_deref_mut());
         action = action.or(clicked);
     }
     ui.dummy([0.0, 0.0]);
     action.or(draw_link_menu(ui, theme, chips))
 }
 
-/// Draws one `block` on the current line with the document's `layout`;
-/// `follows_block` adds the gap a heading keeps from what is above it.
+/// Draws one `block` on the current line with the document's `layout`.
 /// Returns what the user clicked.
 fn draw_block(
     ui: &Ui,
     block: &Block,
-    follows_block: bool,
     layout: BlockLayout,
     theme: &Theme,
     chips: ChipContext<'_>,
@@ -241,9 +237,6 @@ fn draw_block(
 ) -> Option<MarkdownAction> {
     match block {
         Block::Heading { level, spans } => {
-            if follows_block {
-                ui.dummy([0.0, theme.spacing.small]);
-            }
             let bounds = LineBounds {
                 left: layout.left,
                 right: layout.right,
