@@ -13,6 +13,7 @@ use super::{trash::document_with_trash, *};
 
 mod chip_tooltips;
 mod find_in_note;
+mod indent_guides;
 mod link_dialog;
 mod link_menu;
 mod minimum_width;

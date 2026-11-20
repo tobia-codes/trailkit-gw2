@@ -1,13 +1,15 @@
 //! The one row of every list and tree (ROADMAP R96, R155): the memo note
 //! list, the trash, the help topic list. A full-width selectable with the
-//! rounded hover and selection fill, the selection bar, an optional
-//! chevron, a truncated title with marked search hits, markers and a text
-//! at the right end, and an optional detail line below.
+//! rounded hover and selection fill, the selection bar, indent guides in a
+//! tree (R156), an optional chevron, a truncated title with marked search
+//! hits, markers and a text at the right end, and an optional detail line
+//! below.
 //!
 //! The row draws only through the draw list after its selectable, so the
 //! selectable stays the last item: the caller attaches drag and drop, a
 //! context menu or an inline rename input to it.
 
+mod guides;
 mod markers;
 
 pub use self::markers::RowMarker;
@@ -17,7 +19,7 @@ use std::borrow::Cow;
 
 use nexus::imgui::{Key, MouseButton, Selectable, Ui};
 
-use self::markers::draw_markers;
+use self::{guides::draw_indent_guides, markers::draw_markers};
 use crate::{
     color::Color,
     controls::tooltip::draw_tooltip,
@@ -60,8 +62,9 @@ pub struct ListRow<'text> {
     /// Whether the title is being renamed: it is left out, and the caller
     /// draws its input over [`ListRowResponse::title_rect`].
     pub renaming: bool,
-    /// The depth in a tree; the row's content is indented by ImGui's indent
-    /// spacing per level, its fill spans the full width (memo M144).
+    /// The depth in a tree; the row's content and its fill are indented by
+    /// ImGui's indent spacing per level, with one indent guide per level in
+    /// the indentation (R156). The whole width stays clickable (memo M144).
     pub level: usize,
     /// The chevron before the title.
     pub chevron: RowChevron,
@@ -156,12 +159,13 @@ pub fn draw_list_row(ui: &Ui, theme: &Theme, row: &ListRow<'_>) -> ListRowRespon
     // The selectable's item rect reaches half the item spacing beyond the
     // row, where a list clips; the row state belongs on the row itself.
     let rect = [[left, top], [left + size[0], top + size[1]]];
-    draw_row_state_in(ui, theme, row.selected, rect);
     #[expect(
         clippy::cast_precision_loss,
         reason = "a tree is never deep enough to lose precision"
     )]
     let content_left = left + row.level as f32 * style.indent_spacing;
+    // The fill leaves the indentation with its guides free (R156).
+    draw_row_state_in(ui, theme, row.selected, rect, content_left);
     let is_hovered = is_row_hovered(ui, rect);
     // Content follows ImGui's style alpha, e.g. a dragged row (memo M106);
     // the fill keeps the row's place visible.
@@ -169,6 +173,7 @@ pub fn draw_list_row(ui: &Ui, theme: &Theme, row: &ListRow<'_>) -> ListRowRespon
         theme,
         alpha: style.alpha,
     };
+    draw_indent_guides(ui, &ink, row.level, rect);
     let texts = draw_row_texts(ui, &ink, row, rect, content_left, is_hovered);
     if texts.title_truncated && is_hovered {
         draw_tooltip(ui, theme, row.title);

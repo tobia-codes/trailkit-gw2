@@ -61,13 +61,19 @@ pub fn hide_square_row_highlight<'ui>(ui: &'ui Ui) -> [ColorStackToken<'ui>; 3] 
     ]
 }
 
-/// Draws the hover or selection fill of the row `[min, max]` (screen) of
-/// the last drawn item with `radius.md` corners (R71): `bg.active` while
+/// Draws the hover or selection fill `[min, max]` (screen) of the row `row`
+/// of the last drawn item with `radius.md` corners (R71): `bg.active` while
 /// selected or pressed, `bg.hover` while the mouse is on the row itself.
-fn draw_row_highlight_in(ui: &Ui, theme: &Theme, selected: bool, [min, max]: [[f32; 2]; 2]) {
+fn draw_row_highlight_in(
+    ui: &Ui,
+    theme: &Theme,
+    selected: bool,
+    row: [[f32; 2]; 2],
+    [min, max]: [[f32; 2]; 2],
+) {
     let color = if selected || ui.is_item_active() {
         theme.surface.active
-    } else if is_row_hovered(ui, [min, max]) {
+    } else if is_row_hovered(ui, row) {
         theme.surface.hover
     } else {
         return;
@@ -91,21 +97,26 @@ pub(crate) fn is_row_hovered(ui: &Ui, [min, max]: [[f32; 2]; 2]) -> bool {
 /// row shows its state only through this function. Push [`hide_square_row_highlight`] around the
 /// item itself.
 pub fn draw_row_state(ui: &Ui, theme: &Theme, selected: bool) {
-    draw_row_state_in(
-        ui,
-        theme,
-        selected,
-        [ui.item_rect_min(), ui.item_rect_max()],
-    );
+    let row = [ui.item_rect_min(), ui.item_rect_max()];
+    draw_row_state_in(ui, theme, selected, row, row[0][0]);
 }
 
 /// Like [`draw_row_state`] for the row `[min, max]` (screen) of the last
 /// drawn item, e.g. a selectable, whose item rect reaches half the item
-/// spacing beyond the row on both sides.
-pub fn draw_row_state_in(ui: &Ui, theme: &Theme, selected: bool, row: [[f32; 2]; 2]) {
-    draw_row_highlight_in(ui, theme, selected, row);
+/// spacing beyond the row on both sides. The fill and the selection bar start
+/// at `fill_left`: a row inside a tree leaves its indentation with the indent
+/// guides to its left free (ROADMAP R156); the whole row stays hoverable.
+pub fn draw_row_state_in(
+    ui: &Ui,
+    theme: &Theme,
+    selected: bool,
+    row: [[f32; 2]; 2],
+    fill_left: f32,
+) {
+    let fill = [[fill_left.max(row[0][0]), row[0][1]], row[1]];
+    draw_row_highlight_in(ui, theme, selected, row, fill);
     if selected {
-        draw_selection_bar_in(ui, theme, row);
+        draw_selection_bar_in(ui, theme, fill);
     }
 }
 

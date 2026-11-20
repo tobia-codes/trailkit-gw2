@@ -162,7 +162,8 @@ the next element; `TextField` and `draw_dialog_frame` already follow this.
 ## 6. Selection
 
 The selected row keeps the neutral `bg.active` fill (ImGui `Header`) and gets,
-drawn by `list_row::draw_list_row` (R155),
+drawn by `list_row::draw_list_row` (R155; in a tree fill and bar start at
+the row's indentation, right of the indent guides, R156),
 an `accent` bar `list.selection_bar_width` (3 px) wide with round ends,
 inset `space.sm` (8 px) from the top and bottom of the row,
 on the row's left edge. Hover shows `bg.hover` only, no bar.
