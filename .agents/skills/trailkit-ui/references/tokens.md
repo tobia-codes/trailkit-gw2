@@ -206,6 +206,15 @@ Rules:
    (`text.secondary` at rest, `text.primary` hovered or on); meaningful icons
    use their meaning's color (status, chip category, `accent.text` for check
    marks and active states). Only structure marks are `text.disabled`.
+   **Size and line (R147, Q536, Q537):** every interface icon (buttons,
+   menus, lists, toolbars, status lines, dialogs, task checkboxes, the empty
+   state) has one size, the body size × `font.size.icon` (0.9), set through
+   `FontScope`/`IconSize::Interface`, never per call site; only chips and
+   link icons in running text grow with their line (`IconSize::InlineText`).
+   Lucide fills its square differently per icon on purpose, so icons are
+   never resized one by one. An icon is centered by its visible pixels on the
+   capital middle of the text beside it (`draw_icon_into` takes that line);
+   an icon button is square and exactly as tall as a text button (Q524).
 3. **One empty state (Q283).** `draw_empty_state`: optional icon in
    `text.disabled`, title in `Body`, optional hint in `Secondary`, optional
    buttons with one primary, centered as one block.

@@ -8,5 +8,5 @@ body = { name = "font.size.body", value = 1.0, unit = "body_size", purpose = "Bo
 heading3 = { name = "font.size.heading3", value = 1.15, unit = "body_size", purpose = "Level 3 heading and below" }
 heading2 = { name = "font.size.heading2", value = 1.3, unit = "body_size", purpose = "Level 2 heading" }
 heading1 = { name = "font.size.heading1", value = 1.5, unit = "body_size", purpose = "Level 1 heading" }
-icon = { name = "font.size.icon", value = 0.9, unit = "font_size", purpose = "Icon size as a factor of the font size of the text it accompanies (R147)" }
+icon = { name = "font.size.icon", value = 0.9, unit = "font_size", purpose = "Size of every interface icon as a factor of the body size; icons in running text use their line's font size (R147, Q537)" }
 line_height = { name = "font.line_height", value = 1.5, unit = "font_size", purpose = "Line height of running text" }
