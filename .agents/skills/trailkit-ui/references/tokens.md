@@ -120,7 +120,8 @@ editor's formatting buttons that light up for the formatting at the cursor
   `add_separator_above_text` when text follows, as the empty top of its
   first line counts as part of the gap; where that empty top alone is taller
   than `space.sm`, the text below is pulled up by the difference (a scroll
-  region does it inside itself, so scrolled text stops at the line).
+  region does it inside itself, so scrolled text stops at the line). A single
+  `draw_text` label has no leading: `add_separator_above_label`.
 - Text buttons are at least `button.min_width` × font size wide (M131);
   measure rows with `button_width` / `icon_label_button_width`, never with
   `calc_text_size` + padding, or right-aligned rows drift.
