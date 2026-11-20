@@ -282,6 +282,9 @@ Tests never call live services; tools use committed fixtures. Every command:
   there. The line goes away when the branch is merged.
 - **CI must pass**: formatting, Clippy and tests on Windows, branch name,
   `cargo deny`. Fix failures; never bypass a hook or a check.
+- **Build cache:** after each merge into `develop`, the job `develop-cache`
+  builds once and saves the Rust build cache, so the first CI run of a new
+  branch starts warm (R154). It runs no checks; those ran in the PR.
 
 ## 10. What the maintainer does
 

@@ -3,9 +3,11 @@ name: CI
 
 on:
   pull_request:
-  # PRs into `develop` were already checked; only `main` runs again on push (R70).
+  # PRs into `develop` were already checked; only `main` runs again on push
+  # (R70). A push to `develop` only warms the build cache for new PR
+  # branches, which may read the cache of their base branch (R154).
   push:
-    branches: [main]
+    branches: [main, develop]
 
 permissions:
   contents: read
@@ -20,6 +22,7 @@ env:
 jobs:
   changes:
     name: Detect code changes (R70)
+    if: github.ref != 'refs/heads/develop'
     runs-on: ubuntu-latest
     outputs:
       code: ${{ steps.detect.outputs.code }}
@@ -63,9 +66,12 @@ jobs:
       # rustup is preinstalled; rust-toolchain.toml selects the pinned toolchain.
       - name: Install pinned toolchain
         run: rustup toolchain install # explicit: rustup auto-install is deprecated
+      # One key for this job and `develop-cache`, so a new PR branch restores
+      # the cache `develop` saved (R154).
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: rust
+          shared-key: windows
       - name: Format
         run: cargo fmt --all -- --check
       - name: Clippy
@@ -121,6 +127,7 @@ jobs:
 
   deny:
     name: cargo-deny
+    if: github.ref != 'refs/heads/develop'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -140,3 +147,27 @@ jobs:
           BASE_BRANCH: ${{ github.base_ref }}
         working-directory: rust
         run: cargo xtask check-branch --head "$HEAD_BRANCH" --base "$BASE_BRANCH"
+
+  develop-cache:
+    name: Warm the build cache on develop (R154)
+    # Builds what the Windows job builds, without running anything: the PR
+    # already ran every check, this only saves the cache for the next branch.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: rust
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install pinned toolchain
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+          shared-key: windows
+      - name: Clippy build
+        run: cargo clippy --workspace --all-targets
+      - name: Test build
+        run: cargo test --workspace --no-run
+      - name: Release build
+        run: cargo build --workspace --release --exclude xtask --exclude trailkit-datagen --exclude trailkit-api
