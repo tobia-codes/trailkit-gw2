@@ -12,6 +12,8 @@ use trailkit_ui::{
     drawing::style_scope::StyleScope,
     layout::stack::{Stack, StackLayout},
     text::fonts::FontRole,
+    text::glyph_metrics::glyph_bounds,
+    text::{TextStyle, draw_text},
     theme::{Theme, ThemeKind},
 };
 use trailkit_ui_testing::harness::{FrameInput, UiHarness};
@@ -186,5 +188,31 @@ fn a_separator_above_text_counts_the_empty_top_of_the_line() {
     assert!(
         below < theme.spacing.small,
         "the text's empty top replaces part of the gap, got {below}"
+    );
+}
+
+#[test]
+fn a_separator_above_a_label_keeps_its_capitals_space_sm_away() {
+    let measured = std::cell::Cell::new(None);
+    record(|ui, theme, rects| {
+        Stack::vertical(theme).build(ui, |stack| {
+            add_button(ui, stack, rects, "Above");
+            stack.add_separator_above_label(theme, TextStyle::Secondary);
+            let line_bottom = ui.item_rect_max()[1];
+            stack.add(|| {
+                draw_text(ui, theme, TextStyle::Secondary, "Label");
+                let capital_top = {
+                    let _style = TextStyle::Secondary.push(ui, theme);
+                    glyph_bounds('H').map_or(0.0, |(top, _)| top)
+                };
+                measured.set(Some(ui.item_rect_min()[1] + capital_top - line_bottom));
+            });
+        });
+    });
+    let theme = ThemeKind::Dark.theme();
+    let gap = measured.get().expect("the label was drawn");
+    assert!(
+        (gap - theme.spacing.small).abs() <= 0.5,
+        "capitals {gap} px below the line"
     );
 }

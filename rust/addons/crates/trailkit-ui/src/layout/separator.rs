@@ -23,14 +23,32 @@ pub fn draw_separator(ui: &Ui, theme: &Theme) {
     draw_line(ui, theme);
 }
 
+/// How a text below the divider spaces its lines.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum LineSpacing {
+    /// Running text (Markdown): each line keeps the typography's leading
+    /// above its letters (1.5 × font size line height).
+    Running,
+    /// One label drawn with `draw_text`: ImGui's line, no extra leading.
+    Label,
+}
+
 /// The gap between the line and the top of a text line in `first_line_font`
 /// that puts its capital letters `space.sm` below the line: the empty space
 /// above the letters counts as part of it. Negative when that empty space
 /// alone is taller than `space.sm` (a heading, or body text at 20 px).
-pub(crate) fn gap_above_text(ui: &Ui, theme: &Theme, first_line_font: FontRole) -> f32 {
+pub(crate) fn gap_above_text(
+    ui: &Ui,
+    theme: &Theme,
+    first_line_font: FontRole,
+    spacing: LineSpacing,
+) -> f32 {
     let empty_top = {
         let _font = FontScope::push(ui, first_line_font);
-        let leading = theme.typography.leading_for(ui.current_font_size());
+        let leading = match spacing {
+            LineSpacing::Running => theme.typography.leading_for(ui.current_font_size()),
+            LineSpacing::Label => 0.0,
+        };
         leading + glyph_bounds('H').map_or(0.0, |(top, _)| top)
     };
     theme.spacing.small - empty_top

@@ -12,7 +12,6 @@ use trailkit_ui::{
         ButtonState, draw_icon_button, draw_icon_button_with_state, icon_button_width,
     },
     drawing::draw_list::window_draw_list,
-    layout::separator::draw_separator,
     text::TextStyle,
     text::icons::Icon,
     text::text_layout::body_characters_width,
@@ -67,7 +66,7 @@ pub struct FindBarResponse {
 }
 
 /// Draws the bar over the full available width at the cursor, with
-/// `field` as its input, and leaves the cursor below its divider.
+/// `field` as its input; the caller's stack puts the divider below (R148).
 pub fn draw_find_bar(
     ui: &Ui,
     theme: &Theme,
@@ -151,9 +150,5 @@ pub fn draw_find_bar(
     response.next = draw_icon_button_with_state(ui, theme, Icon::ARROW_DOWN, texts.next, arrows);
     ui.same_line_with_spacing(0.0, gap / 2.0);
     response.close = draw_icon_button(ui, theme, Icon::X, texts.close);
-
-    let spacing = ui.clone_style().item_spacing[1];
-    ui.set_cursor_screen_pos([start[0], row_top + field_height + spacing]);
-    draw_separator(ui, theme);
     response
 }

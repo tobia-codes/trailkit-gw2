@@ -13,7 +13,7 @@ use trailkit_ui::{
         icon_label_button_width,
     },
     controls::menu::place_next_popup,
-    layout::separator::draw_separator,
+    layout::stack::{Stack, StackLayout},
     layout::toolbar::move_to_toolbar_end,
     text::icons::Icon,
     theme::Theme,
@@ -50,10 +50,49 @@ impl MemoWindow {
             return;
         }
         if self.ui_state.compact_note_view && self.editor.is_none() {
-            self.draw_find_bar(ui, language, theme);
-            self.draw_note_body(ui, language, theme);
+            Stack::vertical(theme).build(ui, |stack| {
+                self.add_find_bar(stack, ui, language, theme);
+                stack.add(|| self.draw_note_body(ui, language, theme));
+            });
             return;
         }
+        Stack::vertical(theme).build(ui, |stack| {
+            stack.add(|| self.draw_note_toolbar(ui, language, theme));
+            // Without a note there is no toolbar above that a line could set off.
+            if self.editor.is_some() || self.selected_note().is_some() {
+                stack.add_separator(theme);
+            }
+            // Find in the note sits fixed below the toolbar (M198, variant A).
+            self.add_find_bar(stack, ui, language, theme);
+            stack.add(|| {
+                if self.editor.is_some() {
+                    self.draw_editor(ui, language, theme);
+                } else {
+                    self.draw_note_body(ui, language, theme);
+                }
+            });
+        });
+    }
+
+    /// Adds the find bar to `stack` while it is shown, with the divider below
+    /// it (M198, R148).
+    fn add_find_bar(
+        &mut self,
+        stack: &mut StackLayout<'_>,
+        ui: &Ui,
+        language: Language,
+        theme: &Theme,
+    ) {
+        if !self.find_bar_shown() {
+            return;
+        }
+        stack.add(|| self.draw_find_bar(ui, language, theme));
+        stack.add_separator(theme);
+    }
+
+    /// Draws the note toolbar row: the compact view toggle while viewing, the
+    /// formatting groups while editing, and its right end.
+    fn draw_note_toolbar(&mut self, ui: &Ui, language: Language, theme: &Theme) {
         if self.editor.is_none()
             && self.selected_note().is_some()
             && draw_icon_button(
@@ -80,17 +119,6 @@ impl MemoWindow {
             }
         }
         self.draw_note_toolbar_end(ui, language, theme);
-        // Without a note there is no toolbar above that a line could set off.
-        if self.editor.is_some() || self.selected_note().is_some() {
-            draw_separator(ui, theme);
-        }
-        // Find in the note sits fixed below the toolbar (M198, variant A).
-        self.draw_find_bar(ui, language, theme);
-        if self.editor.is_some() {
-            self.draw_editor(ui, language, theme);
-        } else {
-            self.draw_note_body(ui, language, theme);
-        }
     }
 
     /// Draws the right end of the note toolbar (M51): the edit button while

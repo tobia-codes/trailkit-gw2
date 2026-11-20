@@ -13,7 +13,8 @@
 use nexus::imgui::Ui;
 
 use crate::{
-    layout::separator::{draw_rule, gap_above_text},
+    layout::separator::{LineSpacing, draw_rule, gap_above_text},
+    text::TextStyle,
     text::fonts::FontRole,
     theme::Theme,
 };
@@ -138,9 +139,21 @@ impl StackLayout<'_> {
     /// In debug builds, if the stack is horizontal.
     #[must_use = "the next element pulls its text up by the returned overlap"]
     pub fn add_separator_above_text(&mut self, theme: &Theme, first_line_font: FontRole) -> f32 {
-        let below = gap_above_text(self.ui, theme, first_line_font);
+        let below = gap_above_text(self.ui, theme, first_line_font, LineSpacing::Running);
         self.add_rule(theme, below.max(0.0));
         (-below).max(0.0)
+    }
+
+    /// Adds the divider above a one-line label drawn with `draw_text` in
+    /// `style`, so its capital letters keep `space.sm` from the line; a
+    /// label has no leading, so its empty top is only the font's own.
+    ///
+    /// # Panics
+    ///
+    /// In debug builds, if the stack is horizontal.
+    pub fn add_separator_above_label(&mut self, theme: &Theme, style: TextStyle) {
+        let below = gap_above_text(self.ui, theme, style.font(), LineSpacing::Label);
+        self.add_rule(theme, below);
     }
 
     /// Adds the line `space.sm` after the previous element and makes `below`
