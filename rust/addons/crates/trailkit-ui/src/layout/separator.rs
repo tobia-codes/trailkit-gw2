@@ -33,25 +33,16 @@ pub(crate) enum LineSpacing {
     Label,
 }
 
-/// The gap between the line and the top of a text line in `first_line_font`
-/// that puts its capital letters `space.sm` below the line: the empty space
-/// above the letters counts as part of it. Negative when that empty space
-/// alone is taller than `space.sm` (a heading, or body text at 20 px).
-pub(crate) fn gap_above_text(
-    ui: &Ui,
-    theme: &Theme,
-    first_line_font: FontRole,
-    spacing: LineSpacing,
-) -> f32 {
-    let empty_top = {
-        let _font = FontScope::push(ui, first_line_font);
-        let leading = match spacing {
-            LineSpacing::Running => theme.typography.leading_for(ui.current_font_size()),
-            LineSpacing::Label => 0.0,
-        };
-        leading + glyph_bounds('H').map_or(0.0, |(top, _)| top)
+/// How far below a text line's top its capital letters start in `font`:
+/// the leading of running text (none for a label) plus the font's own empty
+/// space above the capitals.
+pub(crate) fn capital_top(ui: &Ui, theme: &Theme, font: FontRole, spacing: LineSpacing) -> f32 {
+    let _font = FontScope::push(ui, font);
+    let leading = match spacing {
+        LineSpacing::Running => theme.typography.leading_for(ui.current_font_size()),
+        LineSpacing::Label => 0.0,
     };
-    theme.spacing.small - empty_top
+    leading + glyph_bounds('H').map_or(0.0, |(top, _)| top)
 }
 
 /// Draws the line `space.sm` below the last item and leaves the cursor

@@ -13,9 +13,8 @@
 use nexus::imgui::Ui;
 
 use crate::{
-    layout::separator::{LineSpacing, draw_rule, gap_above_text},
+    layout::separator::{LineSpacing, capital_top, draw_rule},
     text::TextStyle,
-    text::fonts::FontRole,
     theme::Theme,
 };
 
@@ -126,22 +125,16 @@ impl StackLayout<'_> {
         self.add_rule(theme, theme.spacing.small);
     }
 
-    /// Adds the divider above running text whose first line uses
-    /// `first_line_font`, so its capital letters keep `space.sm` from the line.
-    ///
-    /// When the empty space above the letters is taller than `space.sm`, the
-    /// next element starts right under the line and the return value is how
-    /// far it must pull its text up; a scroll region does so inside itself,
-    /// so its clip edge stays at the line. Otherwise it returns 0.
+    /// Adds the divider with the next element starting right under the
+    /// line: an element that places its own first line `space.sm` below its
+    /// top edge, such as a scroll region that measures its text inside
+    /// (`layout::page`), so its clip edge stays at the line.
     ///
     /// # Panics
     ///
     /// In debug builds, if the stack is horizontal.
-    #[must_use = "the next element pulls its text up by the returned overlap"]
-    pub fn add_separator_above_text(&mut self, theme: &Theme, first_line_font: FontRole) -> f32 {
-        let below = gap_above_text(self.ui, theme, first_line_font, LineSpacing::Running);
-        self.add_rule(theme, below.max(0.0));
-        (-below).max(0.0)
+    pub fn add_separator_before_region(&mut self, theme: &Theme) {
+        self.add_rule(theme, 0.0);
     }
 
     /// Adds the divider above a one-line label drawn with `draw_text` in
@@ -152,7 +145,8 @@ impl StackLayout<'_> {
     ///
     /// In debug builds, if the stack is horizontal.
     pub fn add_separator_above_label(&mut self, theme: &Theme, style: TextStyle) {
-        let below = gap_above_text(self.ui, theme, style.font(), LineSpacing::Label);
+        let below =
+            theme.spacing.small - capital_top(self.ui, theme, style.font(), LineSpacing::Label);
         self.add_rule(theme, below);
     }
 

@@ -204,7 +204,7 @@ fn piece_width(ui: &Ui, piece: &Piece<'_>, theme: &Theme, icons: IconPlacement) 
 /// How far the chip reaches above and below the text: a sixth of the
 /// leading of running text, so it stays slim (memo plan M82); at least one
 /// pixel.
-fn vertical_padding(ui: &Ui, theme: &Theme) -> f32 {
+pub(crate) fn vertical_padding(ui: &Ui, theme: &Theme) -> f32 {
     (theme.typography.leading_for(ui.current_font_size()) / 6.0).max(1.0)
 }
 

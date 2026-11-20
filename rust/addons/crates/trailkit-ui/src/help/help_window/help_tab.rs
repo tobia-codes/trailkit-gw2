@@ -8,10 +8,10 @@ use nexus::imgui::Ui;
 use super::{HelpWindowState, ParsedHelp, ParsedTopic};
 use crate::{
     chat_link::chat_link_chip::ChipContext,
-    layout::page::{PageHead, draw_page},
+    layout::page::{FirstLine, PageHead, draw_page},
     layout::pane_columns::{FillColumn, FixedColumn, PaneColumns, draw_resizable_pane_columns},
     lists::list_row::{ListRow, draw_list_row},
-    markdown::markdown_view::{MarkdownAction, draw_markdown, first_line_font, open_link},
+    markdown::markdown_view::{MarkdownAction, draw_markdown, open_link},
     text::TextStyle,
     theme::Theme,
 };
@@ -97,7 +97,10 @@ fn draw_topic(ui: &Ui, theme: &Theme, topic: &ParsedTopic, chips: ChipContext<'_
         title: &topic.title,
         trailing: None,
         subtitle: topic.lead.as_deref(),
-        first_line: first_line_font(&topic.document),
+        first_line: FirstLine::Markdown {
+            document: &topic.document,
+            chips,
+        },
     };
     let action = draw_page(ui, theme, "topic_body", head, || {
         draw_markdown(ui, &topic.document, theme, chips, None)

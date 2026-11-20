@@ -7,7 +7,10 @@
 use nexus::imgui::{ChildWindow, Ui};
 
 use crate::{
+    chat_link::chat_link_chip::ChipContext,
+    layout::separator::{LineSpacing, capital_top},
     layout::stack::Stack,
+    markdown::{MarkdownDocument, markdown_view::first_line_ink_top},
     text::fonts::FontRole,
     text::glyph_metrics::capital_middle,
     text::{TextStyle, draw_text, draw_text_wrapped},
@@ -26,8 +29,39 @@ pub struct TitleTrailing<'a> {
     pub draw: &'a mut dyn FnMut(&Ui),
 }
 
-/// What the head of a page shows.
-pub struct PageHead<'a> {
+/// What the first line of a page's content is, so its highest ink keeps
+/// `space.sm` from the divider above (R148).
+#[derive(Clone, Copy)]
+pub enum FirstLine<'a> {
+    /// Running text in this font, with the typography's leading above it.
+    Running(FontRole),
+    /// One label drawn with `draw_text` in this style, without leading.
+    Label(TextStyle),
+    /// A markdown document drawn at the content's top; its first line is
+    /// measured as it will wrap, checkboxes and chips included (Q525).
+    Markdown {
+        /// The document.
+        document: &'a MarkdownDocument,
+        /// The texts its chat-link chips show.
+        chips: ChipContext<'a>,
+    },
+}
+
+impl FirstLine<'_> {
+    /// How far below the top of the content the highest ink of this line
+    /// is; call it where the content will be drawn.
+    fn ink_top(self, ui: &Ui, theme: &Theme) -> f32 {
+        match self {
+            Self::Running(font) => capital_top(ui, theme, font, LineSpacing::Running),
+            Self::Label(style) => capital_top(ui, theme, style.font(), LineSpacing::Label),
+            Self::Markdown { document, chips } => first_line_ink_top(ui, document, theme, chips),
+        }
+    }
+}
+
+/// What the head of a page shows; the first line may borrow from shorter-lived
+/// data than the title widget (`'line`).
+pub struct PageHead<'a, 'line> {
     /// The title, drawn in Heading1.
     pub title: &'a str,
     /// The widget behind the title.
@@ -35,9 +69,8 @@ pub struct PageHead<'a> {
     /// The Secondary line below the title, e.g. a help topic's lead
     /// sentence or the state of a read-only note.
     pub subtitle: Option<&'a str>,
-    /// The font of the content's first line, which sets the gap below the
-    /// separator (R83).
-    pub first_line: FontRole,
+    /// The content's first line, which sets the gap below the separator.
+    pub first_line: FirstLine<'line>,
 }
 
 /// Draws `head`, the separator and then `content` in the borderless scroll
@@ -48,7 +81,7 @@ pub fn draw_page<R>(
     ui: &Ui,
     theme: &Theme,
     id: &str,
-    head: PageHead<'_>,
+    head: PageHead<'_, '_>,
     content: impl FnOnce() -> R,
 ) -> Option<R> {
     Stack::vertical(theme).build(ui, |stack| {
@@ -56,20 +89,19 @@ pub fn draw_page<R>(
         if let Some(subtitle) = head.subtitle {
             stack.add(|| draw_text_wrapped(ui, theme, TextStyle::Secondary, subtitle));
         }
-        let overlap = stack.add_separator_above_text(theme, head.first_line);
+        stack.add_separator_before_region(theme);
         // Only the content scrolls, so its scrollbar starts below the
-        // separator; the region starts at the line and pulls its first line
-        // up by the empty space that is more than the gap, so the capitals
-        // keep `space.sm` and scrolled text stops at the line.
+        // separator. The region starts at the line, so scrolled text stops
+        // there, and moves its first line so that line's highest ink keeps
+        // `space.sm` from the line, measured inside the region at its width.
         stack.add(|| {
             ChildWindow::new(id)
                 .size([0.0, 0.0])
                 .draw_background(false)
                 .build(ui, || {
-                    if overlap > 0.0 {
-                        let [x, y] = ui.cursor_pos();
-                        ui.set_cursor_pos([x, (y - overlap).round()]);
-                    }
+                    let shift = theme.spacing.small - head.first_line.ink_top(ui, theme);
+                    let [x, y] = ui.cursor_pos();
+                    ui.set_cursor_pos([x, (y + shift).round()]);
                     content()
                 })
         })

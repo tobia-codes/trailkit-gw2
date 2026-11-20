@@ -11,7 +11,6 @@ use nexus::imgui::{Condition, Ui, Window};
 use trailkit_ui::{
     drawing::style_scope::StyleScope,
     layout::stack::{Stack, StackLayout},
-    text::fonts::FontRole,
     text::glyph_metrics::glyph_bounds,
     text::{TextStyle, draw_text},
     theme::{Theme, ThemeKind},
@@ -167,27 +166,25 @@ fn a_separator_brings_space_sm_on_both_sides_instead_of_the_gap() {
 }
 
 #[test]
-fn a_separator_above_text_counts_the_empty_top_of_the_line() {
+fn a_separator_before_a_region_lets_it_start_at_the_line() {
     let rects = record(|ui, theme, rects| {
         Stack::vertical(theme).build(ui, |stack| {
             add_button(ui, stack, rects, "Above");
-            let overlap = stack.add_separator_above_text(theme, FontRole::Body);
-            assert!(overlap >= 0.0);
+            stack.add_separator_before_region(theme);
             rects
                 .borrow_mut()
                 .push([ui.item_rect_min(), ui.item_rect_max()]);
-            add_button(ui, stack, rects, "Text");
+            add_button(ui, stack, rects, "Region");
         });
     });
     let theme = ThemeKind::Dark.theme();
-    let [above, line, text] = rects[..] else {
+    let [above, line, region] = rects[..] else {
         panic!("three rectangles, got {rects:?}");
     };
     assert_eq!(line[0][1] - above[1][1], theme.spacing.small);
-    let below = text[0][1] - line[1][1];
-    assert!(
-        below < theme.spacing.small,
-        "the text's empty top replaces part of the gap, got {below}"
+    assert_eq!(
+        region[0][1], line[1][1],
+        "the region starts right under the line"
     );
 }
 
