@@ -7,7 +7,8 @@
 //! above or below itself; the stack alone places it. The divider is the one
 //! exception: [`StackLayout::add_separator`] brings `space.sm` on both sides
 //! in place of the stack's gap. A stack is a group too, so stacks nest: a
-//! stack inside another counts as one element.
+//! stack inside another counts as one element. Every element starts on
+//! whole pixels, so its edges stay sharp.
 
 use nexus::imgui::Ui;
 
@@ -69,7 +70,7 @@ impl Stack {
             let mut layout = StackLayout {
                 ui,
                 stack: self,
-                origin: ui.cursor_screen_pos(),
+                origin: round_position(ui.cursor_screen_pos()),
                 previous_end: None,
                 next_gap: None,
             };
@@ -151,12 +152,20 @@ impl StackLayout<'_> {
 }
 
 /// Where the next element starts: `gap` below the previous one at the
-/// stack's left edge, or `gap` right of it at the stack's top edge.
+/// stack's left edge, or `gap` right of it at the stack's top edge, on whole
+/// pixels.
 fn next_position(axis: Axis, origin: [f32; 2], previous_end: [f32; 2], gap: f32) -> [f32; 2] {
-    match axis {
+    round_position(match axis {
         Axis::Vertical => [origin[0], previous_end[1] + gap],
         Axis::Horizontal => [previous_end[0] + gap, origin[1]],
-    }
+    })
+}
+
+/// `position` rounded to whole pixels: an element starting between two pixel
+/// rows draws its edges blurred across both, and its gaps come out half a
+/// pixel off (in-game test 2026-11-20, a text line of 1.5 × 19 px).
+fn round_position([x, y]: [f32; 2]) -> [f32; 2] {
+    [x.round(), y.round()]
 }
 
 #[cfg(test)]
@@ -175,5 +184,14 @@ mod tests {
             next_position(Axis::Horizontal, origin, end, 4.0),
             [114.0, 20.0]
         );
+    }
+
+    #[test]
+    fn elements_start_on_whole_pixels() {
+        let origin = [10.0, 20.0];
+        let below = |end_y| next_position(Axis::Vertical, origin, [50.0, end_y], 8.0);
+        assert_eq!(below(48.5), [10.0, 57.0]);
+        assert_eq!(below(48.4), [10.0, 56.0]);
+        assert_eq!(round_position([3.6, 7.2]), [4.0, 7.0]);
     }
 }

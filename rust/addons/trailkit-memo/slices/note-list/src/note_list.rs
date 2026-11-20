@@ -24,9 +24,9 @@ use trailkit_memo_shared::{
     row_badge::RowBadge,
 };
 use trailkit_ui::{
-    controls::button::icon_button_width, controls::tooltip::draw_tooltip,
-    layout::separator::draw_separator, text::font_registry::FontScope, text::fonts::FontRole,
-    text::icons::Icon, text::text_search::SearchQuery, theme::Theme,
+    controls::button::icon_button_width, controls::tooltip::draw_tooltip, layout::stack::Stack,
+    text::font_registry::FontScope, text::fonts::FontRole, text::icons::Icon,
+    text::text_search::SearchQuery, theme::Theme,
 };
 
 use self::{
@@ -202,10 +202,10 @@ impl NoteList {
         self.reveal = Some(node);
     }
 
-    /// Draws the "new note" / "new group" buttons and the separator below
-    /// them. Both share the row in equal widths, never narrower than an icon
-    /// button; without room for both they stack (M128). Returns the clicked
-    /// button's action.
+    /// Draws the "new note" / "new group" buttons. Both share the row in
+    /// equal widths, `space.sm` apart, never narrower than an icon button;
+    /// without room for both they stack (M128, R148). Returns the clicked
+    /// button's action; the caller places the divider below.
     pub fn draw_header(ui: &Ui, language: Language, theme: &Theme) -> Option<NoteListAction> {
         let buttons = [
             (
@@ -219,8 +219,7 @@ impl NoteList {
                 NoteListAction::NewGroup(None),
             ),
         ];
-        let spacing = ui.clone_style().item_spacing[0];
-        let row_x = ui.cursor_pos()[0];
+        let spacing = theme.spacing.small;
         let available = ui.content_region_avail()[0];
         let minimum = buttons
             .iter()
@@ -232,29 +231,30 @@ impl NoteList {
         } else {
             available.max(minimum)
         };
+        let stack = if side_by_side {
+            Stack::horizontal(theme)
+        } else {
+            Stack::vertical(theme)
+        };
         let mut clicked_action = None;
-        for (index, (icon, tooltip, action)) in buttons.into_iter().enumerate() {
-            if index > 0 {
-                if side_by_side {
-                    ui.same_line();
-                } else {
-                    ui.set_cursor_pos([row_x, ui.cursor_pos()[1]]);
-                }
+        stack.build(ui, |stack| {
+            for (index, (icon, tooltip, action)) in buttons.into_iter().enumerate() {
+                stack.add(|| {
+                    let _id = ui.push_id(i32::try_from(index).unwrap_or_default());
+                    let clicked = {
+                        let _icons = FontScope::push(ui, FontRole::Icons);
+                        let mut buffer = [0; 4];
+                        ui.button_with_size(icon.as_str(&mut buffer), [width, 0.0])
+                    };
+                    if is_item_hovered(ui) {
+                        draw_tooltip(ui, theme, tooltip.get(language));
+                    }
+                    if clicked {
+                        clicked_action = Some(action);
+                    }
+                });
             }
-            let _id = ui.push_id(i32::try_from(index).unwrap_or_default());
-            let clicked = {
-                let _icons = FontScope::push(ui, FontRole::Icons);
-                let mut buffer = [0; 4];
-                ui.button_with_size(icon.as_str(&mut buffer), [width, 0.0])
-            };
-            if is_item_hovered(ui) {
-                draw_tooltip(ui, theme, tooltip.get(language));
-            }
-            if clicked {
-                clicked_action = Some(action);
-            }
-        }
-        draw_separator(ui, theme);
+        });
         clicked_action
     }
 
