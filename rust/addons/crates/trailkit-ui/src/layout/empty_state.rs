@@ -8,8 +8,7 @@ use nexus::imgui::Ui;
 use crate::{
     controls::button::{button_width, draw_button, draw_primary_button},
     controls::text_field::move_below_last_item,
-    text::font_registry::FontScope,
-    text::fonts::FontRole,
+    text::font_registry::{FontScope, IconSize},
     text::icons::Icon,
     text::text_layout::{centered_text, indent_to_center},
     text::{TextStyle, draw_icon},
@@ -70,12 +69,13 @@ pub fn draw_empty_state(
     // below the texts (R148).
     if let Some(icon) = state.icon {
         let width = {
-            let _icons = FontScope::push(ui, FontRole::Icons);
+            let _icons = FontScope::push_icons(ui, IconSize::Standalone);
             let mut buffer = [0; 4];
             ui.calc_text_size(icon.as_str(&mut buffer))[0]
         };
         indent_to_center(ui, width, available[0]);
-        draw_icon(ui, icon, theme.text.disabled);
+        // It stands alone above the title, so it keeps the text's size (Q535).
+        draw_icon(ui, icon, theme.text.disabled, IconSize::Standalone);
         move_below_last_item(ui, theme.spacing.small);
     }
     draw_centered_paragraph(ui, theme, TextStyle::Body, state.title, available[0]);

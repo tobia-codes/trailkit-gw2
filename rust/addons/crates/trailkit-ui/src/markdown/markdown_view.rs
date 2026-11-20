@@ -23,7 +23,7 @@ use crate::{
     drawing::draw_list::window_draw_list,
     layout::separator::draw_separator,
     markdown::{Block, ListMarker, MarkdownDocument, TaskMarker},
-    text::font_registry::FontScope,
+    text::font_registry::{FontScope, IconSize},
     text::fonts::FontRole,
     text::icons::Icon,
     text::search_hits::HitMark,
@@ -186,7 +186,7 @@ pub fn draw_markdown(
     // The marker column must fit the widest marker (a task box) plus a gap,
     // whatever the font size; otherwise the text touches the checkbox.
     let marker_column = {
-        let _icons = FontScope::push(ui, FontRole::Icons);
+        let _icons = FontScope::push_icons(ui, IconSize::Standalone);
         let mut buffer = [0; 4];
         ui.calc_text_size(Icon::SQUARE.as_str(&mut buffer))[0]
     }
@@ -318,7 +318,8 @@ fn draw_list_marker(
                 Icon::SQUARE
             };
             let mut buffer = [0; 4];
-            let _icons = FontScope::push(ui, FontRole::Icons);
+            // A checkbox is a control, not an icon beside text (Q535).
+            let _icons = FontScope::push_icons(ui, IconSize::Standalone);
             let glyph = icon.as_str(&mut buffer);
             let size = ui.calc_text_size(glyph);
             // Only the box is clickable, the text next to it may hold links
@@ -352,7 +353,7 @@ fn draw_list_marker(
                 theme.text.secondary
             };
             ui.set_cursor_screen_pos([left, text_top]);
-            draw_icon(ui, icon, color);
+            draw_icon(ui, icon, color, IconSize::Standalone);
             clicked.then_some(MarkdownAction::ToggleTask(marker))
         }
     };

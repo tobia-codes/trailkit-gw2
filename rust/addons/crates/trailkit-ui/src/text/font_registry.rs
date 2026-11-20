@@ -70,9 +70,42 @@ pub struct FontScope<'ui> {
     frame: PhantomData<&'ui ()>,
 }
 
+/// How large icons are relative to the current text font (R147).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum IconSize {
+    /// An icon that accompanies text (a button's icon, a menu entry's, a
+    /// status line's): the text's size × `font.size.icon`.
+    WithText,
+    /// An icon that stands alone or is a control itself (the empty state's
+    /// icon, a task checkbox; Q535): the text's full size.
+    Standalone,
+}
+
+impl IconSize {
+    /// The icon size as a factor of the current text font's size.
+    fn factor(self) -> f32 {
+        match self {
+            Self::WithText => crate::theme::Theme::default().typography.icon,
+            Self::Standalone => 1.0,
+        }
+    }
+}
+
 impl<'ui> FontScope<'ui> {
+    /// Pushes the icon font sized for icons of `size` next to the current
+    /// text font, for the lifetime of the returned scope.
+    /// `FontScope::push(ui, FontRole::Icons)` is [`IconSize::WithText`].
+    pub fn push_icons(ui: &'ui Ui, size: IconSize) -> Self {
+        Self::push_with_icon_size(ui, FontRole::Icons, size)
+    }
+
     /// Pushes the font of `role` for the lifetime of the returned scope.
-    pub fn push(_ui: &'ui Ui, role: FontRole) -> Self {
+    pub fn push(ui: &'ui Ui, role: FontRole) -> Self {
+        Self::push_with_icon_size(ui, role, IconSize::WithText)
+    }
+
+    /// Pushes the font of `role`; the icon font is sized for `icon_size`.
+    fn push_with_icon_size(_ui: &'ui Ui, role: FontRole, icon_size: IconSize) -> Self {
         let index = FontRole::ALL
             .iter()
             .position(|candidate| *candidate == role)
@@ -88,7 +121,7 @@ impl<'ui> FontScope<'ui> {
         let restore_scale = if role == FontRole::Icons {
             // SAFETY: during a frame ImGui always has a current font, and
             // `font` is a live font of the same atlas (see below).
-            unsafe { scale_icons_to_current_text(font) }
+            unsafe { scale_icons_to_current_text(font, icon_size.factor()) }
         } else {
             None
         };
@@ -104,7 +137,7 @@ impl<'ui> FontScope<'ui> {
 }
 
 /// Sets the `Scale` of the icon font `icons` so its size is the current
-/// text font's size × `font.size.icon` (R147) and returns the previous
+/// text font's size × `factor` (R147) and returns the previous
 /// scale to restore. Returns `None` and changes nothing while the icon font
 /// itself is current (an icon scope inside another keeps its size).
 ///
@@ -112,7 +145,10 @@ impl<'ui> FontScope<'ui> {
 ///
 /// Must be called during a frame, with `icons` a live font of the current
 /// atlas.
-unsafe fn scale_icons_to_current_text(icons: *mut sys::ImFont) -> Option<(*mut sys::ImFont, f32)> {
+unsafe fn scale_icons_to_current_text(
+    icons: *mut sys::ImFont,
+    factor: f32,
+) -> Option<(*mut sys::ImFont, f32)> {
     // SAFETY: guaranteed by the caller; ImGui returns the current font,
     // which is never null during a frame.
     let current = unsafe { sys::igGetFont() };
@@ -124,7 +160,6 @@ unsafe fn scale_icons_to_current_text(icons: *mut sys::ImFont) -> Option<(*mut s
     // render thread, the only thread that touches ImGui.
     unsafe {
         let text_size = (*current).FontSize * (*current).Scale;
-        let factor = crate::theme::Theme::default().typography.icon;
         let previous = (*icons).Scale;
         if (*icons).FontSize > 0.0 {
             (*icons).Scale = text_size * factor / (*icons).FontSize;
