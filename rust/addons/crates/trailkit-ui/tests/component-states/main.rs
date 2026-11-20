@@ -257,12 +257,12 @@ fn menu_entry_states_match_snapshots() {
     let opening = [12.0, 12.0];
     let row = |offset: f32| [opening[0] + 40.0, opening[1] + offset];
     let states = [
-        ("hover-plain", row(20.0)),
-        ("hover-checked", row(44.0)),
-        ("hover-icon", row(100.0)),
-        ("hover-danger", row(124.0)),
-        ("hover-disabled", row(182.0)),
-        ("submenu-open", row(68.0)),
+        ("hover-plain", row(23.0)),
+        ("hover-checked", row(59.0)),
+        ("hover-icon", row(128.0)),
+        ("hover-danger", row(164.0)),
+        ("hover-disabled", row(200.0)),
+        ("submenu-open", row(95.0)),
     ];
     for (kind, theme_name) in THEMES {
         let theme = kind.theme();
@@ -291,7 +291,7 @@ fn menu_entry_states_match_snapshots() {
         assert_state(
             &mut harness,
             names("pressed"),
-            &mouse(row(20.0), true),
+            &mouse(row(23.0), true),
             &mut draw,
         );
     }
