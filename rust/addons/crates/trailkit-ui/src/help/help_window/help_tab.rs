@@ -13,7 +13,6 @@ use crate::{
     layout::stack::Stack,
     lists::list_row::{ListRow, draw_list_row},
     markdown::markdown_view::{MarkdownAction, draw_markdown, open_link},
-    text::TextStyle,
     theme::Theme,
 };
 
@@ -81,12 +80,8 @@ fn draw_topic_list(ui: &Ui, theme: &Theme, help: &ParsedHelp, selected: usize) -
             for (index, topic) in help.topics.iter().enumerate() {
                 let _id = ui.push_id(i32::try_from(index).unwrap_or(i32::MAX));
                 let row = ListRow {
-                    id: "##topic",
                     selected: index == selected,
-                    title: &topic.title,
-                    title_style: TextStyle::Body,
-                    trailing: None,
-                    detail: None,
+                    ..ListRow::new("##topic", &topic.title)
                 };
                 if stack.add(|| draw_list_row(ui, theme, &row)).clicked {
                     clicked = Some(index);

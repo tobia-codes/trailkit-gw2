@@ -169,9 +169,7 @@ fn draw_entry_row(
         ui,
         theme,
         &ListRow {
-            id: "##entry",
             selected: selected == Some(id),
-            title,
             title_style,
             trailing: count.as_deref(),
             detail: Some(ListRowDetail {
@@ -182,6 +180,7 @@ fn draw_entry_row(
                     theme.text.secondary
                 },
             }),
+            ..ListRow::new("##entry", title)
         },
     );
     let mut action = response.clicked.then_some(TrashAction::Select(id));

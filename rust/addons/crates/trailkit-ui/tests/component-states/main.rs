@@ -470,12 +470,11 @@ fn list_row_states_match_snapshots() {
         let mut draw = |ui: &Ui| {
             in_window(ui, &theme, size, || {
                 let row = |id, selected, title, style, trailing, detail| ListRow {
-                    id,
                     selected,
-                    title,
                     title_style: style,
                     trailing,
                     detail,
+                    ..ListRow::new(id, title)
                 };
                 let days = |text, color| Some(ListRowDetail { text, color });
                 for list_row in [
