@@ -563,6 +563,9 @@ fn list_rows() {
             ..FrameInput::default()
         }],
     );
+    // A new note at the end of a long list scrolls into view with its
+    // rename field (M185).
+    assert_state("new-note-long-list", WIDE, long_list, &click([62.0, 65.0]));
     assert_state(
         "drag-into-group",
         WIDE,

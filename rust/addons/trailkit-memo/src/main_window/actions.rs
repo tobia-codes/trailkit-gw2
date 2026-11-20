@@ -550,7 +550,9 @@ impl MemoWindow {
         })
     }
 
-    /// Puts a just-created note or group into rename mode (M43).
+    /// Puts a just-created note or group into rename mode (M43) and scrolls
+    /// the list so its row sits in the middle, as "Go to note" does (M185):
+    /// in a scrolled list the new row at the end would be out of view.
     pub(super) fn start_rename_of_new(&mut self, node: NodeId, title: &str) {
         // The rename happens in the list, so it must be shown.
         if self.ui_state.note_list_hidden {
@@ -558,6 +560,7 @@ impl MemoWindow {
             self.saver.save_ui_state(&self.ui_state);
         }
         self.note_list.start_rename(node, title.to_owned());
+        self.note_list.reveal(node);
     }
 
     /// Hands a copy of the note tree to the storage worker and marks the
