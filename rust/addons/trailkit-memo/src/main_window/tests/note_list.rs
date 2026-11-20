@@ -97,10 +97,10 @@ fn dragging_a_note_onto_an_expanded_group_moves_it_to_the_end() {
     {
         let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
         // Middle of the expanded "Raids" row = into it, at the end (M205).
-        let image = drag_rows(&mut harness, [100.0, 145.0], [100.0, 216.0], &mut draw_dark);
+        let image = drag_rows(&mut harness, [100.0, 145.0], [100.0, 201.0], &mut draw_dark);
         assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-drag-into-group", &image);
         let release = FrameInput {
-            mouse_position: [100.0, 216.0],
+            mouse_position: [100.0, 201.0],
             ..FrameInput::default()
         };
         harness.settle(2, &release, &mut draw_dark);
@@ -121,9 +121,9 @@ fn dragging_a_note_to_the_bottom_edge_of_an_expanded_group_moves_it_to_the_start
     {
         let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
         // Bottom quarter of the expanded "Raids" row = first place (M205).
-        drag_rows(&mut harness, [100.0, 145.0], [100.0, 222.0], &mut draw_dark);
+        drag_rows(&mut harness, [100.0, 145.0], [100.0, 210.0], &mut draw_dark);
         let release = FrameInput {
-            mouse_position: [100.0, 222.0],
+            mouse_position: [100.0, 210.0],
             ..FrameInput::default()
         };
         harness.settle(2, &release, &mut draw_dark);
