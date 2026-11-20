@@ -378,16 +378,34 @@ impl TextBuffer {
 
 /// A list marker at the start of a line and the marker for the next item.
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct ListMarker {
+pub struct ListMarker {
     /// The marker as written, including indentation and the trailing space.
-    text: String,
+    pub text: String,
     /// The marker for the continued item.
-    next: String,
+    pub next: String,
+}
+
+impl ListMarker {
+    /// Whether this is a numbered marker such as `3. ` (not a bullet or task).
+    #[must_use]
+    pub fn is_numbered(&self) -> bool {
+        self.text
+            .trim_start()
+            .starts_with(|character: char| character.is_ascii_digit())
+    }
+
+    /// The length of the marker's indentation in bytes.
+    #[must_use]
+    pub fn indentation_len(&self) -> usize {
+        self.text.len() - self.text.trim_start().len()
+    }
 }
 
 /// Recognizes a markdown list marker at the start of `line`: indentation,
 /// then `- `, `* ` or `+ ` (optionally followed by a task box) or `N. `.
-fn list_marker(line: &str) -> Option<ListMarker> {
+/// The memo editor's numbered list button reads it too (memo M214).
+#[must_use]
+pub fn list_marker(line: &str) -> Option<ListMarker> {
     let indentation = &line[..line.len() - line.trim_start().len()];
     let rest = &line[indentation.len()..];
     for bullet in ["- ", "* ", "+ "] {

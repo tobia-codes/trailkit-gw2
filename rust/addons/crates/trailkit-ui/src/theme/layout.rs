@@ -1,5 +1,5 @@
-//! Layout tokens: spacing, corner radii and the sizes of lists, panes,
-//! buttons and menus, in pixels at 100 % UI scaling. They are the same
+//! Layout tokens: spacing, corner radii and the sizes of lists, buttons
+//! and menus, in pixels at 100 % UI scaling. They are the same
 //! in every built-in theme.
 
 /// Spacing scale in pixels.
@@ -17,29 +17,13 @@ pub struct Spacing {
     pub extra_large: f32,
 }
 
-/// List layout in pixels.
+/// List layout in pixels; gaps, indents and insets come from the spacing
+/// scale (R148).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ListLayout {
-    /// `list.item_spacing`: vertical gap between rows.
-    pub item_spacing: f32,
-    /// `list.indent`: indentation per tree level.
-    pub indent: f32,
     /// `list.selection_bar_width`: width of the accent bar on the left edge
     /// of the selected row (R71).
     pub selection_bar_width: f32,
-    /// `list.selection_bar_inset`: gap between the bar and the top and
-    /// bottom of its row.
-    pub selection_bar_inset: f32,
-}
-
-/// Pane layout in pixels (content regions inside a window).
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct PaneLayout {
-    /// `pane.padding`: inner padding on every side of a pane; no content
-    /// touches a pane edge (`lay-pane-padding`).
-    pub padding: f32,
-    /// `pane.gap`: space between two neighboring panes (holds the splitter).
-    pub gap: f32,
 }
 
 /// Button layout.
@@ -84,15 +68,10 @@ impl TooltipLayout {
     }
 }
 
-/// Menu layout (memo M177).
+/// Menu layout (memo M177); row paddings and gaps come from the spacing
+/// scale (R148).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct MenuLayout {
-    /// `menu.row_padding_x`: gap between a row's edge and its content.
-    pub row_padding_x: f32,
-    /// `menu.row_padding_y`: gap between a row's edge and its text line.
-    pub row_padding_y: f32,
-    /// `menu.row_gap`: gap between two rows.
-    pub row_gap: f32,
     /// `menu.min_width`: minimum width of a command menu, as a multiple of the
     /// current font size, so it scales with the text size.
     pub min_width: f32,

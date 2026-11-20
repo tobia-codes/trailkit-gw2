@@ -8,6 +8,7 @@ use nexus::imgui::{ChildWindow, Ui};
 use trailkit_ui::controls::tooltip::draw_tooltip_with;
 use trailkit_ui::{
     controls::menu::{begin_submenu, draw_menu_item},
+    layout::stack::Stack,
     text::icons::Icon,
     text::{TextStyle, draw_text},
     theme::Theme,
@@ -52,8 +53,8 @@ impl From<NoteListAction> for WindowAction {
 }
 
 impl MemoWindow {
-    /// Draws the fixed header (search field while shown, M138; toolbar) and
-    /// below it the scrolling tree (M129).
+    /// Draws the fixed header (search field while shown, M138; toolbar), the
+    /// divider and below it the scrolling tree (M129), as one stack (R148).
     pub(in crate::main_window) fn draw_tree_pane(
         &mut self,
         ui: &Ui,
@@ -65,30 +66,37 @@ impl MemoWindow {
             self.draw_trash_column(ui, language, theme);
             return;
         }
-        if self.ui_state.search_visible {
-            let search_texts = SearchFieldTexts {
-                hint: SearchText::SearchHint.get(language),
-                clear: SearchText::ClearSearch.get(language),
-                close: SearchText::CloseSearch.get(language),
-            };
-            let response = self.search_field.draw(ui, theme, search_texts);
-            if response.text_changed {
-                // Apply the new text in this frame already.
-                self.update_search();
+        Stack::vertical(theme).build(ui, |stack| {
+            if self.ui_state.search_visible {
+                stack.add(|| {
+                    let search_texts = SearchFieldTexts {
+                        hint: SearchText::SearchHint.get(language),
+                        clear: SearchText::ClearSearch.get(language),
+                        close: SearchText::CloseSearch.get(language),
+                    };
+                    let response = self.search_field.draw(ui, theme, search_texts);
+                    if response.text_changed {
+                        // Apply the new text in this frame already.
+                        self.update_search();
+                    }
+                    if response.close_clicked {
+                        self.actions.push(WindowAction::HideSearch);
+                    }
+                });
             }
-            if response.close_clicked {
-                self.actions.push(WindowAction::HideSearch);
+            if let Some(action) = stack.add(|| NoteList::draw_header(ui, language, theme)) {
+                self.actions.push(action.into());
             }
-        }
-        if let Some(action) = NoteList::draw_header(ui, language, theme) {
-            self.actions.push(action.into());
-        }
-        // Search field and buttons stay put; only the tree below the
-        // separator scrolls, with its own scrollbar (M129).
-        ChildWindow::new("note_list")
-            .size([0.0, 0.0])
-            .draw_background(false)
-            .build(ui, || self.draw_note_list(ui, language, theme));
+            stack.add_separator(theme);
+            // Search field and buttons stay put; only the tree below the
+            // divider scrolls, with its own scrollbar (M129).
+            stack.add(|| {
+                ChildWindow::new("note_list")
+                    .size([0.0, 0.0])
+                    .draw_background(false)
+                    .build(ui, || self.draw_note_list(ui, language, theme));
+            });
+        });
     }
 
     /// Draws the scrolling part of the note list: the empty search result

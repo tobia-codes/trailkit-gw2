@@ -11,5 +11,6 @@ pub(super) const TYPOGRAPHY: Typography = Typography {
     heading3: 1.15,
     heading2: 1.3,
     heading1: 1.5,
+    icon: 0.9,
     line_height: 1.5,
 };

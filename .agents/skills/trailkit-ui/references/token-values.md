@@ -148,19 +148,7 @@ Addons only.
 
 | Token | Dark | Light | Purpose |
 | --- | --- | --- | --- |
-| `list.item_spacing` | 4 px | 4 px | Gap between rows |
-| `list.indent` | 16 px | 16 px | Indentation per tree level |
 | `list.selection_bar_width` | 3 px | 3 px | Width of the selection bar |
-| `list.selection_bar_inset` | 6 px | 6 px | Gap of the bar to its row's ends |
-
-## Pane
-
-Addons only.
-
-| Token | Dark | Light | Purpose |
-| --- | --- | --- | --- |
-| `pane.padding` | 8 px | 8 px | Inner padding of a pane |
-| `pane.gap` | 8 px | 8 px | Gap between neighboring panes |
 
 ## Button
 
@@ -177,9 +165,6 @@ Addons only.
 
 | Token | Dark | Light | Purpose |
 | --- | --- | --- | --- |
-| `menu.row_padding_x` | 10 px | 10 px | Gap between a menu row's edge and its content |
-| `menu.row_padding_y` | 7 px | 7 px | Gap between a menu row's edge and its text line |
-| `menu.row_gap` | 2 px | 2 px | Gap between two menu rows |
 | `menu.min_width` | 14 × font size | 14 × font size | Minimum width of a command menu |
 
 ## Tooltip
@@ -201,4 +186,5 @@ Addons only.
 | `font.size.heading3` | 1.15 × body size | 1.15 × body size | Level 3 heading and below |
 | `font.size.heading2` | 1.30 × body size | 1.30 × body size | Level 2 heading |
 | `font.size.heading1` | 1.50 × body size | 1.50 × body size | Level 1 heading |
+| `font.size.icon` | 0.9 × font size | 0.9 × font size | Size of every interface icon as a factor of the body size; icons in running text use their line's font size (R147, Q537) |
 | `font.line_height` | 1.5 × font size | 1.5 × font size | Line height of running text |

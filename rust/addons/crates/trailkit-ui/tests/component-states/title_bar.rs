@@ -55,7 +55,7 @@ fn title_bar_states_match_snapshots() {
         );
         for (state_name, position) in [
             ("hover-toggle-off", [28.0, 25.0]),
-            ("hover-toggle-on", [68.0, 25.0]),
+            ("hover-toggle-on", [56.0, 25.0]),
             ("hover-collapse", collapse),
             ("hover-close", [size[0] - 28.0, 25.0]),
         ] {
@@ -93,7 +93,7 @@ fn trailing_toggle_states_match_snapshots() {
         let theme = kind.theme();
         for (state_name, help_open, position) in [
             ("rest", false, [160.0, 100.0]),
-            ("hover", false, [size[0] - 100.0, 25.0]),
+            ("hover", false, [size[0] - 80.0, 25.0]),
             ("active", true, [160.0, 100.0]),
         ] {
             let toggles = [

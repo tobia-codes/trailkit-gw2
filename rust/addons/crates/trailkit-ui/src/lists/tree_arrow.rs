@@ -10,6 +10,7 @@ use nexus::imgui::Ui;
 
 use crate::{
     controls::dropdown::{draw_icon_into, icon_width, packed},
+    text::glyph_metrics::capital_middle,
     text::icons::Icon,
     theme::Theme,
 };
@@ -32,9 +33,11 @@ pub fn draw_tree_arrow(
     };
     let box_size = ui.current_font_size();
     let x = (row_min[0] + frame_padding[0] + (box_size - icon_width(ui)) / 2.0).round();
-    let span = [row_min[1], row_min[1] + ui.frame_height()];
+    // On the capitals of the row's title, drawn at the line top inside the
+    // frame padding (R147).
+    let middle = row_min[1] + frame_padding[1] + capital_middle().unwrap_or(box_size / 2.0);
     // SAFETY: called on the render thread inside a frame, where ImGui has a
     // current window and returns its draw list.
     let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
-    draw_icon_into(draw_list, ui, icon, x, span, packed(theme.text.disabled));
+    draw_icon_into(draw_list, ui, icon, x, middle, packed(theme.text.disabled));
 }

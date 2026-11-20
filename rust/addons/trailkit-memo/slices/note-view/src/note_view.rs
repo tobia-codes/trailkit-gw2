@@ -11,9 +11,8 @@ use trailkit_memo_shared::{
 use trailkit_ui::{
     chat_link::chat_link_chip::ChipContext,
     layout::page::{PageHead, TitleTrailing, draw_page},
-    markdown::markdown_view::{MarkdownAction, SearchHighlight, draw_markdown, first_line_font},
+    markdown::markdown_view::{MarkdownAction, SearchHighlight, draw_markdown},
     markdown::{self, MarkdownDocument},
-    text::fonts::FontRole,
     text::text_search::SearchQuery,
     text::{TextStyle, draw_text_wrapped},
     theme::Theme,
@@ -167,10 +166,6 @@ impl NoteView {
         if editable && ui.is_window_hovered() && ui.is_mouse_double_clicked(MouseButton::Left) {
             output.actions.push(NoteViewAction::StartEditing);
         }
-        let first_line = self
-            .parsed
-            .as_ref()
-            .map_or(FontRole::Body, |parsed| first_line_font(&parsed.document));
         // A read-only note keeps its title role; the info line says its
         // state (Q280, `tokens.md` §7.1 rule 1). Title and separator stay at
         // the top; only the content scrolls (M81).
@@ -178,7 +173,6 @@ impl NoteView {
             title: &note.title,
             trailing: input.title_trailing,
             subtitle: input.read_only.map(|read_only| read_only.subtitle),
-            first_line,
         };
         draw_page(ui, theme, "note_body", head, || {
             self.draw_content(

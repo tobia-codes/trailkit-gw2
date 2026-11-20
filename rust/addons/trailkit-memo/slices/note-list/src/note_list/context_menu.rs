@@ -12,7 +12,7 @@ use trailkit_ui::{
         MenuItemTone, begin_submenu, draw_menu_item, draw_menu_item_with_icon,
         draw_menu_item_with_shortcut, draw_popup,
     },
-    layout::separator::draw_compact_separator,
+    layout::separator::draw_separator,
     text::icons::Icon,
     theme::Theme,
 };
@@ -99,7 +99,7 @@ pub fn draw_note_menu(
     draw_popup(ui, theme, popup_id, || {
         choice.leading =
             draw_menu_item_with_shortcut(ui, theme, leading.icon, leading.label, leading.shortcut);
-        draw_compact_separator(ui, theme);
+        draw_separator(ui, theme);
         choice.rename = draw_entry_menu_items(ui, NodeId::Note(note.id), Some(note), &mut menu);
     });
     choice
@@ -135,7 +135,7 @@ fn draw_entry_menu_items(
     }
     // Only groups offer creating, into themselves (M96, M97).
     if let NodeId::Group(group) = node {
-        draw_compact_separator(ui, theme);
+        draw_separator(ui, theme);
         draw_create_menu_items(
             ui,
             language,
@@ -146,7 +146,7 @@ fn draw_entry_menu_items(
     }
     // Deleting comes last, set off by a separator (M133); the edited note and
     // its groups wait until the editor is left (M141).
-    draw_compact_separator(ui, theme);
+    draw_separator(ui, theme);
     let blocked = blocks_delete(menu.document, node, menu.edited);
     if draw_menu_item_with_icon(
         ui,
@@ -191,7 +191,7 @@ fn draw_move_target_groups(
     current: Option<GroupId>,
     menu: &mut EntryMenu<'_>,
 ) {
-    let indent = menu.theme.list.indent;
+    let indent = menu.theme.spacing.large;
     for child in nodes {
         let Node::Group(group) = child else {
             continue;

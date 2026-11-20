@@ -65,9 +65,9 @@ pub fn draw_resizable_pane_columns(
 ) -> PaneColumnsResponse {
     let available = ui.content_region_avail();
     let character_width = ui.calc_text_size("n")[0];
-    let padding = 2.0 * theme.pane.padding;
+    let padding = 2.0 * theme.spacing.small;
     let width_of = |characters: f32| characters * character_width + padding;
-    let gap = theme.pane.gap;
+    let gap = theme.spacing.small;
     let mut response = PaneColumnsResponse::default();
     let mut remaining = available[0];
     for (index, column) in columns.fixed.iter().enumerate() {

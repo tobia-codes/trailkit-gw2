@@ -5,7 +5,7 @@
 use super::*;
 
 /// Center of the `?` at the minimum width: left of the chevron and the `x`.
-const HELP_BUTTON: [f32; 2] = [MINIMUM_WINDOW[0] - 100.0, 25.0];
+const HELP_BUTTON: [f32; 2] = [MINIMUM_WINDOW[0] - 80.0, 25.0];
 
 #[test]
 fn help_button_states_match_snapshots() {

@@ -111,14 +111,13 @@ editor's formatting buttons that light up for the formatting at the cursor
 - Every window, pane, popup and dialog has the 1 px `border.subtle` outline.
 - Regular buttons and dropdowns have a 1 px `border` frame (R85): their fill
   alone can vanish on `bg.window`. Primary and `danger` fills stand out alone.
-- **Dividers (R83)** come from `separator`, never `ui.separator()`, and have the
-  same gap above and below, measured to the visible content (letters, an icon,
-  a button edge); the fill of a hovered row may come closer:
-  - **Section, `spacing.medium` 12:** `draw_separator` (buttons, fields),
-    `draw_separator_above_rows` (fill of the first row `list.item_spacing` away),
-    `draw_separator_above_text` (the text's own leading counts as gap).
-  - **Compact, `spacing.small` 8:** `draw_compact_separator`, inside a tight
-    group: menus, a rule in a note's body.
+- **Dividers (R83, R148)** come from `separator`, never `ui.separator()`. There
+  is one divider: a fixed `space.sm` above and below, measured to the edge of
+  its neighbors' boxes: a button or field edge, the fill of a list row (a
+  hovered or selected row sits 8 px under the line), and for text the top of
+  its line box, as in CSS (Q528), so the empty space above the letters adds
+  to the gap. It is the one element that brings its own space: in a `Stack`
+  it replaces the stack's gap (`StackLayout::add_separator`).
 - Text buttons are at least `button.min_width` × font size wide (M131);
   measure rows with `button_width` / `icon_label_button_width`, never with
   `calc_text_size` + padding, or right-aligned rows drift.
@@ -129,6 +128,21 @@ editor's formatting buttons that light up for the formatting at the cursor
 - Lines (separators, outlines) sit on whole pixels: a 1 px line drawn
   between two pixel rows blurs into a soft 2 px band. `draw_separator`
   snaps; custom-drawn lines must do the same.
+- **One spacing scale (R148).** Every gap, inner padding and indent is a
+  `space.*` step (4, 8, 12, 16, 24 px), nothing below 4 px; components get no
+  spacing tokens of their own. List and menu rows are `space.xs` apart, menu
+  rows padded `space.sm`, panes padded and separated by `space.sm`, the
+  selection bar inset `space.sm`, a tree level indented `space.lg`. Line
+  widths, the selection bar width, radii and the shadow offset are no spacing.
+  Elements are placed by `layout::stack::Stack` (vertical or horizontal, one
+  gap, default `space.sm`, measured between visible edges); no element adds
+  space above or below itself, and list and menu rows are a stack with
+  `space.xs`. Hand offsets (`dummy`, `set_cursor_pos`, gaps minus
+  `item_spacing`) are being migrated to it (R148 step 4).
+  The gap between an icon and its label in a button and a chip's side padding
+  are `space.sm`. Two sizes follow a line's or bar's height instead and stay
+  relative (Q520): a chat-link chip reaches leading ÷ 6 above and below its
+  text (M82), and the toolbar divider is inset 20 % of the bar's height.
 
 ### 5.1 Forms and dialogs (R144)
 
@@ -151,7 +165,7 @@ the next element; `TextField` and `draw_dialog_frame` already follow this.
 The selected row keeps the neutral `bg.active` fill (ImGui `Header`) and gets
 `selection_bar::draw_selection_bar` right after its tree node or selectable:
 an `accent` bar `list.selection_bar_width` (3 px) wide with round ends,
-inset `list.selection_bar_inset` (6 px) from the top and bottom of the row,
+inset `space.sm` (8 px) from the top and bottom of the row,
 on the row's left edge. Hover shows `bg.hover` only, no bar.
 
 ## 7. Typography
@@ -171,8 +185,8 @@ every addon.
 | Role | Examples | Style |
 | --- | --- | --- |
 | Object or page title | note title, group title in the trash preview | `Heading1` (`text.primary`) |
-| Section | settings or help sections | `Heading2` (`text.primary`) |
-| Subsection, dialog title | "Delete permanently?" | `Heading3` (`text.primary`) |
+| Section, dialog title | settings or help sections, "Delete permanently?" (R150) | `Heading2` (`text.primary`) |
+| Subsection | `###` headings in a note or help page | `Heading3` (`text.primary`) |
 | Content, empty-state title | note body, "No notes yet" | `Body` (`text.primary`) |
 | Form field label | "Address" above its input | `Label` (bold, `text.primary`, R139) |
 | Emphasis | group name in a list | `BodyStrong` (`text.primary`) |
@@ -192,6 +206,15 @@ Rules:
    (`text.secondary` at rest, `text.primary` hovered or on); meaningful icons
    use their meaning's color (status, chip category, `accent.text` for check
    marks and active states). Only structure marks are `text.disabled`.
+   **Size and line (R147, Q536, Q537):** every interface icon (buttons,
+   menus, lists, toolbars, status lines, dialogs, task checkboxes, the empty
+   state) has one size, the body size × `font.size.icon` (0.9), set through
+   `FontScope`/`IconSize::Interface`, never per call site; only chips and
+   link icons in running text grow with their line (`IconSize::InlineText`).
+   Lucide fills its square differently per icon on purpose, so icons are
+   never resized one by one. An icon is centered by its visible pixels on the
+   capital middle of the text beside it (`draw_icon_into` takes that line);
+   an icon button is square and exactly as tall as a text button (Q524).
 3. **One empty state (Q283).** `draw_empty_state`: optional icon in
    `text.disabled`, title in `Body`, optional hint in `Secondary`, optional
    buttons with one primary, centered as one block.

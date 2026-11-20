@@ -1,17 +1,10 @@
 # Layout of the shared addon components in pixels, or as a factor of the
-# font size where `unit = "font_size"` (ROADMAP R118 `[addon]`).
+# font size where `unit = "font_size"` (ROADMAP R118 `[addon]`). Gaps and
+# paddings come from the spacing scale in `spacing.toml`, never from here (R148).
 
 [addon.list]
 title = "List"
-item_spacing = { name = "list.item_spacing", value = 4.0, purpose = "Gap between rows" }
-indent = { name = "list.indent", value = 16.0, purpose = "Indentation per tree level" }
 selection_bar_width = { name = "list.selection_bar_width", value = 3.0, purpose = "Width of the selection bar" }
-selection_bar_inset = { name = "list.selection_bar_inset", value = 6.0, purpose = "Gap of the bar to its row's ends" }
-
-[addon.pane]
-title = "Pane"
-padding = { name = "pane.padding", value = 8.0, purpose = "Inner padding of a pane" }
-gap = { name = "pane.gap", value = 8.0, purpose = "Gap between neighboring panes" }
 
 [addon.button]
 title = "Button"
@@ -20,9 +13,6 @@ dropdown_max_width = { name = "button.dropdown_max_width", value = 16.0, unit = 
 
 [addon.menu]
 title = "Menu"
-row_padding_x = { name = "menu.row_padding_x", value = 10.0, purpose = "Gap between a menu row's edge and its content" }
-row_padding_y = { name = "menu.row_padding_y", value = 7.0, purpose = "Gap between a menu row's edge and its text line" }
-row_gap = { name = "menu.row_gap", value = 2.0, purpose = "Gap between two menu rows" }
 min_width = { name = "menu.min_width", value = 14.0, unit = "font_size", purpose = "Minimum width of a command menu" }
 
 [addon.tooltip]

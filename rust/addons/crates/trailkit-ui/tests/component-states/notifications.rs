@@ -6,6 +6,7 @@ use trailkit_ui::{
     feedback::toast::{
         Toast, ToastAction, ToastExtras, ToastTone, draw_toast, draw_toast_with_extras,
     },
+    layout::stack::Stack,
 };
 
 use super::*;
@@ -240,34 +241,43 @@ fn status_card_states_match_snapshots() {
         ];
         let mut draw = |ui: &Ui| {
             in_window(ui, &theme, size, || {
-                draw_status_card(
-                    ui,
-                    &theme,
-                    &StatusCard {
-                        status: CardStatus::Danger,
-                        text: "Your notes could not be loaded. The damaged file was kept as:",
-                        detail: Some(CardDetail {
-                            text: "backups/notes.corrupt.json",
-                            style: TextStyle::Body,
-                        }),
-                        buttons: &buttons,
-                        close_tooltip: Some("Close"),
-                    },
-                );
-                draw_status_card(
-                    ui,
-                    &theme,
-                    &StatusCard {
-                        status: CardStatus::Warning,
-                        text: "Unsaved changes from 11/01/2026, 08:00",
-                        detail: Some(CardDetail {
-                            text: "The note was changed since.",
-                            style: TextStyle::Secondary,
-                        }),
-                        buttons: &wide_buttons,
-                        close_tooltip: None,
-                    },
-                );
+                // Spaced like memo places its cards (R148).
+                Stack::vertical(&theme)
+                    .gap(theme.spacing.medium)
+                    .build(ui, |stack| {
+                        stack.add(|| {
+                            draw_status_card(
+                                ui,
+                                &theme,
+                                &StatusCard {
+                                    status: CardStatus::Danger,
+                                    text: "Your notes could not be loaded. The damaged file was kept as:",
+                                    detail: Some(CardDetail {
+                                        text: "backups/notes.corrupt.json",
+                                        style: TextStyle::Body,
+                                    }),
+                                    buttons: &buttons,
+                                    close_tooltip: Some("Close"),
+                                },
+                            );
+                        });
+                        stack.add(|| {
+                            draw_status_card(
+                                ui,
+                                &theme,
+                                &StatusCard {
+                                    status: CardStatus::Warning,
+                                    text: "Unsaved changes from 11/01/2026, 08:00",
+                                    detail: Some(CardDetail {
+                                        text: "The note was changed since.",
+                                        style: TextStyle::Secondary,
+                                    }),
+                                    buttons: &wide_buttons,
+                                    close_tooltip: None,
+                                },
+                            );
+                        });
+                    });
             });
         };
         for (state, input) in [

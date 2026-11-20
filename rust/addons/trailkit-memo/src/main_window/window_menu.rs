@@ -7,7 +7,7 @@ use trailkit_ui::drawing::draw_list::window_draw_list;
 use trailkit_ui::{
     feedback::backdrop::{Backdrop, BackdropArea},
     layout::pane::draw_pane,
-    layout::separator::draw_compact_separator,
+    layout::separator::draw_separator,
     lists::selection_bar::draw_row_state,
     text::font_registry::FontScope,
     text::fonts::FontRole,
@@ -117,11 +117,13 @@ impl MemoWindow {
                     let width = window_menu_width(ui, theme, &rows)
                         .min(size[0] * WINDOW_MENU_MAXIMUM_FRACTION);
                     draw_pane(ui, theme, "window_menu", [width, 0.0], || {
-                        let _spacing = ui
-                            .push_style_var(StyleVar::ItemSpacing([0.0, theme.list.item_spacing]));
+                        let _spacing = ui.push_style_var(StyleVar::ItemSpacing([
+                            0.0,
+                            theme.spacing.extra_small,
+                        ]));
                         for row in &rows {
                             if row.separated {
-                                draw_compact_separator(ui, theme);
+                                draw_separator(ui, theme);
                             }
                             if draw_window_menu_row(ui, theme, row) {
                                 chosen = Some(row.action.clone());
@@ -157,7 +159,7 @@ fn window_menu_width(ui: &Ui, theme: &Theme, rows: &[WindowMenuRow]) -> f32 {
         })
         .fold(0.0, f32::max);
     let minimum = ui.calc_text_size("n")[0] * WINDOW_MENU_MINIMUM_CHARACTERS;
-    (widest_row + icon_square_side(ui) + 3.0 * gap + 2.0 * theme.pane.padding).max(minimum)
+    (widest_row + icon_square_side(ui) + 3.0 * gap + 2.0 * theme.spacing.small).max(minimum)
 }
 
 /// Draws one row over the available width: icon, label and the shortcut at its

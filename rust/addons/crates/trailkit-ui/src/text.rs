@@ -171,8 +171,8 @@ pub fn draw_truncated_text(
     truncated
 }
 
-/// Draws `icon` at body size in `color` as one item (R96, Q268). The color
-/// follows the icon's role (`tokens.md` §7.1 rule 2).
+/// Draws `icon` in `color` at the interface icon size as one item (R96,
+/// Q268, R147). The color follows the icon's role (`tokens.md` §7.1 rule 2).
 #[cfg(windows)]
 pub fn draw_icon(ui: &Ui, icon: Icon, color: Color) {
     let _icons = FontScope::push(ui, FontRole::Icons);

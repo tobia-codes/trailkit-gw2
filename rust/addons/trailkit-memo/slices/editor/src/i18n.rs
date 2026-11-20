@@ -18,6 +18,8 @@ pub enum EditorText {
     FormatItalic,
     /// Tooltip of the bulleted list button (M53).
     FormatBulletList,
+    /// Tooltip of the numbered list button (M214).
+    FormatNumberedList,
     /// Tooltip of the checkbox button (M53).
     FormatCheckbox,
     /// Tooltip of the link button (M53).
@@ -58,6 +60,7 @@ impl LocalizedText for EditorText {
         Self::FormatBold,
         Self::FormatItalic,
         Self::FormatBulletList,
+        Self::FormatNumberedList,
         Self::FormatCheckbox,
         Self::FormatLink,
         Self::InsertEventRequiresCore,
@@ -112,6 +115,8 @@ impl LocalizedText for EditorText {
             (Self::FormatItalic, Language::German) => "Kursiv (Strg+I)",
             (Self::FormatBulletList, Language::English) => "Bulleted list",
             (Self::FormatBulletList, Language::German) => "Aufzählung",
+            (Self::FormatNumberedList, Language::English) => "Numbered list",
+            (Self::FormatNumberedList, Language::German) => "Nummerierte Liste",
             (Self::FormatCheckbox, Language::English) => "Checkbox",
             (Self::FormatCheckbox, Language::German) => "Checkbox",
             (Self::FormatLink, Language::English) => "Link",

@@ -26,6 +26,7 @@ use trailkit_ui::{
     feedback::toast::Toast,
     help::help_window::{HelpTab, HelpWindowState},
     layout::pane::draw_pane,
+    layout::stack::Stack,
     layout::title_bar::{TitleBarTexts, TitleBarToggle, TogglePlacement},
     text::font_registry::FontScope,
     text::fonts::FontRole,
@@ -308,15 +309,24 @@ impl MemoWindow {
         self.handle_search_keys(ui);
         self.update_search();
         self.update_text_scale(ui, language, theme);
-        self.draw_problem(ui, language, theme);
         self.collect_unsaved_notes();
-        self.draw_draft_overview(ui, language, theme);
-
         // Only a list that is drawn claims the key again below.
         self.note_list_takes_delete_key = false;
-        let content_start = ui.cursor_screen_pos();
-        let content_size = ui.content_region_avail();
-        self.draw_content(ui, language, theme);
+        // The cards above the panes keep `space.md` from them (R148); a card
+        // that is not shown takes no gap.
+        let (content_start, content_size) =
+            Stack::vertical(theme)
+                .gap(theme.spacing.medium)
+                .build(ui, |stack| {
+                    stack.add(|| self.draw_problem(ui, language, theme));
+                    stack.add(|| self.draw_draft_overview(ui, language, theme));
+                    stack.add(|| {
+                        let content_start = ui.cursor_screen_pos();
+                        let content_size = ui.content_region_avail();
+                        self.draw_content(ui, language, theme);
+                        (content_start, content_size)
+                    })
+                });
         self.draw_window_menu(ui, language, theme, content_start, content_size);
         // Last, so it lies above the content and the menu (M148).
         self.draw_toast_message(ui, language, theme);

@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-19 (session 47, PC; faster CI R151, coverage scope R152, shortcut fixes, dialog width R153). Current state and next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
+Last updated: 2026-11-20 (session 49, PC; layout branch and new-row bugfix merged; R148 spacing scale and Stack, R147 icon sizes, R155 help contents decided). Current state and next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
 
@@ -9,7 +9,6 @@ Last updated: 2026-11-19 (session 47, PC; faster CI R151, coverage scope R152, s
 - Decisions: `addons/trailkit-memo.md`, `ROADMAP.md`. Appearance: trailkit-ui `current-design.md`; review: tokens.md §10.
 
 ## ▶ Resume here
-
 
 **First, if [`in-game-tests.md`](in-game-tests.md) lists tests, ask the user: can you test in game now?** Remove each item once
 the user confirms it (user requests 2026-11-13, 2026-11-16); an empty list means no question. A failed test becomes a `bugfix/` branch.
@@ -27,10 +26,11 @@ log export active (click re-checks, then the info), event button **hidden** unti
 **Sessions 44–46 (2026-11-18/19), merged via PR #152:** memo data model M201–M204, drop zones, Backspace on markers/links, link dialog, bare links/e-mails, right-click menu (M205–M211),
 R139–R146 (TextField, no disabled buttons, dialog close icon, wrapped tooltips, link icons, measured form spacing, shared `Dialog`/`Backdrop`, report reuse), M213 text size percent, R149 one link underline. All in-game tests passed except the two below.
 **Done 2026-11-19 (PR of `bugfix/memo-shortcut-keys`):** memo catches Ctrl+Z/Y/Shift+Z, Ctrl+0 (number pad too) and Enter in dialogs; dialogs at most 20 font sizes wide (R153); editor toolbar flush with the title; CI 13 → ~4 min (R151, PR #154).
-**Active work branch: `feature/ui-layout-rules`** (2026-11-20, local commits, nothing approved yet; `git switch feature/ui-layout-rules`).
-Done on it (commit `ea55211`, 98 snapshots changed, all tests green, in game OK 2026-11-20; snapshots still to show with the R87 renders): M214 numbered list button (shared `trailkit_ui::editor::buffer::list_marker`), R150 dialog titles `Heading2`, dropdown list `space.xs` below its field.
-Next on it, in order: **R148** 1. tokens: `list.item_spacing`, `menu.row_gap` → `space.xs`; `pane.gap`, `pane.padding`, `menu.row_padding_x/_y`, `list.selection_bar_inset` → `space.sm`; `list.indent` → `space.lg`; remove the component spacing tokens and use `theme.spacing.*` (`design/tokens/components.toml`, `cargo xtask tokens`). 2. `Stack` helper in `trailkit-ui` (vertical/horizontal, one gap, default `space.sm`, visible edges as R144). 3. One divider replacing `layout/separator.rs`'s four variants (`space.sm` above and below to visible edges; to the row fill under a list; keep a text-aware form for text below). 4. Migrate the hand offsets (note list: search field → buttons 7 px, buttons → divider 12 px, divider → first row 4 px). **R147**: token factor 0.78 (`typography.toml`), the icon font registered at `Heading1` × 0.78 and drawn scaled, one shared icon component taking a `TextStyle`, centered on the role's capital middle, then all 24 `FontRole::Icons` sites; chips 0.85 → 0.78. Then real before/after renders (note list, note view, a dialog; Dark/Light, minimum width, German) as an artifact for the R87 OK, `tokens.md` §5/§10 review, deploy, in-game test, merge OK.
-Also open: length hint `draw_spans` (`inline_text.rs`, 80 lines) for the split grilling; one unreproduced debug crash `imgui.h:1629` while deleting in a link label (if it recurs: Ignore, note cursor placement, key, preview, tooltip).
+**Merged 2026-11-20 (user OK, PRs of `feature/ui-layout-rules` and `bugfix/memo-reveal-new-row`):** M214, R150, dropdown gap; **R148** one spacing scale, `layout::stack::Stack`, one divider (Q528), ImGui `ItemSpacing` 0 (Q529), markdown block gaps (Q530); **R147** one interface icon size (Q536, Q537), icons on the capital middle, square icon buttons (Q523, Q524); note list header buttons on the shared `Button` (mock https://claude.ai/artifact/DuZrXXZKQP7fNZBLEfEtuL); twelve snapshot states that missed their element after the layout change fixed; a new note or group scrolls into view (M185 reveal). All tested in game. Side note: the text field error wraps inside "example.com".
+**Next (R155, Q531–Q534, order fixed):** a. unify menu entries: one `MenuItem` + `draw_menu_item` (icon, shortcut, check, tone, selected), memo's window menu rows use it; b. unify list rows: only `draw_list_row` (level,
+chevron, markers, title marks, renaming), the memo note list moves off `TreeNode`, pixel-identical; row state, chevron and selection bar become `pub(crate)`; c. the help table of contents (sections of the selected topic, click scrolls), R87
+mock first. Also open: length hints for split grilling: `draw_spans` (`inline_text.rs`, 80), `states.rs` tests (819), `editor.rs` (481), `dialogs.rs` (403), `buffer.rs` (413); one unreproduced debug crash `imgui.h:1629` while deleting in a
+link label (if it recurs: Ignore, note cursor placement, key, preview, tooltip).
 **Next: data pipeline** (`rust/tools/trailkit-datagen`): the failing GemExchange job below (review item 3 done, D42); no more datagen unit tests, the backend tests cover it later (R152). Coverage 2026-11-18 before #146: addons 89 % of lines, memo app 70 %, datagen 52 %.
 **Then test gaps:** extract and test the Escape/close logic of `nexus_bridge/render.rs` like `key_routing.rs`; window actions (new group, format, preview, compact view, open folder, clear search); Ctrl+Y/Ctrl+Shift+Z keys. `xtask` last. Prove new tests with injected faults.
 **Coverage tooling (R152, option A):** build `cargo xtask coverage` from the manual steps below and document it in agent-reference/CONTRIBUTING. **Coverage on demand, not in CI** (`llvm-tools` installed): `RUSTFLAGS="-C instrument-coverage" CARGO_TARGET_DIR=target/coverage cargo xwin test --no-run`, run each binary from its crate with `LLVM_PROFILE_FILE`/`TRAILKIT_SNAPSHOT_ROOT` via `WSLENV` (`/p`), `llvm-profdata merge`, `llvm-cov export`; then delete `rust/*.profraw` and the 2.8 GB build.
@@ -55,7 +55,7 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M215+, R155+, B46+, BL27+, questions from 518**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M215+, R156+, B46+, BL27+, questions from 538**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
 4. **Search cache:** `rust/addons/trailkit-memo/src/main_window/search.rs::update_search` calls `SearchQuery::parse` before checking the

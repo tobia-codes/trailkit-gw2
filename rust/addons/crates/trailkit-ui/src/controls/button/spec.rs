@@ -15,6 +15,7 @@ use nexus::imgui::{ImColor32, StyleColor, Ui};
 
 use super::{
     button_width, draw_label, icon_label_button_width, icon_label_content_width, icon_label_gap,
+    label_capital_middle,
 };
 use crate::{
     color::Color,
@@ -85,7 +86,8 @@ impl BusyState {
 /// an optional width.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Button<'text> {
-    /// The label.
+    /// The label; empty for an icon-only button, whose caller names it in
+    /// a tooltip and gives it an ID scope.
     pub label: &'text str,
     /// How it looks while it can be used.
     pub kind: ButtonKind,
@@ -150,6 +152,17 @@ impl<'text> Button<'text> {
         self.icon.is_some() || matches!(self.state, ButtonState::Busy)
     }
 
+    /// The gap between the leading part and the label: none for an icon
+    /// button without a label, e.g. the note list's "New note" (its tooltip
+    /// names it).
+    fn leading_gap(&self, theme: &Theme) -> f32 {
+        if self.label.is_empty() {
+            0.0
+        } else {
+            icon_label_gap(theme)
+        }
+    }
+
     /// The width the button takes.
     #[must_use]
     pub fn measure(&self, ui: &Ui, theme: &Theme) -> f32 {
@@ -175,7 +188,9 @@ impl<'text> Button<'text> {
                 ui.push_style_color(StyleColor::ButtonActive, colors.pressed.to_array()),
             ];
             // The label is the ID only; ImGui draws the frame, the label follows.
-            let _id = ui.push_id(self.label);
+            // ImGui reads an empty ID string up to a NUL byte that a Rust
+            // `&str` lacks, so an icon-only button keeps its caller's ID scope.
+            let _id = (!self.label.is_empty()).then(|| ui.push_id(self.label));
             ui.button_with_size("##button", size)
         } else {
             // Busy or disabled: no ImGui button at all, so nothing hovers,
@@ -220,7 +235,7 @@ impl<'text> Button<'text> {
         // is larger than the content (M131).
         let content_width = self.content_width(ui, theme);
         let mut x = (min[0] + (max[0] - min[0] - content_width) / 2.0).round();
-        let icon_advance = icon_width(ui) + icon_label_gap(theme);
+        let icon_advance = icon_width(ui) + self.leading_gap(theme);
         // SAFETY: called on the render thread inside a frame, where ImGui has
         // a current window and returns its draw list.
         let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
@@ -232,7 +247,9 @@ impl<'text> Button<'text> {
                     label,
                 );
             }
-            (_, Some(icon)) => draw_icon_into(draw_list, ui, icon, x, span, packed),
+            (_, Some(icon)) => {
+                draw_icon_into(draw_list, ui, icon, x, label_capital_middle(span), packed);
+            }
             (_, None) => {}
         }
         if self.has_leading() {
@@ -244,7 +261,9 @@ impl<'text> Button<'text> {
     /// The width of the leading icon or spinner and the label with their gap,
     /// without padding.
     fn content_width(&self, ui: &Ui, theme: &Theme) -> f32 {
-        if self.has_leading() {
+        if self.has_leading() && self.label.is_empty() {
+            icon_width(ui)
+        } else if self.has_leading() {
             icon_label_content_width(ui, theme, self.label)
         } else {
             ui.calc_text_size(self.label)[0]
