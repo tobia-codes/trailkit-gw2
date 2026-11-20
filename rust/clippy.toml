@@ -8,6 +8,8 @@ allow-expect-in-tests = true
 disallowed-methods = [
     { path = "nexus::imgui::Ui::tooltip_text", reason = "use trailkit_ui::controls::tooltip::draw_tooltip, which centers the text (M171)" },
     { path = "nexus::imgui::Ui::tooltip", reason = "use trailkit_ui::controls::tooltip::draw_tooltip_with, which centers the text (M171)" },
+    { path = "nexus::imgui::Ui::is_item_hovered", reason = "true under an overlay child of the same window (ImGui 1.80 compares root windows); use trailkit_ui::controls::hover::is_item_hovered" },
+    { path = "nexus::imgui::Ui::is_item_hovered_with_flags", reason = "true under an overlay child of the same window (ImGui 1.80 compares root windows); use trailkit_ui::controls::hover::is_item_hovered_with_flags" },
     { path = "nexus::imgui::Ui::get_window_draw_list", reason = "panics while a caller holds the window's DrawListMut and crashed the game; use trailkit_ui::drawing::draw_list::window_draw_list (R104, Q355)" },
     { path = "nexus::imgui::sys::igSetWindowFocus_Nil", reason = "changing the focus mid-frame crashed the game in ItemAdd; let ImGui focus at the end of the frame (nexus-addon-dev skill §2.9, R104 Q355)" },
     { path = "nexus::imgui::sys::igSetWindowFocus_Str", reason = "changing the focus mid-frame crashed the game in ItemAdd; let ImGui focus at the end of the frame (nexus-addon-dev skill §2.9, R104 Q355)" },

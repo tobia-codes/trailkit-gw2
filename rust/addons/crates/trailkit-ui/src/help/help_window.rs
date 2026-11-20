@@ -17,6 +17,7 @@
 mod help_tab;
 mod problem_tab;
 
+use crate::controls::hover::is_item_hovered;
 use crate::drawing::draw_list::window_draw_list;
 use nexus::imgui::{Condition, Ui, Window};
 
@@ -407,7 +408,7 @@ fn draw_tab(ui: &Ui, theme: &Theme, label: &str, shown: bool) -> bool {
     let [min, max] = [ui.item_rect_min(), ui.item_rect_max()];
     let fill = if shown || ui.is_item_active() {
         Some(theme.surface.active)
-    } else if ui.is_item_hovered() {
+    } else if is_item_hovered(ui) {
         Some(theme.surface.hover)
     } else {
         None

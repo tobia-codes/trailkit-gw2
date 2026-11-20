@@ -7,6 +7,7 @@
 //! rule 7); the settings window will be the likely second user.
 
 use nexus::imgui::{StyleColor, StyleVar, Ui, WindowHoveredFlags};
+use trailkit_ui::controls::hover::is_item_hovered;
 use trailkit_ui::controls::tooltip::draw_tooltip;
 use trailkit_ui::drawing::draw_list::window_draw_list;
 use trailkit_ui::{
@@ -229,7 +230,7 @@ impl SearchField {
             let _id = ui.push_id(self.generation);
             ui.invisible_button("##search_end", box_size)
         };
-        let hovered = ui.is_item_hovered();
+        let hovered = is_item_hovered(ui);
         if hovered {
             window_draw_list(ui)
                 .add_rect(

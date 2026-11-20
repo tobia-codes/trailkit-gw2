@@ -14,6 +14,7 @@ mod rename;
 mod rows;
 
 use std::collections::{BTreeSet, HashSet};
+use trailkit_ui::controls::hover::is_item_hovered;
 
 use nexus::imgui::{MouseButton, Ui};
 use trailkit_memo_shared::{
@@ -246,7 +247,7 @@ impl NoteList {
                 let mut buffer = [0; 4];
                 ui.button_with_size(icon.as_str(&mut buffer), [width, 0.0])
             };
-            if ui.is_item_hovered() {
+            if is_item_hovered(ui) {
                 draw_tooltip(ui, theme, tooltip.get(language));
             }
             if clicked {

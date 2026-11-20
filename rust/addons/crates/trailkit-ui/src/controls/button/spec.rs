@@ -10,6 +10,7 @@
 //!   the reason in a tooltip with a neutral `ban` icon. Neither is an ImGui
 //!   button: no hover, no pressed state, no click.
 
+use crate::controls::hover::is_item_hovered;
 use nexus::imgui::{ImColor32, StyleColor, Ui};
 
 use super::{
@@ -197,7 +198,7 @@ impl<'text> Button<'text> {
         }
         self.draw_content(ui, theme, [min, max], colors.label);
         if let ButtonState::Disabled { reason } = self.state
-            && ui.is_item_hovered()
+            && is_item_hovered(ui)
         {
             draw_reason_tooltip(ui, theme, reason);
         }

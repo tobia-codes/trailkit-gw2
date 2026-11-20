@@ -2,6 +2,7 @@
 //! invisible until hovered or dragged, then an accent line with the resize
 //! cursor (Windows only).
 
+use crate::controls::hover::is_item_hovered;
 use crate::drawing::draw_list::window_draw_list;
 use nexus::imgui::{MouseCursor, Ui};
 
@@ -31,7 +32,7 @@ pub fn draw_vertical_splitter(
     let start = ui.cursor_screen_pos();
     ui.invisible_button(id, [gap, height.max(1.0)]);
     let is_dragged = ui.is_item_active();
-    if ui.is_item_hovered() || is_dragged {
+    if is_item_hovered(ui) || is_dragged {
         ui.set_mouse_cursor(Some(MouseCursor::ResizeEW));
         let color = if is_dragged {
             theme.accent.active

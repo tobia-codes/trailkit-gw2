@@ -8,6 +8,7 @@ mod spec;
 
 pub use self::spec::{Button, ButtonKind, ButtonState};
 
+use crate::controls::hover::is_item_hovered;
 use crate::controls::tooltip::draw_tooltip;
 use nexus::imgui::{ImColor32, StyleColor, Ui};
 
@@ -196,7 +197,7 @@ pub fn draw_icon_button_with_state(
             ui.dummy([icon_button_width(ui, icon), ui.frame_height()]);
             let color = ImColor32::from(theme.text.disabled.to_array()).to_bits();
             draw_icon_centered(ui, icon, [ui.item_rect_min(), ui.item_rect_max()], color);
-            if ui.is_item_hovered() {
+            if is_item_hovered(ui) {
                 draw_reason_tooltip(ui, theme, reason);
             }
             false
@@ -210,7 +211,7 @@ pub fn draw_icon_button_with_state(
                 [(min[0] + max[0]) / 2.0, (min[1] + max[1]) / 2.0],
                 color,
             );
-            if ui.is_item_hovered() {
+            if is_item_hovered(ui) {
                 draw_tooltip(ui, theme, tooltip);
             }
             false
@@ -292,7 +293,7 @@ fn draw_icon_button_with_fill(
         ui.button(icon.as_str(&mut buffer))
     };
     draw_icon_centered(ui, icon, [ui.item_rect_min(), ui.item_rect_max()], color);
-    if !tooltip.is_empty() && ui.is_item_hovered() {
+    if !tooltip.is_empty() && is_item_hovered(ui) {
         draw_tooltip(ui, theme, tooltip);
     }
     clicked
