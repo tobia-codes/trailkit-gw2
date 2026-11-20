@@ -135,6 +135,11 @@ editor's formatting buttons that light up for the formatting at the cursor
   rows padded `space.sm`, panes padded and separated by `space.sm`, the
   selection bar inset `space.sm`, a tree level indented `space.lg`. Line
   widths, the selection bar width, radii and the shadow offset are no spacing.
+  Elements are placed by `layout::stack::Stack` (vertical or horizontal, one
+  gap, default `space.sm`, measured between visible edges); no element adds
+  space above or below itself, and list and menu rows are a stack with
+  `space.xs`. Hand offsets (`dummy`, `set_cursor_pos`, gaps minus
+  `item_spacing`) are being migrated to it (R148 step 4).
   The gap between an icon and its label in a button and a chip's side padding
   are `space.sm`. Two sizes follow a line's or bar's height instead and stay
   relative (Q520): a chat-link chip reaches leading ÷ 6 above and below its

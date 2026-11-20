@@ -185,7 +185,11 @@ Build once, use everywhere. Planned:
   or `danger` tone, disabled with a tooltip, memo M133, M141). A row that runs a
   command has an icon, so all labels start on one line; a row that picks a value
   (dropdown options, a submenu's targets) has none, only the check mark. The
-  `menu.*` tokens give all of them their room (memo M177)
+  spacing scale gives all of them their room: `space.sm` padding, `space.xs`
+  apart (memo M177, R148)
+- `Stack` — **exists**: `stack::Stack::vertical` / `horizontal` place
+  elements one gap apart (default `space.sm`), measured between visible edges;
+  every new layout uses it instead of ImGui's item spacing or hand offsets (R148)
 - `Pane` and inset separator — **exist**: `pane::draw_pane`,
   `separator::draw_separator`; every sub-region of a window and every
   separator uses them (`lay-pane-padding`, decided 2026-11-01)

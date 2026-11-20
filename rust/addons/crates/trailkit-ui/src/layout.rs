@@ -1,5 +1,5 @@
-//! Window and pane layout: panes, columns with splitters, separators,
-//! toolbars, page heads, the title bar and the empty state (ROADMAP R134).
+//! Window and pane layout: panes, columns with splitters, stacks,
+//! separators, toolbars, page heads, the title bar and the empty state (ROADMAP R134).
 
 #[cfg(windows)]
 pub mod empty_state;
@@ -13,6 +13,8 @@ pub mod pane_columns;
 pub mod separator;
 #[cfg(windows)]
 pub mod splitter;
+#[cfg(windows)]
+pub mod stack;
 #[cfg(windows)]
 pub mod title_bar;
 #[cfg(windows)]
