@@ -189,10 +189,11 @@ fn release_focus_on_outside_click(ui: &Ui, state: &mut TitleBarState) {
     }
 }
 
-/// The height of the title row: that of its icon buttons. The window's own font
-/// can be smaller than the icon font in game, though not in the tests.
+/// The height of the title row: that of its icon buttons, which are as tall
+/// as a button in the body font (Q524). The window's own font can be
+/// smaller in game, though not in the tests.
 fn title_row_height(ui: &Ui) -> f32 {
-    let _icons = FontScope::push(ui, FontRole::Icons);
+    let _body = FontScope::push(ui, FontRole::Body);
     ui.frame_height()
 }
 
@@ -217,6 +218,8 @@ fn draw_title_row(
     open: &mut bool,
 ) -> TitleRowClicks {
     let _muted = ui.push_style_color(StyleColor::Text, theme.text.secondary.to_array());
+    // The buttons are sized by the body font, like every icon button.
+    let _body = FontScope::push(ui, FontRole::Body);
     let mut clicks = TitleRowClicks {
         collapse_clicked: false,
         toggle: None,

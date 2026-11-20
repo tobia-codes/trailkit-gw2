@@ -14,6 +14,9 @@ pub struct Typography {
     pub heading2: f32,
     /// `font.size.heading1`: level 1 heading.
     pub heading1: f32,
+    /// `font.size.icon`: an icon's size as a factor of the font size of the
+    /// text it accompanies (R147).
+    pub icon: f32,
     /// `font.line_height`: line height of running text (notes, editor) as a
     /// multiple of the font size; roomy enough for chat-link chips (M77).
     pub line_height: f32,

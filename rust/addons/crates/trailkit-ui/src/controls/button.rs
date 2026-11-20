@@ -126,12 +126,11 @@ pub fn draw_primary_button_with_icon(ui: &Ui, theme: &Theme, icon: Icon, label: 
         .draw(ui, theme)
 }
 
-/// The width of an icon button showing `icon`.
+/// The width of an icon button: it is square, as wide as a button is tall
+/// in the current text font (Q524).
 #[must_use]
-pub fn icon_button_width(ui: &Ui, icon: Icon) -> f32 {
-    let _icons = FontScope::push(ui, FontRole::Icons);
-    let mut buffer = [0; 4];
-    ui.calc_text_size(icon.as_str(&mut buffer))[0] + 2.0 * ui.clone_style().frame_padding[0]
+pub fn icon_button_width(ui: &Ui, _icon: Icon) -> f32 {
+    ui.frame_height()
 }
 
 /// The width of a button with an icon and `label` (at least
@@ -281,6 +280,8 @@ fn draw_icon_button_with_fill(
         || ImColor32::from(ui.style_color(StyleColor::Text)).to_bits(),
         |icon| ImColor32::from(icon.to_array()).to_bits(),
     );
+    // Square and as tall as a text button (Q524), whatever the icon size.
+    let side = ui.frame_height();
     let clicked = {
         let _colors = [
             ui.push_style_color(StyleColor::Text, [0.0; 4]),
@@ -288,9 +289,9 @@ fn draw_icon_button_with_fill(
             ui.push_style_color(StyleColor::ButtonHovered, fill.hovered.to_array()),
             ui.push_style_color(StyleColor::ButtonActive, fill.pressed.to_array()),
         ];
-        let _icons = FontScope::push(ui, FontRole::Icons);
+        // The glyph is the button's ID only; the icon is drawn below.
         let mut buffer = [0; 4];
-        ui.button(icon.as_str(&mut buffer))
+        ui.button_with_size(icon.as_str(&mut buffer), [side, side])
     };
     draw_icon_centered(ui, icon, [ui.item_rect_min(), ui.item_rect_max()], color);
     if !tooltip.is_empty() && is_item_hovered(ui) {

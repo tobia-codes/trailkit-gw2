@@ -504,8 +504,8 @@ fn views() {
 fn window_chrome_hovers() {
     for (name, position) in [
         ("hover-menu-button", [28.0, 25.0]),
-        ("hover-collapse", [576.0, 25.0]),
-        ("hover-close", [612.0, 25.0]),
+        ("hover-collapse", [588.0, 25.0]),
+        ("hover-close", [616.0, 25.0]),
         ("hover-new-note", [62.0, 65.0]),
         ("hover-new-group", [153.0, 65.0]),
         ("hover-compact", [236.0, 65.0]),

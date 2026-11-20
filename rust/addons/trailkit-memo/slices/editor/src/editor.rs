@@ -379,7 +379,9 @@ impl Editor {
     ) -> Option<ToolbarAction> {
         let active = self.active_formats();
         let mut clicked = None;
-        let spacing = theme.spacing.small;
+        // Buttons of one group sit closer than a group to its separator,
+        // so the groups read as groups (Q523).
+        let spacing = theme.spacing.extra_small;
         let mut id = 0;
         for (group_index, group) in FORMAT_GROUPS.iter().enumerate() {
             let width = group
