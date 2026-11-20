@@ -18,6 +18,7 @@ use crate::{
     controls::button::{Button, ButtonState, draw_popup_icon_button, icon_button_width},
     controls::dropdown::{draw_icon_into, icon_width},
     controls::spinner::{draw_spinner, spinner_width},
+    text::glyph_metrics::capital_middle,
     text::icons::Icon,
     theme::Theme,
 };
@@ -349,7 +350,9 @@ fn draw_toast_text(
         // window's draw list is valid.
         let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
         let packed = ImColor32::from(color.to_array()).to_bits();
-        draw_icon_into(draw_list, ui, icon, x, row, packed);
+        // On the capitals of the message, which ImGui draws at its line top.
+        let middle = top + line_offset + capital_middle().unwrap_or(ui.text_line_height() / 2.0);
+        draw_icon_into(draw_list, ui, icon, x, middle, packed);
         x += icon_width(ui) + small_gap;
     }
     ui.set_cursor_screen_pos([x, top + line_offset]);

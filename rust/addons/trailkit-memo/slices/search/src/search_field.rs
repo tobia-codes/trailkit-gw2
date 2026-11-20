@@ -11,8 +11,12 @@ use trailkit_ui::controls::hover::is_item_hovered;
 use trailkit_ui::controls::tooltip::draw_tooltip;
 use trailkit_ui::drawing::draw_list::window_draw_list;
 use trailkit_ui::{
-    drawing::style_scope::StyleScope, text::font_registry::FontScope, text::fonts::FontRole,
-    text::glyph_metrics::glyph_ink_box, text::icons::Icon, theme::Theme,
+    drawing::style_scope::StyleScope,
+    text::font_registry::FontScope,
+    text::fonts::FontRole,
+    text::glyph_metrics::{capital_middle, icon_visible_box},
+    text::icons::Icon,
+    theme::Theme,
 };
 
 /// State of the search field that outlives a frame.
@@ -131,10 +135,13 @@ impl SearchField {
             .build();
 
         let (magnifier, clear) = field_icon_inks(ui);
-        let middle = start[1] + height / 2.0;
+        // The icons sit on the capitals of the text the input draws at its
+        // line top inside the frame padding, not on the field's middle,
+        // so icons and text share one line (R147).
+        let middle = input_y + padding[1] + capital_middle().unwrap_or(ui.text_line_height() / 2.0);
         let clear_position = [
-            end[0] - padding[0] - clear[2],
-            middle - (clear[1] + clear[3]) / 2.0,
+            (end[0] - padding[0] - clear[2]).round(),
+            (middle - (clear[1] + clear[3]) / 2.0).round(),
         ];
         draw_magnifier(ui, theme, [start[0] + padding[0], middle], magnifier);
         let input_x = start[0] + padding[0] + (magnifier[2] - magnifier[0]) + theme.spacing.small;
@@ -262,13 +269,13 @@ pub fn field_height(ui: &Ui, theme: &Theme) -> f32 {
     ui.frame_height() + theme.spacing.small
 }
 
-/// The ink boxes of the field's magnifier and `x` (M128). Both icons are
-/// placed by their ink, not their line box, in which Lucide glyphs sit off center,
+/// The visible boxes of the field's magnifier and `x` (M128, M170). Both icons
+/// are placed by their ink, not their line box, in which Lucide glyphs sit off center,
 /// so they mirror each other: same size, color and distance to the frame.
 fn field_icon_inks(ui: &Ui) -> ([f32; 4], [f32; 4]) {
     let _icons = FontScope::push(ui, FontRole::Icons);
     let line = ui.text_line_height();
-    let ink = |icon: Icon| glyph_ink_box(icon.glyph()).unwrap_or([0.0, 0.0, line, line]);
+    let ink = |icon: Icon| icon_visible_box(icon.glyph(), line);
     (ink(Icon::SEARCH), ink(Icon::X))
 }
 
@@ -277,7 +284,10 @@ fn draw_magnifier(ui: &Ui, theme: &Theme, [left, middle]: [f32; 2], ink: [f32; 4
     let _icons = FontScope::push(ui, FontRole::Icons);
     let mut buffer = [0; 4];
     window_draw_list(ui).add_text(
-        [left - ink[0], middle - (ink[1] + ink[3]) / 2.0],
+        [
+            (left - ink[0]).round(),
+            (middle - (ink[1] + ink[3]) / 2.0).round(),
+        ],
         theme.text.secondary.to_array(),
         Icon::SEARCH.as_str(&mut buffer),
     );

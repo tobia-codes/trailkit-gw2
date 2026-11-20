@@ -89,11 +89,10 @@ pub fn close_open_popups(ui: &Ui) {
     CLOSE_FRAME.set(Some(ui.frame_count()));
 }
 
-/// The span to center an icon in beside a label drawn at line top `top`: the
-/// label's capitals, in the current font, set the middle.
-fn label_icon_span(ui: &Ui, top: f32) -> [f32; 2] {
-    let middle = capital_middle().unwrap_or(ui.text_line_height() / 2.0);
-    [top, top + 2.0 * middle]
+/// The line to center an icon on beside a label drawn at line top `top`:
+/// the middle of the label's capitals in the current font (R147).
+fn label_icon_middle(ui: &Ui, top: f32) -> f32 {
+    top + capital_middle().unwrap_or(ui.text_line_height() / 2.0)
 }
 
 /// Places the next popup with its top at `position` (screen). `pivot_x` is the
@@ -239,7 +238,7 @@ pub fn draw_menu_item(ui: &Ui, theme: &Theme, label: &str, checked: bool) -> boo
             ui,
             Icon::CHECK,
             menu_row_content_right(ui, theme) - icon_width(ui),
-            label_icon_span(ui, origin[1]),
+            label_icon_middle(ui, origin[1]),
             packed(theme.accent.text),
         );
     }
@@ -331,8 +330,8 @@ fn draw_icon_menu_item(
     // SAFETY: called on the render thread inside a frame, so the current
     // window's draw list is valid.
     let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
-    let span = label_icon_span(ui, origin[1]);
-    draw_icon_into(draw_list, ui, icon, origin[0], span, packed(color));
+    let middle = label_icon_middle(ui, origin[1]);
+    draw_icon_into(draw_list, ui, icon, origin[0], middle, packed(color));
     let label_x = origin[0] + icon_width(ui) + theme.spacing.small;
     draw_menu_row_label([label_x, origin[1]], color, label);
     if let Some(shortcut) = shortcut {
@@ -362,7 +361,7 @@ pub fn begin_submenu<'ui>(
     let [x, y] = ui.cursor_screen_pos();
     let right_edge = ui.window_content_region_max()[0] + ui.window_pos()[0];
     let bottom = y + ui.text_line_height();
-    let span = label_icon_span(ui, y);
+    let middle = label_icon_middle(ui, y);
     // SAFETY: called on the render thread inside a frame, so the current
     // (parent menu) window's draw list is valid for this frame.
     let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
@@ -412,13 +411,13 @@ pub fn begin_submenu<'ui>(
             begin.add(label.len()),
         );
     }
-    draw_icon_into(draw_list, ui, icon, x, span, packed(theme.text.primary));
+    draw_icon_into(draw_list, ui, icon, x, middle, packed(theme.text.primary));
     draw_icon_into(
         draw_list,
         ui,
         Icon::CHEVRON_RIGHT,
         right_edge - icon_width(ui),
-        span,
+        middle,
         packed(theme.text.secondary),
     );
     token

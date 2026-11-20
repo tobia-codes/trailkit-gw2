@@ -10,13 +10,14 @@ use super::{LineBounds, MarkdownAction, SearchHighlight, link_menu::request_link
 use crate::{
     chat_link::ChatLinkChip,
     chat_link::chat_link_chip::{ChipContext, chip_tooltip, chip_width, draw_chip},
-    controls::dropdown::{draw_icon_into, icon_width},
+    controls::dropdown::{draw_icon_into_at, icon_width_at},
     controls::tooltip::draw_tooltip,
     drawing::draw_list::window_draw_list,
     markdown::{LinkKind, Span, link_menu::LinkMenuTarget},
     text::TextStyle,
-    text::font_registry::FontScope,
+    text::font_registry::{FontScope, IconSize},
     text::fonts::FontRole,
+    text::glyph_metrics::capital_middle,
     text::search_hits::mark_search_hits,
     theme::Theme,
 };
@@ -213,7 +214,8 @@ fn draw_link_icon(
     cursor: &mut LineCursor,
 ) -> Option<MarkdownAction> {
     let url = span.style.link.as_ref()?;
-    let icon_size = icon_width(ui);
+    // The icon grows with the text of its line, like a chip (Q537).
+    let icon_size = icon_width_at(ui, IconSize::InlineText);
     let gap = theme.spacing.extra_small;
     let first_word = span.text.split(' ').next().unwrap_or_default();
     cursor.wrap_before(icon_size + gap + ui.calc_text_size(first_word)[0], bounds);
@@ -223,13 +225,16 @@ fn draw_link_icon(
     // SAFETY: on the render thread inside a frame, where ImGui has a current
     // window and returns its draw list.
     let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
-    draw_icon_into(
+    draw_icon_into_at(
         draw_list,
         ui,
         LinkKind::of(url).icon(),
-        cursor.x,
-        [cursor.y, cursor.y + height],
+        [
+            cursor.x,
+            cursor.y + capital_middle().unwrap_or(height / 2.0),
+        ],
         ImColor32::from(theme.text.link.to_array()).to_bits(),
+        IconSize::InlineText,
     );
     cursor.x += icon_size + gap;
     cursor.keeps_line = true;

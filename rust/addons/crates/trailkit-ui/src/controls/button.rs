@@ -38,15 +38,28 @@ pub fn draw_button_with_size(ui: &Ui, theme: &Theme, label: &str, size: [f32; 2]
     Button::new(label).width(size[0]).draw(ui, theme)
 }
 
+/// The distance from the line top of the current font to the middle of its
+/// capital letters.
+fn label_capital_offset() -> f32 {
+    // SAFETY: only reads ImGui's current font size on the render thread.
+    let line_height = unsafe { nexus::imgui::sys::igGetFontSize() };
+    capital_middle().unwrap_or(line_height / 2.0)
+}
+
+/// The screen y of the capital middle of a label that [`draw_label`] centers
+/// between `top` and `bottom` in the current font, after its rounding to a
+/// whole pixel: the line an icon beside it is centered on (R147).
+pub(crate) fn label_capital_middle([top, bottom]: [f32; 2]) -> f32 {
+    let offset = label_capital_offset();
+    ((top + bottom) / 2.0 - offset).round() + offset
+}
+
 /// Draws `label` starting at `x`, vertically centered by its capital letters
 /// between `top` and `bottom` (memo plan M85), in the current font and
 /// `color` (packed `ImColor32` bits). Works while a caller holds the window's
 /// `DrawListMut` (imgui-rs allows only one at a time, e.g. in a dialog card).
-pub(crate) fn draw_label(label: &str, x: f32, [top, bottom]: [f32; 2], color: u32) {
-    // SAFETY: only reads ImGui's current font size on the render thread.
-    let line_height = unsafe { nexus::imgui::sys::igGetFontSize() };
-    let middle = capital_middle().unwrap_or(line_height / 2.0);
-    let y = ((top + bottom) / 2.0 - middle).round();
+pub(crate) fn draw_label(label: &str, x: f32, span: [f32; 2], color: u32) {
+    let y = (label_capital_middle(span) - label_capital_offset()).round();
     let begin = label.as_ptr().cast::<std::ffi::c_char>();
     // SAFETY: called on the render thread inside a frame, so the current
     // window's draw list is valid; `begin..begin + len` is the UTF-8 label,

@@ -186,5 +186,5 @@ Addons only.
 | `font.size.heading3` | 1.15 × body size | 1.15 × body size | Level 3 heading and below |
 | `font.size.heading2` | 1.30 × body size | 1.30 × body size | Level 2 heading |
 | `font.size.heading1` | 1.50 × body size | 1.50 × body size | Level 1 heading |
-| `font.size.icon` | 0.78 × font size | 0.78 × font size | Icon size as a factor of the font size of the text it accompanies (R147) |
+| `font.size.icon` | 0.9 × font size | 0.9 × font size | Icon size as a factor of the font size of the text it accompanies (R147) |
 | `font.line_height` | 1.5 × font size | 1.5 × font size | Line height of running text |

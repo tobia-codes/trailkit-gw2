@@ -15,20 +15,22 @@ mod inline_text;
 mod link_menu;
 
 use crate::controls::hover::is_item_hovered;
-use nexus::imgui::{MouseCursor, Ui};
+use nexus::imgui::{ImColor32, MouseCursor, Ui};
 
 use self::{inline_text::draw_spans, link_menu::draw_link_menu};
 use crate::{
     chat_link::chat_link_chip::ChipContext,
+    controls::dropdown::draw_icon_into,
     drawing::draw_list::window_draw_list,
     layout::separator::draw_separator,
     markdown::{Block, ListMarker, MarkdownDocument, TaskMarker},
-    text::font_registry::{FontScope, IconSize},
+    text::TextStyle,
+    text::font_registry::FontScope,
     text::fonts::FontRole,
+    text::glyph_metrics::capital_middle,
     text::icons::Icon,
     text::search_hits::HitMark,
     text::text_search::SearchQuery,
-    text::{TextStyle, draw_icon},
     theme::Theme,
 };
 
@@ -186,7 +188,7 @@ pub fn draw_markdown(
     // The marker column must fit the widest marker (a task box) plus a gap,
     // whatever the font size; otherwise the text touches the checkbox.
     let marker_column = {
-        let _icons = FontScope::push_icons(ui, IconSize::Standalone);
+        let _icons = FontScope::push(ui, FontRole::Icons);
         let mut buffer = [0; 4];
         ui.calc_text_size(Icon::SQUARE.as_str(&mut buffer))[0]
     }
@@ -317,18 +319,21 @@ fn draw_list_marker(
             } else {
                 Icon::SQUARE
             };
-            let mut buffer = [0; 4];
-            // A checkbox is a control, not an icon beside text (Q535).
-            let _icons = FontScope::push_icons(ui, IconSize::Standalone);
-            let glyph = icon.as_str(&mut buffer);
-            let size = ui.calc_text_size(glyph);
+            // One interface icon size (Q537), on the capitals of the item's
+            // first line like every icon beside text (R147).
+            let middle = text_top + capital_middle().unwrap_or(ui.text_line_height() / 2.0);
+            let [width, height] = {
+                let _icons = FontScope::push(ui, FontRole::Icons);
+                let mut buffer = [0; 4];
+                ui.calc_text_size(icon.as_str(&mut buffer))
+            };
             // Only the box is clickable, the text next to it may hold links
             // and chips (R85); the target reaches a little beyond the glyph.
             let margin = theme.spacing.extra_small;
-            let target_min = [left - margin, text_top - margin];
+            let target_min = [left - margin, (middle - height / 2.0).round() - margin];
             let target_size = [
-                size[0].max(1.0) + 2.0 * margin,
-                size[1].max(1.0) + 2.0 * margin,
+                width.max(1.0) + 2.0 * margin,
+                height.max(1.0) + 2.0 * margin,
             ];
             ui.set_cursor_screen_pos(target_min);
             let clicked = ui.invisible_button("task", target_size);
@@ -352,8 +357,17 @@ fn draw_list_marker(
             } else {
                 theme.text.secondary
             };
-            ui.set_cursor_screen_pos([left, text_top]);
-            draw_icon(ui, icon, color, IconSize::Standalone);
+            // SAFETY: called on the render thread inside a frame, where ImGui
+            // has a current window and returns its draw list.
+            let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
+            draw_icon_into(
+                draw_list,
+                ui,
+                icon,
+                left,
+                middle,
+                ImColor32::from(color.to_array()).to_bits(),
+            );
             clicked.then_some(MarkdownAction::ToggleTask(marker))
         }
     };

@@ -33,7 +33,6 @@ use trailkit_ui::{
         draw_window as draw_title_bar,
     },
     lists::list_row::{ListRow, ListRowDetail, draw_list_row},
-    text::font_registry::IconSize,
     text::icons::Icon,
     text::{TextStyle, draw_icon, draw_text, draw_text_wrapped, draw_truncated_text},
     theme::{Theme, ThemeKind},
@@ -624,7 +623,7 @@ fn icons_in_text_colors() {
                     theme.status.warning,
                     theme.status.danger,
                 ] {
-                    draw_icon(ui, Icon::TRIANGLE_ALERT, color, IconSize::WithText);
+                    draw_icon(ui, Icon::TRIANGLE_ALERT, color);
                     ui.same_line();
                 }
             });

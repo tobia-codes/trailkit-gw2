@@ -31,7 +31,7 @@ use crate::{color::Color, text::fonts::FontRole, theme::Theme};
 use crate::{
     controls::hover::is_item_hovered,
     controls::tooltip::draw_tooltip,
-    text::font_registry::{FontScope, IconSize},
+    text::font_registry::FontScope,
     text::glyph_metrics::{capital_middle, icon_visible_box},
     text::icons::Icon,
     text::text_layout::truncate_to_width,
@@ -171,12 +171,11 @@ pub fn draw_truncated_text(
     truncated
 }
 
-/// Draws `icon` in `color` as one item, sized by `size` against the current
-/// text font (R96, Q268, R147). The color follows the icon's role
-/// (`tokens.md` §7.1 rule 2).
+/// Draws `icon` in `color` at the interface icon size as one item (R96,
+/// Q268, R147). The color follows the icon's role (`tokens.md` §7.1 rule 2).
 #[cfg(windows)]
-pub fn draw_icon(ui: &Ui, icon: Icon, color: Color, size: IconSize) {
-    let _icons = FontScope::push_icons(ui, size);
+pub fn draw_icon(ui: &Ui, icon: Icon, color: Color) {
+    let _icons = FontScope::push(ui, FontRole::Icons);
     let mut buffer = [0; 4];
     ui.text_colored(color.to_array(), icon.as_str(&mut buffer));
 }
@@ -233,7 +232,7 @@ pub fn draw_icon_text(ui: &Ui, theme: &Theme, content: &IconText<'_>) -> f32 {
     };
     let difference = (icon_middle - text_middle).round();
     ui.set_cursor_screen_pos([left, top + (-difference).max(0.0)]);
-    draw_icon(ui, content.icon, content.icon_color, IconSize::WithText);
+    draw_icon(ui, content.icon, content.icon_color);
     ui.same_line_with_spacing(0.0, crate::controls::button::icon_label_gap(theme));
     let text_left = ui.cursor_screen_pos()[0];
     let text_top = top + difference.max(0.0);

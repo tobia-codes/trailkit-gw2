@@ -51,12 +51,21 @@ pub unsafe fn install_font(role: FontRole, font: *mut sys::ImFont) {
     }
 }
 
+/// The `ImFont` the host delivered for `role`; null until it is ready.
+fn font_pointer(role: FontRole) -> *mut sys::ImFont {
+    let index = FontRole::ALL
+        .iter()
+        .position(|candidate| *candidate == role)
+        .unwrap_or_default();
+    FONT_POINTERS[index].load(Ordering::Acquire)
+}
+
 /// Pushes the font of a [`FontRole`] onto ImGui's font stack and pops it on
 /// drop. If the font is not ready yet, nothing is pushed and the current font
 /// is used.
 ///
-/// The icon font is sized by the text it accompanies (R147): pushed while a
-/// text font is current, its icons are that font's size × `font.size.icon`.
+/// The icon font is sized by [`IconSize`] (R147, Q537): interface icons all
+/// get one size from the body font, icons in running text grow with it.
 /// It is registered once at the largest size and scaled through ImGui's
 /// per-font `Scale`, which every size query and draw call honors.
 #[must_use = "the font is popped again when the scope is dropped"]
@@ -70,47 +79,34 @@ pub struct FontScope<'ui> {
     frame: PhantomData<&'ui ()>,
 }
 
-/// How large icons are relative to the current text font (R147).
+/// Which text an icon is sized by (R147, Q537).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IconSize {
-    /// An icon that accompanies text (a button's icon, a menu entry's, a
-    /// status line's): the text's size × `font.size.icon`.
-    WithText,
-    /// An icon that stands alone or is a control itself (the empty state's
-    /// icon, a task checkbox; Q535): the text's full size.
-    Standalone,
-}
-
-impl IconSize {
-    /// The icon size as a factor of the current text font's size.
-    fn factor(self) -> f32 {
-        match self {
-            Self::WithText => crate::theme::Theme::default().typography.icon,
-            Self::Standalone => 1.0,
-        }
-    }
+    /// Every icon of the interface (buttons, menus, lists, toolbars, status
+    /// lines, dialogs, task checkboxes, the empty state): one size, the body
+    /// font's size × `font.size.icon`, whatever text is next to it.
+    Interface,
+    /// An icon inside running text (a link's icon, a chat-link chip's): the
+    /// current text font's size × `font.size.icon`, so it grows with a
+    /// heading like the words around it.
+    InlineText,
 }
 
 impl<'ui> FontScope<'ui> {
-    /// Pushes the icon font sized for icons of `size` next to the current
-    /// text font, for the lifetime of the returned scope.
-    /// `FontScope::push(ui, FontRole::Icons)` is [`IconSize::WithText`].
+    /// Pushes the icon font at `size` for the lifetime of the returned scope.
+    /// `FontScope::push(ui, FontRole::Icons)` is [`IconSize::Interface`].
     pub fn push_icons(ui: &'ui Ui, size: IconSize) -> Self {
         Self::push_with_icon_size(ui, FontRole::Icons, size)
     }
 
     /// Pushes the font of `role` for the lifetime of the returned scope.
     pub fn push(ui: &'ui Ui, role: FontRole) -> Self {
-        Self::push_with_icon_size(ui, role, IconSize::WithText)
+        Self::push_with_icon_size(ui, role, IconSize::Interface)
     }
 
     /// Pushes the font of `role`; the icon font is sized for `icon_size`.
     fn push_with_icon_size(_ui: &'ui Ui, role: FontRole, icon_size: IconSize) -> Self {
-        let index = FontRole::ALL
-            .iter()
-            .position(|candidate| *candidate == role)
-            .unwrap_or_default();
-        let font = FONT_POINTERS[index].load(Ordering::Acquire);
+        let font = font_pointer(role);
         if font.is_null() {
             return Self {
                 pushed: false,
@@ -121,7 +117,7 @@ impl<'ui> FontScope<'ui> {
         let restore_scale = if role == FontRole::Icons {
             // SAFETY: during a frame ImGui always has a current font, and
             // `font` is a live font of the same atlas (see below).
-            unsafe { scale_icons_to_current_text(font, icon_size.factor()) }
+            unsafe { scale_icons(font, icon_size) }
         } else {
             None
         };
@@ -136,30 +132,33 @@ impl<'ui> FontScope<'ui> {
     }
 }
 
-/// Sets the `Scale` of the icon font `icons` so its size is the current
-/// text font's size × `factor` (R147) and returns the previous
-/// scale to restore. Returns `None` and changes nothing while the icon font
-/// itself is current (an icon scope inside another keeps its size).
+/// Sets the `Scale` of the icon font `icons` to `size` (R147, Q537): the
+/// body font's or the current text font's size × `font.size.icon`. Returns
+/// the previous scale to restore, or `None` without a change while the icon
+/// font itself is current (an icon scope inside another keeps its size).
 ///
 /// # Safety
 ///
 /// Must be called during a frame, with `icons` a live font of the current
 /// atlas.
-unsafe fn scale_icons_to_current_text(
-    icons: *mut sys::ImFont,
-    factor: f32,
-) -> Option<(*mut sys::ImFont, f32)> {
+unsafe fn scale_icons(icons: *mut sys::ImFont, size: IconSize) -> Option<(*mut sys::ImFont, f32)> {
     // SAFETY: guaranteed by the caller; ImGui returns the current font,
     // which is never null during a frame.
     let current = unsafe { sys::igGetFont() };
     if current.is_null() || ptr::eq(current, icons) {
         return None;
     }
-    // SAFETY: both pointers are live fonts of the current atlas; only plain
+    let body = font_pointer(FontRole::Body);
+    let text = match size {
+        IconSize::Interface if !body.is_null() => body,
+        IconSize::Interface | IconSize::InlineText => current,
+    };
+    let factor = crate::theme::Theme::default().typography.icon;
+    // SAFETY: all pointers are live fonts of the current atlas; only plain
     // `f32` fields are read and the icon font's `Scale` is written on the
     // render thread, the only thread that touches ImGui.
     unsafe {
-        let text_size = (*current).FontSize * (*current).Scale;
+        let text_size = (*text).FontSize * (*text).Scale;
         let previous = (*icons).Scale;
         if (*icons).FontSize > 0.0 {
             (*icons).Scale = text_size * factor / (*icons).FontSize;

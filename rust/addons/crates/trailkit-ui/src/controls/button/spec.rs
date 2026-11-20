@@ -15,6 +15,7 @@ use nexus::imgui::{ImColor32, StyleColor, Ui};
 
 use super::{
     button_width, draw_label, icon_label_button_width, icon_label_content_width, icon_label_gap,
+    label_capital_middle,
 };
 use crate::{
     color::Color,
@@ -232,7 +233,9 @@ impl<'text> Button<'text> {
                     label,
                 );
             }
-            (_, Some(icon)) => draw_icon_into(draw_list, ui, icon, x, span, packed),
+            (_, Some(icon)) => {
+                draw_icon_into(draw_list, ui, icon, x, label_capital_middle(span), packed);
+            }
             (_, None) => {}
         }
         if self.has_leading() {

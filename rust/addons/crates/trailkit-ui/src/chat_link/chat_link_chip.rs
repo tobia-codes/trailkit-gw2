@@ -11,8 +11,7 @@ use crate::drawing::draw_list::WindowDrawList;
 use crate::{
     chat_link::{ChatLink, ChatLinkChip, ChatLinkError, ChatLinkKind, ChipText},
     color::Color,
-    text::font_registry::FontScope,
-    text::fonts::FontRole,
+    text::font_registry::{FontScope, IconSize},
     text::glyph_metrics::glyph_bounds,
     text::icons::Icon,
     theme::Theme,
@@ -27,7 +26,7 @@ use crate::{
 fn icon_offset(ui: &Ui) -> f32 {
     let capital = glyph_bounds('H');
     let square = {
-        let _icons = FontScope::push(ui, FontRole::Icons);
+        let _icons = FontScope::push_icons(ui, IconSize::InlineText);
         glyph_bounds(Icon::SQUARE.glyph())
     };
     match (capital, square) {
@@ -165,7 +164,7 @@ fn for_each_piece(
 fn piece_width(ui: &Ui, piece: &Piece<'_>, theme: &Theme) -> f32 {
     match piece {
         Piece::Icon(icon, _) => {
-            let _icons = FontScope::push(ui, FontRole::Icons);
+            let _icons = FontScope::push_icons(ui, IconSize::InlineText);
             let mut buffer = [0; 4];
             ui.calc_text_size(icon.as_str(&mut buffer))[0] + theme.spacing.extra_small
         }
@@ -275,7 +274,7 @@ pub fn draw_chip(
     }
     let offset = icon_offset(ui);
     let icon_size = {
-        let _icons = FontScope::push(ui, FontRole::Icons);
+        let _icons = FontScope::push_icons(ui, IconSize::InlineText);
         ui.current_font_size()
     };
     let mut x = position[0] + padding(theme);
@@ -283,7 +282,7 @@ pub fn draw_chip(
         let advance = piece_width(ui, &piece, theme);
         match piece {
             Piece::Icon(icon, color) => {
-                let _icons = FontScope::push(ui, FontRole::Icons);
+                let _icons = FontScope::push_icons(ui, IconSize::InlineText);
                 draw_scaled_icon(icon, [x, position[1] + offset], icon_size, color);
             }
             Piece::Text(text, color) => {
