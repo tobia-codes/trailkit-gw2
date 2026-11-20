@@ -105,8 +105,7 @@ editor's formatting buttons that light up for the formatting at the cursor
   Only lines too thin to show a radius (separators, the text caret) are
   exempt. ImGui 1.80 draws the highlight of `Selectable`, `MenuItem`,
   `BeginMenu` and tree nodes with radius 0, whatever `FrameRounding` says, so
-  never use its highlight: rows use `selection_bar::hide_square_row_highlight`
-  + `draw_row_highlight`, popups use `menu::draw_popup` with the `menu` entries
+  never use its highlight: rows use `list_row::draw_list_row`, popups use `menu::draw_popup` with the `menu` entries
   (never a bare `MenuItem` or `ui.popup`).
 - Every window, pane, popup and dialog has the 1 px `border.subtle` outline.
 - Regular buttons and dropdowns have a 1 px `border` frame (R85): their fill
@@ -162,8 +161,8 @@ the next element; `TextField` and `draw_dialog_frame` already follow this.
 
 ## 6. Selection
 
-The selected row keeps the neutral `bg.active` fill (ImGui `Header`) and gets
-`selection_bar::draw_selection_bar` right after its tree node or selectable:
+The selected row keeps the neutral `bg.active` fill (ImGui `Header`) and gets,
+drawn by `list_row::draw_list_row` (R155),
 an `accent` bar `list.selection_bar_width` (3 px) wide with round ends,
 inset `space.sm` (8 px) from the top and bottom of the row,
 on the row's left edge. Hover shows `bg.hover` only, no bar.

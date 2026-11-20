@@ -177,13 +177,13 @@ Build once, use everywhere. Planned:
   long options end with "…" in the field and wrap on two lines in the list
   (R128); never tinted (memo M193).
   No compact or other variants. Never ImGui's plain combo
-- Selection bar — **exists**: `selection_bar::draw_selection_bar`, called
-  right after the selected row's tree node (R71), with the rounded row fill
-  `draw_row_highlight`; the `_in` variants take the row rect for
-  selectables, whose item rect reaches beyond the row
-- Tree arrow — **exists**: `tree_arrow::draw_tree_arrow`, the Lucide chevron
-  (`chevron-down` / `chevron-right` in `text.disabled`) over ImGui's hidden
-  triangle; never ImGui's filled triangle in lists (R71)
+- List row — **exists** (R155): every row of a list or tree is
+  `list_row::draw_list_row` with a `ListRow` (level, `RowChevron`, title
+  style and search hits, `RowMarker`s, trailing text, detail line,
+  renaming); it draws the rounded fill, the selection bar (R71) and the
+  Lucide chevron (`text.disabled`, never ImGui's triangle). The response
+  reports click, chevron click, hovered marker and the title rect for an
+  inline rename. Never an ImGui `TreeNode` or bare `Selectable` in a list
 - Menu entries — **exist**: `menu::draw_menu_item` (check mark = Lucide
   `check` in `accent.text`) and `menu::begin_submenu` (Lucide `chevron-right`,
   flush beside the parent); never ImGui's own check mark/arrow (memo M99);
