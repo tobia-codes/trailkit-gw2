@@ -71,6 +71,7 @@ Names follow `memo-state-<state>-<dark|light>.png` and
 | Dialogs, toast | `dialog-unsaved-dark`, `toast-dark`; error and success toasts: `ui-toast-error-*`, `ui-toast-success-*` (trailkit-ui) |
 | Popup menus, submenus, dropdown | `menu-note-dark`, `menu-note-reset-submenu-dark`, `kind-open-dark` |
 | A group collapsed by a click, the note staying | `group-clicked-dark` |
+| Indent guides with a selected and a hovered nested row | `indent-guides-hover-dark`, `indent-guides-group-light` |
 | Any view at the narrowest window | `min-<state>-dark`, in German `min-de-<state>-dark` |
 
 ## How the layout behaves
@@ -84,7 +85,11 @@ Names follow `memo-state-<state>-<dark|light>.png` and
 - **The editor hides the note list** and brings it back when it ends (M167). A
   list the user hid stays hidden.
 - **A click on a group's row toggles it** and selects it; the note pane keeps its note
-  (M172, M173).
+  (M172, M173). The toggle waits for the double-click time, so a double-click only
+  renames; the chevron toggles at once.
+- **Indent guides** (R156): a 1 px `border.subtle` line below each expanded group's
+  chevron down to its last descendant; fills and the selection bar of nested rows start
+  right of the lines.
 - **Ctrl+F toggles the search.** The field's `x` clears text first and closes an empty
   field (M176).
 - **Popup menus have room** (`menu.*` tokens, M177): an icon in every command row, none in
