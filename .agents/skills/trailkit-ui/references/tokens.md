@@ -135,6 +135,10 @@ editor's formatting buttons that light up for the formatting at the cursor
   rows padded `space.sm`, panes padded and separated by `space.sm`, the
   selection bar inset `space.sm`, a tree level indented `space.lg`. Line
   widths, the selection bar width, radii and the shadow offset are no spacing.
+  The gap between an icon and its label in a button and a chip's side padding
+  are `space.sm`. Two sizes follow a line's or bar's height instead and stay
+  relative (Q520): a chat-link chip reaches leading ÷ 6 above and below its
+  text (M82), and the toolbar divider is inset 20 % of the bar's height.
 
 ### 5.1 Forms and dialogs (R144)
 

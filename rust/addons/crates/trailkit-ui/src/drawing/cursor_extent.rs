@@ -20,16 +20,13 @@ use windows::Win32::{
 /// `style.MouseCursorScale` (imgui.cpp, `FindBestWindowPosForPopup`).
 const IMGUI_TOOLTIP_AVOID_WIDTH: f32 = 24.0;
 
-/// Gap between the cursor and a tooltip in pixels.
-const TOOLTIP_GAP: f32 = 4.0;
-
 /// The `style.MouseCursorScale` that places tooltips just right of a cursor
-/// reaching `extent` (`[right, down]`) from its hot spot; never below
-/// ImGui's default of 1.
+/// reaching `extent` (`[right, down]`) from its hot spot, `gap` pixels
+/// further right (`space.xs`, R148); never below ImGui's default of 1.
 #[must_use]
-pub fn tooltip_cursor_scale(extent: Option<[f32; 2]>) -> f32 {
+pub fn tooltip_cursor_scale(extent: Option<[f32; 2]>, gap: f32) -> f32 {
     extent.map_or(1.0, |[right, _]| {
-        ((right + TOOLTIP_GAP) / IMGUI_TOOLTIP_AVOID_WIDTH).max(1.0)
+        ((right + gap) / IMGUI_TOOLTIP_AVOID_WIDTH).max(1.0)
     })
 }
 
@@ -192,9 +189,9 @@ mod tests {
     #[test]
     fn tooltips_start_right_of_the_cursor() {
         // A 44 px wide game cursor: 44 + 4 px gap = 48 px = 2 × 24.
-        assert!((tooltip_cursor_scale(Some([44.0, 60.0])) - 2.0).abs() < f32::EPSILON);
+        assert!((tooltip_cursor_scale(Some([44.0, 60.0]), 4.0) - 2.0).abs() < f32::EPSILON);
         // Small cursors and unknown ones keep ImGui's default.
-        assert!((tooltip_cursor_scale(Some([10.0, 16.0])) - 1.0).abs() < f32::EPSILON);
-        assert!((tooltip_cursor_scale(None) - 1.0).abs() < f32::EPSILON);
+        assert!((tooltip_cursor_scale(Some([10.0, 16.0]), 4.0) - 1.0).abs() < f32::EPSILON);
+        assert!((tooltip_cursor_scale(None, 4.0) - 1.0).abs() < f32::EPSILON);
     }
 }

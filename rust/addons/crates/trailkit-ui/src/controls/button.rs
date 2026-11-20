@@ -154,9 +154,9 @@ fn min_text_button_width(ui: &Ui, theme: &Theme) -> f32 {
     theme.button.min_width_for(ui.current_font_size())
 }
 
-/// The gap between an icon and its label inside a button.
+/// The gap between an icon and its label inside a button (`space.sm`, R148).
 pub(crate) fn icon_label_gap(theme: &Theme) -> f32 {
-    theme.spacing.extra_small * 1.5
+    theme.spacing.small
 }
 
 /// Draws a borderless icon button (`bg.hover` only while hovered) with

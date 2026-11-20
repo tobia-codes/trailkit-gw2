@@ -118,9 +118,9 @@ struct TooltipOffset {
 
 impl TooltipOffset {
     /// Applies the scale for a cursor of `extent` (`None` = unknown, the
-    /// default offset).
-    fn push(extent: Option<[f32; 2]>) -> Self {
-        let scale = tooltip_cursor_scale(extent);
+    /// default offset) that keeps tooltips `gap` pixels right of it.
+    fn push(extent: Option<[f32; 2]>, gap: f32) -> Self {
+        let scale = tooltip_cursor_scale(extent, gap);
         // SAFETY: called on the render thread inside a frame, so the style
         // of the current ImGui context is valid and nothing else touches it
         // concurrently.
@@ -160,7 +160,7 @@ impl<'ui> StyleScope<'ui> {
             _colors: COLOR_SLOTS
                 .map(|(slot, token)| ui.push_style_color(slot, token(theme).to_array())),
             _style_vars: STYLE_VARS.map(|style_var| ui.push_style_var(style_var(theme))),
-            _tooltip_offset: TooltipOffset::push(extent),
+            _tooltip_offset: TooltipOffset::push(extent, theme.spacing.extra_small),
         }
     }
 

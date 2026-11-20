@@ -223,9 +223,9 @@ fn draw_scaled_icon(icon: Icon, position: [f32; 2], size: f32, color: Color) {
     }
 }
 
-/// Horizontal padding inside the pill.
+/// Horizontal padding inside the pill (`space.sm`, R148).
 fn padding(theme: &Theme) -> f32 {
-    theme.spacing.extra_small * 1.5
+    theme.spacing.small
 }
 
 /// The width `chip` takes in the current font, padding included.
