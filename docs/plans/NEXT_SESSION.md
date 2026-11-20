@@ -10,7 +10,6 @@ Last updated: 2026-11-20 (session 48, PC; R148 spacing scale and Stack, R147 ico
 
 ## ▶ Resume here
 
-
 **First, if [`in-game-tests.md`](in-game-tests.md) lists tests, ask the user: can you test in game now?** Remove each item once
 the user confirms it (user requests 2026-11-13, 2026-11-16); an empty list means no question. A failed test becomes a `bugfix/` branch.
 
@@ -27,20 +26,16 @@ log export active (click re-checks, then the info), event button **hidden** unti
 **Sessions 44–46 (2026-11-18/19), merged via PR #152:** memo data model M201–M204, drop zones, Backspace on markers/links, link dialog, bare links/e-mails, right-click menu (M205–M211),
 R139–R146 (TextField, no disabled buttons, dialog close icon, wrapped tooltips, link icons, measured form spacing, shared `Dialog`/`Backdrop`, report reuse), M213 text size percent, R149 one link underline. All in-game tests passed except the two below.
 **Done 2026-11-19 (PR of `bugfix/memo-shortcut-keys`):** memo catches Ctrl+Z/Y/Shift+Z, Ctrl+0 (number pad too) and Enter in dialogs; dialogs at most 20 font sizes wide (R153); editor toolbar flush with the title; CI 13 → ~4 min (R151, PR #154).
-**Active work branch: `feature/ui-layout-rules`** (2026-11-20, local commits only, nothing pushed; `git switch feature/ui-layout-rules`).
-Done on it, all tests green, deployed and OK in game: M214, R150, dropdown gap (`ea55211`); **R148** complete: one spacing scale (component spacing tokens removed),
-`layout::stack::Stack` (rounded positions), one divider with a fixed `space.sm` (Q528), ImGui `ItemSpacing` 0 with every gap explicit (Q529), markdown block gaps (Q530),
-status card leaves its gap to the caller, problem page and help topic list as stacks; **R147** complete: one interface icon size = body × `font.size.icon` 0.9
-(Q536, Q537; only chips/link icons in text follow their line), icons on the capital middle of their text (`draw_icon_into` takes that line), square icon buttons
-as tall as text buttons, editor toolbar variant C (Q523, Q524). Mock: https://claude.ai/artifact/ScQ3VRbwZ7oJ3Q6Zcy2LT4. Decisions are in the R147/R148 rows.
-Next on it, in order: 1. the note list header buttons draw their own button (`slices/note-list/src/note_list.rs`, `draw_header`): move them onto the shared
-button with a width (rule 7), pixel-identical. 2. Review every changed snapshot against `tokens.md` §10 (R82); fix or report. 3. Deploy, in-game check, then ask
-for the merge OK (R74) and open the PR into `develop`.
-**After that branch (R155, Q531–Q534, order fixed):** a. unify menu entries: one `MenuItem` + `draw_menu_item` (icon, shortcut, check, tone, selected), memo's
-window menu rows use it; b. unify list rows: only `draw_list_row` (level, chevron, markers, title marks, renaming), the memo note list moves off `TreeNode`,
-pixel-identical; row state, chevron and selection bar become `pub(crate)`; c. the help table of contents (sections of the selected topic, click scrolls), R87 mock first.
-Also open: length hints for split grilling: `draw_spans` (`inline_text.rs`, 80), `states.rs` tests (819), `editor.rs` (481), `dialogs.rs` (403), `buffer.rs` (413);
-one unreproduced debug crash `imgui.h:1629` while deleting in a link label (if it recurs: Ignore, note cursor placement, key, preview, tooltip).
+**Active work branch: `feature/ui-layout-rules`** (2026-11-20, local commits only, nothing pushed; `git switch feature/ui-layout-rules`). Done on it, all tests green, deployed and OK in game: M214, R150, dropdown gap (`ea55211`); **R148**
+complete: one spacing scale (component spacing tokens removed), `layout::stack::Stack` (rounded positions), one divider with a fixed `space.sm` (Q528), ImGui `ItemSpacing` 0 with every gap explicit (Q529), markdown block gaps (Q530), status
+card leaves its gap to the caller, problem page and help topic list as stacks; **R147** complete: one interface icon size = body × `font.size.icon` 0.9 (Q536, Q537; only chips/link icons in text follow their line), icons on the capital
+middle of their text (`draw_icon_into` takes that line), square icon buttons as tall as text buttons, editor toolbar variant C (Q523, Q524). Mock: https://claude.ai/artifact/ScQ3VRbwZ7oJ3Q6Zcy2LT4. Decisions are in the R147/R148 rows. Next
+on it, in order: 1. the note list header buttons draw their own button (`slices/note-list/src/note_list.rs`, `draw_header`): move them onto the shared button with a width (rule 7), pixel-identical. 2. Review every changed snapshot against
+`tokens.md` §10 (R82); fix or report. 3. Deploy, in-game check, then ask for the merge OK (R74) and open the PR into `develop`.
+**After that branch (R155, Q531–Q534, order fixed):** a. unify menu entries: one `MenuItem` + `draw_menu_item` (icon, shortcut, check, tone, selected), memo's window menu rows use it; b. unify list rows: only `draw_list_row` (level,
+chevron, markers, title marks, renaming), the memo note list moves off `TreeNode`, pixel-identical; row state, chevron and selection bar become `pub(crate)`; c. the help table of contents (sections of the selected topic, click scrolls), R87
+mock first. Also open: length hints for split grilling: `draw_spans` (`inline_text.rs`, 80), `states.rs` tests (819), `editor.rs` (481), `dialogs.rs` (403), `buffer.rs` (413); one unreproduced debug crash `imgui.h:1629` while deleting in a
+link label (if it recurs: Ignore, note cursor placement, key, preview, tooltip).
 **Next: data pipeline** (`rust/tools/trailkit-datagen`): the failing GemExchange job below (review item 3 done, D42); no more datagen unit tests, the backend tests cover it later (R152). Coverage 2026-11-18 before #146: addons 89 % of lines, memo app 70 %, datagen 52 %.
 **Then test gaps:** extract and test the Escape/close logic of `nexus_bridge/render.rs` like `key_routing.rs`; window actions (new group, format, preview, compact view, open folder, clear search); Ctrl+Y/Ctrl+Shift+Z keys. `xtask` last. Prove new tests with injected faults.
 **Coverage tooling (R152, option A):** build `cargo xtask coverage` from the manual steps below and document it in agent-reference/CONTRIBUTING. **Coverage on demand, not in CI** (`llvm-tools` installed): `RUSTFLAGS="-C instrument-coverage" CARGO_TARGET_DIR=target/coverage cargo xwin test --no-run`, run each binary from its crate with `LLVM_PROFILE_FILE`/`TRAILKIT_SNAPSHOT_ROOT` via `WSLENV` (`/p`), `llvm-profdata merge`, `llvm-cov export`; then delete `rust/*.profraw` and the 2.8 GB build.
