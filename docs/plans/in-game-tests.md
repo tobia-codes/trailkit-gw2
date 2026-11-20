@@ -27,23 +27,3 @@ is ready when the user is back at the PC.
    bottom-right corner as far left as it goes.
 5. Reload memo: Nexus menu › Addons › trailkit-memo › unload,
    then load again.
-
-## Pending (branch `feature/insert-after-selection`, deploy it first)
-
-Deploy: `git switch feature/insert-after-selection`, then `cargo xtask deploy trailkit-memo` in `rust/`.
-
-1. **New entries next to the selection (M215).** Select a note at the top
-   level (e.g. "Daily"), click **New group** above the list. Before: the
-   group went to the end of the list. Now: it appears right below "Daily",
-   in rename mode. Select a group, click **New note**: the note is the
-   group's last entry. Select a note inside a group, click **New note** or
-   **New group**: it appears right below that note, in the same group.
-2. **Empty spot clears the selection (M216).** With a note selected, click
-   the empty space below the last row. Now no row is highlighted (no fill,
-   no purple bar); the note stays on the right. Then **New note** goes to
-   the end of the list and the list scrolls to it.
-3. **Fills 4 px from the guide lines (R156).** Open a group with notes and
-   hover a note in it, then select one. Before: the fill started about
-   10 px right of the group's thin line. Now: 4 px right of it; the line is
-   never covered. Approved look:
-   https://claude.ai/artifact/2wvMyxTH8fUumYQS8dqTNh

@@ -181,7 +181,7 @@ Build once, use everywhere. Planned:
   `list_row::draw_list_row` with a `ListRow` (level, `RowChevron`, title
   style and search hits, `RowMarker`s, trailing text, detail line,
   renaming); it draws the rounded fill, the selection bar (R71), the indent
-  guides of a tree (`border.subtle`, fills start right of them, R156) and the
+  guides of a tree (`border.subtle`, fills start `space.xs` right of them, R156) and the
   Lucide chevron (`text.disabled`, never ImGui's triangle). The response
   reports click, chevron click, hovered marker and the title rect for an
   inline rename. Never an ImGui `TreeNode` or bare `Selectable` in a list

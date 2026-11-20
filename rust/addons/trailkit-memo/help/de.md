@@ -47,7 +47,7 @@ Deine Notizen stehen in einer Liste, die du sortieren und in Gruppen ordnen kann
 
 ### Anlegen und umbenennen
 
-- **Neue Notiz / neue Gruppe:** die beiden Buttons über der Liste. Der neue Eintrag landet in der ausgewählten Gruppe (bzw. der Gruppe der ausgewählten Notiz), ganz am Ende, und die Liste scrollt dorthin. Tippe gleich einen Namen ein und drücke Enter.
+- **Neue Notiz / neue Gruppe:** die beiden Buttons über der Liste. Der neue Eintrag landet direkt unter der ausgewählten Notiz oder als letzter Eintrag in der ausgewählten Gruppe; ohne Auswahl am Ende der Liste. Die Liste scrollt dorthin. Ein Klick auf eine leere Stelle der Liste hebt die Auswahl auf; die Notiz rechts bleibt stehen. Tippe gleich einen Namen ein und drücke Enter.
 - **Rechtsklick** auf eine Gruppe oder eine leere Stelle der Liste bietet dasselbe: auf einer Gruppe kommt der neue Eintrag in sie hinein, auf einer leeren Stelle ans Ende der Liste.
 - **Umbenennen:** Doppelklick auf einen Eintrag oder Rechtsklick › *Umbenennen*. Enter oder ein Klick daneben übernimmt den Namen, Escape bricht ab.
 - **Notizmenü:** Der Button mit den drei Punkten neben *Bearbeiten* bietet *Umbenennen*, *Verschieben nach*, *Reset-Art* und *Löschen* für die offene Notiz. *Umbenennen* öffnet den Editor mit markiertem Titel; beende ihn mit *Speichern*.

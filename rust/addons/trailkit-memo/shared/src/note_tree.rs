@@ -112,15 +112,19 @@ impl NotesDocument {
         }
     }
 
-    /// The group a new note or group goes into when `selected` is selected
-    /// (M43): the selected group itself, the group of a selected note, or
-    /// `None` for the root level.
+    /// Where a new note or group goes when `selected` is selected (M215,
+    /// replaces M43's end of the group): into a selected group as its last
+    /// entry, right after a selected note in the same parent, and at the end
+    /// of the root level without a selection or with one that no longer
+    /// exists.
     #[must_use]
-    pub fn insertion_parent(&self, selected: Option<NodeId>) -> Option<GroupId> {
-        match selected? {
-            NodeId::Group(group) if self.contains(NodeId::Group(group)) => Some(group),
-            NodeId::Group(_) => None,
-            node @ NodeId::Note(_) => parent_of(&self.root, node).flatten(),
+    pub fn insertion_point(&self, selected: Option<NodeId>) -> InsertionPoint {
+        match selected {
+            Some(NodeId::Group(group)) if self.contains(NodeId::Group(group)) => {
+                InsertionPoint::End(Some(group))
+            }
+            Some(note @ NodeId::Note(_)) if self.contains(note) => InsertionPoint::After(note),
+            Some(_) | None => InsertionPoint::End(None),
         }
     }
 
@@ -485,7 +489,7 @@ mod tests {
     }
 
     #[test]
-    fn insertion_parent_follows_the_selection() {
+    fn a_new_entry_goes_next_to_the_selection() {
         let document = sample_document();
         let TreeNode::Note(root_note) = &document.root[0] else {
             panic!("expected a note");
@@ -497,22 +501,30 @@ mod tests {
             panic!("expected a note");
         };
 
-        assert_eq!(document.insertion_parent(None), None);
+        assert_eq!(document.insertion_point(None), InsertionPoint::End(None));
         assert_eq!(
-            document.insertion_parent(Some(NodeId::Note(root_note.id))),
-            None
+            document.insertion_point(Some(NodeId::Note(root_note.id))),
+            InsertionPoint::After(NodeId::Note(root_note.id)),
+            "after a selected note at the root level"
         );
         assert_eq!(
-            document.insertion_parent(Some(NodeId::Group(group.id))),
-            Some(group.id)
+            document.insertion_point(Some(NodeId::Group(group.id))),
+            InsertionPoint::End(Some(group.id)),
+            "into a selected group, as its last entry"
         );
         assert_eq!(
-            document.insertion_parent(Some(NodeId::Note(nested.id))),
-            Some(group.id)
+            document.insertion_point(Some(NodeId::Note(nested.id))),
+            InsertionPoint::After(NodeId::Note(nested.id)),
+            "after a selected note inside a group"
         );
         assert_eq!(
-            document.insertion_parent(Some(NodeId::Group(GroupId::new_unique()))),
-            None
+            document.insertion_point(Some(NodeId::Group(GroupId::new_unique()))),
+            InsertionPoint::End(None),
+            "a selection that no longer exists"
+        );
+        assert_eq!(
+            document.insertion_point(Some(NodeId::Note(NoteId::new_unique()))),
+            InsertionPoint::End(None)
         );
     }
 
