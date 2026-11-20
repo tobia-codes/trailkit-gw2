@@ -128,12 +128,19 @@ impl StackLayout<'_> {
     /// Adds the divider above running text whose first line uses
     /// `first_line_font`, so its capital letters keep `space.sm` from the line.
     ///
+    /// When the empty space above the letters is taller than `space.sm`, the
+    /// next element starts right under the line and the return value is how
+    /// far it must pull its text up; a scroll region does so inside itself,
+    /// so its clip edge stays at the line. Otherwise it returns 0.
+    ///
     /// # Panics
     ///
     /// In debug builds, if the stack is horizontal.
-    pub fn add_separator_above_text(&mut self, theme: &Theme, first_line_font: FontRole) {
+    #[must_use = "the next element pulls its text up by the returned overlap"]
+    pub fn add_separator_above_text(&mut self, theme: &Theme, first_line_font: FontRole) -> f32 {
         let below = gap_above_text(self.ui, theme, first_line_font);
-        self.add_rule(theme, below);
+        self.add_rule(theme, below.max(0.0));
+        (-below).max(0.0)
     }
 
     /// Adds the line `space.sm` after the previous element and makes `below`

@@ -4,9 +4,9 @@
 //!
 //! The visible edge below the line is a frame's edge (buttons, fields), the
 //! fill of a list row, or the capital letters of text; the last needs
-//! [`draw_separator_above_text`], since a text line starts with empty space
-//! above its letters. ImGui 1.80's `Separator` spans the full window width,
-//! padding included, so it is never used.
+//! `StackLayout::add_separator_above_text`, since a text line starts with
+//! empty space above its letters. ImGui 1.80's `Separator` spans the full
+//! window width, padding included, so it is never used.
 
 use crate::drawing::draw_list::window_draw_list;
 use nexus::imgui::Ui;
@@ -20,35 +20,30 @@ use crate::{
 /// line and from the line to the next item's edge, such as a button, a field
 /// or the fill of a list row.
 pub fn draw_separator(ui: &Ui, theme: &Theme) {
-    draw_line(ui, theme, theme.spacing.small);
-}
-
-/// Draws the divider above running text whose first line uses
-/// `first_line_font`, so the capital letters keep `space.sm` from the line.
-pub fn draw_separator_above_text(ui: &Ui, theme: &Theme, first_line_font: FontRole) {
-    draw_line(ui, theme, gap_above_text(ui, theme, first_line_font));
+    draw_line(ui, theme);
 }
 
 /// The gap between the line and the top of a text line in `first_line_font`
 /// that puts its capital letters `space.sm` below the line: the empty space
-/// above the letters counts as part of it.
+/// above the letters counts as part of it. Negative when that empty space
+/// alone is taller than `space.sm` (a heading, or body text at 20 px).
 pub(crate) fn gap_above_text(ui: &Ui, theme: &Theme, first_line_font: FontRole) -> f32 {
     let empty_top = {
         let _font = FontScope::push(ui, first_line_font);
         let leading = theme.typography.leading_for(ui.current_font_size());
         leading + glyph_bounds('H').map_or(0.0, |(top, _)| top)
     };
-    (theme.spacing.small - empty_top).max(0.0)
+    theme.spacing.small - empty_top
 }
 
-/// Draws the line `space.sm` below the last item and leaves the cursor so
-/// the next item starts `below` under the line; ImGui's item spacing after
-/// each item is taken into account.
-fn draw_line(ui: &Ui, theme: &Theme, below: f32) {
+/// Draws the line `space.sm` below the last item and leaves the cursor
+/// `space.sm` under it; ImGui's item spacing after each item is taken into
+/// account.
+fn draw_line(ui: &Ui, theme: &Theme) {
     let item_spacing = ui.clone_style().item_spacing[1];
     move_cursor_down(ui, theme.spacing.small - item_spacing);
     draw_rule(ui, theme);
-    move_cursor_down(ui, below - item_spacing);
+    move_cursor_down(ui, theme.spacing.small - item_spacing);
 }
 
 /// Draws the line itself at the cursor in `border.subtle`, across the

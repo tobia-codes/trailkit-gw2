@@ -169,7 +169,8 @@ fn a_separator_above_text_counts_the_empty_top_of_the_line() {
     let rects = record(|ui, theme, rects| {
         Stack::vertical(theme).build(ui, |stack| {
             add_button(ui, stack, rects, "Above");
-            stack.add_separator_above_text(theme, FontRole::Body);
+            let overlap = stack.add_separator_above_text(theme, FontRole::Body);
+            assert!(overlap >= 0.0);
             rects
                 .borrow_mut()
                 .push([ui.item_rect_min(), ui.item_rect_max()]);
