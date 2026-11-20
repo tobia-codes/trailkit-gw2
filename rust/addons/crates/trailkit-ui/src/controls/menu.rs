@@ -1,14 +1,24 @@
 //! Menu entries for context menus shared by all addons (memo plan M98, M99).
+//! Every entry is a [`MenuItem`]: [`draw_menu_item`] draws it in a popup,
+//! [`draw_menu_panel`] in a menu drawn as a panel (ROADMAP R155).
 //!
 //! ImGui draws its own check mark and submenu arrow; these entries use the
 //! Lucide `check` and `chevron-right` icons like the dropdown, and submenus
 //! open flush beside their parent instead of overlapping it.
 
+mod item;
+mod panel;
+
+pub use self::item::{MenuItem, MenuItemTone};
+pub use self::panel::{MenuEntry, draw_menu_panel};
+
 use crate::controls::hover::{is_item_hovered, is_item_hovered_with_flags};
 use std::cell::Cell;
 
 use crate::controls::tooltip::draw_reason_tooltip;
-use nexus::imgui::{ItemHoveredFlags, MenuItem, MenuToken, StyleColor, StyleVar, Ui};
+use nexus::imgui::{
+    ItemHoveredFlags, MenuItem as ImguiMenuItem, MenuToken, StyleColor, StyleVar, Ui,
+};
 
 use crate::{
     color::Color,
@@ -219,127 +229,61 @@ pub(crate) fn draw_menu_row_label(origin: [f32; 2], color: Color, label: &str) {
     }
 }
 
-/// Draws a menu item and returns whether it was clicked. A `checked` item
-/// shows a check mark in the accent color at its right end.
-pub fn draw_menu_item(ui: &Ui, theme: &Theme, label: &str, checked: bool) -> bool {
-    let origin = ui.cursor_screen_pos();
-    let clicked = {
-        let _hidden = ui.push_style_color(StyleColor::Text, [0.0; 4]);
-        MenuItem::new(label).build(ui)
-    };
-    draw_menu_row_highlight(ui, theme, false);
-    draw_menu_row_label(origin, theme.text.primary, label);
-    if checked {
-        // SAFETY: called on the render thread inside a frame, so the
-        // current window's draw list is valid.
-        let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
-        draw_icon_into(
-            draw_list,
-            ui,
-            Icon::CHECK,
-            menu_row_content_right(ui, theme) - icon_width(ui),
-            label_icon_middle(ui, origin[1]),
-            packed(theme.accent.text),
-        );
-    }
-    clicked
-}
-
-/// How a menu item with an icon looks.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MenuItemTone {
-    /// `text.primary` label and icon.
-    Regular,
-    /// `danger` label and icon, for a destructive item that asks first
-    /// (memo M146).
-    Danger,
-}
-
-/// Draws a menu item with a Lucide `icon` before `label` and returns
-/// whether it was clicked (memo M133). A disabled item is drawn in
-/// `text.disabled` and shows `disabled_tooltip` as its reason, with the
-/// neutral `ban` icon, while hovered (M141, R93).
-pub fn draw_menu_item_with_icon(
-    ui: &Ui,
-    theme: &Theme,
-    icon: Icon,
-    label: &str,
-    tone: MenuItemTone,
-    disabled_tooltip: Option<&str>,
-) -> bool {
-    draw_icon_menu_item(ui, theme, icon, label, None, (tone, disabled_tooltip))
-}
-
-/// Draws an enabled menu item with a Lucide `icon` before `label` and its
-/// `shortcut` in `text.secondary` at the row's right end (memo M198); ImGui
-/// keeps room for the shortcut. Returns whether it was clicked.
-pub fn draw_menu_item_with_shortcut(
-    ui: &Ui,
-    theme: &Theme,
-    icon: Icon,
-    label: &str,
-    shortcut: &str,
-) -> bool {
-    draw_icon_menu_item(
-        ui,
-        theme,
-        icon,
-        label,
-        Some(shortcut),
-        (MenuItemTone::Regular, None),
-    )
-}
-
-/// Draws a menu item with `icon`, `label` and an optional `shortcut`; see
-/// [`draw_menu_item_with_icon`] for the tone and the disabled state.
-fn draw_icon_menu_item(
-    ui: &Ui,
-    theme: &Theme,
-    icon: Icon,
-    label: &str,
-    shortcut: Option<&str>,
-    (tone, disabled_tooltip): (MenuItemTone, Option<&str>),
-) -> bool {
-    let enabled = disabled_tooltip.is_none();
+/// Draws `item` as an entry of the current popup and returns whether it was
+/// clicked (never while disabled). The icon sits at the row's start, the
+/// label after it; a check mark or the shortcut sits at the right end.
+pub fn draw_menu_item(ui: &Ui, theme: &Theme, item: &MenuItem<'_>) -> bool {
+    let enabled = item.is_enabled();
     // ImGui draws the label at the cursor; the item rect is no substitute
     // because it reaches half the item spacing further up and left.
     let origin = ui.cursor_screen_pos();
-    // ImGui keeps room for a check mark after the label; the label moves
-    // right by the icon, which fits into that room.
+    // ImGui keeps room for a check mark after the label; an icon moves the
+    // label right, which fits into that room.
     let clicked = {
         // A disabled item draws its label in `TextDisabled`, not `Text`.
         let _hidden = [
             ui.push_style_color(StyleColor::Text, [0.0; 4]),
             ui.push_style_color(StyleColor::TextDisabled, [0.0; 4]),
         ];
-        let item = MenuItem::new(label).enabled(enabled);
-        match shortcut {
-            Some(shortcut) => item.shortcut(shortcut).build(ui),
-            None => item.build(ui),
+        let entry = ImguiMenuItem::new(item.label).enabled(enabled);
+        match item.shortcut {
+            Some(shortcut) => entry.shortcut(shortcut).build(ui),
+            None => entry.build(ui),
         }
     };
     // ImGui reports the hover of a disabled item once the item has ended.
     if enabled {
-        draw_menu_row_highlight(ui, theme, false);
+        draw_menu_row_highlight(ui, theme, item.selected);
     }
-    let color = match (enabled, tone) {
-        (false, _) => theme.text.disabled,
-        (true, MenuItemTone::Regular) => theme.text.primary,
-        (true, MenuItemTone::Danger) => theme.status.danger,
-    };
+    let color = item.color(theme);
     // SAFETY: called on the render thread inside a frame, so the current
     // window's draw list is valid.
     let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
     let middle = label_icon_middle(ui, origin[1]);
-    draw_icon_into(draw_list, ui, icon, origin[0], middle, packed(color));
-    let label_x = origin[0] + icon_width(ui) + theme.spacing.small;
-    draw_menu_row_label([label_x, origin[1]], color, label);
-    if let Some(shortcut) = shortcut {
-        let right = menu_row_content_right(ui, theme);
+    let label_x = match item.icon {
+        Some(icon) => {
+            draw_icon_into(draw_list, ui, icon, origin[0], middle, packed(color));
+            origin[0] + icon_width(ui) + theme.spacing.small
+        }
+        None => origin[0],
+    };
+    draw_menu_row_label([label_x, origin[1]], color, item.label);
+    let right = menu_row_content_right(ui, theme);
+    if item.checked {
+        draw_icon_into(
+            draw_list,
+            ui,
+            Icon::CHECK,
+            right - icon_width(ui),
+            middle,
+            packed(theme.accent.text),
+        );
+    }
+    if let Some(shortcut) = item.shortcut {
         let x = right - ui.calc_text_size(shortcut)[0];
         draw_menu_row_label([x, origin[1]], theme.text.secondary, shortcut);
     }
-    if let Some(reason) = disabled_tooltip
+    if let Some(reason) = item.disabled_reason
         && is_item_hovered_with_flags(ui, ItemHoveredFlags::ALLOW_WHEN_DISABLED)
     {
         draw_reason_tooltip(ui, theme, reason);

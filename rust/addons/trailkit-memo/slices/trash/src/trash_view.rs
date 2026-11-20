@@ -14,7 +14,7 @@ use trailkit_ui::{
         draw_danger_button, draw_danger_icon_button, draw_icon_button,
         draw_primary_button_with_icon, icon_button_width, icon_label_button_width,
     },
-    controls::menu::{MenuItemTone, draw_menu_item_with_icon, draw_popup},
+    controls::menu::{MenuItem, MenuItemTone, draw_menu_item, draw_popup},
     layout::empty_state::{EmptyState, draw_empty_state},
     layout::separator::draw_separator,
     layout::stack::Stack,
@@ -201,19 +201,16 @@ fn draw_entry_row(
 /// the `danger` "Delete permanently …" (M146).
 fn draw_entry_menu(ui: &Ui, language: Language, theme: &Theme, id: NodeId) -> Option<TrashAction> {
     let mut action = None;
-    if draw_menu_item_with_icon(
-        ui,
-        theme,
-        Icon::ROTATE_CCW,
-        TrashText::Restore.get(language),
-        MenuItemTone::Regular,
-        None,
-    ) {
+    let restore = MenuItem::new(TrashText::Restore.get(language)).icon(Icon::ROTATE_CCW);
+    if draw_menu_item(ui, theme, &restore) {
         action = Some(TrashAction::Restore(id));
     }
     draw_separator(ui, theme);
     let label = format!("{} …", TrashText::DeletePermanently.get(language));
-    if draw_menu_item_with_icon(ui, theme, Icon::TRASH_2, &label, MenuItemTone::Danger, None) {
+    let delete = MenuItem::new(&label)
+        .icon(Icon::TRASH_2)
+        .tone(MenuItemTone::Danger);
+    if draw_menu_item(ui, theme, &delete) {
         action = Some(TrashAction::DeletePermanently(id));
     }
     action

@@ -130,7 +130,13 @@ Build once, use everywhere. Planned:
   is only disabled with the user's explicit approval (R140).** Disabled
   menu entries use the same reason tooltip. Drive `Busy` with
   `busy::BusyState` (at least 0.6 s); on popups and toasts
-  `draw_popup_icon_button` (hover on `bg.active`)
+  `draw_popup_icon_button` (hover on `bg.active`). An icon-only button with
+  a frame is `Button::new("").icon(..).width(..)`, named by its tooltip
+- Menu entry — **exists** (R155): every entry is a `menu::MenuItem` (label,
+  icon, shortcut, check mark, `MenuItemTone`, selected, disabled reason);
+  `draw_menu_item` draws it in a popup (`draw_popup`), `draw_menu_panel`
+  in a menu drawn as a panel (memo's window menu, R155-1); submenus:
+  `begin_submenu`
 - `Popover` / `Tooltip`, `ConfirmDialog`, `UnsavedChangesDialog`
 - `DependencyHint` (greyed feature + explanation + "Open core settings"/
   "Get trailkit-core" button)

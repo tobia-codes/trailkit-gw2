@@ -10,7 +10,7 @@ use std::cell::Cell;
 use nexus::imgui::{Condition, Ui, Window};
 use trailkit_ui::{
     controls::menu::{
-        close_open_popups, draw_menu_item, draw_popup, menu_row_highlight_rect,
+        MenuItem, close_open_popups, draw_menu_item, draw_popup, menu_row_highlight_rect,
         popup_drawn_this_frame,
     },
     drawing::style_scope::StyleScope,
@@ -80,9 +80,9 @@ fn menu_rows_have_the_same_gap_on_every_side() {
                     draw_popup(ui, &theme, "menu", || {
                         let position = ui.window_pos();
                         let size = ui.window_size();
-                        draw_menu_item(ui, &theme, "First", false);
+                        draw_menu_item(ui, &theme, &MenuItem::new("First"));
                         let [first, _] = menu_row_highlight_rect(ui, &theme);
-                        draw_menu_item(ui, &theme, "Last", false);
+                        draw_menu_item(ui, &theme, &MenuItem::new("Last"));
                         let [_, last] = menu_row_highlight_rect(ui, &theme);
                         gaps.set(Some([
                             first[0] - position[0],

@@ -2,16 +2,10 @@
 //! opens a panel over the full content height with a dimmed backdrop. It holds
 //! the ways to the notes, the search and the trash, and hides the note list.
 
-use nexus::imgui::{StyleVar, Ui};
-use trailkit_ui::drawing::draw_list::window_draw_list;
+use nexus::imgui::Ui;
 use trailkit_ui::{
+    controls::menu::{MenuEntry, MenuItem, draw_menu_panel},
     feedback::backdrop::{Backdrop, BackdropArea},
-    layout::pane::draw_pane,
-    layout::separator::draw_separator,
-    lists::selection_bar::draw_row_state,
-    text::font_registry::FontScope,
-    text::fonts::FontRole,
-    text::glyph_metrics::{capital_middle, icon_visible_box},
     text::icons::Icon,
     theme::Theme,
 };
@@ -28,69 +22,69 @@ const WINDOW_MENU_MAXIMUM_FRACTION: f32 = 0.85;
 /// not as a list tailored to its longest label (M166).
 const WINDOW_MENU_MINIMUM_CHARACTERS: f32 = 27.0;
 
-/// One row of the window menu.
+/// One entry of the window menu and what choosing it does.
 #[derive(Debug, Clone)]
-struct WindowMenuRow {
-    /// The Lucide icon before the label.
-    icon: Icon,
-    /// The localized label; also the row's ImGui id.
-    label: &'static str,
-    /// The shortcut at the row's right end.
-    shortcut: Option<&'static str>,
-    /// Whether the row names the area the window shows.
-    selected: bool,
-    /// Whether a separator sets the row apart from the rows above.
-    separated: bool,
-    /// What choosing the row does.
-    action: WindowAction,
+struct WindowMenuEntry {
+    /// What the entry shows.
+    entry: MenuEntry<'static>,
+    /// What choosing it does; `None` for a separator.
+    action: Option<WindowAction>,
+}
+
+impl WindowMenuEntry {
+    /// A row showing `item` that triggers `action`.
+    const fn row(item: MenuItem<'static>, action: WindowAction) -> Self {
+        Self {
+            entry: MenuEntry::Item(item),
+            action: Some(action),
+        }
+    }
+
+    /// A separator that sets the rows below apart.
+    const SEPARATOR: Self = Self {
+        entry: MenuEntry::Separator,
+        action: None,
+    };
 }
 
 impl MemoWindow {
-    /// The rows the menu offers now. Without notes there is nothing to search
-    /// or hide; the editor hides the note list by itself (M167).
-    fn window_menu_rows(&self, language: Language) -> Vec<WindowMenuRow> {
+    /// The entries the menu offers now. Without notes there is nothing to
+    /// search or hide; the editor hides the note list by itself (M167).
+    fn window_menu_entries(&self, language: Language) -> Vec<WindowMenuEntry> {
         let has_notes = !self.document.root.is_empty();
-        let mut rows = vec![WindowMenuRow {
-            icon: Icon::FILE_TEXT,
-            label: Text::MenuNotes.get(language),
-            shortcut: None,
-            selected: !self.trash.visible,
-            separated: false,
-            action: WindowAction::ShowNotes,
-        }];
+        let mut entries = vec![WindowMenuEntry::row(
+            MenuItem::new(Text::MenuNotes.get(language))
+                .icon(Icon::FILE_TEXT)
+                .selected(!self.trash.visible),
+            WindowAction::ShowNotes,
+        )];
         if has_notes {
-            rows.push(WindowMenuRow {
-                icon: Icon::SEARCH,
-                label: Text::MenuSearch.get(language),
-                shortcut: Some(Text::SearchShortcut.get(language)),
-                selected: false,
-                separated: false,
-                action: WindowAction::ShowSearch,
-            });
+            entries.push(WindowMenuEntry::row(
+                MenuItem::new(Text::MenuSearch.get(language))
+                    .icon(Icon::SEARCH)
+                    .shortcut(Text::SearchShortcut.get(language)),
+                WindowAction::ShowSearch,
+            ));
         }
-        rows.push(WindowMenuRow {
-            icon: Icon::TRASH_2,
-            label: TrashText::Trash.get(language),
-            shortcut: None,
-            selected: self.trash.visible,
-            separated: false,
-            action: WindowAction::OpenTrash,
-        });
+        entries.push(WindowMenuEntry::row(
+            MenuItem::new(TrashText::Trash.get(language))
+                .icon(Icon::TRASH_2)
+                .selected(self.trash.visible),
+            WindowAction::OpenTrash,
+        ));
         if has_notes && self.editor.is_none() {
-            rows.push(WindowMenuRow {
-                icon: Icon::PANEL_LEFT,
-                label: if self.ui_state.note_list_hidden {
-                    Text::ShowNoteList.get(language)
-                } else {
-                    Text::HideNoteList.get(language)
-                },
-                shortcut: None,
-                selected: false,
-                separated: true,
-                action: WindowAction::ToggleNoteList,
-            });
+            let label = if self.ui_state.note_list_hidden {
+                Text::ShowNoteList.get(language)
+            } else {
+                Text::HideNoteList.get(language)
+            };
+            entries.push(WindowMenuEntry::SEPARATOR);
+            entries.push(WindowMenuEntry::row(
+                MenuItem::new(label).icon(Icon::PANEL_LEFT),
+                WindowAction::ToggleNoteList,
+            ));
         }
-        rows
+        entries
     }
 
     /// Draws the open menu over the content area from `start` with `size`: it
@@ -108,28 +102,19 @@ impl MemoWindow {
             return;
         }
         ui.set_cursor_screen_pos(start);
-        let rows = self.window_menu_rows(language);
+        let menu = self.window_menu_entries(language);
+        let entries: Vec<_> = menu.iter().map(|entry| entry.entry).collect();
         let mut chosen = None;
         let is_backdrop_clicked =
             Backdrop::new("window_menu_backdrop", BackdropArea::Region { size })
                 .clickable(true)
                 .draw(ui, theme, || {
-                    let width = window_menu_width(ui, theme, &rows)
-                        .min(size[0] * WINDOW_MENU_MAXIMUM_FRACTION);
-                    draw_pane(ui, theme, "window_menu", [width, 0.0], || {
-                        let _spacing = ui.push_style_var(StyleVar::ItemSpacing([
-                            0.0,
-                            theme.spacing.extra_small,
-                        ]));
-                        for row in &rows {
-                            if row.separated {
-                                draw_separator(ui, theme);
-                            }
-                            if draw_window_menu_row(ui, theme, row) {
-                                chosen = Some(row.action.clone());
-                            }
-                        }
-                    });
+                    let minimum = ui.calc_text_size("n")[0] * WINDOW_MENU_MINIMUM_CHARACTERS;
+                    let maximum = size[0] * WINDOW_MENU_MAXIMUM_FRACTION;
+                    chosen =
+                        draw_menu_panel(ui, theme, "window_menu", [minimum, maximum], &entries)
+                            .and_then(|index| menu.get(index))
+                            .and_then(|entry| entry.action.clone());
                 });
         if let Some(action) = chosen {
             self.window_menu_open = false;
@@ -138,70 +123,4 @@ impl MemoWindow {
             self.window_menu_open = false;
         }
     }
-}
-
-/// The side of the square the rows' icons are centered in.
-fn icon_square_side(ui: &Ui) -> f32 {
-    let _icons = FontScope::push(ui, FontRole::Icons);
-    ui.text_line_height()
-}
-
-/// The width of the panel: its minimum, or the widest row with its padding.
-fn window_menu_width(ui: &Ui, theme: &Theme, rows: &[WindowMenuRow]) -> f32 {
-    let gap = theme.spacing.small;
-    let widest_row = rows
-        .iter()
-        .map(|row| {
-            let shortcut = row
-                .shortcut
-                .map_or(0.0, |text| 2.0 * gap + ui.calc_text_size(text)[0]);
-            ui.calc_text_size(row.label)[0] + shortcut
-        })
-        .fold(0.0, f32::max);
-    let minimum = ui.calc_text_size("n")[0] * WINDOW_MENU_MINIMUM_CHARACTERS;
-    (widest_row + icon_square_side(ui) + 3.0 * gap + 2.0 * theme.spacing.small).max(minimum)
-}
-
-/// Draws one row over the available width: icon, label and the shortcut at its
-/// right end; a selected row looks like a selected list row. Returns whether
-/// it was clicked.
-fn draw_window_menu_row(ui: &Ui, theme: &Theme, row: &WindowMenuRow) -> bool {
-    let width = ui.content_region_avail()[0];
-    let height = ui.frame_height() + theme.spacing.extra_small;
-    let clicked = ui.invisible_button(row.label, [width, height]);
-    draw_row_state(ui, theme, row.selected);
-    let [left, top] = ui.item_rect_min();
-    let right = ui.item_rect_max()[0];
-    let middle = top + height / 2.0;
-    let gap = theme.spacing.small;
-    let square = icon_square_side(ui);
-    {
-        let _icons = FontScope::push(ui, FontRole::Icons);
-        let ink = icon_visible_box(row.icon.glyph(), square);
-        let position = [
-            left + gap + (square - (ink[2] - ink[0])) / 2.0 - ink[0],
-            middle - (ink[1] + ink[3]) / 2.0,
-        ];
-        let mut buffer = [0; 4];
-        window_draw_list(ui).add_text(
-            position,
-            theme.text.primary.to_array(),
-            row.icon.as_str(&mut buffer),
-        );
-    }
-    let text_y = middle - capital_middle().unwrap_or(ui.text_line_height() / 2.0);
-    let draw_list = window_draw_list(ui);
-    draw_list.add_text(
-        [left + 2.0 * gap + square, text_y],
-        theme.text.primary.to_array(),
-        row.label,
-    );
-    if let Some(shortcut) = row.shortcut {
-        draw_list.add_text(
-            [right - gap - ui.calc_text_size(shortcut)[0], text_y],
-            theme.text.secondary.to_array(),
-            shortcut,
-        );
-    }
-    clicked
 }

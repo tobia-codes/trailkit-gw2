@@ -52,7 +52,7 @@ this module rewritten.
 | `src/main_window/trash.rs` | deleting (questions, selection after it), trash view actions, Ctrl+Z / Ctrl+Y, hourly purge |
 | `src/main_window/panes/trash_pane.rs` | drawing the trash column, the read-only trash preview and the undo toast |
 | `src/main_window/panes/layout.rs` | two panes, empty state |
-| `src/main_window/window_menu.rs` | the window menu: panel over the full height with a backdrop, its rows |
+| `src/main_window/window_menu.rs` | the window menu: its entries and actions on a backdrop over the full height; `trailkit_ui`'s `draw_menu_panel` draws the rows |
 | `src/main_window/panes.rs` | the group of the visible areas: `layout`, `note_list`, `note_pane`, `trash_pane` (R137, Q500) |
 | `src/main_window/tests.rs` | interaction tests of the main window; `tests/note_list.rs` context menu, dragging, groups; `tests/search.rs` search; `tests/trash.rs` deleting, trash and undo; `tests/save_errors.rs` save errors; `tests/states.rs` one snapshot per state (`tests/states/`, e.g. the minimum width) |
 | `src/nexus_bridge.rs` | the Nexus bridge, the only Nexus API calls: export, load/unload, keybind, quick access, render callbacks (Windows only) |
