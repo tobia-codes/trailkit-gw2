@@ -12,7 +12,7 @@
 mod guides;
 mod markers;
 
-pub use self::markers::RowMarker;
+pub use self::{guides::tree_indent, markers::RowMarker};
 
 use crate::drawing::draw_list::window_draw_list;
 use std::borrow::Cow;
@@ -63,8 +63,8 @@ pub struct ListRow<'text> {
     /// draws its input over [`ListRowResponse::title_rect`].
     pub renaming: bool,
     /// The depth in a tree; the row's content and its fill are indented by
-    /// ImGui's indent spacing per level, with one indent guide per level in
-    /// the indentation (R156). The whole width stays clickable (memo M144).
+    /// [`tree_indent`] per level, `space.xs` right of the guide of its
+    /// parent (R156). The whole width stays clickable (memo M144).
     pub level: usize,
     /// The chevron before the title.
     pub chevron: RowChevron,
@@ -159,14 +159,9 @@ pub fn draw_list_row(ui: &Ui, theme: &Theme, row: &ListRow<'_>) -> ListRowRespon
     // The selectable's item rect reaches half the item spacing beyond the
     // row, where a list clips; the row state belongs on the row itself.
     let rect = [[left, top], [left + size[0], top + size[1]]];
-    #[expect(
-        clippy::cast_precision_loss,
-        reason = "a tree is never deep enough to lose precision"
-    )]
-    let content_left = left + row.level as f32 * style.indent_spacing;
-    // The fill leaves the guides free, `space.xs` right of the nearest (R156).
-    let fill_left = guides::fill_left(ui, theme, left, row.level);
-    draw_row_state_in(ui, theme, row.selected, rect, fill_left);
+    // Content and fill start `space.xs` right of the nearest guide (R156).
+    let content_left = guides::content_left(ui, theme, left, row.level);
+    draw_row_state_in(ui, theme, row.selected, rect, content_left);
     let is_hovered = is_row_hovered(ui, rect);
     // Content follows ImGui's style alpha, e.g. a dragged row (memo M106);
     // the fill keeps the row's place visible.

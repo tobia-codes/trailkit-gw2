@@ -27,6 +27,7 @@ use trailkit_ui::{
     controls::button::{Button, icon_button_width},
     controls::tooltip::draw_tooltip,
     layout::stack::Stack,
+    lists::list_row::tree_indent,
     text::icons::Icon,
     text::text_search::SearchQuery,
     theme::Theme,
@@ -320,7 +321,8 @@ impl NoteList {
             self.pending_group_click = None;
         }
         self.start_press(ui, theme, pressed, search.as_ref());
-        self.track_drag(ui, theme, style.indent_spacing, document, &mut output);
+        // The drop levels use the list's own tree indent (R156).
+        self.track_drag(ui, theme, tree_indent(ui, theme), document, &mut output);
         // A click on an empty spot of the list: a left click clears the
         // selection (M216), a right click offers creating at the end of the
         // root level (M96).

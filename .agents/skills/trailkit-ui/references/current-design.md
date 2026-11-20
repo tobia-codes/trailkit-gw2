@@ -88,8 +88,9 @@ Names follow `memo-state-<state>-<dark|light>.png` and
   (M172, M173). The toggle waits for the double-click time, so a double-click only
   renames; the chevron toggles at once.
 - **Indent guides** (R156): a 1 px `border.subtle` line below each expanded group's
-  chevron down to its last descendant; fills and the selection bar of nested rows start
-  `space.xs` right of the nearest line.
+  chevron down to its last descendant; a nested row (fill, bar and content) starts
+  `space.xs` right of the nearest line, its text padded like a top-level row; one tree
+  level is `list_row::tree_indent`.
 - **A click on an empty spot of the list selects nothing**; the note stays shown (M216).
 - **Ctrl+F toggles the search.** The field's `x` clears text first and closes an empty
   field (M176).

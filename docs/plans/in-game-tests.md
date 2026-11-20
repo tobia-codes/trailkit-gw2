@@ -45,5 +45,6 @@ Deploy: `git switch feature/insert-after-selection`, then `cargo xtask deploy tr
 3. **Fills 4 px from the guide lines (R156).** Open a group with notes and
    hover a note in it, then select one. Before: the fill started about
    10 px right of the group's thin line. Now: 4 px right of it; the line is
-   never covered. Approved look:
+   never covered, and the note's text sits as far inside the fill as the
+   text of a top-level row like "Daily" (same left padding). Approved look:
    https://claude.ai/artifact/2wvMyxTH8fUumYQS8dqTNh
