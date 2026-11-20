@@ -27,7 +27,7 @@ log export active (click re-checks, then the info), event button **hidden** unti
 **Sessions 44–46 (2026-11-18/19), merged via PR #152:** memo data model M201–M204, drop zones, Backspace on markers/links, link dialog, bare links/e-mails, right-click menu (M205–M211),
 R139–R146 (TextField, no disabled buttons, dialog close icon, wrapped tooltips, link icons, measured form spacing, shared `Dialog`/`Backdrop`, report reuse), M213 text size percent, R149 one link underline. All in-game tests passed except the two below.
 **Done 2026-11-19 (PR of `bugfix/memo-shortcut-keys`):** memo catches Ctrl+Z/Y/Shift+Z, Ctrl+0 (number pad too) and Enter in dialogs; dialogs at most 20 font sizes wide (R153); editor toolbar flush with the title; CI 13 → ~4 min (R151, PR #154).
-**Next, in order:** 3. `feature/ui-layout-rules`: R147 icon size by text role (0.78), R148 one spacing scale + `Stack` + one divider + dropdown list `space.xs` below its field, R150 dialog titles `Heading2`, BL25 numbered list button: one mock (R87) first.
+**Active work branch: `feature/ui-layout-rules`** (2026-11-20): R147 icon size by text role (0.78), R148 one spacing scale + `Stack` + one divider + dropdown list `space.xs` below its field, R150 dialog titles `Heading2`, M214 numbered list button (BL25 decided): real before/after renders for the R87 OK first.
 Also open: length hint `draw_spans` (`inline_text.rs`, 80 lines) for the split grilling; one unreproduced debug crash `imgui.h:1629` while deleting in a link label (if it recurs: Ignore, note cursor placement, key, preview, tooltip).
 **Next: data pipeline** (`rust/tools/trailkit-datagen`): the failing GemExchange job below (review item 3 done, D42); no more datagen unit tests, the backend tests cover it later (R152). Coverage 2026-11-18 before #146: addons 89 % of lines, memo app 70 %, datagen 52 %.
 **Then test gaps:** extract and test the Escape/close logic of `nexus_bridge/render.rs` like `key_routing.rs`; window actions (new group, format, preview, compact view, open folder, clear search); Ctrl+Y/Ctrl+Shift+Z keys. `xtask` last. Prove new tests with injected faults.
@@ -53,7 +53,7 @@ as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass ne
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M214+, R155+, B46+, BL27+, questions from 515**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M215+, R155+, B46+, BL27+, questions from 518**. Deferred: GW2 build/Nexus version in `session_start` (C12).
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
 4. **Search cache:** `rust/addons/trailkit-memo/src/main_window/search.rs::update_search` calls `SearchQuery::parse` before checking the
