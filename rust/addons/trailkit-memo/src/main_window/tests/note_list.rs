@@ -24,7 +24,7 @@ fn right_click_on_an_empty_list_spot_creates_a_root_note() {
     harness.frame(&input(empty_spot, false, true), &mut draw_dark);
     let image = harness.settle(2, &input(empty_spot, false, false), &mut draw_dark);
     assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-list-context-menu", &image);
-    let new_note_item = [empty_spot[0] + 30.0, empty_spot[1] + 14.0];
+    let new_note_item = [empty_spot[0] + 30.0, empty_spot[1] - 3.0];
     harness.frame(&input(new_note_item, false, false), &mut draw_dark);
     harness.frame(&input(new_note_item, true, false), &mut draw_dark);
     harness.settle(2, &input(new_note_item, false, false), &mut draw_dark);
@@ -421,7 +421,7 @@ fn a_note_created_from_the_empty_spot_menu_takes_typing_into_its_rename() {
     }
     memo.delete_selected_by_key(Language::English);
     let empty_spot = [100.0, 300.0];
-    let new_note_item = [empty_spot[0] + 30.0, empty_spot[1] + 14.0];
+    let new_note_item = [empty_spot[0] + 30.0, empty_spot[1] - 3.0];
     for frame in [
         input(empty_spot, false, false),
         input(empty_spot, false, true),

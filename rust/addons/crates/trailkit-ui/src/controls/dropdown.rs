@@ -114,7 +114,7 @@ fn draw_option_list(
     // keeps from the row's end like in every menu (M177).
     let list_width = width
         .max(width - 2.0 * style.frame_padding[0] + 2.0 * style.window_padding[0])
-        + theme.menu.row_padding_x;
+        + theme.spacing.small;
     // The list opens `space.xs` below its field, so the two borders do not
     // overlap (R148).
     place_next_popup([min[0], max[1] + theme.spacing.extra_small], 0.0);

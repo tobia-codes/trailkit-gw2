@@ -506,9 +506,9 @@ impl Editor {
         // Preview (M60, M72): editor and preview always stay side by side,
         // however narrow; the minimum only keeps the splitter usable.
         let available = ui.content_region_avail()[0];
-        let usable = (available - theme.pane.gap).max(0.0);
+        let usable = (available - theme.spacing.small).max(0.0);
         let preview_minimum = (ui.calc_text_size("n")[0] * MINIMUM_PREVIEW_SPLIT_CHARACTERS
-            + 2.0 * theme.pane.padding)
+            + 2.0 * theme.spacing.small)
             .min(usable / 2.0);
         let editor_width = (usable * input.preview_split_fraction)
             .clamp(preview_minimum, usable - preview_minimum);

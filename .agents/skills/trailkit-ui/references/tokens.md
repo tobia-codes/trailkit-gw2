@@ -115,7 +115,7 @@ editor's formatting buttons that light up for the formatting at the cursor
   same gap above and below, measured to the visible content (letters, an icon,
   a button edge); the fill of a hovered row may come closer:
   - **Section, `spacing.medium` 12:** `draw_separator` (buttons, fields),
-    `draw_separator_above_rows` (fill of the first row `list.item_spacing` away),
+    `draw_separator_above_rows` (fill of the first row `space.xs` away),
     `draw_separator_above_text` (the text's own leading counts as gap).
   - **Compact, `spacing.small` 8:** `draw_compact_separator`, inside a tight
     group: menus, a rule in a note's body.
@@ -129,6 +129,12 @@ editor's formatting buttons that light up for the formatting at the cursor
 - Lines (separators, outlines) sit on whole pixels: a 1 px line drawn
   between two pixel rows blurs into a soft 2 px band. `draw_separator`
   snaps; custom-drawn lines must do the same.
+- **One spacing scale (R148).** Every gap, inner padding and indent is a
+  `space.*` step (4, 8, 12, 16, 24 px), nothing below 4 px; components get no
+  spacing tokens of their own. List and menu rows are `space.xs` apart, menu
+  rows padded `space.sm`, panes padded and separated by `space.sm`, the
+  selection bar inset `space.sm`, a tree level indented `space.lg`. Line
+  widths, the selection bar width, radii and the shadow offset are no spacing.
 
 ### 5.1 Forms and dialogs (R144)
 
@@ -151,7 +157,7 @@ the next element; `TextField` and `draw_dialog_frame` already follow this.
 The selected row keeps the neutral `bg.active` fill (ImGui `Header`) and gets
 `selection_bar::draw_selection_bar` right after its tree node or selectable:
 an `accent` bar `list.selection_bar_width` (3 px) wide with round ends,
-inset `list.selection_bar_inset` (6 px) from the top and bottom of the row,
+inset `space.sm` (8 px) from the top and bottom of the row,
 on the row's left edge. Hover shows `bg.hover` only, no bar.
 
 ## 7. Typography

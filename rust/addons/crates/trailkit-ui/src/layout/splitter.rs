@@ -17,7 +17,7 @@ pub struct SplitterResponse {
     pub released: bool,
 }
 
-/// Draws a splitter of `pane.gap` width and `height` at the cursor, between a
+/// Draws a splitter of `space.sm` width and `height` at the cursor, between a
 /// left pane of `left_width` and the pane that follows. While dragged it
 /// reports the new left width, clamped to `left_range`.
 pub fn draw_vertical_splitter(
@@ -28,7 +28,7 @@ pub fn draw_vertical_splitter(
     left_range: (f32, f32),
     height: f32,
 ) -> SplitterResponse {
-    let gap = theme.pane.gap;
+    let gap = theme.spacing.small;
     let start = ui.cursor_screen_pos();
     ui.invisible_button(id, [gap, height.max(1.0)]);
     let is_dragged = ui.is_item_active();

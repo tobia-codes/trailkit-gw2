@@ -44,19 +44,17 @@ pub fn draw_popup(ui: &Ui, theme: &Theme, id: &str, content: impl FnOnce()) {
 /// (memo M177), and ImGui's own square row highlight is hidden, as the entries
 /// of this module draw a rounded one in `bg.popup_hover` (ROADMAP R80, R81).
 pub(crate) fn draw_fitted_popup(ui: &Ui, theme: &Theme, id: &str, content: impl FnOnce()) {
-    let menu = theme.menu;
+    // Rows are padded `space.sm` on every side and `space.xs` apart (R148).
+    let padding = theme.spacing.small;
+    let gap = theme.spacing.extra_small;
     // A row's item rect reaches half the item spacing beyond its text, so the
     // spacing makes the row's padding and gap. The window padding puts the text
     // that far inside the highlight, which keeps `space.sm` from the popup's
-    // edge on every side (R144); the highlight leaves half the gap at each end.
-    let _spacing = ui.push_style_var(StyleVar::ItemSpacing([
-        2.0 * menu.row_padding_x,
-        2.0 * menu.row_padding_y + menu.row_gap,
-    ]));
-    let _padding = ui.push_style_var(StyleVar::WindowPadding([
-        theme.spacing.small + theme.border.width + menu.row_padding_x,
-        theme.spacing.small + menu.row_padding_y + menu.row_gap / 2.0,
-    ]));
+    // edge and its border on every side (R144); the highlight leaves half the
+    // gap at each end, which the item rect's half spacing already covers.
+    let _spacing = ui.push_style_var(StyleVar::ItemSpacing([2.0 * padding, 2.0 * padding + gap]));
+    let inside = theme.spacing.small + theme.border.width + padding;
+    let _padding = ui.push_style_var(StyleVar::WindowPadding([inside, inside]));
     ui.popup(id, || {
         let frame = ui.frame_count();
         if CLOSE_FRAME.get() == Some(frame) {
@@ -129,7 +127,7 @@ pub fn menu_row_highlight_rect(ui: &Ui, theme: &Theme) -> [[f32; 2]; 2] {
 fn row_highlight_rect(ui: &Ui, theme: &Theme, [min, max]: [[f32; 2]; 2]) -> [[f32; 2]; 2] {
     let inset = theme.spacing.small + theme.border.width;
     let left = ui.window_pos()[0];
-    let half_gap = theme.menu.row_gap / 2.0;
+    let half_gap = theme.spacing.extra_small / 2.0;
     [
         [left + inset, min[1] + half_gap],
         [left + ui.window_size()[0] - inset, max[1] - half_gap],
@@ -138,7 +136,7 @@ fn row_highlight_rect(ui: &Ui, theme: &Theme, [min, max]: [[f32; 2]; 2]) -> [[f3
 
 /// The x where content at a menu row's right end stops.
 pub(crate) fn menu_row_content_right(ui: &Ui, theme: &Theme) -> f32 {
-    menu_row_highlight_rect(ui, theme)[1][0] - theme.menu.row_padding_x
+    menu_row_highlight_rect(ui, theme)[1][0] - theme.spacing.small
 }
 
 /// Fills the highlight of the row spanning `[min, max]` with `color`.

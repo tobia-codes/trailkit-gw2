@@ -253,7 +253,7 @@ fn draw_drop_indicator(ui: &Ui, theme: &Theme, indicator: DropIndicator) {
 /// its top or bottom edge, faster closer to the edge (M111).
 fn scroll_near_edges(ui: &Ui, theme: &Theme) {
     let band =
-        ui.text_line_height() + 2.0 * ui.clone_style().frame_padding[1] + theme.list.item_spacing;
+        ui.text_line_height() + 2.0 * ui.clone_style().frame_padding[1] + theme.spacing.extra_small;
     let top = ui.window_pos()[1];
     let bottom = top + ui.window_size()[1];
     let mouse_y = ui.io().mouse_pos[1];

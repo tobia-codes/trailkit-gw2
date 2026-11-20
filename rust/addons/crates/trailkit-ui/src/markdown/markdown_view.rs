@@ -191,7 +191,7 @@ pub fn draw_markdown(
     let width = ui.content_region_avail()[0]
         .min(average_character_width * READABLE_LINE_CHARACTERS)
         .max(average_character_width);
-    let indent = theme.list.indent;
+    let indent = theme.spacing.large;
     // The marker column must fit the widest marker (a task box) plus a gap,
     // whatever the font size; otherwise the text touches the checkbox.
     let marker_column = {

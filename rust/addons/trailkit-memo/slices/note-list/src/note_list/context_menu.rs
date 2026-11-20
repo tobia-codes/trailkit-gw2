@@ -191,7 +191,7 @@ fn draw_move_target_groups(
     current: Option<GroupId>,
     menu: &mut EntryMenu<'_>,
 ) {
-    let indent = menu.theme.list.indent;
+    let indent = menu.theme.spacing.large;
     for child in nodes {
         let Node::Group(group) = child else {
             continue;

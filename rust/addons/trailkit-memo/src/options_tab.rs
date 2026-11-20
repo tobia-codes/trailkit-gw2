@@ -62,7 +62,7 @@ fn pane_height(ui: &Ui, theme: &Theme) -> f32 {
         ui.text_line_height()
     };
     let spacing = ui.clone_style().item_spacing[1];
-    2.0 * theme.pane.padding + title + version + ui.frame_height() + 2.0 * spacing
+    2.0 * theme.spacing.small + title + version + ui.frame_height() + 2.0 * spacing
 }
 
 #[cfg(test)]

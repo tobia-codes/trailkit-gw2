@@ -271,9 +271,9 @@ fn draw_child_titles(ui: &Ui, theme: &Theme, nodes: &[TreeNode]) {
             TreeNode::Note(note) => draw_text(ui, theme, TextStyle::Body, &note.title),
             TreeNode::Group(group) => {
                 draw_text(ui, theme, TextStyle::BodyStrong, &group.title);
-                ui.indent_by(theme.list.indent);
+                ui.indent_by(theme.spacing.large);
                 draw_child_titles(ui, theme, &group.children);
-                ui.unindent_by(theme.list.indent);
+                ui.unindent_by(theme.spacing.large);
             }
         }
     }

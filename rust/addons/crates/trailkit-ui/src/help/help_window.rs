@@ -390,10 +390,10 @@ fn draw_tabs(
             clicked = Some(tab);
         }
     }
-    // The panes start `pane.gap` below the tabs, as panes keep it between
+    // The panes start `space.sm` below the tabs, as panes keep it between
     // each other.
     let item_spacing = ui.clone_style().item_spacing[1];
-    ui.dummy([0.0, (theme.pane.gap - 2.0 * item_spacing).max(0.0)]);
+    ui.dummy([0.0, (theme.spacing.small - 2.0 * item_spacing).max(0.0)]);
     clicked
 }
 

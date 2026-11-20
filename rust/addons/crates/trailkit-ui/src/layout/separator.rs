@@ -21,9 +21,9 @@ pub fn draw_separator(ui: &Ui, theme: &Theme) {
 
 /// A section divider above list rows: their text keeps about `spacing.medium`
 /// from the line, while the fill of a hovered or selected row stays
-/// `list.item_spacing` away from it, like from the next row (R83).
+/// `space.xs` away from it, like from the next row (R83).
 pub fn draw_separator_above_rows(ui: &Ui, theme: &Theme) {
-    draw_line(ui, theme, theme.spacing.medium, theme.list.item_spacing);
+    draw_line(ui, theme, theme.spacing.medium, theme.spacing.extra_small);
 }
 
 /// A section divider above running text whose first line uses `first_line_font`:

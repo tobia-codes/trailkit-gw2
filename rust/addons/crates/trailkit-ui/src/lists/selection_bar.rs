@@ -5,7 +5,7 @@
 //! fill and, on a selected row, a short `accent` bar with round ends on its
 //! left edge. The
 //! bar takes the same share of every row's height: in a one-line row it is
-//! inset `list.selection_bar_inset` from top and bottom, taller rows (the
+//! inset `space.sm` from top and bottom, taller rows (the
 //! two-line rows) get a proportionally longer bar.
 //!
 //! ImGui 1.80 clamps the rounding of a rectangle to half its width minus one
@@ -28,12 +28,7 @@ fn draw_selection_bar_in(ui: &Ui, theme: &Theme, [min, max]: [[f32; 2]; 2]) {
     let [left, top] = min;
     let bottom = max[1];
     let width = theme.list.selection_bar_width;
-    let [bar_top, bar_bottom] = bar_span(
-        top,
-        bottom,
-        ui.frame_height(),
-        theme.list.selection_bar_inset,
-    );
+    let [bar_top, bar_bottom] = bar_span(top, bottom, ui.frame_height(), theme.spacing.small);
     let radius = width / 2.0;
     let color = theme.accent.base.to_array();
     let draw_list = window_draw_list(ui);
