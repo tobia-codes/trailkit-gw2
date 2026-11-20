@@ -115,7 +115,9 @@ fn draw_option_list(
     let list_width = width
         .max(width - 2.0 * style.frame_padding[0] + 2.0 * style.window_padding[0])
         + theme.menu.row_padding_x;
-    place_next_popup([min[0], max[1]], 0.0);
+    // The list opens `space.xs` below its field, so the two borders do not
+    // overlap (R148).
+    place_next_popup([min[0], max[1] + theme.spacing.extra_small], 0.0);
     // SAFETY: a plain ImGui call on the render thread inside a frame; it only
     // sets the size limits of the next window (the popup).
     unsafe {

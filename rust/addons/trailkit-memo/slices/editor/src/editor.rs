@@ -89,6 +89,11 @@ const FORMAT_GROUPS: [&[FormatButton]; 4] = [
             Some(FormatCommand::BulletList),
         ),
         (
+            Icon::LIST_ORDERED,
+            EditorText::FormatNumberedList,
+            Some(FormatCommand::NumberedList),
+        ),
+        (
             Icon::LIST_TODO,
             EditorText::FormatCheckbox,
             Some(FormatCommand::Checkbox),

@@ -171,8 +171,8 @@ every addon.
 | Role | Examples | Style |
 | --- | --- | --- |
 | Object or page title | note title, group title in the trash preview | `Heading1` (`text.primary`) |
-| Section | settings or help sections | `Heading2` (`text.primary`) |
-| Subsection, dialog title | "Delete permanently?" | `Heading3` (`text.primary`) |
+| Section, dialog title | settings or help sections, "Delete permanently?" (R150) | `Heading2` (`text.primary`) |
+| Subsection | `###` headings in a note or help page | `Heading3` (`text.primary`) |
 | Content, empty-state title | note body, "No notes yet" | `Body` (`text.primary`) |
 | Form field label | "Address" above its input | `Label` (bold, `text.primary`, R139) |
 | Emphasis | group name in a list | `BodyStrong` (`text.primary`) |
