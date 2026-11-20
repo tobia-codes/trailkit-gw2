@@ -44,7 +44,8 @@ Modules are grouped by concern (ROADMAP R134): `text`, `layout`, `controls`, `li
 | `layout::pane` | `draw_pane` — a content region on `bg.panel` with `pane.padding` on every side (`lay-pane-padding`); its size comes from the caller | Windows |
 | `layout::pane_columns` | `draw_resizable_pane_columns` — panes side by side with a splitter in each gap: fixed columns with widths in body characters, the last one fills; memo's main window and the help window (R101) | Windows |
 | `layout::splitter` | `draw_vertical_splitter` — resizable gap between two panes (accent line on hover/drag) | Windows |
-| `layout::separator` | `draw_separator` — horizontal line that ends at the window/pane padding | Windows |
+| `layout::stack` | `Stack::vertical` / `Stack::horizontal` — elements one gap apart (default `space.sm`), measured between visible edges; nestable (R148) | Windows |
+| `layout::separator` | `draw_separator` — the one divider (in a stack: `add_separator`, `add_separator_above_text`): `space.sm` above and below to the visible edges, ends at the window/pane padding (R148) | Windows |
 | `layout::toolbar` | `begin_toolbar_group` (thin separator line, wraps when the group does not fit), `move_to_toolbar_end` (right-aligned items, wrap in narrow windows; `lay-responsive`) | Windows |
 | `layout::page` | `draw_page` — a page head inside a pane: Heading1 title with an optional `TitleTrailing` widget, optional Secondary line, separator, scrolling content; memo's note view and the help window (R101) | Windows |
 | `layout::title_bar` | `draw_window` — a window with the trailkit title bar (collapse chevron, bold title, close `x`) instead of ImGui's (R71) | Windows |

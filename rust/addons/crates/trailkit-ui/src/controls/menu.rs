@@ -44,19 +44,17 @@ pub fn draw_popup(ui: &Ui, theme: &Theme, id: &str, content: impl FnOnce()) {
 /// (memo M177), and ImGui's own square row highlight is hidden, as the entries
 /// of this module draw a rounded one in `bg.popup_hover` (ROADMAP R80, R81).
 pub(crate) fn draw_fitted_popup(ui: &Ui, theme: &Theme, id: &str, content: impl FnOnce()) {
-    let menu = theme.menu;
+    // Rows are padded `space.sm` on every side and `space.xs` apart (R148).
+    let padding = theme.spacing.small;
+    let gap = theme.spacing.extra_small;
     // A row's item rect reaches half the item spacing beyond its text, so the
     // spacing makes the row's padding and gap. The window padding puts the text
     // that far inside the highlight, which keeps `space.sm` from the popup's
-    // edge on every side (R144); the highlight leaves half the gap at each end.
-    let _spacing = ui.push_style_var(StyleVar::ItemSpacing([
-        2.0 * menu.row_padding_x,
-        2.0 * menu.row_padding_y + menu.row_gap,
-    ]));
-    let _padding = ui.push_style_var(StyleVar::WindowPadding([
-        theme.spacing.small + theme.border.width + menu.row_padding_x,
-        theme.spacing.small + menu.row_padding_y + menu.row_gap / 2.0,
-    ]));
+    // edge and its border on every side (R144); the highlight leaves half the
+    // gap at each end, which the item rect's half spacing already covers.
+    let _spacing = ui.push_style_var(StyleVar::ItemSpacing([2.0 * padding, 2.0 * padding + gap]));
+    let inside = theme.spacing.small + theme.border.width + padding;
+    let _padding = ui.push_style_var(StyleVar::WindowPadding([inside, inside]));
     ui.popup(id, || {
         let frame = ui.frame_count();
         if CLOSE_FRAME.get() == Some(frame) {
@@ -91,11 +89,10 @@ pub fn close_open_popups(ui: &Ui) {
     CLOSE_FRAME.set(Some(ui.frame_count()));
 }
 
-/// The span to center an icon in beside a label drawn at line top `top`: the
-/// label's capitals, in the current font, set the middle.
-fn label_icon_span(ui: &Ui, top: f32) -> [f32; 2] {
-    let middle = capital_middle().unwrap_or(ui.text_line_height() / 2.0);
-    [top, top + 2.0 * middle]
+/// The line to center an icon on beside a label drawn at line top `top`:
+/// the middle of the label's capitals in the current font (R147).
+fn label_icon_middle(ui: &Ui, top: f32) -> f32 {
+    top + capital_middle().unwrap_or(ui.text_line_height() / 2.0)
 }
 
 /// Places the next popup with its top at `position` (screen). `pivot_x` is the
@@ -129,7 +126,7 @@ pub fn menu_row_highlight_rect(ui: &Ui, theme: &Theme) -> [[f32; 2]; 2] {
 fn row_highlight_rect(ui: &Ui, theme: &Theme, [min, max]: [[f32; 2]; 2]) -> [[f32; 2]; 2] {
     let inset = theme.spacing.small + theme.border.width;
     let left = ui.window_pos()[0];
-    let half_gap = theme.menu.row_gap / 2.0;
+    let half_gap = theme.spacing.extra_small / 2.0;
     [
         [left + inset, min[1] + half_gap],
         [left + ui.window_size()[0] - inset, max[1] - half_gap],
@@ -138,7 +135,7 @@ fn row_highlight_rect(ui: &Ui, theme: &Theme, [min, max]: [[f32; 2]; 2]) -> [[f3
 
 /// The x where content at a menu row's right end stops.
 pub(crate) fn menu_row_content_right(ui: &Ui, theme: &Theme) -> f32 {
-    menu_row_highlight_rect(ui, theme)[1][0] - theme.menu.row_padding_x
+    menu_row_highlight_rect(ui, theme)[1][0] - theme.spacing.small
 }
 
 /// Fills the highlight of the row spanning `[min, max]` with `color`.
@@ -241,7 +238,7 @@ pub fn draw_menu_item(ui: &Ui, theme: &Theme, label: &str, checked: bool) -> boo
             ui,
             Icon::CHECK,
             menu_row_content_right(ui, theme) - icon_width(ui),
-            label_icon_span(ui, origin[1]),
+            label_icon_middle(ui, origin[1]),
             packed(theme.accent.text),
         );
     }
@@ -333,8 +330,8 @@ fn draw_icon_menu_item(
     // SAFETY: called on the render thread inside a frame, so the current
     // window's draw list is valid.
     let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
-    let span = label_icon_span(ui, origin[1]);
-    draw_icon_into(draw_list, ui, icon, origin[0], span, packed(color));
+    let middle = label_icon_middle(ui, origin[1]);
+    draw_icon_into(draw_list, ui, icon, origin[0], middle, packed(color));
     let label_x = origin[0] + icon_width(ui) + theme.spacing.small;
     draw_menu_row_label([label_x, origin[1]], color, label);
     if let Some(shortcut) = shortcut {
@@ -364,7 +361,7 @@ pub fn begin_submenu<'ui>(
     let [x, y] = ui.cursor_screen_pos();
     let right_edge = ui.window_content_region_max()[0] + ui.window_pos()[0];
     let bottom = y + ui.text_line_height();
-    let span = label_icon_span(ui, y);
+    let middle = label_icon_middle(ui, y);
     // SAFETY: called on the render thread inside a frame, so the current
     // (parent menu) window's draw list is valid for this frame.
     let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
@@ -414,13 +411,13 @@ pub fn begin_submenu<'ui>(
             begin.add(label.len()),
         );
     }
-    draw_icon_into(draw_list, ui, icon, x, span, packed(theme.text.primary));
+    draw_icon_into(draw_list, ui, icon, x, middle, packed(theme.text.primary));
     draw_icon_into(
         draw_list,
         ui,
         Icon::CHEVRON_RIGHT,
         right_edge - icon_width(ui),
-        span,
+        middle,
         packed(theme.text.secondary),
     );
     token

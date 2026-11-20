@@ -1,59 +1,41 @@
-//! A horizontal separator that respects the padding of the current window or
-//! pane (`lay-pane-padding`).
+//! The one horizontal divider (ROADMAP R148): `space.sm` above and below,
+//! measured to the visible edges of its neighbors, across the content width
+//! of the current window or pane (`lay-pane-padding`).
 //!
-//! ImGui 1.80's `Separator` always spans the full window width, padding
-//! included, so it touches the pane edges. [`draw_separator`] spans only the
-//! available content width.
+//! Below the line, text is measured from the top of its line box, as in CSS:
+//! the empty space above the letters is part of the text, so the gap stays
+//! the same fixed `space.sm` whatever the font or first line (Q528). ImGui
+//! 1.80's `Separator` spans the full window width, padding included, so it
+//! is never used.
 
 use crate::drawing::draw_list::window_draw_list;
 use nexus::imgui::Ui;
 
-use crate::{
-    text::font_registry::FontScope, text::fonts::FontRole, text::glyph_metrics::glyph_bounds,
-    theme::Theme,
-};
+use crate::theme::Theme;
 
-/// A divider between sections: `spacing.medium` above and below (R83), for
-/// neighbors that show their own edge, such as buttons and input fields.
+/// Draws the divider below the last item: `space.sm` from its edge to the
+/// line and from the line to the next item's edge, such as a button, a field
+/// or the fill of a list row.
 pub fn draw_separator(ui: &Ui, theme: &Theme) {
-    draw_line(ui, theme, theme.spacing.medium, theme.spacing.medium);
+    draw_line(ui, theme);
 }
 
-/// A section divider above list rows: their text keeps about `spacing.medium`
-/// from the line, while the fill of a hovered or selected row stays
-/// `list.item_spacing` away from it, like from the next row (R83).
-pub fn draw_separator_above_rows(ui: &Ui, theme: &Theme) {
-    draw_line(ui, theme, theme.spacing.medium, theme.list.item_spacing);
-}
-
-/// A section divider above running text whose first line uses `first_line_font`:
-/// the empty space on top of that line counts as part of the gap, so its capital
-/// letters keep `spacing.medium` from the line (R83).
-pub fn draw_separator_above_text(ui: &Ui, theme: &Theme, first_line_font: FontRole) {
-    let empty_top = {
-        let _font = FontScope::push(ui, first_line_font);
-        let leading = theme.typography.leading_for(ui.current_font_size());
-        leading + glyph_bounds('H').map_or(0.0, |(top, _)| top)
-    };
-    let below = (theme.spacing.medium - empty_top).max(0.0);
-    draw_line(ui, theme, theme.spacing.medium, below);
-}
-
-/// A compact divider inside a tight group such as a menu or a note's body:
-/// `spacing.small` above and below (R83).
-pub fn draw_compact_separator(ui: &Ui, theme: &Theme) {
-    draw_line(ui, theme, theme.spacing.small, theme.spacing.small);
-}
-
-/// Draws a horizontal line in the `border.subtle` color across the available
-/// content width with the gaps `above` and `below` it;
-/// the item spacing ImGui adds around an item is taken into account. The line
-/// is snapped to whole pixels: between two pixel rows it would blur into a soft
-/// band twice as thick (R71, in-game test). ImGui's `AddLine` already adds half
-/// a pixel, so the line goes through the whole pixel coordinate itself.
-fn draw_line(ui: &Ui, theme: &Theme, above: f32, below: f32) {
+/// Draws the line `space.sm` below the last item and leaves the cursor
+/// `space.sm` under it; ImGui's item spacing after each item is taken into
+/// account.
+fn draw_line(ui: &Ui, theme: &Theme) {
     let item_spacing = ui.clone_style().item_spacing[1];
-    move_cursor_down(ui, above - item_spacing);
+    move_cursor_down(ui, theme.spacing.small - item_spacing);
+    draw_rule(ui, theme);
+    move_cursor_down(ui, theme.spacing.small - item_spacing);
+}
+
+/// Draws the line itself at the cursor in `border.subtle`, across the
+/// available content width, as one item as tall as the line. It is snapped
+/// to whole pixels: between two pixel rows it would blur into a soft band
+/// twice as thick (R71, in-game test). ImGui's `AddLine` already adds half a
+/// pixel, so the line goes through the whole pixel coordinate itself.
+pub(crate) fn draw_rule(ui: &Ui, theme: &Theme) {
     let start = ui.cursor_screen_pos();
     let width = ui.content_region_avail()[0].max(1.0);
     let thickness = theme.border.width.max(1.0).round();
@@ -68,7 +50,6 @@ fn draw_line(ui: &Ui, theme: &Theme, above: f32, below: f32) {
         )
         .thickness(thickness)
         .build();
-    move_cursor_down(ui, below - item_spacing);
 }
 
 /// Moves the cursor down by `distance` (up if negative).

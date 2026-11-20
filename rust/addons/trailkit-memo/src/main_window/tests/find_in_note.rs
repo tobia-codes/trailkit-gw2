@@ -7,13 +7,13 @@ use super::*;
 /// The window size of these tests; the bar's buttons are placed for it.
 const SIZE: [f32; 2] = [640.0, 360.0];
 /// Center of the bar's "previous" arrow.
-const PREVIOUS_BUTTON: [f32; 2] = [524.0, 117.0];
+const PREVIOUS_BUTTON: [f32; 2] = [544.0, 109.0];
 /// Center of the bar's "next" arrow.
-const NEXT_BUTTON: [f32; 2] = [560.0, 117.0];
+const NEXT_BUTTON: [f32; 2] = [572.0, 109.0];
 /// Center of the bar's close button.
-const CLOSE_BUTTON: [f32; 2] = [596.0, 117.0];
+const CLOSE_BUTTON: [f32; 2] = [600.0, 109.0];
 /// Center of the note toolbar's `⋯` button.
-const NOTE_MENU_BUTTON: [f32; 2] = [532.0, 64.0];
+const NOTE_MENU_BUTTON: [f32; 2] = [536.0, 64.0];
 /// Center of the first row of the opened `⋯` menu.
 const FIRST_NOTE_MENU_ROW: [f32; 2] = [470.0, 98.0];
 /// Windows virtual-key code of Enter.

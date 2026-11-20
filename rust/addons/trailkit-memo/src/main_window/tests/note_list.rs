@@ -24,7 +24,7 @@ fn right_click_on_an_empty_list_spot_creates_a_root_note() {
     harness.frame(&input(empty_spot, false, true), &mut draw_dark);
     let image = harness.settle(2, &input(empty_spot, false, false), &mut draw_dark);
     assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-list-context-menu", &image);
-    let new_note_item = [empty_spot[0] + 30.0, empty_spot[1] + 14.0];
+    let new_note_item = [empty_spot[0] + 30.0, empty_spot[1] - 3.0];
     harness.frame(&input(new_note_item, false, false), &mut draw_dark);
     harness.frame(&input(new_note_item, true, false), &mut draw_dark);
     harness.settle(2, &input(new_note_item, false, false), &mut draw_dark);
@@ -97,10 +97,10 @@ fn dragging_a_note_onto_an_expanded_group_moves_it_to_the_end() {
     {
         let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
         // Middle of the expanded "Raids" row = into it, at the end (M205).
-        let image = drag_rows(&mut harness, [100.0, 145.0], [100.0, 216.0], &mut draw_dark);
+        let image = drag_rows(&mut harness, [100.0, 145.0], [100.0, 201.0], &mut draw_dark);
         assert_snapshot(env!("CARGO_MANIFEST_DIR"), "memo-drag-into-group", &image);
         let release = FrameInput {
-            mouse_position: [100.0, 216.0],
+            mouse_position: [100.0, 201.0],
             ..FrameInput::default()
         };
         harness.settle(2, &release, &mut draw_dark);
@@ -121,9 +121,9 @@ fn dragging_a_note_to_the_bottom_edge_of_an_expanded_group_moves_it_to_the_start
     {
         let mut draw_dark = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
         // Bottom quarter of the expanded "Raids" row = first place (M205).
-        drag_rows(&mut harness, [100.0, 145.0], [100.0, 222.0], &mut draw_dark);
+        drag_rows(&mut harness, [100.0, 145.0], [100.0, 210.0], &mut draw_dark);
         let release = FrameInput {
-            mouse_position: [100.0, 222.0],
+            mouse_position: [100.0, 210.0],
             ..FrameInput::default()
         };
         harness.settle(2, &release, &mut draw_dark);
@@ -421,7 +421,7 @@ fn a_note_created_from_the_empty_spot_menu_takes_typing_into_its_rename() {
     }
     memo.delete_selected_by_key(Language::English);
     let empty_spot = [100.0, 300.0];
-    let new_note_item = [empty_spot[0] + 30.0, empty_spot[1] + 14.0];
+    let new_note_item = [empty_spot[0] + 30.0, empty_spot[1] - 3.0];
     for frame in [
         input(empty_spot, false, false),
         input(empty_spot, false, true),

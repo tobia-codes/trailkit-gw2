@@ -17,9 +17,8 @@ use crate::{
     feedback::status_line::draw_status_line,
     layout::page::{PageHead, draw_page},
     layout::pane::draw_pane,
-    layout::separator::draw_separator,
+    layout::stack::{Stack, StackLayout},
     markdown::LinkKind,
-    text::fonts::FontRole,
     text::icons::Icon,
     text::text_layout::format_count,
     text::{TextStyle, draw_text, draw_text_wrapped},
@@ -39,72 +38,88 @@ pub(super) fn draw_problem_tab(
         title: texts.problem_tab,
         trailing: None,
         subtitle: Some(texts.problem_intro),
-        first_line: FontRole::Heading3,
     };
     draw_pane(ui, theme, "problem", [0.0, 0.0], || {
         draw_page(ui, theme, "problem_body", head, || {
-            if let Some(notice) = content.problem.notice {
-                draw_status_card(
-                    ui,
-                    theme,
-                    &StatusCard {
-                        status: CardStatus::Warning,
-                        text: notice.text,
-                        detail: Some(CardDetail {
-                            text: notice.detail,
-                            style: TextStyle::Secondary,
-                        }),
-                        buttons: &[],
-                        close_tooltip: None,
-                    },
-                );
-            }
-            draw_step(ui, theme, 1, texts.save_log_step, || {
-                let export = Button::new(texts.export_log)
-                    .icon(Icon::DOWNLOAD)
-                    .state(content.problem.export_button);
-                if export.draw(ui, theme) {
-                    action = Some(HelpAction::ExportLog);
-                }
-                draw_text_wrapped(ui, theme, TextStyle::Small, texts.export_hint);
-                if let Some((status, text)) = content.problem.status {
-                    draw_status_line(ui, theme, status, text, TextStyle::Small);
-                }
-            });
-            draw_step(ui, theme, 2, texts.report_step, || {
-                let report = Button::new(texts.report_button)
-                    .kind(ButtonKind::Primary)
-                    .opens_link(LinkKind::Web);
-                if report.draw(ui, theme) {
-                    action = Some(HelpAction::ReportProblem);
-                }
-                draw_text_wrapped(ui, theme, TextStyle::Small, texts.report_hint);
-            });
-            draw_separator(ui, theme);
-            draw_text_wrapped(ui, theme, TextStyle::Small, texts.footer);
+            // Card, steps and footer are sections, `space.xl` apart like
+            // the headings in the help text (Q530).
+            Stack::vertical(theme)
+                .gap(theme.spacing.extra_large)
+                .build(ui, |page| {
+                    if let Some(notice) = content.problem.notice {
+                        page.add(|| {
+                            draw_status_card(
+                                ui,
+                                theme,
+                                &StatusCard {
+                                    status: CardStatus::Warning,
+                                    text: notice.text,
+                                    detail: Some(CardDetail {
+                                        text: notice.detail,
+                                        style: TextStyle::Secondary,
+                                    }),
+                                    buttons: &[],
+                                    close_tooltip: None,
+                                },
+                            )
+                        });
+                    }
+                    page.add(|| {
+                        draw_step(ui, theme, 1, texts.save_log_step, |step| {
+                            let export = Button::new(texts.export_log)
+                                .icon(Icon::DOWNLOAD)
+                                .state(content.problem.export_button);
+                            if step.add(|| export.draw(ui, theme)) {
+                                action = Some(HelpAction::ExportLog);
+                            }
+                            step.add(|| {
+                                draw_text_wrapped(ui, theme, TextStyle::Small, texts.export_hint);
+                            });
+                            if let Some((status, text)) = content.problem.status {
+                                step.add(|| {
+                                    draw_status_line(ui, theme, status, text, TextStyle::Small);
+                                });
+                            }
+                        });
+                    });
+                    page.add(|| {
+                        draw_step(ui, theme, 2, texts.report_step, |step| {
+                            let report = Button::new(texts.report_button)
+                                .kind(ButtonKind::Primary)
+                                .opens_link(LinkKind::Web);
+                            if step.add(|| report.draw(ui, theme)) {
+                                action = Some(HelpAction::ReportProblem);
+                            }
+                            step.add(|| {
+                                draw_text_wrapped(ui, theme, TextStyle::Small, texts.report_hint);
+                            });
+                        });
+                    });
+                    page.add_separator(theme);
+                    page.add(|| draw_text_wrapped(ui, theme, TextStyle::Small, texts.footer));
+                });
         });
     });
     action
 }
 
 /// Draws one numbered step: the number in a `bg.active` circle on the left,
-/// the Heading3 `title` beside it and `body` indented below the title. The
-/// first step follows the separator directly, later ones keep
-/// `spacing.small` from the step above.
-fn draw_step(ui: &Ui, theme: &Theme, number: u8, title: &str, body: impl FnOnce()) {
-    if number > 1 {
-        ui.dummy([0.0, theme.spacing.small]);
-    }
+/// and beside it a stack (`space.sm` apart, R148) of the Heading3 `title`
+/// and what `body` adds below it.
+fn draw_step(
+    ui: &Ui,
+    theme: &Theme,
+    number: u8,
+    title: &str,
+    body: impl FnOnce(&mut StackLayout<'_>),
+) {
     let [left, top] = ui.cursor_screen_pos();
     let diameter = ui.text_line_height() + theme.spacing.extra_small;
     let indent = diameter + theme.spacing.small;
-    ui.indent_by(indent);
-    ui.set_cursor_screen_pos([left + indent, top]);
     let title_height = {
         let _style = TextStyle::Heading3.push(ui, theme);
         ui.text_line_height()
     };
-    draw_text(ui, theme, TextStyle::Heading3, title);
     draw_step_number(
         ui,
         theme,
@@ -112,8 +127,11 @@ fn draw_step(ui: &Ui, theme: &Theme, number: u8, title: &str, body: impl FnOnce(
         [left + diameter / 2.0, top + title_height / 2.0],
         diameter,
     );
-    body();
-    ui.unindent_by(indent);
+    ui.set_cursor_screen_pos([left + indent, top]);
+    Stack::vertical(theme).build(ui, |step| {
+        step.add(|| draw_text(ui, theme, TextStyle::Heading3, title));
+        body(step);
+    });
 }
 
 /// Draws `number` in BodyStrong centered in a `bg.active` circle of

@@ -49,6 +49,8 @@ impl Icon {
     pub const ITALIC: Self = Self('\u{e0fb}');
     /// `list`: bulleted list.
     pub const LIST: Self = Self('\u{e106}');
+    /// `list-ordered`: numbered list (memo M214).
+    pub const LIST_ORDERED: Self = Self('\u{e1d1}');
     /// `list-todo`: checkbox (task) list item.
     pub const LIST_TODO: Self = Self('\u{e4c3}');
     /// `link`: insert a link.
@@ -136,7 +138,7 @@ impl Icon {
     /// `arrow-down`: next hit of find in a note (memo M198).
     pub const ARROW_DOWN: Self = Self('\u{e042}');
     /// Every icon above; keep in sync when adding one.
-    pub const ALL: [Self; 59] = [
+    pub const ALL: [Self; 60] = [
         Self::FOLDER_INPUT,
         Self::MENU,
         Self::FILE_TEXT,
@@ -164,6 +166,7 @@ impl Icon {
         Self::BOLD,
         Self::ITALIC,
         Self::LIST,
+        Self::LIST_ORDERED,
         Self::LIST_TODO,
         Self::LINK,
         Self::UNLINK,

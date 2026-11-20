@@ -15,6 +15,7 @@ use trailkit_ui::{
     controls::button::{
         ButtonState, draw_icon_button_with_state, draw_icon_toggle, icon_button_width,
     },
+    controls::text_field::move_below_last_item,
     editor::view::TextEditor,
     layout::pane::draw_pane,
     layout::splitter::draw_vertical_splitter,
@@ -87,6 +88,11 @@ const FORMAT_GROUPS: [&[FormatButton]; 4] = [
             Icon::LIST,
             EditorText::FormatBulletList,
             Some(FormatCommand::BulletList),
+        ),
+        (
+            Icon::LIST_ORDERED,
+            EditorText::FormatNumberedList,
+            Some(FormatCommand::NumberedList),
         ),
         (
             Icon::LIST_TODO,
@@ -373,7 +379,9 @@ impl Editor {
     ) -> Option<ToolbarAction> {
         let active = self.active_formats();
         let mut clicked = None;
-        let spacing = ui.clone_style().item_spacing[0];
+        // Buttons of one group sit closer than a group to its separator,
+        // so the groups read as groups (Q523).
+        let spacing = theme.spacing.extra_small;
         let mut id = 0;
         for (group_index, group) in FORMAT_GROUPS.iter().enumerate() {
             let width = group
@@ -388,7 +396,7 @@ impl Editor {
             }
             for (index, (icon, tooltip, command)) in group.iter().enumerate() {
                 if index > 0 {
-                    ui.same_line();
+                    ui.same_line_with_spacing(0.0, spacing);
                 }
                 id += 1;
                 let _id = ui.push_id(id);
@@ -476,6 +484,8 @@ impl Editor {
     ) -> EditorOutput {
         let mut output = EditorOutput::default();
         self.draw_title_input(ui, language, theme, input.is_dialog_open);
+        // The text area starts `space.sm` below the title field (R148).
+        move_below_last_item(ui, theme.spacing.small);
 
         if input.is_dialog_open {
             self.body.unfocus();
@@ -501,9 +511,9 @@ impl Editor {
         // Preview (M60, M72): editor and preview always stay side by side,
         // however narrow; the minimum only keeps the splitter usable.
         let available = ui.content_region_avail()[0];
-        let usable = (available - theme.pane.gap).max(0.0);
+        let usable = (available - theme.spacing.small).max(0.0);
         let preview_minimum = (ui.calc_text_size("n")[0] * MINIMUM_PREVIEW_SPLIT_CHARACTERS
-            + 2.0 * theme.pane.padding)
+            + 2.0 * theme.spacing.small)
             .min(usable / 2.0);
         let editor_width = (usable * input.preview_split_fraction)
             .clamp(preview_minimum, usable - preview_minimum);

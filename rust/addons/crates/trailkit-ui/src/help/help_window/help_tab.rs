@@ -10,8 +10,9 @@ use crate::{
     chat_link::chat_link_chip::ChipContext,
     layout::page::{PageHead, draw_page},
     layout::pane_columns::{FillColumn, FixedColumn, PaneColumns, draw_resizable_pane_columns},
+    layout::stack::Stack,
     lists::list_row::{ListRow, draw_list_row},
-    markdown::markdown_view::{MarkdownAction, draw_markdown, first_line_font, open_link},
+    markdown::markdown_view::{MarkdownAction, draw_markdown, open_link},
     text::TextStyle,
     theme::Theme,
 };
@@ -70,23 +71,28 @@ pub(super) fn draw_help_tab(
     topic_changed || response.released
 }
 
-/// Draws one row per topic and returns the clicked one.
+/// Draws one row per topic, `space.xs` apart like memo's note list (R148),
+/// and returns the clicked one.
 fn draw_topic_list(ui: &Ui, theme: &Theme, help: &ParsedHelp, selected: usize) -> Option<usize> {
     let mut clicked = None;
-    for (index, topic) in help.topics.iter().enumerate() {
-        let _id = ui.push_id(i32::try_from(index).unwrap_or(i32::MAX));
-        let row = ListRow {
-            id: "##topic",
-            selected: index == selected,
-            title: &topic.title,
-            title_style: TextStyle::Body,
-            trailing: None,
-            detail: None,
-        };
-        if draw_list_row(ui, theme, &row).clicked {
-            clicked = Some(index);
-        }
-    }
+    Stack::vertical(theme)
+        .gap(theme.spacing.extra_small)
+        .build(ui, |stack| {
+            for (index, topic) in help.topics.iter().enumerate() {
+                let _id = ui.push_id(i32::try_from(index).unwrap_or(i32::MAX));
+                let row = ListRow {
+                    id: "##topic",
+                    selected: index == selected,
+                    title: &topic.title,
+                    title_style: TextStyle::Body,
+                    trailing: None,
+                    detail: None,
+                };
+                if stack.add(|| draw_list_row(ui, theme, &row)).clicked {
+                    clicked = Some(index);
+                }
+            }
+        });
     clicked
 }
 
@@ -97,7 +103,6 @@ fn draw_topic(ui: &Ui, theme: &Theme, topic: &ParsedTopic, chips: ChipContext<'_
         title: &topic.title,
         trailing: None,
         subtitle: topic.lead.as_deref(),
-        first_line: first_line_font(&topic.document),
     };
     let action = draw_page(ui, theme, "topic_body", head, || {
         draw_markdown(ui, &topic.document, theme, chips, None)

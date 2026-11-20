@@ -15,14 +15,13 @@ use nexus::imgui::{ImColor32, Selectable, Style, StyleColor, Ui};
 
 use crate::{
     color::Color,
-    controls::button::draw_label,
+    controls::button::{draw_label, label_capital_middle},
     controls::menu::{
         draw_fitted_popup, draw_menu_row_highlight, draw_menu_row_label, menu_row_content_right,
         place_next_popup,
     },
-    text::font_registry::FontScope,
-    text::fonts::FontRole,
-    text::glyph_metrics::icon_visible_box,
+    text::font_registry::{FontScope, IconSize},
+    text::glyph_metrics::{capital_middle, icon_visible_box},
     text::icons::Icon,
     text::text_layout::{truncate_to_width, wrap_to_two_lines},
     theme::Theme,
@@ -114,8 +113,10 @@ fn draw_option_list(
     // keeps from the row's end like in every menu (M177).
     let list_width = width
         .max(width - 2.0 * style.frame_padding[0] + 2.0 * style.window_padding[0])
-        + theme.menu.row_padding_x;
-    place_next_popup([min[0], max[1]], 0.0);
+        + theme.spacing.small;
+    // The list opens `space.xs` below its field, so the two borders do not
+    // overlap (R148).
+    place_next_popup([min[0], max[1] + theme.spacing.extra_small], 0.0);
     // SAFETY: a plain ImGui call on the render thread inside a frame; it only
     // sets the size limits of the next window (the popup).
     unsafe {
@@ -172,12 +173,11 @@ fn draw_option_list(
             // The chosen option also gets a check mark, not only a color
             // (`a11y-color-alone`), beside its first line.
             if is_selected {
-                let [row_min, row_max] = [ui.item_rect_min(), ui.item_rect_max()];
                 draw_icon(
                     ui,
                     Icon::CHECK,
                     menu_row_content_right(ui, theme) - icon_width(ui),
-                    [row_min[1], row_max[1] - extra],
+                    origin[1] + capital_middle().unwrap_or(line_height / 2.0),
                     packed(theme.accent.text),
                 );
             }
@@ -226,44 +226,63 @@ fn draw_selected_content<'label>(
         ui,
         Icon::CHEVRON_DOWN,
         chevron_x,
-        [min[1], max[1]],
+        label_capital_middle([min[1], max[1]]),
         packed(theme.text.secondary),
     );
     shown
 }
 
-/// The width of one icon glyph at the current font size.
+/// The width of one interface icon glyph (R147, Q537).
 pub(crate) fn icon_width(ui: &Ui) -> f32 {
-    let _icons = FontScope::push(ui, FontRole::Icons);
+    icon_width_at(ui, IconSize::Interface)
+}
+
+/// The width of one icon glyph at `size`.
+pub(crate) fn icon_width_at(ui: &Ui, size: IconSize) -> f32 {
+    let _icons = FontScope::push_icons(ui, size);
     let mut buffer = [0; 4];
     ui.calc_text_size(Icon::CHEVRON_DOWN.as_str(&mut buffer))[0]
 }
 
-/// Draws `icon` at `x`, centered between `top` and `bottom` by its visible
-/// pixels (memo M170, M177), into the current window's draw list.
-fn draw_icon(ui: &Ui, icon: Icon, x: f32, vertical_span: [f32; 2], color: u32) {
+/// Draws `icon` at `x` with the middle of its visible pixels (memo M170,
+/// M177) on `middle`, into the current window's draw list.
+fn draw_icon(ui: &Ui, icon: Icon, x: f32, middle: f32, color: u32) {
     // SAFETY: called on the render thread inside a frame, so the current
     // window's draw list is valid.
     let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
-    draw_icon_into(draw_list, ui, icon, x, vertical_span, color);
+    draw_icon_into(draw_list, ui, icon, x, middle, color);
 }
 
 /// Like [`draw_icon`], into `draw_list` (e.g. a parent menu's list while a
-/// submenu window is current).
+/// submenu window is current). `middle` is the screen y of the capital
+/// middle of the text the icon accompanies, so icon and text share one
+/// reference line (R147); for an icon without text, the middle of its frame.
 pub(crate) fn draw_icon_into(
     draw_list: *mut nexus::imgui::sys::ImDrawList,
     ui: &Ui,
     icon: Icon,
     x: f32,
-    [top, bottom]: [f32; 2],
+    middle: f32,
     color: u32,
 ) {
-    let _icons = FontScope::push(ui, FontRole::Icons);
+    draw_icon_into_at(draw_list, ui, icon, [x, middle], color, IconSize::Interface);
+}
+
+/// Like [`draw_icon_into`] at `size`, with `[x, middle]` as there.
+pub(crate) fn draw_icon_into_at(
+    draw_list: *mut nexus::imgui::sys::ImDrawList,
+    ui: &Ui,
+    icon: Icon,
+    [x, middle]: [f32; 2],
+    color: u32,
+    size: IconSize,
+) {
+    let _icons = FontScope::push_icons(ui, size);
     let mut buffer = [0; 4];
     let glyph = icon.as_str(&mut buffer);
     let line = ui.text_line_height();
     let ink = icon_visible_box(icon.glyph(), line);
-    let y = ((top + bottom - ink[1] - ink[3]) / 2.0).round();
+    let y = (middle - f32::midpoint(ink[1], ink[3])).round();
     let begin = glyph.as_ptr().cast::<std::ffi::c_char>();
     // SAFETY: called on the render thread inside a frame with a draw list
     // of this frame; `begin..begin + len` is the UTF-8 glyph, which ImGui

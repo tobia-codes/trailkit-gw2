@@ -11,49 +11,29 @@ use crate::drawing::draw_list::WindowDrawList;
 use crate::{
     chat_link::{ChatLink, ChatLinkChip, ChatLinkError, ChatLinkKind, ChipText},
     color::Color,
-    text::font_registry::FontScope,
-    text::fonts::FontRole,
+    text::font_registry::{FontScope, IconSize},
     text::glyph_metrics::glyph_bounds,
     text::icons::Icon,
     theme::Theme,
 };
 
-/// Icon size relative to the text size (memo plan M81, M82): at 100 % icons
-/// look taller than the capitals, at 80 % too small next to the letters.
-const ICON_SCALE: f32 = 0.85;
-
-/// Size and vertical position of chip icons in the current fonts: icons are
-/// drawn at [`ICON_SCALE`] of the text size and centered on the capital
-/// letters (memo plan M80, M81).
-#[derive(Debug, Clone, Copy)]
-struct IconPlacement {
-    /// Factor from the icon font's own size to the drawn size.
-    scale: f32,
-    /// Distance from the line top to the top of the drawn icon.
-    offset: f32,
-}
-
-/// Measures the icon size and offset for the current text font. Lucide draws
-/// all icons on one grid, so the full square stands for every icon (centering
-/// each glyph by its own shape would shift flat icons off the line).
-/// Measured: a 16 px "H" is 9 px tall, the icon square 15 px.
-fn icon_placement(ui: &Ui) -> IconPlacement {
+/// The distance from the line top of the current text font to the top of a
+/// chip icon, so icons are centered on the capital letters (memo plan M80,
+/// M81); the icon font is already sized by the text (`font.size.icon`,
+/// R147). Lucide draws all icons on one grid, so the full square stands for
+/// every icon (centering each glyph by its own shape would shift flat icons
+/// off the line).
+fn icon_offset(ui: &Ui) -> f32 {
     let capital = glyph_bounds('H');
     let square = {
-        let _icons = FontScope::push(ui, FontRole::Icons);
+        let _icons = FontScope::push_icons(ui, IconSize::InlineText);
         glyph_bounds(Icon::SQUARE.glyph())
     };
     match (capital, square) {
         (Some((capital_top, capital_bottom)), Some((square_top, square_bottom))) => {
-            let scale = ICON_SCALE;
-            let offset =
-                (capital_top + capital_bottom) / 2.0 - (square_top + square_bottom) / 2.0 * scale;
-            IconPlacement { scale, offset }
+            (capital_top + capital_bottom) / 2.0 - (square_top + square_bottom) / 2.0
         }
-        _ => IconPlacement {
-            scale: 1.0,
-            offset: 0.0,
-        },
+        _ => 0.0,
     }
 }
 
@@ -70,8 +50,14 @@ enum Piece<'a> {
     Icon(Icon, Color),
     /// A run of text.
     Text(&'a str, Color),
-    /// A small filled circle (coin), in this color.
-    Dot(Color),
+    /// A small filled circle (coin) after its amount, `space.xs` from it;
+    /// `before_next` adds `space.sm` before the next amount (R148, Q521).
+    Dot {
+        /// The coin color.
+        color: Color,
+        /// Whether another amount follows in the same chip.
+        before_next: bool,
+    },
 }
 
 /// The icon of a link kind.
@@ -127,16 +113,21 @@ fn for_each_piece(
                 (copper / 100 % 100, theme.coin.silver),
                 (copper % 100, theme.coin.copper),
             ];
-            let mut shown = false;
+            // Zero amounts are left out; zero coins still show "0" copper.
+            let last_shown = parts
+                .iter()
+                .rposition(|(amount, _)| *amount != 0)
+                .unwrap_or(parts.len() - 1);
             for (index, (amount, color)) in parts.into_iter().enumerate() {
-                let is_last = index == parts.len() - 1;
-                if amount == 0 && !(is_last && !shown) {
+                if amount == 0 && index != last_shown {
                     continue;
                 }
                 let mut buffer = [0; 10];
                 visit(Piece::Text(format_number(amount, &mut buffer), primary));
-                visit(Piece::Dot(color));
-                shown = true;
+                visit(Piece::Dot {
+                    color,
+                    before_next: index != last_shown,
+                });
             }
         }
         Ok(link) => {
@@ -170,16 +161,23 @@ fn for_each_piece(
 }
 
 /// The width of a piece in the current font.
-fn piece_width(ui: &Ui, piece: &Piece<'_>, theme: &Theme, icons: IconPlacement) -> f32 {
+fn piece_width(ui: &Ui, piece: &Piece<'_>, theme: &Theme) -> f32 {
     match piece {
         Piece::Icon(icon, _) => {
-            let _icons = FontScope::push(ui, FontRole::Icons);
+            let _icons = FontScope::push_icons(ui, IconSize::InlineText);
             let mut buffer = [0; 4];
-            ui.calc_text_size(icon.as_str(&mut buffer))[0] * icons.scale + theme.spacing.extra_small
+            ui.calc_text_size(icon.as_str(&mut buffer))[0] + theme.spacing.extra_small
         }
         Piece::Text(text, _) => ui.calc_text_size(text)[0],
-        // A little air before the dot, more after it (before the next amount).
-        Piece::Dot(_) => dot_radius(ui) * 2.0 + theme.spacing.extra_small * 1.5,
+        // A little air before the dot, more after it before the next amount.
+        Piece::Dot { before_next, .. } => {
+            let after = if *before_next {
+                theme.spacing.small
+            } else {
+                0.0
+            };
+            theme.spacing.extra_small + dot_radius(ui) * 2.0 + after
+        }
     }
 }
 
@@ -223,18 +221,17 @@ fn draw_scaled_icon(icon: Icon, position: [f32; 2], size: f32, color: Color) {
     }
 }
 
-/// Horizontal padding inside the pill.
+/// Horizontal padding inside the pill (`space.sm`, R148).
 fn padding(theme: &Theme) -> f32 {
-    theme.spacing.extra_small * 1.5
+    theme.spacing.small
 }
 
 /// The width `chip` takes in the current font, padding included.
 #[must_use]
 pub fn chip_width(ui: &Ui, chip: &ChatLinkChip, theme: &Theme, context: ChipContext<'_>) -> f32 {
-    let icons = icon_placement(ui);
     let mut width = 2.0 * padding(theme);
     for_each_piece(chip, theme, context, |piece| {
-        width += piece_width(ui, &piece, theme, icons);
+        width += piece_width(ui, &piece, theme);
     });
     width
 }
@@ -275,28 +272,28 @@ pub fn draw_chip(
             .thickness(theme.border.width.max(1.0))
             .build();
     }
-    let icons = icon_placement(ui);
+    let offset = icon_offset(ui);
     let icon_size = {
-        let _icons = FontScope::push(ui, FontRole::Icons);
-        ui.current_font_size() * icons.scale
+        let _icons = FontScope::push_icons(ui, IconSize::InlineText);
+        ui.current_font_size()
     };
     let mut x = position[0] + padding(theme);
     for_each_piece(chip, theme, context, |piece| {
-        let advance = piece_width(ui, &piece, theme, icons);
+        let advance = piece_width(ui, &piece, theme);
         match piece {
             Piece::Icon(icon, color) => {
-                let _icons = FontScope::push(ui, FontRole::Icons);
-                draw_scaled_icon(icon, [x, position[1] + icons.offset], icon_size, color);
+                let _icons = FontScope::push_icons(ui, IconSize::InlineText);
+                draw_scaled_icon(icon, [x, position[1] + offset], icon_size, color);
             }
             Piece::Text(text, color) => {
                 draw_list.add_text([x, position[1]], color.to_array(), text);
             }
-            Piece::Dot(color) => {
+            Piece::Dot { color, .. } => {
                 let radius = dot_radius(ui);
                 draw_list
                     .add_circle(
                         [
-                            x + theme.spacing.extra_small / 2.0 + radius,
+                            x + theme.spacing.extra_small + radius,
                             position[1] + height / 2.0,
                         ],
                         radius,

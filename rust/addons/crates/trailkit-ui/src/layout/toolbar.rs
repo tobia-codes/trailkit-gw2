@@ -17,7 +17,7 @@ pub fn begin_toolbar_group(ui: &Ui, theme: &Theme, width: f32) {
     ui.same_line_with_spacing(0.0, gap);
     let [x, y] = ui.cursor_screen_pos();
     if x + 1.0 + gap + width > right_edge {
-        ui.new_line();
+        wrap_line(ui, theme);
         return;
     }
     let inset = (height * 0.2).round();
@@ -33,14 +33,22 @@ pub fn begin_toolbar_group(ui: &Ui, theme: &Theme, width: f32) {
     ui.same_line_with_spacing(0.0, gap);
 }
 
-/// Continues the toolbar line at its right end for `width` of items,
-/// wrapping onto a new line when they do not fit (`lay-responsive`).
-pub fn move_to_toolbar_end(ui: &Ui, width: f32) {
+/// Continues the toolbar line at its right end for `width` of items, at
+/// least `space.sm` after the last item, wrapping onto a new line when they
+/// do not fit (`lay-responsive`).
+pub fn move_to_toolbar_end(ui: &Ui, theme: &Theme, width: f32) {
     let right_edge = ui.window_content_region_max()[0] + ui.window_pos()[0];
-    ui.same_line();
+    ui.same_line_with_spacing(0.0, theme.spacing.small);
     if ui.cursor_screen_pos()[0] + width > right_edge {
-        ui.new_line();
+        wrap_line(ui, theme);
     }
     let y = ui.cursor_screen_pos()[1];
     ui.set_cursor_screen_pos([right_edge - width, y]);
+}
+
+/// Starts a new toolbar line `space.sm` below the current one (R148).
+fn wrap_line(ui: &Ui, theme: &Theme) {
+    ui.new_line();
+    let [x, y] = ui.cursor_pos();
+    ui.set_cursor_pos([x, y + theme.spacing.small]);
 }

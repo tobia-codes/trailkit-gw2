@@ -15,20 +15,22 @@ mod inline_text;
 mod link_menu;
 
 use crate::controls::hover::is_item_hovered;
-use nexus::imgui::{MouseCursor, Ui};
+use nexus::imgui::{ImColor32, MouseCursor, Ui};
 
 use self::{inline_text::draw_spans, link_menu::draw_link_menu};
 use crate::{
     chat_link::chat_link_chip::ChipContext,
+    controls::dropdown::draw_icon_into,
     drawing::draw_list::window_draw_list,
-    layout::separator::draw_compact_separator,
+    layout::separator::draw_separator,
     markdown::{Block, ListMarker, MarkdownDocument, TaskMarker},
+    text::TextStyle,
     text::font_registry::FontScope,
     text::fonts::FontRole,
+    text::glyph_metrics::capital_middle,
     text::icons::Icon,
     text::search_hits::HitMark,
     text::text_search::SearchQuery,
-    text::{TextStyle, draw_icon},
     theme::Theme,
 };
 
@@ -166,15 +168,6 @@ struct BlockLayout {
     marker_column: f32,
 }
 
-/// The font of the first line of `document`, e.g. to keep an even gap above it.
-#[must_use]
-pub fn first_line_font(document: &MarkdownDocument) -> FontRole {
-    match document.blocks.first() {
-        Some(Block::Heading { level, .. }) => FontRole::heading(*level),
-        _ => FontRole::Body,
-    }
-}
-
 /// Draws `document` at the cursor position and returns what the user
 /// clicked. `chips` supplies the texts of chat-link chips; `highlight`
 /// marks search hits.
@@ -191,7 +184,7 @@ pub fn draw_markdown(
     let width = ui.content_region_avail()[0]
         .min(average_character_width * READABLE_LINE_CHARACTERS)
         .max(average_character_width);
-    let indent = theme.list.indent;
+    let indent = theme.spacing.large;
     // The marker column must fit the widest marker (a task box) plus a gap,
     // whatever the font size; otherwise the text touches the checkbox.
     let marker_column = {
@@ -212,37 +205,33 @@ pub fn draw_markdown(
     for (index, block) in document.blocks.iter().enumerate() {
         let _id = ui.push_id(i32::try_from(index).unwrap_or(i32::MAX));
         // Items of one list stand close together; every other block boundary
-        // gets the paragraph gap (memo plan M66).
+        // gets the paragraph gap `space.lg`, a heading `space.xl` above it
+        // (memo plan M66, Q530).
         let continues_list = matches!(block, Block::ListItem { .. })
             && index
                 .checked_sub(1)
                 .and_then(|previous| document.blocks.get(previous))
                 .is_some_and(|previous| matches!(previous, Block::ListItem { .. }));
         if index > 0 && !continues_list {
-            ui.dummy([0.0, theme.spacing.small]);
+            let gap = if matches!(block, Block::Heading { .. }) {
+                theme.spacing.extra_large
+            } else {
+                theme.spacing.large
+            };
+            ui.dummy([0.0, gap]);
         }
-        let clicked = draw_block(
-            ui,
-            block,
-            index > 0,
-            layout,
-            theme,
-            chips,
-            highlight.as_deref_mut(),
-        );
+        let clicked = draw_block(ui, block, layout, theme, chips, highlight.as_deref_mut());
         action = action.or(clicked);
     }
     ui.dummy([0.0, 0.0]);
     action.or(draw_link_menu(ui, theme, chips))
 }
 
-/// Draws one `block` on the current line with the document's `layout`;
-/// `follows_block` adds the gap a heading keeps from what is above it.
+/// Draws one `block` on the current line with the document's `layout`.
 /// Returns what the user clicked.
 fn draw_block(
     ui: &Ui,
     block: &Block,
-    follows_block: bool,
     layout: BlockLayout,
     theme: &Theme,
     chips: ChipContext<'_>,
@@ -250,9 +239,6 @@ fn draw_block(
 ) -> Option<MarkdownAction> {
     match block {
         Block::Heading { level, spans } => {
-            if follows_block {
-                ui.dummy([0.0, theme.spacing.small]);
-            }
             let bounds = LineBounds {
                 left: layout.left,
                 right: layout.right,
@@ -282,7 +268,7 @@ fn draw_block(
             marker_click.or(text_click)
         }
         Block::Rule => {
-            draw_compact_separator(ui, theme);
+            draw_separator(ui, theme);
             None
         }
     }
@@ -333,17 +319,21 @@ fn draw_list_marker(
             } else {
                 Icon::SQUARE
             };
-            let mut buffer = [0; 4];
-            let _icons = FontScope::push(ui, FontRole::Icons);
-            let glyph = icon.as_str(&mut buffer);
-            let size = ui.calc_text_size(glyph);
+            // One interface icon size (Q537), on the capitals of the item's
+            // first line like every icon beside text (R147).
+            let middle = text_top + capital_middle().unwrap_or(ui.text_line_height() / 2.0);
+            let [width, height] = {
+                let _icons = FontScope::push(ui, FontRole::Icons);
+                let mut buffer = [0; 4];
+                ui.calc_text_size(icon.as_str(&mut buffer))
+            };
             // Only the box is clickable, the text next to it may hold links
             // and chips (R85); the target reaches a little beyond the glyph.
             let margin = theme.spacing.extra_small;
-            let target_min = [left - margin, text_top - margin];
+            let target_min = [left - margin, (middle - height / 2.0).round() - margin];
             let target_size = [
-                size[0].max(1.0) + 2.0 * margin,
-                size[1].max(1.0) + 2.0 * margin,
+                width.max(1.0) + 2.0 * margin,
+                height.max(1.0) + 2.0 * margin,
             ];
             ui.set_cursor_screen_pos(target_min);
             let clicked = ui.invisible_button("task", target_size);
@@ -367,8 +357,17 @@ fn draw_list_marker(
             } else {
                 theme.text.secondary
             };
-            ui.set_cursor_screen_pos([left, text_top]);
-            draw_icon(ui, icon, color);
+            // SAFETY: called on the render thread inside a frame, where ImGui
+            // has a current window and returns its draw list.
+            let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
+            draw_icon_into(
+                draw_list,
+                ui,
+                icon,
+                left,
+                middle,
+                ImColor32::from(color.to_array()).to_bits(),
+            );
             clicked.then_some(MarkdownAction::ToggleTask(marker))
         }
     };

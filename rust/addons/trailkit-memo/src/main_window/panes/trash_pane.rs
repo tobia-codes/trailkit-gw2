@@ -7,7 +7,7 @@ use nexus::imgui::{ChildWindow, Ui};
 use trailkit_ui::{
     controls::button::ButtonState,
     feedback::toast::{ToastAction, draw_toast},
-    layout::separator::draw_separator,
+    layout::stack::Stack,
     markdown::markdown_view::{MarkdownAction, open_link},
     text::{TextStyle, draw_text_wrapped},
     theme::Theme,
@@ -36,24 +36,30 @@ impl MemoWindow {
         theme: &Theme,
     ) {
         let has_entries = !self.document.trash.is_empty();
-        if let Some(action) = draw_trash_header(ui, language, theme, has_entries) {
-            self.actions.push(WindowAction::Trash(action));
-        }
         let now = Timestamp::now();
         let mut clicked = None;
-        ChildWindow::new("trash_list")
-            .size([0.0, 0.0])
-            .draw_background(false)
-            .build(ui, || {
-                clicked = draw_trash_entries(
-                    ui,
-                    language,
-                    theme,
-                    &self.document.trash,
-                    self.trash.selected,
-                    now,
-                );
+        Stack::vertical(theme).build(ui, |stack| {
+            if let Some(action) = stack.add(|| draw_trash_header(ui, language, theme, has_entries))
+            {
+                self.actions.push(WindowAction::Trash(action));
+            }
+            stack.add_separator(theme);
+            stack.add(|| {
+                ChildWindow::new("trash_list")
+                    .size([0.0, 0.0])
+                    .draw_background(false)
+                    .build(ui, || {
+                        clicked = draw_trash_entries(
+                            ui,
+                            language,
+                            theme,
+                            &self.document.trash,
+                            self.trash.selected,
+                            now,
+                        );
+                    });
             });
+        });
         if let Some(action) = clicked {
             self.actions.push(WindowAction::Trash(action));
         }
@@ -82,28 +88,36 @@ impl MemoWindow {
             );
             return;
         };
-        if let Some(action) = draw_preview_toolbar(ui, language, theme, entry.id()) {
+        let entry_id = entry.id();
+        let mut toolbar_action = None;
+        let mut view_actions = Vec::new();
+        Stack::vertical(theme).build(ui, |stack| {
+            toolbar_action = stack.add(|| draw_preview_toolbar(ui, language, theme, entry_id));
+            stack.add_separator(theme);
+            let TreeNode::Note(note) = &entry.node else {
+                stack.add(|| draw_group_preview(ui, language, theme, entry, now));
+                return;
+            };
+            let info = labels::info_line(entry, now, language);
+            let input = NoteViewInput {
+                note: Some(note),
+                search: None,
+                find: None,
+                chips: chip_context(language),
+                title_trailing: None,
+                read_only: Some(ReadOnly { subtitle: &info }),
+            };
+            let output = stack.add(|| {
+                self.note_view
+                    .draw(ui, language, theme, input, &mut self.trash.scroll)
+            });
+            view_actions = output.actions;
+        });
+        if let Some(action) = toolbar_action {
             self.actions.push(WindowAction::Trash(action));
         }
-        draw_separator(ui, theme);
-        let TreeNode::Note(note) = &entry.node else {
-            draw_group_preview(ui, language, theme, entry, now);
-            return;
-        };
-        let info = labels::info_line(entry, now, language);
-        let input = NoteViewInput {
-            note: Some(note),
-            search: None,
-            find: None,
-            chips: chip_context(language),
-            title_trailing: None,
-            read_only: Some(ReadOnly { subtitle: &info }),
-        };
-        let output = self
-            .note_view
-            .draw(ui, language, theme, input, &mut self.trash.scroll);
         // A trashed note cannot change: only links open.
-        for action in output.actions {
+        for action in view_actions {
             if let NoteViewAction::Markdown(MarkdownAction::OpenLink(url)) = action {
                 open_link(&url);
             }

@@ -2,20 +2,11 @@
 //! The values of that token file; `generated.rs` assembles them into
 //! the built-in themes (ROADMAP R118, R133).
 
-use crate::theme::{ButtonLayout, ListLayout, MenuLayout, PaneLayout, TooltipLayout};
+use crate::theme::{ButtonLayout, ListLayout, MenuLayout, TooltipLayout};
 
 /// List tokens, the same in both built-in themes.
 pub(super) const LIST_LAYOUT: ListLayout = ListLayout {
-    item_spacing: 4.0,
-    indent: 16.0,
     selection_bar_width: 3.0,
-    selection_bar_inset: 6.0,
-};
-
-/// Pane tokens, the same in both built-in themes.
-pub(super) const PANE_LAYOUT: PaneLayout = PaneLayout {
-    padding: 8.0,
-    gap: 8.0,
 };
 
 /// Button tokens, the same in both built-in themes.
@@ -25,12 +16,7 @@ pub(super) const BUTTON_LAYOUT: ButtonLayout = ButtonLayout {
 };
 
 /// Menu tokens, the same in both built-in themes.
-pub(super) const MENU_LAYOUT: MenuLayout = MenuLayout {
-    row_padding_x: 10.0,
-    row_padding_y: 7.0,
-    row_gap: 2.0,
-    min_width: 14.0,
-};
+pub(super) const MENU_LAYOUT: MenuLayout = MenuLayout { min_width: 14.0 };
 
 /// Tooltip tokens, the same in both built-in themes.
 pub(super) const TOOLTIP_LAYOUT: TooltipLayout = TooltipLayout { max_width: 34.0 };

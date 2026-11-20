@@ -112,7 +112,10 @@ impl FontRole {
             Self::Heading2 => typography.heading2,
             Self::Heading3 => typography.heading3,
             Self::Small => typography.small,
-            Self::Body | Self::BodyBold | Self::BodyItalic | Self::BodyBoldItalic | Self::Icons => {
+            // Registered for the largest text an icon accompanies and drawn
+            // scaled down for smaller text (R147, 1A; see `FontScope`).
+            Self::Icons => typography.heading1 * typography.icon,
+            Self::Body | Self::BodyBold | Self::BodyItalic | Self::BodyBoldItalic => {
                 typography.body
             }
         }

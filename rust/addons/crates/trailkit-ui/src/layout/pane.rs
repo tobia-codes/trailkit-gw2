@@ -2,7 +2,7 @@
 //! `lay-pane-padding`).
 //!
 //! A pane is an ImGui child window with the `bg.panel` background and
-//! `pane.padding` on every side. ImGui gives borderless child windows no
+//! `space.sm` on every side. ImGui gives borderless child windows no
 //! padding at all, so every sub-region of a trailkit window is drawn through
 //! [`draw_pane`] instead of a bare `ChildWindow`.
 
@@ -26,8 +26,8 @@ pub fn draw_pane<R>(
     // ImGui reads the padding once in `BeginChild`; popping right after it
     // keeps the window padding for popups and nested windows unchanged.
     let padding = ui.push_style_var(StyleVar::WindowPadding([
-        theme.pane.padding,
-        theme.pane.padding,
+        theme.spacing.small,
+        theme.spacing.small,
     ]));
     let token = ChildWindow::new(id)
         .size(size)

@@ -504,8 +504,8 @@ fn views() {
 fn window_chrome_hovers() {
     for (name, position) in [
         ("hover-menu-button", [28.0, 25.0]),
-        ("hover-collapse", [576.0, 25.0]),
-        ("hover-close", [612.0, 25.0]),
+        ("hover-collapse", [588.0, 25.0]),
+        ("hover-close", [616.0, 25.0]),
         ("hover-new-note", [62.0, 65.0]),
         ("hover-new-group", [153.0, 65.0]),
         ("hover-compact", [236.0, 65.0]),
@@ -524,7 +524,7 @@ fn list_rows() {
         ("hover-row", DAILIES_ROW),
         ("hover-group", RAIDS_ROW),
         ("hover-group-arrow", [36.0, RAIDS_ROW[1]]),
-        ("hover-child-row", [100.0, 202.0]),
+        ("hover-child-row", [100.0, 189.0]),
         ("hover-badge-count", [184.0, RAIDS_ROW[1]]),
     ] {
         assert_state(name, WIDE, selected, &hover(position));

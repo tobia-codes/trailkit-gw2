@@ -1,7 +1,7 @@
 //! A dialog (`overlay-dialog-layout`, `overlay-dialog-scope`): a card on a
 //! [`Backdrop`] over one window, centered in it, `bg.panel` with a
 //! `border.subtle` outline, `radius.lg` and `space.lg` padding. The card
-//! starts with the title in `Heading3` and, unless turned off, the close icon
+//! starts with the title in `Heading2` (R150) and, unless turned off, the close icon
 //! at its top right (R141); the dialog draws its content below.
 //!
 //! While the close icon is on, the icon, Escape and a click on the backdrop
@@ -179,7 +179,7 @@ impl<'a> Dialog<'a> {
                 };
                 let title_width = (width - close_width).max(1.0);
                 let _wrap = ui.push_text_wrap_pos_with_pos(ui.cursor_pos()[0] + title_width);
-                draw_text_wrapped(ui, theme, TextStyle::Heading3, self.title);
+                draw_text_wrapped(ui, theme, TextStyle::Heading2, self.title);
             }
             move_below_last_item(ui, theme.spacing.medium);
             content(width)
@@ -206,7 +206,7 @@ impl<'a> Dialog<'a> {
     ) -> bool {
         let cursor = ui.cursor_screen_pos();
         let title_height = {
-            let _title = FontScope::push(ui, TextStyle::Heading3.font());
+            let _title = FontScope::push(ui, TextStyle::Heading2.font());
             ui.text_line_height()
         };
         ui.set_cursor_screen_pos([

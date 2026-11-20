@@ -9,7 +9,10 @@
 use std::ops::Range;
 
 use jiff::Timestamp;
-use trailkit_ui::markdown::{InlineKind, inline_ranges};
+use trailkit_ui::{
+    editor::buffer::{ListMarker, list_marker},
+    markdown::{InlineKind, inline_ranges},
+};
 
 use trailkit_memo_shared::{
     drafts::Draft,
@@ -94,6 +97,9 @@ pub enum FormatCommand {
     Italic,
     /// `- ` at the start of the line (toggles).
     BulletList,
+    /// `N. ` at the start of the line (M214): continues the numbering of
+    /// the line above, replaces a bullet or task marker, toggles off.
+    NumberedList,
     /// `- [ ] ` at the start of the line (toggles).
     Checkbox,
     /// `[…](https://)` around the selection, with the URL part selected.
@@ -136,6 +142,7 @@ pub fn format_edit(text: &str, selection: Range<usize>, command: FormatCommand) 
         FormatCommand::Heading1 => set_heading_level(text, start, 1),
         FormatCommand::Heading2 => set_heading_level(text, start, 2),
         FormatCommand::BulletList => toggle_line_prefix(text, start..end, "- "),
+        FormatCommand::NumberedList => toggle_numbered_line(text, start..end),
         FormatCommand::Checkbox => toggle_line_prefix(text, start..end, "- [ ] "),
         FormatCommand::Link => {
             // Inside an existing link: remove the link syntax, keep the label (M71).
@@ -298,6 +305,8 @@ pub struct ActiveFormats {
     pub italic: bool,
     /// The line is a bulleted list item (not a task).
     pub bullet_list: bool,
+    /// The line is a numbered list item (M214).
+    pub numbered_list: bool,
     /// The line is a task (checkbox) item.
     pub checkbox: bool,
     /// Inside a link.
@@ -314,6 +323,7 @@ impl ActiveFormats {
             FormatCommand::Bold => self.bold,
             FormatCommand::Italic => self.italic,
             FormatCommand::BulletList => self.bullet_list,
+            FormatCommand::NumberedList => self.numbered_list,
             FormatCommand::Checkbox => self.checkbox,
             FormatCommand::Link => self.link,
         }
@@ -336,6 +346,7 @@ pub fn active_formats(text: &str, selection: Range<usize>) -> ActiveFormats {
         bold: innermost_range(text, &selection, InlineKind::Strong).is_some(),
         italic: innermost_range(text, &selection, InlineKind::Emphasis).is_some(),
         bullet_list: !checkbox && (line.starts_with("- ") || line.starts_with("* ")),
+        numbered_list: list_marker(line).is_some_and(|marker| marker.is_numbered()),
         checkbox,
         link: innermost_range(text, &selection, InlineKind::Link).is_some(),
     }
@@ -392,6 +403,54 @@ fn toggle_line_prefix(text: &str, selection: Range<usize>, prefix: &str) -> Text
             replacement: prefix.to_owned(),
             selection: selection.start + prefix.len()..selection.end + prefix.len(),
         }
+    }
+}
+
+/// Numbers the line containing `selection.start` (M214): the number after
+/// the line above when that one is numbered, otherwise `1. `. A bullet or
+/// task marker is replaced; a numbered line loses its number.
+fn toggle_numbered_line(text: &str, selection: Range<usize>) -> TextEdit {
+    let line_start = text[..selection.start]
+        .rfind('\n')
+        .map_or(0, |index| index + 1);
+    let line_end = text[line_start..]
+        .find('\n')
+        .map_or(text.len(), |index| line_start + index);
+    let line = &text[line_start..line_end];
+    let indentation = line.len() - line.trim_start().len();
+    let marker = list_marker(line);
+    let marker_end = marker.as_ref().map_or(line_start + indentation, |marker| {
+        line_start + marker.text.len()
+    });
+    let replacement = if marker.as_ref().is_some_and(ListMarker::is_numbered) {
+        String::new()
+    } else {
+        let line_above = text[..line_start.saturating_sub(1)]
+            .rsplit('\n')
+            .next()
+            .filter(|_| line_start > 0);
+        line_above
+            .and_then(list_marker)
+            .filter(ListMarker::is_numbered)
+            .map_or_else(
+                || "1. ".to_owned(),
+                |above| above.next.trim_start().to_owned(),
+            )
+    };
+    let range = line_start + indentation..marker_end;
+    let shift = |position: usize| {
+        if position >= range.end {
+            position - range.len() + replacement.len()
+        } else if position >= range.start {
+            range.start + replacement.len()
+        } else {
+            position
+        }
+    };
+    TextEdit {
+        selection: shift(selection.start)..shift(selection.end),
+        range,
+        replacement,
     }
 }
 
@@ -560,5 +619,41 @@ mod tests {
         assert!(!session.has_changes());
         let draft = session.to_draft(Timestamp::UNIX_EPOCH, note.updated_at);
         assert!(!EditSession::from_draft(&note, draft).has_changes());
+    }
+
+    #[test]
+    fn numbered_list_starts_at_one_and_toggles_off() {
+        let (text, selection) = run("milk", 2..2, FormatCommand::NumberedList);
+        assert_eq!((text.as_str(), selection), ("1. milk", 5..5));
+        let (text, selection) = run("1. milk", 5..5, FormatCommand::NumberedList);
+        assert_eq!((text.as_str(), selection), ("milk", 2..2));
+    }
+
+    #[test]
+    fn numbered_list_continues_the_line_above() {
+        let (text, _) = run(
+            "1. eggs\n2. milk\nbread",
+            17..17,
+            FormatCommand::NumberedList,
+        );
+        assert_eq!(text, "1. eggs\n2. milk\n3. bread");
+        let (text, _) = run("eggs\nbread", 7..7, FormatCommand::NumberedList);
+        assert_eq!(text, "eggs\n1. bread", "a plain line above starts at one");
+    }
+
+    #[test]
+    fn numbered_list_replaces_a_bullet_or_task_marker() {
+        let (text, selection) = run("- milk", 4..4, FormatCommand::NumberedList);
+        assert_eq!((text.as_str(), selection), ("1. milk", 5..5));
+        let (text, _) = run("- [ ] milk", 8..8, FormatCommand::NumberedList);
+        assert_eq!(text, "1. milk");
+        let (text, _) = run("  - milk", 6..6, FormatCommand::NumberedList);
+        assert_eq!(text, "  1. milk", "the indentation stays");
+    }
+
+    #[test]
+    fn numbered_line_lights_its_button() {
+        assert!(active_formats("2. milk", 4..4).is_active(FormatCommand::NumberedList));
+        assert!(!active_formats("- milk", 4..4).is_active(FormatCommand::NumberedList));
     }
 }

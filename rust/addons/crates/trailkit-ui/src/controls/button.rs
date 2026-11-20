@@ -38,15 +38,28 @@ pub fn draw_button_with_size(ui: &Ui, theme: &Theme, label: &str, size: [f32; 2]
     Button::new(label).width(size[0]).draw(ui, theme)
 }
 
+/// The distance from the line top of the current font to the middle of its
+/// capital letters.
+fn label_capital_offset() -> f32 {
+    // SAFETY: only reads ImGui's current font size on the render thread.
+    let line_height = unsafe { nexus::imgui::sys::igGetFontSize() };
+    capital_middle().unwrap_or(line_height / 2.0)
+}
+
+/// The screen y of the capital middle of a label that [`draw_label`] centers
+/// between `top` and `bottom` in the current font, after its rounding to a
+/// whole pixel: the line an icon beside it is centered on (R147).
+pub(crate) fn label_capital_middle([top, bottom]: [f32; 2]) -> f32 {
+    let offset = label_capital_offset();
+    ((top + bottom) / 2.0 - offset).round() + offset
+}
+
 /// Draws `label` starting at `x`, vertically centered by its capital letters
 /// between `top` and `bottom` (memo plan M85), in the current font and
 /// `color` (packed `ImColor32` bits). Works while a caller holds the window's
 /// `DrawListMut` (imgui-rs allows only one at a time, e.g. in a dialog card).
-pub(crate) fn draw_label(label: &str, x: f32, [top, bottom]: [f32; 2], color: u32) {
-    // SAFETY: only reads ImGui's current font size on the render thread.
-    let line_height = unsafe { nexus::imgui::sys::igGetFontSize() };
-    let middle = capital_middle().unwrap_or(line_height / 2.0);
-    let y = ((top + bottom) / 2.0 - middle).round();
+pub(crate) fn draw_label(label: &str, x: f32, span: [f32; 2], color: u32) {
+    let y = (label_capital_middle(span) - label_capital_offset()).round();
     let begin = label.as_ptr().cast::<std::ffi::c_char>();
     // SAFETY: called on the render thread inside a frame, so the current
     // window's draw list is valid; `begin..begin + len` is the UTF-8 label,
@@ -126,12 +139,11 @@ pub fn draw_primary_button_with_icon(ui: &Ui, theme: &Theme, icon: Icon, label: 
         .draw(ui, theme)
 }
 
-/// The width of an icon button showing `icon`.
+/// The width of an icon button: it is square, as wide as a button is tall
+/// in the current text font (Q524).
 #[must_use]
-pub fn icon_button_width(ui: &Ui, icon: Icon) -> f32 {
-    let _icons = FontScope::push(ui, FontRole::Icons);
-    let mut buffer = [0; 4];
-    ui.calc_text_size(icon.as_str(&mut buffer))[0] + 2.0 * ui.clone_style().frame_padding[0]
+pub fn icon_button_width(ui: &Ui, _icon: Icon) -> f32 {
+    ui.frame_height()
 }
 
 /// The width of a button with an icon and `label` (at least
@@ -154,9 +166,9 @@ fn min_text_button_width(ui: &Ui, theme: &Theme) -> f32 {
     theme.button.min_width_for(ui.current_font_size())
 }
 
-/// The gap between an icon and its label inside a button.
+/// The gap between an icon and its label inside a button (`space.sm`, R148).
 pub(crate) fn icon_label_gap(theme: &Theme) -> f32 {
-    theme.spacing.extra_small * 1.5
+    theme.spacing.small
 }
 
 /// Draws a borderless icon button (`bg.hover` only while hovered) with
@@ -281,6 +293,8 @@ fn draw_icon_button_with_fill(
         || ImColor32::from(ui.style_color(StyleColor::Text)).to_bits(),
         |icon| ImColor32::from(icon.to_array()).to_bits(),
     );
+    // Square and as tall as a text button (Q524), whatever the icon size.
+    let side = ui.frame_height();
     let clicked = {
         let _colors = [
             ui.push_style_color(StyleColor::Text, [0.0; 4]),
@@ -288,9 +302,9 @@ fn draw_icon_button_with_fill(
             ui.push_style_color(StyleColor::ButtonHovered, fill.hovered.to_array()),
             ui.push_style_color(StyleColor::ButtonActive, fill.pressed.to_array()),
         ];
-        let _icons = FontScope::push(ui, FontRole::Icons);
+        // The glyph is the button's ID only; the icon is drawn below.
         let mut buffer = [0; 4];
-        ui.button(icon.as_str(&mut buffer))
+        ui.button_with_size(icon.as_str(&mut buffer), [side, side])
     };
     draw_icon_centered(ui, icon, [ui.item_rect_min(), ui.item_rect_max()], color);
     if !tooltip.is_empty() && is_item_hovered(ui) {
