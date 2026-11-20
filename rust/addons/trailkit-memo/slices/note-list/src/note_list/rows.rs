@@ -104,15 +104,11 @@ fn draw_group(ui: &Ui, group: &Group, level: usize, context: &mut RowContext<'_,
     };
     record_row(ui, node, kind, &response, context);
     let is_hovered = response.hovered;
-    // The first click of a double-click toggled the group: the second, which
-    // starts the rename, turns it back. The chevron's second click already did.
-    let turn_back =
-        is_hovered && ui.is_mouse_double_clicked(MouseButton::Left) && !response.chevron_clicked;
     if is_hovered {
         handle_hovered_row(ui, node, response.chevron_clicked, context);
     }
     context_menu::draw_context_menu(ui, node, None, context);
-    if response.chevron_clicked || turn_back {
+    if response.chevron_clicked {
         let action = if context.search.is_some() {
             NoteListAction::SetCollapsedInSearch(group.id, expanded)
         } else {

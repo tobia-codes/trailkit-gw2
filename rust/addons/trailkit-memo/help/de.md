@@ -59,7 +59,7 @@ Deine Notizen stehen in einer Liste, die du sortieren und in Gruppen ordnen kann
 
 ### Gruppen
 
-Gruppen haben fett gedruckte Namen und zeigen rechts, wie viele Notizen sie enthalten. Ein Klick irgendwo auf die Zeile klappt die Gruppe auf oder zu; die Notiz, die du gerade liest, bleibt rechts stehen.
+Gruppen haben fett gedruckte Namen und zeigen rechts, wie viele Notizen sie enthalten. Ein Klick irgendwo auf die Zeile klappt die Gruppe auf oder zu: der Pfeil sofort, der Rest der Zeile einen Moment später, damit ein Doppelklick die Gruppe umbenennt, ohne sie zuzuklappen. Die Notiz, die du gerade liest, bleibt rechts stehen.
 
 ### Löschen
 

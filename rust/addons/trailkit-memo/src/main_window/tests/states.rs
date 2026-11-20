@@ -71,6 +71,13 @@ fn click(position: [f32; 2]) -> Vec<FrameInput> {
     steps
 }
 
+/// The mouse resting at `position` until ImGui's double-click time (0.3 s
+/// at 60 frames per second) has passed, so a single click on a group
+/// toggles it (M172).
+fn wait_past_double_click(position: [f32; 2]) -> Vec<FrameInput> {
+    (0..24).flat_map(|_| hover(position)).collect()
+}
+
 /// A right click at `position`, opening its context menu.
 fn right_click(position: [f32; 2]) -> Vec<FrameInput> {
     let mut steps = hover(position);
@@ -530,10 +537,21 @@ fn list_rows() {
         assert_state(name, WIDE, selected, &hover(position));
     }
     assert_state("pressed-row", WIDE, selected, &press(DAILIES_ROW));
-    // A click on the row collapses the group; the note stays (M172, M173).
+    // A click on the row collapses the group once the double-click time
+    // passed; the note stays (M172, M173).
     assert_state("group-clicked", WIDE, selected, &{
         let mut steps = click(RAIDS_ROW);
-        steps.extend(hover(NOWHERE));
+        steps.extend(wait_past_double_click(NOWHERE));
+        steps
+    });
+    // A double-click renames the group and leaves it expanded (M172, M44).
+    // ImGui starts its last click time at 0, so a click in the first 0.3 s of
+    // the harness would pair with that one: wait first.
+    assert_state("group-double-clicked", WIDE, selected, &{
+        let mut steps = wait_past_double_click(NOWHERE);
+        steps.extend(click(RAIDS_ROW));
+        steps.extend(click(RAIDS_ROW));
+        steps.extend(wait_past_double_click(NOWHERE));
         steps
     });
     assert_state("collapsed-group", WIDE, selected, &{
