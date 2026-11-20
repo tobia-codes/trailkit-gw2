@@ -115,9 +115,14 @@ impl SearchField {
     ) -> SearchFieldResponse {
         let start = ui.cursor_screen_pos();
         let height = field_height(ui, theme);
-        let input_y = start[1] + theme.spacing.small / 2.0;
         let end = [start[0] + width, start[1] + height];
         let padding = ui.clone_style().frame_padding;
+        // The input draws its text at its line top inside the frame padding;
+        // it moves so the text's capitals sit on the field's middle, like a
+        // button label (M85), and the icons share that line (R147).
+        let capitals = capital_middle().unwrap_or(ui.text_line_height() / 2.0);
+        let text_top = (start[1] + height / 2.0 - capitals).round();
+        let input_y = text_top - padding[1];
         // Like ImGui's own inputs (`FrameBgHovered`), but not while typing.
         let is_hovered = ui.is_mouse_hovering_rect(start, end)
             && ui.is_window_hovered_with_flags(
@@ -138,7 +143,7 @@ impl SearchField {
         // The icons sit on the capitals of the text the input draws at its
         // line top inside the frame padding, not on the field's middle,
         // so icons and text share one line (R147).
-        let middle = input_y + padding[1] + capital_middle().unwrap_or(ui.text_line_height() / 2.0);
+        let middle = text_top + capitals;
         let clear_position = [
             (end[0] - padding[0] - clear[2]).round(),
             (middle - (clear[1] + clear[3]) / 2.0).round(),
