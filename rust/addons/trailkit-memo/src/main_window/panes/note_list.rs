@@ -7,7 +7,7 @@ use jiff::Timestamp;
 use nexus::imgui::{ChildWindow, Ui};
 use trailkit_ui::controls::tooltip::draw_tooltip_with;
 use trailkit_ui::{
-    controls::menu::{begin_submenu, draw_menu_item},
+    controls::menu::{MenuItem, begin_submenu, draw_menu_item},
     layout::stack::Stack,
     text::icons::Icon,
     text::{TextStyle, draw_text},
@@ -180,7 +180,8 @@ pub(in crate::main_window) fn draw_reset_type_submenu(
     };
     for (period, text) in KIND_OPTIONS {
         let is_current = note.reset_schedule.period() == period;
-        if draw_menu_item(ui, theme, text.get(language), is_current) && !is_current {
+        let option = MenuItem::new(text.get(language)).checked(is_current);
+        if draw_menu_item(ui, theme, &option) && !is_current {
             actions.push(WindowAction::SetResetPeriod(note.id, period));
         }
     }

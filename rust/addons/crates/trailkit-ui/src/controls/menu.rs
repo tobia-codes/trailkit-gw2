@@ -1,14 +1,24 @@
 //! Menu entries for context menus shared by all addons (memo plan M98, M99).
+//! Every entry is a [`MenuItem`]: [`draw_menu_item`] draws it in a popup,
+//! [`draw_menu_panel`] in a menu drawn as a panel (ROADMAP R155).
 //!
 //! ImGui draws its own check mark and submenu arrow; these entries use the
 //! Lucide `check` and `chevron-right` icons like the dropdown, and submenus
-//! open flush beside their parent instead of overlapping it.
+//! open `space.xs` beside their parent instead of overlapping it (memo M98).
+
+mod item;
+mod panel;
+
+pub use self::item::{MenuItem, MenuItemTone};
+pub use self::panel::{MenuEntry, draw_menu_panel};
 
 use crate::controls::hover::{is_item_hovered, is_item_hovered_with_flags};
 use std::cell::Cell;
 
 use crate::controls::tooltip::draw_reason_tooltip;
-use nexus::imgui::{ItemHoveredFlags, MenuItem, MenuToken, StyleColor, StyleVar, Ui};
+use nexus::imgui::{
+    ItemHoveredFlags, MenuItem as ImguiMenuItem, MenuToken, StyleColor, StyleVar, Ui,
+};
 
 use crate::{
     color::Color,
@@ -119,17 +129,41 @@ pub fn place_next_popup(position: [f32; 2], pivot_x: f32) {
 /// border, so all rows of every kind line up (R144).
 #[must_use]
 pub fn menu_row_highlight_rect(ui: &Ui, theme: &Theme) -> [[f32; 2]; 2] {
-    row_highlight_rect(ui, theme, [ui.item_rect_min(), ui.item_rect_max()])
+    row_highlight_rect(
+        theme,
+        MenuSpan::of_current_window(ui),
+        [ui.item_rect_min(), ui.item_rect_max()],
+    )
 }
 
-/// [`menu_row_highlight_rect`] for a row spanning `[min, max]`.
-fn row_highlight_rect(ui: &Ui, theme: &Theme, [min, max]: [[f32; 2]; 2]) -> [[f32; 2]; 2] {
+/// The horizontal extent of the menu window a row belongs to.
+#[derive(Debug, Clone, Copy)]
+struct MenuSpan {
+    /// The window's left edge (screen).
+    left: f32,
+    /// The window's width.
+    width: f32,
+}
+
+impl MenuSpan {
+    /// The span of the current window. Read it before `BeginMenu` for a
+    /// submenu row: while the submenu is open, it is the current window.
+    fn of_current_window(ui: &Ui) -> Self {
+        Self {
+            left: ui.window_pos()[0],
+            width: ui.window_size()[0],
+        }
+    }
+}
+
+/// [`menu_row_highlight_rect`] for a row spanning `[min, max]` in a menu
+/// window spanning `span`.
+fn row_highlight_rect(theme: &Theme, span: MenuSpan, [min, max]: [[f32; 2]; 2]) -> [[f32; 2]; 2] {
     let inset = theme.spacing.small + theme.border.width;
-    let left = ui.window_pos()[0];
     let half_gap = theme.spacing.extra_small / 2.0;
     [
-        [left + inset, min[1] + half_gap],
-        [left + ui.window_size()[0] - inset, max[1] - half_gap],
+        [span.left + inset, min[1] + half_gap],
+        [span.left + span.width - inset, max[1] - half_gap],
     ]
 }
 
@@ -138,7 +172,8 @@ pub(crate) fn menu_row_content_right(ui: &Ui, theme: &Theme) -> f32 {
     menu_row_highlight_rect(ui, theme)[1][0] - theme.spacing.small
 }
 
-/// Fills the highlight of the row spanning `[min, max]` with `color`.
+/// Fills the highlight of the row spanning `[min, max]` in a menu window
+/// spanning `span` with `color`.
 ///
 /// # Safety
 ///
@@ -146,12 +181,12 @@ pub(crate) fn menu_row_content_right(ui: &Ui, theme: &Theme) -> f32 {
 /// thread inside a frame.
 unsafe fn fill_menu_row(
     draw_list: *mut nexus::imgui::sys::ImDrawList,
-    ui: &Ui,
     theme: &Theme,
+    span: MenuSpan,
     row: [[f32; 2]; 2],
     color: Color,
 ) {
-    let [min, max] = row_highlight_rect(ui, theme, row);
+    let [min, max] = row_highlight_rect(theme, span, row);
     // SAFETY: guaranteed by the caller; the call only adds a rectangle.
     unsafe {
         nexus::imgui::sys::ImDrawList_AddRectFilled(
@@ -190,8 +225,8 @@ pub(crate) fn draw_menu_row_highlight(ui: &Ui, theme: &Theme, selected: bool) {
     unsafe {
         fill_menu_row(
             nexus::imgui::sys::igGetWindowDrawList(),
-            ui,
             theme,
+            MenuSpan::of_current_window(ui),
             [ui.item_rect_min(), ui.item_rect_max()],
             color,
         );
@@ -219,127 +254,61 @@ pub(crate) fn draw_menu_row_label(origin: [f32; 2], color: Color, label: &str) {
     }
 }
 
-/// Draws a menu item and returns whether it was clicked. A `checked` item
-/// shows a check mark in the accent color at its right end.
-pub fn draw_menu_item(ui: &Ui, theme: &Theme, label: &str, checked: bool) -> bool {
-    let origin = ui.cursor_screen_pos();
-    let clicked = {
-        let _hidden = ui.push_style_color(StyleColor::Text, [0.0; 4]);
-        MenuItem::new(label).build(ui)
-    };
-    draw_menu_row_highlight(ui, theme, false);
-    draw_menu_row_label(origin, theme.text.primary, label);
-    if checked {
-        // SAFETY: called on the render thread inside a frame, so the
-        // current window's draw list is valid.
-        let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
-        draw_icon_into(
-            draw_list,
-            ui,
-            Icon::CHECK,
-            menu_row_content_right(ui, theme) - icon_width(ui),
-            label_icon_middle(ui, origin[1]),
-            packed(theme.accent.text),
-        );
-    }
-    clicked
-}
-
-/// How a menu item with an icon looks.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MenuItemTone {
-    /// `text.primary` label and icon.
-    Regular,
-    /// `danger` label and icon, for a destructive item that asks first
-    /// (memo M146).
-    Danger,
-}
-
-/// Draws a menu item with a Lucide `icon` before `label` and returns
-/// whether it was clicked (memo M133). A disabled item is drawn in
-/// `text.disabled` and shows `disabled_tooltip` as its reason, with the
-/// neutral `ban` icon, while hovered (M141, R93).
-pub fn draw_menu_item_with_icon(
-    ui: &Ui,
-    theme: &Theme,
-    icon: Icon,
-    label: &str,
-    tone: MenuItemTone,
-    disabled_tooltip: Option<&str>,
-) -> bool {
-    draw_icon_menu_item(ui, theme, icon, label, None, (tone, disabled_tooltip))
-}
-
-/// Draws an enabled menu item with a Lucide `icon` before `label` and its
-/// `shortcut` in `text.secondary` at the row's right end (memo M198); ImGui
-/// keeps room for the shortcut. Returns whether it was clicked.
-pub fn draw_menu_item_with_shortcut(
-    ui: &Ui,
-    theme: &Theme,
-    icon: Icon,
-    label: &str,
-    shortcut: &str,
-) -> bool {
-    draw_icon_menu_item(
-        ui,
-        theme,
-        icon,
-        label,
-        Some(shortcut),
-        (MenuItemTone::Regular, None),
-    )
-}
-
-/// Draws a menu item with `icon`, `label` and an optional `shortcut`; see
-/// [`draw_menu_item_with_icon`] for the tone and the disabled state.
-fn draw_icon_menu_item(
-    ui: &Ui,
-    theme: &Theme,
-    icon: Icon,
-    label: &str,
-    shortcut: Option<&str>,
-    (tone, disabled_tooltip): (MenuItemTone, Option<&str>),
-) -> bool {
-    let enabled = disabled_tooltip.is_none();
+/// Draws `item` as an entry of the current popup and returns whether it was
+/// clicked (never while disabled). The icon sits at the row's start, the
+/// label after it; a check mark or the shortcut sits at the right end.
+pub fn draw_menu_item(ui: &Ui, theme: &Theme, item: &MenuItem<'_>) -> bool {
+    let enabled = item.is_enabled();
     // ImGui draws the label at the cursor; the item rect is no substitute
     // because it reaches half the item spacing further up and left.
     let origin = ui.cursor_screen_pos();
-    // ImGui keeps room for a check mark after the label; the label moves
-    // right by the icon, which fits into that room.
+    // ImGui keeps room for a check mark after the label; an icon moves the
+    // label right, which fits into that room.
     let clicked = {
         // A disabled item draws its label in `TextDisabled`, not `Text`.
         let _hidden = [
             ui.push_style_color(StyleColor::Text, [0.0; 4]),
             ui.push_style_color(StyleColor::TextDisabled, [0.0; 4]),
         ];
-        let item = MenuItem::new(label).enabled(enabled);
-        match shortcut {
-            Some(shortcut) => item.shortcut(shortcut).build(ui),
-            None => item.build(ui),
+        let entry = ImguiMenuItem::new(item.label).enabled(enabled);
+        match item.shortcut {
+            Some(shortcut) => entry.shortcut(shortcut).build(ui),
+            None => entry.build(ui),
         }
     };
     // ImGui reports the hover of a disabled item once the item has ended.
     if enabled {
-        draw_menu_row_highlight(ui, theme, false);
+        draw_menu_row_highlight(ui, theme, item.selected);
     }
-    let color = match (enabled, tone) {
-        (false, _) => theme.text.disabled,
-        (true, MenuItemTone::Regular) => theme.text.primary,
-        (true, MenuItemTone::Danger) => theme.status.danger,
-    };
+    let color = item.color(theme);
     // SAFETY: called on the render thread inside a frame, so the current
     // window's draw list is valid.
     let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
     let middle = label_icon_middle(ui, origin[1]);
-    draw_icon_into(draw_list, ui, icon, origin[0], middle, packed(color));
-    let label_x = origin[0] + icon_width(ui) + theme.spacing.small;
-    draw_menu_row_label([label_x, origin[1]], color, label);
-    if let Some(shortcut) = shortcut {
-        let right = menu_row_content_right(ui, theme);
+    let label_x = match item.icon {
+        Some(icon) => {
+            draw_icon_into(draw_list, ui, icon, origin[0], middle, packed(color));
+            origin[0] + icon_width(ui) + theme.spacing.small
+        }
+        None => origin[0],
+    };
+    draw_menu_row_label([label_x, origin[1]], color, item.label);
+    let right = menu_row_content_right(ui, theme);
+    if item.checked {
+        draw_icon_into(
+            draw_list,
+            ui,
+            Icon::CHECK,
+            right - icon_width(ui),
+            middle,
+            packed(theme.accent.text),
+        );
+    }
+    if let Some(shortcut) = item.shortcut {
         let x = right - ui.calc_text_size(shortcut)[0];
         draw_menu_row_label([x, origin[1]], theme.text.secondary, shortcut);
     }
-    if let Some(reason) = disabled_tooltip
+    if let Some(reason) = item.disabled_reason
         && is_item_hovered_with_flags(ui, ItemHoveredFlags::ALLOW_WHEN_DISABLED)
     {
         draw_reason_tooltip(ui, theme, reason);
@@ -349,8 +318,8 @@ fn draw_icon_menu_item(
 
 /// Begins a submenu entry with a Lucide `icon` before `label` and a chevron at
 /// its right end; returns a token while the submenu is open (draw its items,
-/// then drop the token). The submenu starts at the parent's right edge (memo
-/// M98).
+/// then drop the token). The submenu opens `space.xs` beside the parent, and
+/// the row keeps its hover fill while the submenu is open (memo M98).
 pub fn begin_submenu<'ui>(
     ui: &'ui Ui,
     theme: &Theme,
@@ -362,15 +331,19 @@ pub fn begin_submenu<'ui>(
     let right_edge = ui.window_content_region_max()[0] + ui.window_pos()[0];
     let bottom = y + ui.text_line_height();
     let middle = label_icon_middle(ui, y);
+    // The row keeps its highlight while its submenu is open, so the way back
+    // stays visible; read before `BeginMenu` makes the submenu current.
+    let parent = MenuSpan::of_current_window(ui);
     // SAFETY: called on the render thread inside a frame, so the current
     // (parent menu) window's draw list is valid for this frame.
     let draw_list = unsafe { nexus::imgui::sys::igGetWindowDrawList() };
     let token = {
         // ImGui lets a submenu overlap its parent by `ItemInnerSpacing.x`;
-        // only `BeginMenu` reads it. ImGui's own label and arrow are drawn
-        // transparent and replaced below.
-        let _flush = ui.push_style_var(StyleVar::ItemInnerSpacing([
-            0.0,
+        // only `BeginMenu` reads it. A negative overlap leaves `space.xs`
+        // between the two menus on either side. ImGui's own label and arrow
+        // are drawn transparent and replaced below.
+        let _apart = ui.push_style_var(StyleVar::ItemInnerSpacing([
+            -theme.spacing.extra_small,
             style.item_inner_spacing[1],
         ]));
         let _hidden = ui.push_style_color(StyleColor::Text, [0.0; 4]);
@@ -393,7 +366,7 @@ pub fn begin_submenu<'ui>(
         ];
         // SAFETY: render thread inside a frame; `draw_list` belongs to the
         // parent menu of this frame.
-        unsafe { fill_menu_row(draw_list, ui, theme, row, theme.surface.popup_hover) };
+        unsafe { fill_menu_row(draw_list, theme, parent, row, theme.surface.popup_hover) };
     }
     let begin = label.as_ptr().cast::<std::ffi::c_char>();
     // SAFETY: render thread inside a frame; `draw_list` belongs to the

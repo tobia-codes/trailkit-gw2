@@ -8,10 +8,7 @@ use trailkit_memo_shared::{
     note_tree::{GroupId, InsertionPoint, NodeId, Note, NoteId, NotesDocument, TreeNode as Node},
 };
 use trailkit_ui::{
-    controls::menu::{
-        MenuItemTone, begin_submenu, draw_menu_item, draw_menu_item_with_icon,
-        draw_menu_item_with_shortcut, draw_popup,
-    },
+    controls::menu::{MenuItem, MenuItemTone, begin_submenu, draw_menu_item, draw_popup},
     layout::separator::draw_separator,
     text::icons::Icon,
     theme::Theme,
@@ -97,8 +94,13 @@ pub fn draw_note_menu(
     let mut choice = NoteMenuChoice::default();
     let theme = menu.theme;
     draw_popup(ui, theme, popup_id, || {
-        choice.leading =
-            draw_menu_item_with_shortcut(ui, theme, leading.icon, leading.label, leading.shortcut);
+        choice.leading = draw_menu_item(
+            ui,
+            theme,
+            &MenuItem::new(leading.label)
+                .icon(leading.icon)
+                .shortcut(leading.shortcut),
+        );
         draw_separator(ui, theme);
         choice.rename = draw_entry_menu_items(ui, NodeId::Note(note.id), Some(note), &mut menu);
     });
@@ -114,13 +116,10 @@ fn draw_entry_menu_items(
     menu: &mut EntryMenu<'_>,
 ) -> bool {
     let (language, theme) = (menu.language, menu.theme);
-    let rename = draw_menu_item_with_icon(
+    let rename = draw_menu_item(
         ui,
         theme,
-        Icon::PENCIL,
-        NoteListText::Rename.get(language),
-        MenuItemTone::Regular,
-        None,
+        &MenuItem::new(NoteListText::Rename.get(language)).icon(Icon::PENCIL),
     );
     if let Some(_submenu) = begin_submenu(
         ui,
@@ -148,14 +147,11 @@ fn draw_entry_menu_items(
     // its groups wait until the editor is left (M141).
     draw_separator(ui, theme);
     let blocked = blocks_delete(menu.document, node, menu.edited);
-    if draw_menu_item_with_icon(
-        ui,
-        theme,
-        Icon::TRASH_2,
-        NoteListText::Delete.get(language),
-        MenuItemTone::Danger,
-        blocked.then(|| NoteListText::SaveOrCancelFirst.get(language)),
-    ) {
+    let delete = MenuItem::new(NoteListText::Delete.get(language))
+        .icon(Icon::TRASH_2)
+        .tone(MenuItemTone::Danger)
+        .disabled_for(blocked.then(|| NoteListText::SaveOrCancelFirst.get(language)));
+    if draw_menu_item(ui, theme, &delete) {
         menu.actions.push(NoteListAction::Delete(node));
     }
     rename
@@ -167,13 +163,8 @@ fn draw_entry_menu_items(
 fn draw_move_targets(ui: &Ui, node: NodeId, menu: &mut EntryMenu<'_>) {
     let (theme, language) = (menu.theme, menu.language);
     let current = menu.document.parent(node).flatten();
-    if draw_menu_item(
-        ui,
-        theme,
-        NoteListText::TopLevel.get(language),
-        current.is_none(),
-    ) && current.is_some()
-    {
+    let top_level = MenuItem::new(NoteListText::TopLevel.get(language)).checked(current.is_none());
+    if draw_menu_item(ui, theme, &top_level) && current.is_some() {
         menu.actions
             .push(NoteListAction::Move(node, InsertionPoint::End(None)));
     }
@@ -202,7 +193,8 @@ fn draw_move_target_groups(
         let _id = ui.push_id(group.id.imgui_id());
         ui.indent_by(indent);
         let is_current = current == Some(group.id);
-        if draw_menu_item(ui, menu.theme, &group.title, is_current) && !is_current {
+        let target = MenuItem::new(&group.title).checked(is_current);
+        if draw_menu_item(ui, menu.theme, &target) && !is_current {
             menu.actions.push(NoteListAction::Move(
                 node,
                 InsertionPoint::End(Some(group.id)),
@@ -222,23 +214,17 @@ pub(super) fn draw_create_menu_items(
     point: InsertionPoint,
     actions: &mut Vec<NoteListAction>,
 ) {
-    if draw_menu_item_with_icon(
+    if draw_menu_item(
         ui,
         theme,
-        Icon::FILE_PLUS,
-        Text::NewNote.get(language),
-        MenuItemTone::Regular,
-        None,
+        &MenuItem::new(Text::NewNote.get(language)).icon(Icon::FILE_PLUS),
     ) {
         actions.push(NoteListAction::NewNote(Some(point)));
     }
-    if draw_menu_item_with_icon(
+    if draw_menu_item(
         ui,
         theme,
-        Icon::FOLDER_PLUS,
-        Text::NewGroup.get(language),
-        MenuItemTone::Regular,
-        None,
+        &MenuItem::new(Text::NewGroup.get(language)).icon(Icon::FOLDER_PLUS),
     ) {
         actions.push(NoteListAction::NewGroup(Some(point)));
     }

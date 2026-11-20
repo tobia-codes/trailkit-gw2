@@ -18,9 +18,7 @@ use trailkit_ui::{
         draw_primary_button_with_icon,
     },
     controls::dropdown::draw_dropdown,
-    controls::menu::{
-        MenuItemTone, begin_submenu, draw_menu_item, draw_menu_item_with_icon, draw_popup,
-    },
+    controls::menu::{MenuItem, MenuItemTone, begin_submenu, draw_menu_item, draw_popup},
     controls::tooltip::draw_tooltip,
     drawing::style_scope::StyleScope,
     feedback::status_line::{Status, draw_status_line},
@@ -228,36 +226,27 @@ fn draw_sample_menu(ui: &Ui, theme: &Theme, opened: &Cell<bool>) {
         ui.open_popup("menu");
     }
     draw_popup(ui, theme, "menu", || {
-        draw_menu_item(ui, theme, "Rename", false);
-        draw_menu_item(ui, theme, "Checked", true);
+        draw_menu_item(ui, theme, &MenuItem::new("Rename"));
+        draw_menu_item(ui, theme, &MenuItem::new("Checked").checked(true));
         if let Some(_submenu) = begin_submenu(ui, theme, Icon::FOLDER_INPUT, "Move to") {
-            draw_menu_item(ui, theme, "Normal", true);
-            draw_menu_item(ui, theme, "Daily reset", false);
+            draw_menu_item(ui, theme, &MenuItem::new("Normal").checked(true));
+            draw_menu_item(ui, theme, &MenuItem::new("Daily reset"));
         }
         draw_separator(ui, theme);
-        draw_menu_item_with_icon(
+        draw_menu_item(ui, theme, &MenuItem::new("Restore").icon(Icon::ROTATE_CCW));
+        draw_menu_item(
             ui,
             theme,
-            Icon::ROTATE_CCW,
-            "Restore",
-            MenuItemTone::Regular,
-            None,
+            &MenuItem::new("Delete")
+                .icon(Icon::TRASH_2)
+                .tone(MenuItemTone::Danger),
         );
-        draw_menu_item_with_icon(
+        draw_menu_item(
             ui,
             theme,
-            Icon::TRASH_2,
-            "Delete",
-            MenuItemTone::Danger,
-            None,
-        );
-        draw_menu_item_with_icon(
-            ui,
-            theme,
-            Icon::TRASH_2,
-            "Blocked",
-            MenuItemTone::Regular,
-            Some("Finish editing first"),
+            &MenuItem::new("Blocked")
+                .icon(Icon::TRASH_2)
+                .disabled_for(Some("Finish editing first")),
         );
     });
 }
@@ -268,12 +257,12 @@ fn menu_entry_states_match_snapshots() {
     let opening = [12.0, 12.0];
     let row = |offset: f32| [opening[0] + 40.0, opening[1] + offset];
     let states = [
-        ("hover-plain", row(20.0)),
-        ("hover-checked", row(44.0)),
-        ("hover-icon", row(100.0)),
-        ("hover-danger", row(124.0)),
-        ("hover-disabled", row(182.0)),
-        ("submenu-open", row(68.0)),
+        ("hover-plain", row(23.0)),
+        ("hover-checked", row(59.0)),
+        ("hover-icon", row(128.0)),
+        ("hover-danger", row(164.0)),
+        ("hover-disabled", row(200.0)),
+        ("submenu-open", row(95.0)),
     ];
     for (kind, theme_name) in THEMES {
         let theme = kind.theme();
@@ -302,7 +291,7 @@ fn menu_entry_states_match_snapshots() {
         assert_state(
             &mut harness,
             names("pressed"),
-            &mouse(row(20.0), true),
+            &mouse(row(23.0), true),
             &mut draw,
         );
     }

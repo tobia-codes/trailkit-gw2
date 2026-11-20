@@ -7,7 +7,7 @@ use nexus::imgui::Ui;
 use super::MarkdownAction;
 use crate::{
     chat_link::{ChipText, chat_link_chip::ChipContext},
-    controls::menu::{MenuItemTone, draw_menu_item_with_icon, draw_popup},
+    controls::menu::{MenuItem, draw_menu_item, draw_popup},
     markdown::link_menu::{LinkMenuCommand, LinkMenuTarget, wiki_search_url},
     theme::Theme,
 };
@@ -43,14 +43,8 @@ pub(super) fn draw_link_menu(
     let mut action = None;
     draw_popup(ui, theme, MENU_ID, || {
         for entry in target.entries() {
-            let is_clicked = draw_menu_item_with_icon(
-                ui,
-                theme,
-                entry.icon,
-                (chips.text)(entry.label),
-                MenuItemTone::Regular,
-                None,
-            );
+            let item = MenuItem::new((chips.text)(entry.label)).icon(entry.icon);
+            let is_clicked = draw_menu_item(ui, theme, &item);
             if is_clicked {
                 action = Some(perform(ui, &target, entry.command, chips));
             }
