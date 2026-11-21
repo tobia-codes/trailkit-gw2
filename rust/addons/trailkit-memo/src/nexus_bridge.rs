@@ -353,6 +353,7 @@ fn set_requested_cursor() -> bool {
     // SAFETY: loading a shared system cursor and setting it are plain calls
     // on the thread that processes the window's messages.
     if let Ok(cursor) = unsafe { LoadCursorW(None, id) } {
+        // SAFETY: `cursor` is a shared system cursor that is never freed.
         unsafe { SetCursor(Some(cursor)) };
     }
     true
