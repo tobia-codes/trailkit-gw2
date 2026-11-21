@@ -29,3 +29,25 @@ is ready when the user is back at the PC.
    then load again.
 
 ## Tests
+
+38. **Trashed groups as a tree (M218, branch `feature/trash-group-tree`,
+    mock https://claude.ai/artifact/3F7P7A1uxLhVhMGjwZ6b54).** Deploy the
+    branch. Make a group with three notes, delete one note on its own, then
+    the group. Open the trash. Before: a group looked like a note (bold
+    title and count only) and could only come back whole.
+    1. The group has an arrow; the separately deleted note says
+       "from “<group>” · 30 days left" below its title.
+    2. Click the group's row: it is shown on the right and opens at once;
+       its notes follow indented with the guide line, without days left.
+       Click again: it closes. Leave the trash and open it again: closed.
+    3. Click a note inside: it shows on the right with "In the trashed
+       group “<group>” · …"; text can be selected and copied.
+    4. **Restore** that note: the group is back in the note list at its old
+       place with only this note; the trash keeps the rest. Restore the
+       separately deleted note: it joins the same group. Restore the rest:
+       everything is in its old order, no second group.
+    5. Delete a note inside a trashed group for good (red button): it asks
+       first, then only that note is gone.
+    6. The note list looks and behaves as before (open, close, drag a group:
+       it and its notes fade, search).
+    7. Repeat 1–3 with Nexus in Deutsch at the narrowest window.

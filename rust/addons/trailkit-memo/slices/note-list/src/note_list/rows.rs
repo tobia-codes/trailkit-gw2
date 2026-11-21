@@ -5,7 +5,7 @@
 use trailkit_ui::controls::tooltip::draw_tooltip;
 
 use nexus::imgui::{MouseButton, StyleVar, Ui};
-use trailkit_memo_shared::note_tree::{Group, NodeId, Note, TreeNode as Node};
+use trailkit_memo_shared::note_tree::{Group, NodeId, Note, TreeNode as Node, visit_shown};
 use trailkit_ui::{
     lists::list_row::{ListRow, ListRowResponse, RowChevron, RowMarker, draw_list_row},
     text::TextStyle,
@@ -22,41 +22,51 @@ use super::{
 };
 use crate::tree_drag::{RowKind, RowRect};
 
-/// Draws `nodes` at tree depth `level` and, recursively, the children of
-/// expanded groups; during a search only the rows it shows (M118).
-pub(super) fn draw_nodes(ui: &Ui, nodes: &[Node], level: usize, context: &mut RowContext<'_, '_>) {
-    for node in nodes {
-        if let Some(search) = context.search
-            && !search.filter.is_visible(node.id())
-        {
-            continue;
+/// Draws the rows of `nodes`: every group and, below an expanded one, its
+/// children (the shared tree walk, M218 Q570); during a search only the
+/// rows it shows (M118), its groups expanded unless collapsed for it (M124).
+pub(super) fn draw_nodes(ui: &Ui, nodes: &[Node], context: &mut RowContext<'_, '_>) {
+    let (search, collapsed) = (context.search, context.collapsed_groups);
+    let is_shown = |node: &Node| search.is_none_or(|search| search.filter.is_visible(node.id()));
+    let is_open = |group: &Group| match search {
+        Some(search) => !search.collapsed.contains(&group.id),
+        None => !collapsed.contains(&group.id),
+    };
+    // The dragged row and its children are faded (M106): from its row
+    // until the next row at its level or above.
+    let mut faded_level: Option<usize> = None;
+    visit_shown(nodes, &is_shown, &is_open, &mut |row| {
+        if faded_level.is_some_and(|level| row.level <= level) {
+            faded_level = None;
         }
-        // The dragged row and its children are faded (M106).
-        let _faded = (context.dragged == Some(node.id()))
+        if faded_level.is_none() && context.dragged == Some(row.node.id()) {
+            faded_level = Some(row.level);
+        }
+        let _faded = faded_level
+            .is_some()
             .then(|| ui.push_style_var(StyleVar::Alpha(DRAGGED_ROW_ALPHA)));
-        match node {
-            Node::Group(group) => draw_group(ui, group, level, context),
-            Node::Note(note) => draw_note_row(ui, note, level, context),
+        match row.node {
+            Node::Group(group) => draw_group(ui, group, row.level, row.open, context),
+            Node::Note(note) => draw_note_row(ui, note, row.level, context),
         }
-    }
+    });
 }
 
-/// Draws one group row and, if expanded, its children.
-fn draw_group(ui: &Ui, group: &Group, level: usize, context: &mut RowContext<'_, '_>) {
+/// Draws one group row, `expanded` or not.
+fn draw_group(
+    ui: &Ui,
+    group: &Group,
+    level: usize,
+    expanded: bool,
+    context: &mut RowContext<'_, '_>,
+) {
     let _id = ui.push_id(group.id.imgui_id());
     let node = NodeId::Group(group.id);
     let is_renaming = is_renaming(node, context);
-    // During a search the count is the matching notes (M121) and groups
-    // are expanded unless collapsed for this search only (M124).
-    let (note_count, expanded) = match context.search {
-        Some(search) => (
-            search.filter.group_count(group.id),
-            !search.collapsed.contains(&group.id),
-        ),
-        None => (
-            group.note_count(),
-            !context.collapsed_groups.contains(&group.id),
-        ),
+    // During a search the count is the matching notes (M121).
+    let note_count = match context.search {
+        Some(search) => search.filter.group_count(group.id),
+        None => group.note_count(),
     };
     let mut count_buffer = [0; 20];
     let count = format_count(note_count, &mut count_buffer);
@@ -119,9 +129,6 @@ fn draw_group(ui: &Ui, group: &Group, level: usize, context: &mut RowContext<'_,
     if is_renaming {
         let _bold = FontScope::push(ui, FontRole::BodyBold);
         draw_rename_over(ui, &response, context);
-    }
-    if expanded {
-        draw_nodes(ui, &group.children, level + 1, context);
     }
 }
 

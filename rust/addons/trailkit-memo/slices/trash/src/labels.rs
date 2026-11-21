@@ -28,19 +28,48 @@ pub fn is_urgent(entry: &TrashEntry, now: Timestamp) -> bool {
 }
 
 /// The info line below a trashed entry's title (M145): "In the trash ·
-/// deleted today · 29 days left".
+/// deleted today · 29 days left"; for an entry inside the trashed group
+/// `in_group` "In the trashed group “Raids” · …" (M218), with the dates of
+/// the trash `entry` holding it.
 #[must_use]
-pub fn info_line(entry: &TrashEntry, now: Timestamp, language: Language) -> String {
+pub fn info_line(
+    entry: &TrashEntry,
+    in_group: Option<&str>,
+    now: Timestamp,
+    language: Language,
+) -> String {
     let deleted = match entry.days_since_deleted(now) {
         0 => TrashText::DeletedToday.get(language).to_owned(),
         1 => TrashText::DeletedYesterday.get(language).to_owned(),
         days => with_count(TrashText::DeletedDaysAgo, days, language),
     };
-    format!(
-        "{} · {deleted} · {}",
-        TrashText::InTrash.get(language),
-        days_left(entry, now, language)
-    )
+    let start = match in_group {
+        Some(group) => TrashText::InTrashedGroup
+            .get(language)
+            .replace("{group}", group),
+        None => TrashText::InTrash.get(language).to_owned(),
+    };
+    format!("{start} · {deleted} · {}", days_left(entry, now, language))
+}
+
+/// The line below an entry's title in the trash list: its days left, for
+/// an entry deleted out of the group `from_group` "from “Raids” · 28 days
+/// left" (M218, Q566).
+#[must_use]
+pub fn row_detail(
+    entry: &TrashEntry,
+    from_group: Option<&str>,
+    now: Timestamp,
+    language: Language,
+) -> String {
+    let days = days_left(entry, now, language);
+    match from_group {
+        Some(group) => format!(
+            "{} · {days}",
+            TrashText::FromGroup.get(language).replace("{group}", group)
+        ),
+        None => days,
+    }
 }
 
 /// "3 notes" for a count of notes.
@@ -138,6 +167,7 @@ mod tests {
             deleted_at: Timestamp::UNIX_EPOCH,
             former_parent: None,
             former_index: 0,
+            child_order: Vec::new(),
             unknown_fields: Default::default(),
         }
     }
@@ -146,8 +176,25 @@ mod tests {
     fn the_info_line_names_the_day_and_the_days_left() {
         let now = Timestamp::UNIX_EPOCH + SignedDuration::from_hours(25);
         assert_eq!(
-            info_line(&entry(), now, Language::German),
+            info_line(&entry(), None, now, Language::German),
             "Im Papierkorb · gelöscht gestern · noch 29 Tage"
+        );
+        assert_eq!(
+            info_line(&entry(), Some("Raids"), now, Language::English),
+            "In the trashed group “Raids” · deleted yesterday · 29 days left"
+        );
+    }
+
+    #[test]
+    fn a_separately_deleted_entry_names_its_group() {
+        let now = Timestamp::UNIX_EPOCH + SignedDuration::from_hours(25);
+        assert_eq!(
+            row_detail(&entry(), Some("Neue Gruppe"), now, Language::German),
+            "aus „Neue Gruppe“ · noch 29 Tage"
+        );
+        assert_eq!(
+            row_detail(&entry(), None, now, Language::English),
+            "29 days left"
         );
     }
 

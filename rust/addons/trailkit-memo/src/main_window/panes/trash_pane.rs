@@ -53,8 +53,9 @@ impl MemoWindow {
                             ui,
                             language,
                             theme,
-                            &self.document.trash,
+                            &self.document,
                             self.trash.selected,
+                            &self.trash.open_groups,
                             now,
                         );
                     });
@@ -75,11 +76,23 @@ impl MemoWindow {
         theme: &Theme,
     ) {
         let now = Timestamp::now();
-        let Some(entry) = self
-            .trash
-            .selected
-            .and_then(|node| self.document.trash_entry(node))
-        else {
+        let selected = self.trash.selected;
+        // The selected entry may sit inside a trashed group (M218): it shows
+        // the deadline of the entry holding it and names its group.
+        let found = selected.and_then(|node| {
+            let shown = self.document.find_in_trash(node)?;
+            let holding = self.document.trash_entry_holding(node)?;
+            let group = self
+                .document
+                .trashed_parent(node)
+                .map(|group| group.title.as_str());
+            Some((
+                node,
+                shown,
+                labels::info_line(holding, group, now, language),
+            ))
+        });
+        let Some((entry_id, shown, info)) = found else {
             draw_text_wrapped(
                 ui,
                 theme,
@@ -88,17 +101,18 @@ impl MemoWindow {
             );
             return;
         };
-        let entry_id = entry.id();
         let mut toolbar_action = None;
         let mut view_actions = Vec::new();
         Stack::vertical(theme).build(ui, |stack| {
             toolbar_action = stack.add(|| draw_preview_toolbar(ui, language, theme, entry_id));
             stack.add_separator(theme);
-            let TreeNode::Note(note) = &entry.node else {
-                stack.add(|| draw_group_preview(ui, language, theme, entry, now));
-                return;
+            let note = match shown {
+                TreeNode::Note(note) => note,
+                TreeNode::Group(group) => {
+                    stack.add(|| draw_group_preview(ui, language, theme, group, &info));
+                    return;
+                }
             };
-            let info = labels::info_line(entry, now, language);
             let input = NoteViewInput {
                 note: Some(note),
                 search: None,

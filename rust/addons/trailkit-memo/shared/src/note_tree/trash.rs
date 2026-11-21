@@ -3,7 +3,7 @@
 
 use jiff::{SignedDuration, Timestamp};
 
-use super::{NodeId, Note, NoteId, NotesDocument, Place, TrashEntry, TreeNode};
+use super::{ChildOrder, Group, NodeId, Note, NoteId, NotesDocument, Place, TrashEntry, TreeNode};
 
 /// How long a deleted entry stays in the trash before it is purged (M12,
 /// M150).
@@ -89,11 +89,16 @@ impl NotesDocument {
             return false;
         };
         let removed = source.remove(place.index);
+        let mut child_order = Vec::new();
+        if let TreeNode::Group(group) = &removed {
+            record_child_order(group, &mut child_order);
+        }
         self.trash.push(TrashEntry {
             node: removed,
             deleted_at: now,
             former_parent: place.parent,
             former_index: place.index,
+            child_order,
             unknown_fields: Default::default(),
         });
         true
@@ -109,29 +114,6 @@ impl NotesDocument {
     #[must_use]
     pub fn note_in_trash(&self, id: NoteId) -> Option<&Note> {
         self.trash.iter().find_map(|entry| entry.node.find_note(id))
-    }
-
-    /// Puts a trashed entry back to its former parent at its former index
-    /// (clamped), or at the end of the root level if that group is gone
-    /// (M140). Groups come back whole (M147). Returns whether it was in the
-    /// trash.
-    pub fn restore_from_trash(&mut self, node: NodeId) -> bool {
-        let Some(index) = self.trash.iter().position(|entry| entry.id() == node) else {
-            return false;
-        };
-        let entry = self.trash.remove(index);
-        let place = Place {
-            parent: entry.former_parent,
-            index: entry.former_index,
-        };
-        self.insert_at(place, entry.node);
-        true
-    }
-
-    /// Removes an entry from the trash for good (M146) and returns it.
-    pub fn delete_from_trash(&mut self, node: NodeId) -> Option<TrashEntry> {
-        let index = self.trash.iter().position(|entry| entry.id() == node)?;
-        Some(self.trash.remove(index))
     }
 
     /// Empties the trash for good (M146) and returns what was in it.
@@ -156,6 +138,20 @@ impl NotesDocument {
         match self.children_mut(place.parent) {
             Some(children) => children.insert(place.index.min(children.len()), node),
             None => self.root.push(node),
+        }
+    }
+}
+
+/// Adds the order of the children of `group` and of every group inside it
+/// to `orders` (M218).
+fn record_child_order(group: &Group, orders: &mut Vec<ChildOrder>) {
+    orders.push(ChildOrder {
+        group: group.id,
+        children: group.children.iter().map(TreeNode::id).collect(),
+    });
+    for child in &group.children {
+        if let TreeNode::Group(inner) = child {
+            record_child_order(inner, orders);
         }
     }
 }

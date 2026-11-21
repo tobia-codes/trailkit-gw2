@@ -1,12 +1,15 @@
-//! Drawing the trash (memo M136, M145–M150): the list column with its
-//! header, two-line rows and context menu, the empty state, and the
-//! toolbar and group preview of the note pane.
+//! Drawing the trash (memo M136, M145–M150, M218): the list column with its
+//! header, two-line rows, trashed groups as a tree to expand, the context
+//! menu, the empty state, and the toolbar and group preview of the note
+//! pane.
+
+use std::collections::BTreeSet;
 
 use jiff::Timestamp;
 use nexus::imgui::{MouseButton, Ui};
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText},
-    note_tree::{NodeId, TrashEntry, TreeNode},
+    note_tree::{Group, GroupId, NodeId, NotesDocument, TrashEntry, TreeNode, visit_shown},
 };
 use trailkit_ui::controls::hover::is_item_hovered;
 use trailkit_ui::{
@@ -19,7 +22,7 @@ use trailkit_ui::{
     layout::separator::draw_separator,
     layout::stack::Stack,
     layout::toolbar::move_to_toolbar_end,
-    lists::list_row::{ListRow, ListRowDetail, draw_list_row},
+    lists::list_row::{ListRow, ListRowDetail, RowChevron, draw_list_row},
     text::icons::Icon,
     text::{TextStyle, draw_text, draw_text_wrapped, draw_truncated_text},
     theme::Theme,
@@ -32,6 +35,8 @@ use crate::{i18n::TrashText, labels};
 pub enum TrashAction {
     /// Show an entry in the note pane.
     Select(NodeId),
+    /// Show a trashed group and open or close it (M218, Q563).
+    ToggleGroup(GroupId),
     /// Put an entry back (M140).
     Restore(NodeId),
     /// Delete an entry for good; the app asks first (M146).
@@ -106,18 +111,20 @@ pub fn draw_trash_header(
     action
 }
 
-/// Draws the trash entries, newest first, into the current (scrolling)
-/// window, or the empty state. `selected` is the entry shown in the note
-/// pane.
+/// Draws the trash entries of `document`, newest first, into the current
+/// (scrolling) window, or the empty state. `selected` is the entry shown in
+/// the note pane; trashed groups in `open_groups` show what they hold
+/// below them, indented like the note list (M218).
 pub fn draw_trash_entries(
     ui: &Ui,
     language: Language,
     theme: &Theme,
-    trash: &[TrashEntry],
+    document: &NotesDocument,
     selected: Option<NodeId>,
+    open_groups: &BTreeSet<GroupId>,
     now: Timestamp,
 ) -> Option<TrashAction> {
-    if trash.is_empty() {
+    if document.trash.is_empty() {
         // Icon, "The trash is empty." and how long entries stay (Q283 b).
         let state = EmptyState {
             icon: Some(Icon::TRASH_2),
@@ -128,62 +135,184 @@ pub fn draw_trash_entries(
         draw_empty_state(ui, theme, &state);
         return None;
     }
+    let is_open = |group: &Group| open_groups.contains(&group.id);
     // Rows are `space.xs` apart (R148).
     let mut action = None;
     Stack::vertical(theme)
         .gap(theme.spacing.extra_small)
         .build(ui, |stack| {
-            for entry in trash.iter().rev() {
+            for entry in document.trash.iter().rev() {
+                let row = EntryRow {
+                    entry,
+                    from_group: entry
+                        .former_parent
+                        .and_then(|group| document.group_title_anywhere(group)),
+                    open: matches!(&entry.node, TreeNode::Group(group) if is_open(group)),
+                };
                 if let Some(clicked) =
-                    stack.add(|| draw_entry_row(ui, language, theme, entry, selected, now))
+                    stack.add(|| draw_entry_row(ui, language, theme, &row, selected, now))
                 {
                     action = Some(clicked);
                 }
+                let TreeNode::Group(group) = &entry.node else {
+                    continue;
+                };
+                if !row.open {
+                    continue;
+                }
+                // What a trashed group holds, one level deeper (Q565).
+                visit_shown(&group.children, &|_| true, &is_open, &mut |shown| {
+                    let child = ChildRow {
+                        node: shown.node,
+                        level: shown.level + 1,
+                        open: shown.open,
+                    };
+                    if let Some(clicked) =
+                        stack.add(|| draw_child_row(ui, language, theme, &child, selected))
+                    {
+                        action = Some(clicked);
+                    }
+                });
             }
         });
     action
 }
 
+/// A trash entry as its row shows it.
+#[derive(Debug, Clone, Copy)]
+struct EntryRow<'entry> {
+    /// The entry.
+    entry: &'entry TrashEntry,
+    /// The group it was deleted out of, by title (Q566).
+    from_group: Option<&'entry str>,
+    /// Whether a group shows what it holds.
+    open: bool,
+}
+
 /// Draws one two-line row: the title (groups in bold with their note
-/// count) and the days left below it, `danger` in the last week (M150).
+/// count and the chevron) and below it the days left, `danger` in the last
+/// week (M150), after the group it came from (Q566).
 fn draw_entry_row(
     ui: &Ui,
     language: Language,
     theme: &Theme,
-    entry: &TrashEntry,
+    row: &EntryRow<'_>,
     selected: Option<NodeId>,
     now: Timestamp,
 ) -> Option<TrashAction> {
+    let entry = row.entry;
     let id = entry.id();
     let _id = ui.push_id(id.imgui_id());
-    let (title, title_style) = match &entry.node {
-        TreeNode::Note(note) => (note.title.as_str(), TextStyle::Body),
-        TreeNode::Group(group) => (group.title.as_str(), TextStyle::BodyStrong),
-    };
-    let count = match &entry.node {
-        TreeNode::Note(_) => None,
-        TreeNode::Group(group) => Some(group.note_count().to_string()),
-    };
-    let days_left = labels::days_left(entry, now, language);
+    let shape = RowShape::of(&entry.node, row.open);
+    let detail = labels::row_detail(entry, row.from_group, now, language);
     let response = draw_list_row(
         ui,
         theme,
         &ListRow {
             selected: selected == Some(id),
-            title_style,
-            trailing: count.as_deref(),
+            title_style: shape.title_style,
+            trailing: shape.count.as_deref(),
+            chevron: shape.chevron,
             detail: Some(ListRowDetail {
-                text: days_left.as_ref(),
+                text: &detail,
                 color: if labels::is_urgent(entry, now) {
                     theme.status.danger
                 } else {
                     theme.text.secondary
                 },
             }),
-            ..ListRow::new("##entry", title)
+            ..ListRow::new("##entry", entry.node.title())
         },
     );
-    let mut action = response.clicked.then_some(TrashAction::Select(id));
+    row_action(ui, language, theme, &entry.node, response.clicked)
+}
+
+/// A node inside a trashed group as its row shows it.
+#[derive(Debug, Clone, Copy)]
+struct ChildRow<'node> {
+    /// The note or group.
+    node: &'node TreeNode,
+    /// Its depth in the trash list.
+    level: usize,
+    /// Whether a group shows what it holds.
+    open: bool,
+}
+
+/// Draws a row inside a trashed group: indented with the indent guide,
+/// without its own days left, since the group's deadline applies (Q565).
+fn draw_child_row(
+    ui: &Ui,
+    language: Language,
+    theme: &Theme,
+    row: &ChildRow<'_>,
+    selected: Option<NodeId>,
+) -> Option<TrashAction> {
+    let id = row.node.id();
+    let _id = ui.push_id(id.imgui_id());
+    let shape = RowShape::of(row.node, row.open);
+    let response = draw_list_row(
+        ui,
+        theme,
+        &ListRow {
+            selected: selected == Some(id),
+            title_style: shape.title_style,
+            trailing: shape.count.as_deref(),
+            chevron: shape.chevron,
+            level: row.level,
+            ..ListRow::new("##child", row.node.title())
+        },
+    );
+    row_action(ui, language, theme, row.node, response.clicked)
+}
+
+/// How a row shows a note or a group, as in the note list (M218, Q561 B).
+#[derive(Debug)]
+struct RowShape {
+    /// Body for a note, bold for a group.
+    title_style: TextStyle,
+    /// A group's note count.
+    count: Option<String>,
+    /// A group's chevron.
+    chevron: RowChevron,
+}
+
+impl RowShape {
+    /// The shape of `node`, a group `open` or not.
+    fn of(node: &TreeNode, open: bool) -> Self {
+        match node {
+            TreeNode::Note(_) => Self {
+                title_style: TextStyle::Body,
+                count: None,
+                chevron: RowChevron::None,
+            },
+            TreeNode::Group(group) => Self {
+                title_style: TextStyle::BodyStrong,
+                count: Some(group.note_count().to_string()),
+                chevron: if open {
+                    RowChevron::Open
+                } else {
+                    RowChevron::Closed
+                },
+            },
+        }
+    }
+}
+
+/// What a click on the row just drawn asks for: a note is shown, a group
+/// shown and toggled at once (Q563); a right click opens the entry menu.
+fn row_action(
+    ui: &Ui,
+    language: Language,
+    theme: &Theme,
+    node: &TreeNode,
+    clicked: bool,
+) -> Option<TrashAction> {
+    let id = node.id();
+    let select = match node {
+        TreeNode::Group(group) => TrashAction::ToggleGroup(group.id),
+        TreeNode::Note(_) => TrashAction::Select(id),
+    };
+    let mut action = clicked.then_some(select);
     if is_item_hovered(ui) && ui.is_mouse_clicked(MouseButton::Right) {
         action = Some(TrashAction::Select(id));
         ui.open_popup("trash_context");
@@ -246,26 +375,12 @@ pub fn draw_preview_toolbar(
 }
 
 /// Draws a trashed group in the note pane (M147): its title (Q280), the
-/// info line, and the titles of the notes it holds.
-pub fn draw_group_preview(
-    ui: &Ui,
-    language: Language,
-    theme: &Theme,
-    entry: &TrashEntry,
-    now: Timestamp,
-) {
-    let TreeNode::Group(group) = &entry.node else {
-        return;
-    };
+/// `info` line, and the titles of the notes it holds.
+pub fn draw_group_preview(ui: &Ui, language: Language, theme: &Theme, group: &Group, info: &str) {
     Stack::vertical(theme).build(ui, |stack| {
         stack.add(|| draw_text_wrapped(ui, theme, TextStyle::Heading1, &group.title));
         stack.add(|| {
-            draw_text(
-                ui,
-                theme,
-                TextStyle::Secondary,
-                &labels::info_line(entry, now, language),
-            );
+            draw_text(ui, theme, TextStyle::Secondary, info);
         });
         stack.add_separator(theme);
         stack.add(|| {

@@ -27,6 +27,12 @@ pub enum TrashText {
     OneDayLeft,
     /// Info line start of a trashed entry (M145).
     InTrash,
+    /// Info line start of an entry inside a trashed group; `{group}` is
+    /// replaced (M218).
+    InTrashedGroup,
+    /// Where a separately deleted entry came from, before its days left;
+    /// `{group}` is replaced (M218, Q566).
+    FromGroup,
     /// Deleted within the last day.
     DeletedToday,
     /// Deleted one day ago.
@@ -88,6 +94,8 @@ impl LocalizedText for TrashText {
         Self::DaysLeft,
         Self::OneDayLeft,
         Self::InTrash,
+        Self::InTrashedGroup,
+        Self::FromGroup,
         Self::DeletedToday,
         Self::DeletedYesterday,
         Self::DeletedDaysAgo,
@@ -133,6 +141,8 @@ const fn english(text: TrashText) -> &'static str {
         TrashText::DaysLeft => "{count} days left",
         TrashText::OneDayLeft => "1 day left",
         TrashText::InTrash => "In the trash",
+        TrashText::InTrashedGroup => "In the trashed group “{group}”",
+        TrashText::FromGroup => "from “{group}”",
         TrashText::DeletedToday => "deleted today",
         TrashText::DeletedYesterday => "deleted yesterday",
         TrashText::DeletedDaysAgo => "deleted {count} days ago",
@@ -183,6 +193,8 @@ const fn german(text: TrashText) -> &'static str {
         TrashText::DaysLeft => "noch {count} Tage",
         TrashText::OneDayLeft => "noch 1 Tag",
         TrashText::InTrash => "Im Papierkorb",
+        TrashText::InTrashedGroup => "In der gelöschten Gruppe „{group}“",
+        TrashText::FromGroup => "aus „{group}“",
         TrashText::DeletedToday => "gelöscht heute",
         TrashText::DeletedYesterday => "gelöscht gestern",
         TrashText::DeletedDaysAgo => "gelöscht vor {count} Tagen",

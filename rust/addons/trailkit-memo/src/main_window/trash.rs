@@ -91,6 +91,9 @@ pub(super) struct TrashState {
     pub(super) scroll: f32,
     /// When the trash is checked for expired entries next (M150).
     pub(super) next_purge: Option<Timestamp>,
+    /// The trashed groups that show what they hold (M218); all closed when
+    /// the trash opens (Q564).
+    pub(super) open_groups: BTreeSet<GroupId>,
 }
 
 impl MemoWindow {
@@ -300,6 +303,9 @@ impl MemoWindow {
 
     /// Shows the trash in place of the note list, which must show for that.
     fn show_trash(&mut self) {
+        if !self.trash.visible {
+            self.trash.open_groups.clear();
+        }
         self.trash.visible = true;
         if self.ui_state.note_list_hidden {
             self.ui_state.note_list_hidden = false;
@@ -325,6 +331,17 @@ impl MemoWindow {
                     self.note_view.show_other_note(false);
                 }
             }
+            WindowAction::Trash(TrashAction::ToggleGroup(group)) => {
+                let node = NodeId::Group(*group);
+                if self.trash.selected != Some(node) {
+                    self.trash.selected = Some(node);
+                    self.trash.scroll = 0.0;
+                    self.note_view.show_other_note(false);
+                }
+                if !self.trash.open_groups.remove(group) {
+                    self.trash.open_groups.insert(*group);
+                }
+            }
             WindowAction::Trash(TrashAction::Restore(node)) => {
                 let next = self.trash_neighbour(*node);
                 if self.document.restore_from_trash(*node) {
@@ -334,8 +351,8 @@ impl MemoWindow {
                 }
             }
             WindowAction::Trash(TrashAction::DeletePermanently(node)) => {
-                if let Some(entry) = self.document.trash_entry(*node) {
-                    let (title, text) = labels::delete_permanently_question(&entry.node, language);
+                if let Some(found) = self.document.find_in_trash(*node) {
+                    let (title, text) = labels::delete_permanently_question(found, language);
                     self.confirmation = Some(Confirmation {
                         kind: ConfirmationKind::DeletePermanently(*node),
                         title,
@@ -370,8 +387,8 @@ impl MemoWindow {
             ConfirmationKind::DeleteGroup(node) => self.move_to_trash(node, language),
             ConfirmationKind::DeletePermanently(node) => {
                 let next = self.trash_neighbour(node);
-                if let Some(entry) = self.document.delete_from_trash(node) {
-                    self.forget_drafts(&[entry]);
+                if let Some(removed) = self.document.delete_from_trash(node) {
+                    self.forget_drafts([&removed]);
                     self.trash.selected = next;
                     self.save_notes();
                 }
@@ -379,7 +396,7 @@ impl MemoWindow {
             ConfirmationKind::EmptyTrash => {
                 let removed = self.document.empty_trash();
                 if !removed.is_empty() {
-                    self.forget_drafts(&removed);
+                    self.forget_drafts(removed.iter().map(|entry| &entry.node));
                     self.trash.selected = None;
                     self.save_notes();
                 }
@@ -388,11 +405,15 @@ impl MemoWindow {
     }
 
     /// The trash selection once `node` leaves the trash: unchanged unless
-    /// `node` is selected, then the next entry down the list (older), else
-    /// the one above, else nothing.
+    /// `node` is selected, then for an entry inside a trashed group that
+    /// group (M218), else the next entry down the list (older), else the one
+    /// above, else nothing.
     fn trash_neighbour(&self, node: NodeId) -> Option<NodeId> {
         if self.trash.selected != Some(node) {
             return self.trash.selected;
+        }
+        if let Some(parent) = self.document.trashed_parent(node) {
+            return Some(NodeId::Group(parent.id));
         }
         // The list shows the newest entry first.
         let shown: Vec<NodeId> = self
@@ -409,12 +430,12 @@ impl MemoWindow {
             .copied()
     }
 
-    /// Deletes the drafts of the notes in `entries`, deleted for good
+    /// Deletes the drafts of the notes in `nodes`, deleted for good
     /// (M151).
-    fn forget_drafts(&mut self, entries: &[TrashEntry]) {
+    fn forget_drafts<'node>(&mut self, nodes: impl IntoIterator<Item = &'node TreeNode>) {
         let mut changed = false;
-        for entry in entries {
-            entry.node.for_each_note_id(&mut |note| {
+        for node in nodes {
+            node.for_each_note_id(&mut |note| {
                 changed |= self.drafts.take(note).is_some();
             });
         }
@@ -437,11 +458,11 @@ impl MemoWindow {
         if self
             .trash
             .selected
-            .is_some_and(|selected| self.document.trash_entry(selected).is_none())
+            .is_some_and(|selected| self.document.find_in_trash(selected).is_none())
         {
             self.trash.selected = None;
         }
-        self.forget_drafts(&purged);
+        self.forget_drafts(purged.iter().map(|entry| &entry.node));
         if self.ui_state.forget_missing_groups(&self.document) {
             self.saver.save_ui_state(&self.ui_state);
         }
