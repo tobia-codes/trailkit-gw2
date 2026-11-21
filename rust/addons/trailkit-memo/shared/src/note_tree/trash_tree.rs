@@ -570,4 +570,26 @@ mod tests {
             "nothing is overwritten; restored entries slot in by their old order"
         );
     }
+
+    #[test]
+    fn an_entry_gone_from_the_recorded_order_is_skipped() {
+        let Sample {
+            mut document,
+            raids,
+            weekly,
+            daily,
+            archive,
+            ..
+        } = sample();
+        assert!(document.move_to_trash(NodeId::Group(raids), noon()));
+        // "Daily" sat between "Weekly" and "Archive"; it is deleted for good.
+        assert!(document.delete_from_trash(daily).is_some());
+        assert!(document.restore_from_trash(NodeId::Group(archive)));
+        assert!(document.restore_from_trash(weekly));
+        assert_eq!(
+            outline(&document.root),
+            "First, Raids[Weekly, Archive[Plan]], Last",
+            "the missing entry is skipped, the others keep their order"
+        );
+    }
 }
