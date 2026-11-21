@@ -117,6 +117,13 @@ fn a_click_without_drag_and_another_note_select_nothing() {
     assert!(!memo.takes_copy_key(), "the game keeps Ctrl+C");
 
     run(&mut memo, &drag_select(BEFORE_OF, AFTER_FIRST));
+    run(&mut memo, &click_at([100.0, 300.0]));
+    assert!(
+        !memo.note_view.has_selection(),
+        "a click anywhere in the window ends it (user wish 2026-11-21)"
+    );
+
+    run(&mut memo, &drag_select(BEFORE_OF, AFTER_FIRST));
     let dailies = memo.document.root.get(1).map(Node::id).expect("Dailies");
     memo.apply(&WindowAction::Select(dailies), Language::English);
     run(&mut memo, &[]);

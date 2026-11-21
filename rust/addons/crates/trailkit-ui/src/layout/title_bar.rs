@@ -7,9 +7,11 @@
 //! (e.g. the help `?`), a Lucide chevron that collapses the window and a
 //! Lucide `x` that closes it on the right. The
 //! row uses the window padding, so the first and the last button line up
-//! with the panes below. ImGui still moves the window when its empty areas
-//! are dragged; windows without a title bar are exempt from
-//! `ConfigWindowsMoveFromTitleBarOnly`.
+//! with the panes below. Only the title bar moves the window (memo M217
+//! follow-up, user wish 2026-11-21): ImGui would move a window by any empty
+//! spot, and `ConfigWindowsMoveFromTitleBarOnly` skips windows without its
+//! own title bar and would change every addon's windows, so trailkit windows
+//! are `NO_MOVE` and the empty parts of this row drag them.
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -80,6 +82,9 @@ pub struct TitleBarState {
     expanded_size: [f32; 2],
     /// The count of [`record_mouse_button_press`] this window has handled.
     seen_mouse_button_presses: u64,
+    /// The window position when a drag on the title bar started, while the
+    /// left button is held.
+    drag_origin: Option<[f32; 2]>,
 }
 
 impl TitleBarState {
@@ -89,6 +94,7 @@ impl TitleBarState {
         restore_size: None,
         expanded_size: [0.0, 0.0],
         seen_mouse_button_presses: 0,
+        drag_origin: None,
     };
 
     /// Whether the window is collapsed to its title bar.
@@ -115,8 +121,16 @@ pub fn draw_window<Label: AsRef<str>>(
     open: &mut bool,
     content: impl FnOnce(),
 ) -> Option<usize> {
-    let mut flags = WindowFlags::NO_TITLE_BAR | WindowFlags::NO_COLLAPSE;
+    let mut flags = WindowFlags::NO_TITLE_BAR | WindowFlags::NO_COLLAPSE | WindowFlags::NO_MOVE;
     let mut window = window;
+    if let Some([x, y]) = state.drag_origin {
+        if ui.is_mouse_down(MouseButton::Left) {
+            let [moved_x, moved_y] = ui.mouse_drag_delta_with_threshold(MouseButton::Left, 0.0);
+            window = window.position([x + moved_x, y + moved_y], Condition::Always);
+        } else {
+            state.drag_origin = None;
+        }
+    }
     if state.collapsed {
         flags |= WindowFlags::NO_RESIZE | WindowFlags::NO_SCROLLBAR;
         let height = title_row_height(ui) + 2.0 * ui.clone_style().window_padding[1];
@@ -133,6 +147,7 @@ pub fn draw_window<Label: AsRef<str>>(
         // The content starts `space.sm` below the title row (R148).
         Stack::vertical(theme).build(ui, |stack| {
             let row = stack.add(|| draw_title_row(ui, theme, texts, toggles, state, open));
+            start_drag_on_title_bar(ui, state);
             clicked_toggle = row.toggle;
             if row.collapse_clicked {
                 if state.collapsed {
@@ -146,6 +161,24 @@ pub fn draw_window<Label: AsRef<str>>(
         });
     });
     clicked_toggle
+}
+
+/// Starts moving the window when the left button is pressed on the title
+/// row (or the window padding above it) where no button is. Call right after
+/// drawing the row, so its buttons are known as hovered.
+fn start_drag_on_title_bar(ui: &Ui, state: &mut TitleBarState) {
+    if !ui.is_mouse_clicked(MouseButton::Left)
+        || !ui.is_window_hovered()
+        || ui.is_any_item_hovered()
+    {
+        return;
+    }
+    let [_, mouse_y] = ui.io().mouse_pos;
+    let window_top = ui.window_pos()[1];
+    let row_bottom = ui.item_rect_max()[1];
+    if (window_top..=row_bottom).contains(&mouse_y) {
+        state.drag_origin = Some(ui.window_pos());
+    }
 }
 
 /// Right and middle mouse button presses seen by the addon's `WndProc`.

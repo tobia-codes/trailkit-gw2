@@ -12,7 +12,6 @@ use trailkit_memo_shared::{
 use trailkit_ui::{
     chat_link::chat_link_chip::ChipContext,
     layout::page::{PageHead, TitleTrailing, draw_page},
-    layout::pane::WindowDrag,
     markdown::markdown_view::{MarkdownAction, SearchHighlight, draw_selectable_markdown},
     markdown::text_selection::TextSelection,
     markdown::{self, MarkdownDocument},
@@ -222,23 +221,16 @@ impl NoteView {
             trailing: input.title_trailing,
             subtitle: input.read_only.map(|read_only| read_only.subtitle),
         };
-        draw_page(
-            ui,
-            theme,
-            "note_body",
-            head,
-            WindowDrag::KeepsWindow,
-            || {
-                self.draw_content(
-                    ui,
-                    language,
-                    theme,
-                    (input.search, input.find, input.chips, editable),
-                    note_scroll,
-                    &mut output,
-                );
-            },
-        );
+        draw_page(ui, theme, "note_body", head, || {
+            self.draw_content(
+                ui,
+                language,
+                theme,
+                (input.search, input.find, input.chips, editable),
+                note_scroll,
+                &mut output,
+            );
+        });
         output
     }
 

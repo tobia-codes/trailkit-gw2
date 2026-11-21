@@ -264,6 +264,16 @@ static ESCAPE_KEY_ARMED: AtomicBool = AtomicBool::new(false);
 /// what is open in it, else the window (as its close button does).
 static ESCAPE_KEY_PRESSED: AtomicBool = AtomicBool::new(false);
 
+/// Ctrl+C and Ctrl+A caught since the last frame; the main window and the
+/// help window each apply them only while they belong to it (M217).
+#[derive(Debug, Clone, Copy, Default)]
+struct SelectionKeys {
+    /// Ctrl+C was caught.
+    copy: bool,
+    /// Ctrl+A was caught.
+    select_all: bool,
+}
+
 /// Whether Ctrl+C belongs to the window: it has the focus and text of the
 /// reading view is selected (M217). Written by the render callback.
 static COPY_KEY_ARMED: AtomicBool = AtomicBool::new(false);

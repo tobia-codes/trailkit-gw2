@@ -10,10 +10,10 @@ use super::{HelpWindowState, ParsedHelp, ParsedTopic};
 use crate::{
     chat_link::chat_link_chip::ChipContext,
     layout::page::{PageHead, draw_page},
-    layout::pane::WindowDrag,
     layout::pane_columns::{FillColumn, FixedColumn, PaneColumns, draw_resizable_pane_columns},
     lists::list_row::{ListRow, RowChevron, draw_list_row},
     markdown::markdown_view::{MarkdownAction, draw_markdown_with_heading_tops, open_link},
+    markdown::text_selection::TextSelection,
     text::TextStyle,
     theme::Theme,
 };
@@ -36,6 +36,11 @@ pub(super) struct TopicView {
     section: Option<usize>,
     /// Where the topic should scroll in the next frame.
     scroll: Option<ScrollTarget>,
+    /// The selected text of the shown topic (memo M217: everything that is
+    /// read can be copied, user wish 2026-11-21).
+    pub(super) selection: TextSelection,
+    /// The topic the selection belongs to; another topic selects nothing.
+    selection_topic: Option<usize>,
 }
 
 /// Where a topic scrolls after a click in the list.
@@ -92,6 +97,10 @@ pub(super) fn draw_help_tab(
         if column == 0 {
             click = draw_topic_list(ui, theme, help, selected, view.section);
         } else {
+            if view.selection_topic != Some(selected) {
+                view.selection.clear();
+                view.selection_topic = Some(selected);
+            }
             draw_topic(ui, theme, &help.topics[selected], view, chips);
         }
     });
@@ -181,30 +190,24 @@ fn draw_topic(
         trailing: None,
         subtitle: topic.lead.as_deref(),
     };
-    let action = draw_page(
-        ui,
-        theme,
-        "topic_body",
-        head,
-        WindowDrag::MovesWindow,
-        || {
-            let (action, heading_tops) = draw_markdown_with_heading_tops(
-                ui,
-                &topic.document,
-                theme,
-                chips,
-                SECTION_HEADING_LEVEL,
-            );
-            match view.scroll.take() {
-                Some(ScrollTarget::Start) => ui.set_scroll_y(0.0),
-                Some(ScrollTarget::Section(index)) => {
-                    ui.set_scroll_y(heading_tops.get(index).copied().unwrap_or_default());
-                }
-                None => {}
+    let action = draw_page(ui, theme, "topic_body", head, || {
+        let (action, heading_tops) = draw_markdown_with_heading_tops(
+            ui,
+            &topic.document,
+            theme,
+            chips,
+            SECTION_HEADING_LEVEL,
+            &mut view.selection,
+        );
+        match view.scroll.take() {
+            Some(ScrollTarget::Start) => ui.set_scroll_y(0.0),
+            Some(ScrollTarget::Section(index)) => {
+                ui.set_scroll_y(heading_tops.get(index).copied().unwrap_or_default());
             }
-            action
-        },
-    );
+            None => {}
+        }
+        action
+    });
     if let Some(Some(MarkdownAction::OpenLink(url))) = action {
         open_link(&url);
     }

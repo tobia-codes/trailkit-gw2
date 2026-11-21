@@ -10,11 +10,7 @@
 
 use nexus::imgui::Ui;
 
-use crate::{
-    layout::pane::{WindowDrag, draw_pane},
-    layout::splitter::draw_vertical_splitter,
-    theme::Theme,
-};
+use crate::{layout::pane::draw_pane, layout::splitter::draw_vertical_splitter, theme::Theme};
 
 /// The ImGui id of a splitter, unique per gap through `push_id`.
 const SPLITTER_ID: &str = "splitter";
@@ -88,14 +84,7 @@ pub fn draw_resizable_pane_columns(
             column.minimum_characters,
         ))
         .clamp(minimum, maximum);
-        draw_pane(
-            ui,
-            theme,
-            column.id,
-            [width, 0.0],
-            WindowDrag::MovesWindow,
-            || draw(index),
-        );
+        draw_pane(ui, theme, column.id, [width, 0.0], || draw(index));
         ui.same_line_with_spacing(0.0, 0.0);
         let _splitter_id = ui.push_id(i32::try_from(index).unwrap_or(i32::MAX));
         let splitter = draw_vertical_splitter(
@@ -113,16 +102,9 @@ pub fn draw_resizable_pane_columns(
         ui.same_line_with_spacing(0.0, 0.0);
         remaining -= width + gap;
     }
-    draw_pane(
-        ui,
-        theme,
-        columns.fill.id,
-        [0.0, 0.0],
-        WindowDrag::MovesWindow,
-        || {
-            draw(columns.fixed.len());
-        },
-    );
+    draw_pane(ui, theme, columns.fill.id, [0.0, 0.0], || {
+        draw(columns.fixed.len());
+    });
     response
 }
 

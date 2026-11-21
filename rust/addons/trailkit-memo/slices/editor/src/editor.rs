@@ -17,7 +17,7 @@ use trailkit_ui::{
     },
     controls::text_field::move_below_last_item,
     editor::view::TextEditor,
-    layout::pane::{WindowDrag, draw_pane},
+    layout::pane::draw_pane,
     layout::splitter::draw_vertical_splitter,
     layout::toolbar::begin_toolbar_group,
     markdown::markdown_view::{MarkdownAction, SearchHighlight, draw_markdown},
@@ -545,26 +545,17 @@ impl Editor {
                 .preview
                 .get_or_insert_with(|| markdown::parse(&self.session.body));
             let actions = &mut output.actions;
-            draw_pane(
-                ui,
-                theme,
-                "preview",
-                [0.0, 0.0],
-                WindowDrag::KeepsWindow,
-                || {
-                    // The preview is read-only: links open and chips copy, but
-                    // checkboxes do not toggle. It marks search hits (M122).
-                    let mut highlight = input.search.map(SearchHighlight::new);
-                    match draw_markdown(ui, preview, theme, input.chips, highlight.as_mut()) {
-                        Some(
-                            action @ (MarkdownAction::OpenLink(_) | MarkdownAction::Copied(_)),
-                        ) => {
-                            actions.push(EditorAction::Markdown(action));
-                        }
-                        Some(MarkdownAction::ToggleTask(_)) | None => {}
+            draw_pane(ui, theme, "preview", [0.0, 0.0], || {
+                // The preview is read-only: links open and chips copy, but
+                // checkboxes do not toggle. It marks search hits (M122).
+                let mut highlight = input.search.map(SearchHighlight::new);
+                match draw_markdown(ui, preview, theme, input.chips, highlight.as_mut()) {
+                    Some(action @ (MarkdownAction::OpenLink(_) | MarkdownAction::Copied(_))) => {
+                        actions.push(EditorAction::Markdown(action));
                     }
-                },
-            );
+                    Some(MarkdownAction::ToggleTask(_)) | None => {}
+                }
+            });
         }
         output
     }

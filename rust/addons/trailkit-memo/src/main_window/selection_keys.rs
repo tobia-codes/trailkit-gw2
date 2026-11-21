@@ -1,7 +1,8 @@
 //! Ctrl+C and Ctrl+A for the selected text of the reading view (M217, Q555):
-//! copying shows the "Copied" toast like a chip click (user wish 2026-11-21).
+//! copying shows the "Copied" toast like a chip click, and any left click in
+//! the window ends the selection (user wishes 2026-11-21).
 
-use nexus::imgui::Ui;
+use nexus::imgui::{MouseButton, Ui, WindowHoveredFlags};
 use trailkit_ui::markdown::markdown_view::MarkdownAction;
 
 use super::{MemoWindow, WindowAction};
@@ -30,6 +31,19 @@ impl MemoWindow {
     #[must_use]
     pub fn takes_copy_key(&self) -> bool {
         self.takes_select_all_key() && self.note_view.has_selection()
+    }
+
+    /// Ends the selection on a left click anywhere in the window (user wish
+    /// 2026-11-21, replaces "a click in the note" of Q553). Shift+click
+    /// extends it instead; a press in the note's text starts a new one there.
+    /// Must run before the note view draws.
+    pub(super) fn clear_selection_on_click(&mut self, ui: &Ui) {
+        if ui.is_mouse_clicked(MouseButton::Left)
+            && !ui.io().key_shift
+            && ui.is_window_hovered_with_flags(WindowHoveredFlags::ROOT_AND_CHILD_WINDOWS)
+        {
+            self.note_view.clear_selection();
+        }
     }
 
     /// Ctrl+C and Ctrl+A as ImGui sees them; in game the window message

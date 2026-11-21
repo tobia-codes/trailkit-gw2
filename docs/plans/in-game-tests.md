@@ -53,8 +53,14 @@ is ready when the user is back at the PC.
        copy or open; a plain click still copies the chip (with "Copied") and
        opens the link; a plain click on the checkbox still ticks it.
     5. **Shift+click** further down extends the selection, **Ctrl+A**
-       selects the whole note; a click into the note, another note, **Edit**
-       or a new search removes it. A double-click still opens the editor.
-    6. Dragging on the note's toolbar or empty space in the note pane does
-       not move the window; the title bar still does.
+       selects the whole note; any click into the window (note, note list,
+       title bar), another note, **Edit** or a new search removes it. A
+       double-click still opens the editor.
+    6. Dragging anywhere but the title bar (toolbar, note list, empty space)
+       does not move memo's window or the help window (R158); dragging the
+       title bar's empty part still moves both, its buttons still work.
+       Open the trash, select a deleted note and copy from it too.
     7. Repeat 1 and 3 with Nexus in Deutsch: the entry says **Kopieren**.
+    8. Open the help (`?`), select text in a topic with the mouse and press
+       **Ctrl+C**: the text is on the clipboard and the game ignores Ctrl+C;
+       **Ctrl+A** selects the whole topic; right-click › Copy works too.

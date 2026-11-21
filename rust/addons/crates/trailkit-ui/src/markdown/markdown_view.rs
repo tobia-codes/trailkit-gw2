@@ -212,6 +212,38 @@ pub fn draw_selectable_markdown(
     highlight: Option<&mut SearchHighlight<'_>>,
     selection: &mut TextSelection,
 ) -> Option<MarkdownAction> {
+    draw_selectable_document(ui, document, theme, chips, highlight, None, selection)
+}
+
+/// Like [`draw_selectable_markdown`] without search hits, and also returns
+/// the window-content y (as for `set_scroll_y`) of the top of every heading
+/// of `level`, in order: the scroll targets of the help's sections (R155 c).
+pub fn draw_markdown_with_heading_tops(
+    ui: &Ui,
+    document: &MarkdownDocument,
+    theme: &Theme,
+    chips: ChipContext<'_>,
+    level: u8,
+    selection: &mut TextSelection,
+) -> (Option<MarkdownAction>, Vec<f32>) {
+    let mut tops = Vec::new();
+    let heading_tops = Some((level, &mut tops));
+    let action =
+        draw_selectable_document(ui, document, theme, chips, None, heading_tops, selection);
+    (action, tops)
+}
+
+/// Draws `document` with its `highlight` and lets the mouse move
+/// `selection` (memo plan M217); `heading_tops` as for [`draw_document`].
+fn draw_selectable_document(
+    ui: &Ui,
+    document: &MarkdownDocument,
+    theme: &Theme,
+    chips: ChipContext<'_>,
+    highlight: Option<&mut SearchHighlight<'_>>,
+    heading_tops: Option<(u8, &mut Vec<f32>)>,
+    selection: &mut TextSelection,
+) -> Option<MarkdownAction> {
     selection.clamp(document);
     // A press or right click counts only on the text area, not on the
     // scrollbar or on something drawn over the view.
@@ -226,7 +258,7 @@ pub fn draw_selectable_markdown(
         highlight,
         selection: Some(&mut pass),
     };
-    let action = draw_document(ui, document, theme, chips, marks, None);
+    let action = draw_document(ui, document, theme, chips, marks, heading_tops);
     pass.finish(ui, document, selection, (pressed_here, right_clicked_here));
     action.or_else(|| draw_link_menu(ui, theme, chips))
 }
@@ -235,28 +267,6 @@ pub fn draw_selectable_markdown(
 /// such a release selected text and is no click (Q551).
 fn is_drag_release(ui: &Ui) -> bool {
     ui.mouse_drag_delta_with_threshold(MouseButton::Left, -1.0) != [0.0, 0.0]
-}
-
-/// Like [`draw_markdown`] without search hits, and also returns the
-/// window-content y (as for `set_scroll_y`) of the top of every heading of
-/// `level`, in order: the scroll targets of the help's sections (R155 c).
-pub fn draw_markdown_with_heading_tops(
-    ui: &Ui,
-    document: &MarkdownDocument,
-    theme: &Theme,
-    chips: ChipContext<'_>,
-    level: u8,
-) -> (Option<MarkdownAction>, Vec<f32>) {
-    let mut tops = Vec::new();
-    let action = draw_document(
-        ui,
-        document,
-        theme,
-        chips,
-        Marks::default(),
-        Some((level, &mut tops)),
-    );
-    (action, tops)
 }
 
 /// Draws `document` for [`draw_markdown`] with its `marks`; `heading_tops`

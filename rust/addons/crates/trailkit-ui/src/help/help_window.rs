@@ -19,7 +19,7 @@ mod problem_tab;
 
 use crate::controls::hover::is_item_hovered;
 use crate::drawing::draw_list::window_draw_list;
-use nexus::imgui::{Condition, Ui, Window};
+use nexus::imgui::{Condition, MouseButton, Ui, Window, WindowFocusedFlags, WindowHoveredFlags};
 
 use crate::{
     chat_link::chat_link_chip::ChipContext,
@@ -217,8 +217,12 @@ pub struct HelpWindow {
     state_changed: bool,
     /// The parsed help text, once the window was drawn.
     help: Option<ParsedHelp>,
-    /// The marked section and the pending scroll of the Help tab.
+    /// The marked section, the pending scroll and the text selection of the
+    /// Help tab.
     topic_view: help_tab::TopicView,
+    /// Whether the window had the keyboard focus and no text field took the
+    /// keys in the last frame: Ctrl+C and Ctrl+A belong to it then.
+    takes_keys: bool,
 }
 
 impl HelpWindow {
@@ -237,6 +241,52 @@ impl HelpWindow {
     #[must_use]
     pub const fn state(&self) -> HelpWindowState {
         self.state
+    }
+
+    /// Whether Ctrl+A belongs to the window: it is open with the focus on
+    /// the Help tab and no text field takes the keys (memo M217). An addon's
+    /// window message callback catches it only then.
+    #[must_use]
+    pub fn takes_select_all_key(&self) -> bool {
+        self.open && self.takes_keys && self.state.tab == HelpTab::Help
+    }
+
+    /// Whether Ctrl+C belongs to the window: as
+    /// [`Self::takes_select_all_key`] and text of the topic is selected.
+    #[must_use]
+    pub fn takes_copy_key(&self) -> bool {
+        self.takes_select_all_key() && !self.topic_view.selection.is_empty()
+    }
+
+    /// Puts the selected text of the topic on the clipboard after Ctrl+C.
+    pub fn copy_selection_by_key(&self, ui: &Ui) {
+        if self.takes_copy_key()
+            && let Some(document) = self.shown_document()
+            && let Some(text) = self.topic_view.selection.text(document)
+        {
+            ui.set_clipboard_text(text);
+        }
+    }
+
+    /// Selects the whole topic after Ctrl+A.
+    pub fn select_all_by_key(&mut self) {
+        let shown = self
+            .help
+            .as_ref()
+            .and_then(|help| help.topics.get(self.state.topic));
+        if self.takes_select_all_key()
+            && let Some(topic) = shown
+        {
+            self.topic_view.selection.select_all(&topic.document);
+        }
+    }
+
+    /// The document of the shown topic, once the help is parsed.
+    fn shown_document(&self) -> Option<&MarkdownDocument> {
+        let help = self.help.as_ref()?;
+        help.topics
+            .get(self.state.topic)
+            .map(|topic| &topic.document)
     }
 
     /// The state to save if the user changed the tab or the topic or let go
@@ -334,12 +384,22 @@ impl HelpWindow {
         }
         let mut open = true;
         let mut action = None;
+        // Ctrl+C and Ctrl+A as ImGui sees them; in game the addon's window
+        // message callback gets them first while they belong to the window.
+        if ui.io().key_ctrl {
+            if ui.is_key_index_pressed(VIRTUAL_KEY_C) {
+                self.copy_selection_by_key(ui);
+            } else if ui.is_key_index_pressed(VIRTUAL_KEY_A) {
+                self.select_all_by_key();
+            }
+        }
         let Self {
             title_bar,
             state,
             state_changed,
             help,
             topic_view,
+            takes_keys,
             ..
         } = self;
         let _ = draw_window(
@@ -352,6 +412,17 @@ impl HelpWindow {
             &mut open,
             || {
                 let _body = FontScope::push(ui, FontRole::Body);
+                *takes_keys = ui
+                    .is_window_focused_with_flags(WindowFocusedFlags::ROOT_AND_CHILD_WINDOWS)
+                    && !ui.io().want_text_input;
+                // Any left click in the window ends the selection; Shift+click
+                // extends it (memo M217, user wish 2026-11-21).
+                if ui.is_mouse_clicked(MouseButton::Left)
+                    && !ui.io().key_shift
+                    && ui.is_window_hovered_with_flags(WindowHoveredFlags::ROOT_AND_CHILD_WINDOWS)
+                {
+                    topic_view.selection.clear();
+                }
                 // The panes start `space.sm` below the tabs, as panes keep
                 // it between each other (R148).
                 Stack::vertical(theme).build(ui, |stack| {
@@ -385,6 +456,11 @@ impl HelpWindow {
         action
     }
 }
+
+/// Virtual-key code of A (Ctrl+A selects the whole topic).
+const VIRTUAL_KEY_A: i32 = 0x41;
+/// Virtual-key code of C (Ctrl+C copies the selection).
+const VIRTUAL_KEY_C: i32 = 0x43;
 
 /// Draws the two neutral tabs (R95: `bg.active` behind the shown one, no
 /// accent) and returns the clicked one.

@@ -10,21 +10,9 @@ use nexus::imgui::{ChildWindow, StyleVar, Ui};
 
 use crate::theme::Theme;
 
-/// What dragging the mouse on an empty spot of a region does.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum WindowDrag {
-    /// Moves the whole window, ImGui's default.
-    MovesWindow,
-    /// Leaves the window in place, so the drag can select text (memo M217,
-    /// Q550). ImGui checks the innermost region under the mouse, so every
-    /// region around the text needs it.
-    KeepsWindow,
-}
-
 /// Draws a pane of `size` (ImGui child-window sizing: `0.0` fills the
 /// remaining space, negative values leave that much space free) and runs
-/// `content` inside it; `drag` decides whether dragging on it moves the
-/// window.
+/// `content` inside it.
 ///
 /// Returns the result of `content`, or `None` if the pane is fully clipped
 /// and `content` was not called.
@@ -33,7 +21,6 @@ pub fn draw_pane<R>(
     theme: &Theme,
     id: &str,
     size: [f32; 2],
-    drag: WindowDrag,
     content: impl FnOnce() -> R,
 ) -> Option<R> {
     // ImGui reads the padding once in `BeginChild`; popping right after it
@@ -47,7 +34,6 @@ pub fn draw_pane<R>(
         .always_use_window_padding(true)
         // The faint `border.subtle` outline with rounded corners (memo M103).
         .border(true)
-        .movable(drag == WindowDrag::MovesWindow)
         .begin(ui);
     padding.pop();
     token.map(|_pane| content())
