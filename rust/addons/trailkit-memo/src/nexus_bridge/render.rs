@@ -304,7 +304,7 @@ fn apply_caught_keys(
         window.confirm_dialog_by_key(language);
     }
     if selection_keys.copy {
-        window.copy_selection_by_key(ui);
+        window.copy_selection_by_key(ui, language);
     }
     if selection_keys.select_all {
         window.select_all_by_key();

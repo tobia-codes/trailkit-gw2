@@ -3,9 +3,9 @@
 //! the window ends the selection (user wishes 2026-11-21).
 
 use nexus::imgui::{MouseButton, Ui, WindowHoveredFlags};
-use trailkit_ui::markdown::markdown_view::MarkdownAction;
+use trailkit_memo_shared::i18n::Language;
 
-use super::{MemoWindow, WindowAction};
+use super::MemoWindow;
 
 /// Virtual-key code of A (Ctrl+A selects the whole note).
 const VIRTUAL_KEY_A: i32 = 0x41;
@@ -48,25 +48,26 @@ impl MemoWindow {
 
     /// Ctrl+C and Ctrl+A as ImGui sees them; in game the window message
     /// callback gets them first while they belong to the window.
-    pub(super) fn handle_selection_keys(&mut self, ui: &Ui) {
+    pub(super) fn handle_selection_keys(&mut self, ui: &Ui, language: Language) {
         if !ui.io().key_ctrl {
             return;
         }
         if ui.is_key_index_pressed(VIRTUAL_KEY_C) {
-            self.copy_selection_by_key(ui);
+            self.copy_selection_by_key(ui, language);
         } else if ui.is_key_index_pressed(VIRTUAL_KEY_A) {
             self.select_all_by_key();
         }
     }
 
-    /// Puts the selected text on the clipboard after Ctrl+C and confirms it.
-    pub fn copy_selection_by_key(&mut self, ui: &Ui) {
+    /// Puts the selected text on the clipboard after Ctrl+C and confirms it
+    /// with the toast at once: the window message callback's keys are applied
+    /// before the frame's actions are collected, so an action would be lost.
+    pub fn copy_selection_by_key(&mut self, ui: &Ui, language: Language) {
         if self.takes_copy_key()
             && let Some(text) = self.note_view.selected_text()
         {
             ui.set_clipboard_text(&text);
-            self.actions
-                .push(WindowAction::Markdown(MarkdownAction::Copied(text)));
+            self.show_copied_toast(language);
         }
     }
 

@@ -184,3 +184,24 @@ fn editing_ends_the_selection() {
     assert!(!memo.note_view.has_selection(), "Q553");
     assert!(!memo.takes_select_all_key(), "Ctrl+A belongs to the editor");
 }
+
+#[test]
+fn ctrl_c_caught_before_the_frame_still_shows_the_toast() {
+    // In game the window message callback catches Ctrl+C and memo applies
+    // it before drawing, as `nexus_bridge::render` does.
+    let (mut memo, _worker, _directory) = sample();
+    run(&mut memo, &drag_select(BEFORE_OF, AFTER_FIRST));
+    assert!(memo.toast.is_none());
+    let mut harness = UiHarness::new(SIZE);
+    let mut clipboard = None;
+    harness.step(&FrameInput::default(), |ui: &Ui| {
+        memo.copy_selection_by_key(ui, Language::English);
+        draw(ui, &mut memo, SIZE, ThemeKind::Dark);
+        clipboard = ui.clipboard_text();
+    });
+    assert!(memo.toast.is_some(), "the Copied toast pops up");
+    assert_eq!(
+        clipboard.as_deref(),
+        Some("of Ectoplasm\n[ ] Mystic Coins\nCheck the wiki first.")
+    );
+}

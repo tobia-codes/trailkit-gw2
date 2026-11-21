@@ -308,7 +308,7 @@ impl MemoWindow {
         self.handle_undo_keys(ui);
         self.handle_text_scale_keys(ui);
         self.handle_search_keys(ui);
-        self.handle_selection_keys(ui);
+        self.handle_selection_keys(ui, language);
         self.clear_selection_on_click(ui);
         self.update_search();
         self.update_text_scale(ui, language, theme);

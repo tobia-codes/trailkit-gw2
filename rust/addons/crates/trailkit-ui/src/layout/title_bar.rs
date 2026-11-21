@@ -126,7 +126,11 @@ pub fn draw_window<Label: AsRef<str>>(
     if let Some([x, y]) = state.drag_origin {
         if ui.is_mouse_down(MouseButton::Left) {
             let [moved_x, moved_y] = ui.mouse_drag_delta_with_threshold(MouseButton::Left, 0.0);
-            window = window.position([x + moved_x, y + moved_y], Condition::Always);
+            // The drag works on the top-left corner; a window placed by its
+            // center (the help window) would otherwise jump by half its size.
+            window = window
+                .position([x + moved_x, y + moved_y], Condition::Always)
+                .position_pivot([0.0, 0.0]);
         } else {
             state.drag_origin = None;
         }

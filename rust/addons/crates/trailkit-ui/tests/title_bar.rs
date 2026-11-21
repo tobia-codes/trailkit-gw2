@@ -20,9 +20,9 @@ const TEXTS: TitleBarTexts<'static> = TitleBarTexts {
     close: "Close",
 };
 
-/// Drags the window's content from `from` by `by` and returns where the
-/// window ends up.
-fn window_position_after_drag(from: [f32; 2], by: [f32; 2]) -> [f32; 2] {
+/// Drags the window, placed at `pivot` of itself on its first use, from
+/// `from` by `by` and returns where its top-left corner ends up.
+fn window_position_after_drag(from: [f32; 2], by: [f32; 2], pivot: [f32; 2]) -> [f32; 2] {
     let theme = ThemeKind::Dark.theme();
     let mut harness = UiHarness::new([600.0, 400.0]);
     let mut state = TitleBarState::default();
@@ -34,7 +34,11 @@ fn window_position_after_drag(from: [f32; 2], by: [f32; 2]) -> [f32; 2] {
             ui,
             &theme,
             Window::new("window")
-                .position([20.0, 20.0], Condition::FirstUseEver)
+                .position(
+                    [20.0 + 300.0 * pivot[0], 20.0 + 200.0 * pivot[1]],
+                    Condition::FirstUseEver,
+                )
+                .position_pivot(pivot)
                 .size([300.0, 200.0], Condition::FirstUseEver),
             TEXTS,
             &[],
@@ -65,13 +69,22 @@ fn window_position_after_drag(from: [f32; 2], by: [f32; 2]) -> [f32; 2] {
 #[test]
 fn only_the_title_bar_moves_the_window() {
     assert_eq!(
-        window_position_after_drag([160.0, 38.0], [60.0, 40.0]),
+        window_position_after_drag([160.0, 38.0], [60.0, 40.0], [0.0, 0.0]),
         [80.0, 60.0],
         "a drag on the title moves the window"
     );
     assert_eq!(
-        window_position_after_drag([160.0, 150.0], [60.0, 40.0]),
+        window_position_after_drag([160.0, 150.0], [60.0, 40.0], [0.0, 0.0]),
         [20.0, 20.0],
         "a drag on the content leaves it in place"
     );
+}
+
+/// A window placed by its center, as the help window is, moves by exactly
+/// the drag and does not jump by half its size.
+#[test]
+fn a_centered_window_follows_the_drag_without_jumping() {
+    // Centered at (170, 120), the 300 × 200 window's corner is at (20, 20).
+    let corner = window_position_after_drag([160.0, 38.0], [60.0, 40.0], [0.5, 0.5]);
+    assert_eq!(corner, [80.0, 60.0]);
 }
