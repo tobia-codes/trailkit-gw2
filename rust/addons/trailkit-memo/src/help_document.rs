@@ -1,55 +1,17 @@
-//! memo's help text (ROADMAP R95, memo M181): the topics of
-//! `help/<language>.md`, whose last topic "Privacy" is completed with the
-//! privacy policy `PRIVACY.md` / `PRIVACY.de.md` from the repository root,
-//! so the help never drifts from the published policy (R99).
-
-use std::sync::OnceLock;
+//! memo's help text (ROADMAP R95, memo M181): the build script assembles it
+//! from one file per topic in `help/<language>/`, the last topic completed
+//! with the privacy policy `PRIVACY.md` / `PRIVACY.de.md` from the repository
+//! root, so the help never drifts from the published policy (R99, R157).
 
 use trailkit_memo_shared::i18n::Language;
 
-/// The help text in `language`, built once and then shared; the help window
+/// The help text in `language`, embedded at build time; the help window
 /// recognizes an unchanged text by its address.
 pub fn help_document(language: Language) -> &'static str {
-    static ENGLISH: OnceLock<String> = OnceLock::new();
-    static GERMAN: OnceLock<String> = OnceLock::new();
-    let (cell, help, privacy) = match language {
-        Language::English => (
-            &ENGLISH,
-            include_str!("../help/en.md"),
-            include_str!("../../../../PRIVACY.md"),
-        ),
-        Language::German => (
-            &GERMAN,
-            include_str!("../help/de.md"),
-            include_str!("../../../../PRIVACY.de.md"),
-        ),
-    };
-    cell.get_or_init(|| with_privacy_topic(help, privacy))
-}
-
-/// `help` with the body of `privacy` appended to its last topic: the policy's
-/// `#` title is dropped, its `##` sections become `###` headings, and the
-/// link to the other language on its date line is cut, since both languages
-/// have their own help.
-fn with_privacy_topic(help: &str, privacy: &str) -> String {
-    let mut document = help.trim_end().to_owned();
-    document.push_str("\n\n");
-    for line in privacy
-        .lines()
-        .skip_while(|line| !line.starts_with("# "))
-        .skip(1)
-    {
-        if let Some(section) = line.strip_prefix("## ") {
-            document.push_str("### ");
-            document.push_str(section);
-        } else if let Some((date, _other_language)) = line.split_once(" · [") {
-            document.push_str(date);
-        } else {
-            document.push_str(line);
-        }
-        document.push('\n');
+    match language {
+        Language::English => include_str!(concat!(env!("OUT_DIR"), "/help-en.md")),
+        Language::German => include_str!(concat!(env!("OUT_DIR"), "/help-de.md")),
     }
-    document
 }
 
 #[cfg(test)]
@@ -96,17 +58,5 @@ mod tests {
             );
             assert!(!body.lines().any(|line| line.starts_with("# ")));
         }
-    }
-
-    #[test]
-    fn the_policy_sections_become_subsections() {
-        let document = with_privacy_topic(
-            "## Privacy\n\nLead.\n",
-            "# Privacy\n\nLast updated: 2026-11-11 · [Deutsche Fassung](PRIVACY.de.md)\n\n## Data\n\nText.\n",
-        );
-        assert_eq!(
-            document,
-            "## Privacy\n\nLead.\n\n\nLast updated: 2026-11-11\n\n### Data\n\nText.\n"
-        );
     }
 }

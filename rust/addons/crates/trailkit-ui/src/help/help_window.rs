@@ -150,7 +150,7 @@ pub struct HelpWindowContent<'text> {
     /// The ImGui id of the window, stable across languages, e.g.
     /// `trailkit.memo.help`.
     pub id: &'text str,
-    /// The help markdown in the current language (`help/<language>.md`);
+    /// The help markdown in the current language (built from `help/<language>/`);
     /// it is parsed again only when another text is passed.
     pub help_text: &'static str,
     /// The texts.

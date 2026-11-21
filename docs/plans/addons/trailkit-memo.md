@@ -121,7 +121,7 @@ references with autocompletion and status.
 | M17 | Two files under `Paths_GetAddonDirectory("trailkit/memo")`: `settings.json` and `notes.json` (incl. trash), each with `schema_version`, atomic writes (R22) | 2026-11-01 |
 | M18 | Saving on the worker thread, debounced 2 s after the last change, plus immediately on unload | 2026-11-01 |
 | M19 | Markdown: `pulldown-cmark` with the tasklist extension; the renderer lives in `crates/trailkit-ui` from the start (help pages of every addon reuse it) with hooks for clickable checkboxes and event chips | 2026-11-01 |
-| M20 | Help content `help/{en,de}.md` is embedded with `include_str!` (never out of sync with the DLL) | 2026-11-01 |
+| M20 | Help content `help/{en,de}.md` is embedded with `include_str!` (never out of sync with the DLL); since R157 one file per topic in `help/{en,de}/`, joined by `build.rs` | 2026-11-01 |
 | M21 | Main window: two panes (tree with search on the left, note with edit/view toggle on the right) with a draggable splitter; below a width threshold single-pane (tree → note → back); responsive per `lay-responsive` | 2026-11-01 |
 | M22 | Drag & drop for notes **and groups**: drop on the upper/lower edge = before/after, on a group = into; plus "Move to…" in the context menu as non-drag alternative | 2026-11-01 |
 | M23 | Notes and groups are allowed on every level, including the root | 2026-11-01 |

@@ -1,5 +1,5 @@
 //! The topics of an addon's help text (ROADMAP R95): every `##` heading of
-//! `help/<language>.md` starts a topic, `###` headings structure it, and a
+//! the text (joined from `help/<language>/`, R157) starts a topic, `###` headings structure it, and a
 //! level 1 heading before the first topic (the document title) is ignored.
 //! The help window lists the topics on the left and shows the selected one,
 //! rendered with the markdown view, on the right.

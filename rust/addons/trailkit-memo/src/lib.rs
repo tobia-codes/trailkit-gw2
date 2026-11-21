@@ -16,6 +16,9 @@ mod options_tab;
 // Only the Windows glue uses them; on other hosts only their tests do.
 #[cfg_attr(not(windows), allow(dead_code))]
 mod help_document;
+// The build script's help assembly, compiled here only for its tests (R157).
+#[cfg(test)]
+mod help_assembly;
 #[cfg_attr(not(windows), allow(dead_code))]
 mod help_text;
 #[cfg_attr(not(windows), allow(dead_code))]

@@ -27,3 +27,5 @@ is ready when the user is back at the PC.
    bottom-right corner as far left as it goes.
 5. Reload memo: Nexus menu › Addons › trailkit-memo › unload,
    then load again.
+
+## Tests
