@@ -6,7 +6,7 @@
 use std::collections::BTreeSet;
 
 use jiff::Timestamp;
-use nexus::imgui::{MouseButton, Ui};
+use nexus::imgui::{MouseButton, StyleVar, Ui};
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText},
     note_tree::{Group, GroupId, NodeId, NotesDocument, TrashEntry, TreeNode, visit_shown},
@@ -136,45 +136,39 @@ pub fn draw_trash_entries(
         return None;
     }
     let is_open = |group: &Group| open_groups.contains(&group.id);
-    // Rows are `space.xs` apart (R148).
+    // Rows are `space.xs` apart (R148). The gap is ImGui's item spacing, as
+    // in the note list, so the indent guides run through it unbroken.
+    let _rows = ui.push_style_var(StyleVar::ItemSpacing([0.0, theme.spacing.extra_small]));
     let mut action = None;
-    Stack::vertical(theme)
-        .gap(theme.spacing.extra_small)
-        .build(ui, |stack| {
-            for entry in document.trash.iter().rev() {
-                let row = EntryRow {
-                    entry,
-                    from_group: entry
-                        .former_parent
-                        .and_then(|group| document.group_title_anywhere(group)),
-                    open: matches!(&entry.node, TreeNode::Group(group) if is_open(group)),
-                };
-                if let Some(clicked) =
-                    stack.add(|| draw_entry_row(ui, language, theme, &row, selected, now))
-                {
-                    action = Some(clicked);
-                }
-                let TreeNode::Group(group) = &entry.node else {
-                    continue;
-                };
-                if !row.open {
-                    continue;
-                }
-                // What a trashed group holds, one level deeper (Q565).
-                visit_shown(&group.children, &|_| true, &is_open, &mut |shown| {
-                    let child = ChildRow {
-                        node: shown.node,
-                        level: shown.level + 1,
-                        open: shown.open,
-                    };
-                    if let Some(clicked) =
-                        stack.add(|| draw_child_row(ui, language, theme, &child, selected))
-                    {
-                        action = Some(clicked);
-                    }
-                });
+    for entry in document.trash.iter().rev() {
+        let row = EntryRow {
+            entry,
+            from_group: entry
+                .former_parent
+                .and_then(|group| document.group_title_anywhere(group)),
+            open: matches!(&entry.node, TreeNode::Group(group) if is_open(group)),
+        };
+        if let Some(clicked) = draw_entry_row(ui, language, theme, &row, selected, now) {
+            action = Some(clicked);
+        }
+        let TreeNode::Group(group) = &entry.node else {
+            continue;
+        };
+        if !row.open {
+            continue;
+        }
+        // What a trashed group holds, one level deeper (Q565).
+        visit_shown(&group.children, &|_| true, &is_open, &mut |shown| {
+            let child = ChildRow {
+                node: shown.node,
+                level: shown.level + 1,
+                open: shown.open,
+            };
+            if let Some(clicked) = draw_child_row(ui, language, theme, &child, selected) {
+                action = Some(clicked);
             }
         });
+    }
     action
 }
 
