@@ -528,6 +528,12 @@ impl Editor {
         if response.changed {
             self.sync_body();
         }
+        // Copying in the body is confirmed like copying anywhere else.
+        if let Some(text) = response.copied {
+            output
+                .actions
+                .push(EditorAction::Markdown(MarkdownAction::Copied(text)));
+        }
         if input.preview_visible {
             ui.same_line_with_spacing(0.0, 0.0);
             let splitter = draw_vertical_splitter(

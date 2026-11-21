@@ -37,6 +37,7 @@ use trailkit_ui::{
     theme::Theme,
 };
 
+use super::SelectionKeys;
 use crate::{
     help_document::help_document,
     help_text::HelpText,
@@ -146,6 +147,28 @@ impl MemoHelp {
     pub(super) fn close(&mut self) {
         if self.window.is_open() {
             self.toggle();
+        }
+    }
+
+    /// Whether Ctrl+C belongs to the help window (a topic's text is
+    /// selected and it has the focus, memo M217).
+    pub(super) fn takes_copy_key(&self) -> bool {
+        self.window.takes_copy_key()
+    }
+
+    /// Whether Ctrl+A belongs to the help window.
+    pub(super) fn takes_select_all_key(&self) -> bool {
+        self.window.takes_select_all_key()
+    }
+
+    /// Applies Ctrl+C and Ctrl+A caught by the window message callback; the
+    /// help window ignores them unless they belong to it.
+    pub(super) fn apply_selection_keys(&mut self, ui: &Ui, keys: SelectionKeys) {
+        if keys.copy {
+            self.window.copy_selection_by_key(ui);
+        }
+        if keys.select_all {
+            self.window.select_all_by_key();
         }
     }
 

@@ -511,3 +511,81 @@ fn a_topic_without_sections_keeps_the_title_column() {
         );
     }
 }
+
+/// On "Press" at the start of the first section's paragraph.
+const PARAGRAPH_START: [f32; 2] = [157.0, 204.0];
+/// After "move the window." at the paragraph's end.
+const PARAGRAPH_END: [f32; 2] = [262.0, 253.0];
+
+/// The help's text can be selected and copied like a note's (memo M217,
+/// user wish 2026-11-21): a drag selects, Ctrl+C copies the text as shown.
+#[test]
+fn a_topic_can_be_selected_and_copied() {
+    for (kind, theme_name) in [(ThemeKind::Dark, "dark"), (ThemeKind::Light, "light")] {
+        let theme = kind.theme();
+        let mut window = HelpWindow::new();
+        window.open();
+        let content = HelpWindowContent {
+            id: "help",
+            help_text: HELP_EN,
+            texts: TEXTS_EN,
+            problem: ProblemPage {
+                export_button: ButtonState::Ready,
+                status: None,
+                notice: None,
+            },
+            chips: ChipContext { text: &chip_text },
+        };
+        let mut harness = UiHarness::new([IMAGE_WIDTH, HEIGHT]);
+        let mut clipboard = None;
+        let mut draw = |ui: &Ui| {
+            let _style = StyleScope::push_with_cursor_extent(ui, &theme, None);
+            window.draw_in(
+                ui,
+                &theme,
+                Window::new("help")
+                    .position([0.0, 0.0], Condition::Always)
+                    .size([10.0, HEIGHT], Condition::Always),
+                &content,
+            );
+            clipboard = ui.clipboard_text();
+        };
+        let mouse = |position: [f32; 2], left_button_down: bool| FrameInput {
+            mouse_position: position,
+            left_button_down,
+            ..FrameInput::default()
+        };
+        harness.step(&mouse(PARAGRAPH_START, false), &mut draw);
+        harness.step(&mouse(PARAGRAPH_START, true), &mut draw);
+        for step in 1..=4_u8 {
+            let fraction = f32::from(step) / 4.0;
+            let at = [
+                PARAGRAPH_START[0] + (PARAGRAPH_END[0] - PARAGRAPH_START[0]) * fraction,
+                PARAGRAPH_START[1] + (PARAGRAPH_END[1] - PARAGRAPH_START[1]) * fraction,
+            ];
+            harness.step(&mouse(at, true), &mut draw);
+        }
+        harness.step(&mouse(PARAGRAPH_END, false), &mut draw);
+        let image = harness.settle(SETTLE_FRAMES, &mouse(PARAGRAPH_END, false), &mut draw);
+        assert_snapshot(
+            env!("CARGO_MANIFEST_DIR"),
+            &format!("help-window-selection-{theme_name}"),
+            &image,
+        );
+        let ctrl_c = FrameInput {
+            control: true,
+            keys: vec![0x43],
+            ..mouse(PARAGRAPH_END, false)
+        };
+        harness.step(&ctrl_c, &mut draw);
+        harness.step(&mouse(PARAGRAPH_END, false), &mut draw);
+        drop(draw);
+        assert_eq!(
+            clipboard.as_deref(),
+            Some(
+                "Press the keybind you set in Nexus, or choose the addon in the Nexus menu. Drag the title bar to move the window."
+            )
+        );
+        assert!(window.takes_copy_key(), "the game does not get Ctrl+C");
+    }
+}

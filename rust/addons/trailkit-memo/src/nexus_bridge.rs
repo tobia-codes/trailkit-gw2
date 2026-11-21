@@ -264,6 +264,30 @@ static ESCAPE_KEY_ARMED: AtomicBool = AtomicBool::new(false);
 /// what is open in it, else the window (as its close button does).
 static ESCAPE_KEY_PRESSED: AtomicBool = AtomicBool::new(false);
 
+/// Ctrl+C and Ctrl+A caught since the last frame; the main window and the
+/// help window each apply them only while they belong to it (M217).
+#[derive(Debug, Clone, Copy, Default)]
+struct SelectionKeys {
+    /// Ctrl+C was caught.
+    copy: bool,
+    /// Ctrl+A was caught.
+    select_all: bool,
+}
+
+/// Whether Ctrl+C belongs to the window: it has the focus and text of the
+/// reading view is selected (M217). Written by the render callback.
+static COPY_KEY_ARMED: AtomicBool = AtomicBool::new(false);
+
+/// Set when Ctrl+C was caught; the render callback copies the selection.
+static COPY_KEY_PRESSED: AtomicBool = AtomicBool::new(false);
+
+/// Whether Ctrl+A belongs to the window: it has the focus and shows a note to
+/// read (M217). Written by the render callback.
+static SELECT_ALL_KEY_ARMED: AtomicBool = AtomicBool::new(false);
+
+/// Set when Ctrl+A was caught; the render callback selects the whole note.
+static SELECT_ALL_KEY_PRESSED: AtomicBool = AtomicBool::new(false);
+
 /// Gives every key memo catches back to the game until the render callback
 /// arms them again (M79, M135, M174, M175, M198, M199).
 fn disarm_window_keys() {
@@ -276,6 +300,8 @@ fn disarm_window_keys() {
         &TEXT_SIZE_RESET_ARMED,
         &DIALOG_ENTER_ARMED,
         &ESCAPE_KEY_ARMED,
+        &COPY_KEY_ARMED,
+        &SELECT_ALL_KEY_ARMED,
     ] {
         armed.store(false, Ordering::Relaxed);
     }
@@ -536,6 +562,8 @@ fn route_window_message(message: u32, key: WPARAM, details: LPARAM) -> u32 {
         text_size_reset: TEXT_SIZE_RESET_ARMED.load(Ordering::Relaxed),
         dialog_enter: DIALOG_ENTER_ARMED.load(Ordering::Relaxed),
         escape: ESCAPE_KEY_ARMED.load(Ordering::Relaxed),
+        copy: COPY_KEY_ARMED.load(Ordering::Relaxed),
+        select_all: SELECT_ALL_KEY_ARMED.load(Ordering::Relaxed),
     };
     let key_message = KeyMessage {
         message,
@@ -563,6 +591,8 @@ fn route_window_message(message: u32, key: WPARAM, details: LPARAM) -> u32 {
         KeySignal::ResetTextSize => TEXT_SIZE_RESET_PRESSED.store(true, Ordering::Relaxed),
         KeySignal::ConfirmDialog => DIALOG_ENTER_PRESSED.store(true, Ordering::Relaxed),
         KeySignal::Escape => ESCAPE_KEY_PRESSED.store(true, Ordering::Relaxed),
+        KeySignal::Copy => COPY_KEY_PRESSED.store(true, Ordering::Relaxed),
+        KeySignal::SelectAll => SELECT_ALL_KEY_PRESSED.store(true, Ordering::Relaxed),
     }
     if signal.consumes_key() {
         MESSAGE_CONSUMED

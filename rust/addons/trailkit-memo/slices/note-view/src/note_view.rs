@@ -1,7 +1,8 @@
 //! The reading view of a note: title (with an optional trailing widget,
 //! M102), separator and the rendered content in its own scroll region, so
 //! the title stays in place (M81), drawn with the shared page head of
-//! `trailkit-ui` (R101). Search hits are marked (M122).
+//! `trailkit-ui` (R101). Search hits are marked (M122); the mouse selects
+//! text to copy (M217).
 
 use nexus::imgui::{MouseButton, Ui};
 use trailkit_memo_shared::{
@@ -11,7 +12,8 @@ use trailkit_memo_shared::{
 use trailkit_ui::{
     chat_link::chat_link_chip::ChipContext,
     layout::page::{PageHead, TitleTrailing, draw_page},
-    markdown::markdown_view::{MarkdownAction, SearchHighlight, draw_markdown},
+    markdown::markdown_view::{MarkdownAction, SearchHighlight, draw_selectable_markdown},
+    markdown::text_selection::TextSelection,
     markdown::{self, MarkdownDocument},
     text::text_search::SearchQuery,
     text::{TextStyle, draw_text_wrapped},
@@ -97,6 +99,11 @@ pub struct NoteView {
     scroll_to_first_hit: bool,
     /// Scroll the current find hit into view on the next frame (M198).
     reveal_current_hit: bool,
+    /// The selected text of the shown note (M217).
+    selection: TextSelection,
+    /// The search or find phrase marked when the selection was last drawn;
+    /// another one selects nothing (Q553).
+    marked_query: Option<SearchQuery>,
 }
 
 impl Default for NoteView {
@@ -107,6 +114,8 @@ impl Default for NoteView {
             restore_scroll: true,
             scroll_to_first_hit: false,
             reveal_current_hit: false,
+            selection: TextSelection::default(),
+            marked_query: None,
         }
     }
 }
@@ -122,6 +131,32 @@ impl NoteView {
     /// A new search started: jump to the first hit on the next frame.
     pub fn jump_to_first_hit(&mut self) {
         self.scroll_to_first_hit = true;
+    }
+
+    /// Selects nothing (M217, Q553): the search changed or editing starts.
+    pub fn clear_selection(&mut self) {
+        self.selection.clear();
+    }
+
+    /// Whether text of the shown note is selected, so Ctrl+C has something
+    /// to copy (M217).
+    #[must_use]
+    pub fn has_selection(&self) -> bool {
+        self.parsed.is_some() && !self.selection.is_empty()
+    }
+
+    /// The selected text as it is copied (Q554), if any.
+    #[must_use]
+    pub fn selected_text(&self) -> Option<String> {
+        let parsed = self.parsed.as_ref()?;
+        self.selection.text(&parsed.document)
+    }
+
+    /// Selects the whole shown note (Ctrl+A, Q555).
+    pub fn select_all(&mut self) {
+        if let Some(parsed) = &self.parsed {
+            self.selection.select_all(&parsed.document);
+        }
     }
 
     /// The current find hit changed: scroll it into view on the next frame
@@ -142,6 +177,9 @@ impl NoteView {
     ) -> NoteViewOutput {
         let mut output = NoteViewOutput::default();
         let Some(note) = input.note else {
+            // Nothing shown, nothing to copy.
+            self.parsed = None;
+            self.selection.clear();
             draw_text_wrapped(
                 ui,
                 theme,
@@ -155,6 +193,15 @@ impl NoteView {
             .as_ref()
             .is_none_or(|parsed| parsed.note != note.id || parsed.source != note.body);
         if is_stale {
+            // Another note selects nothing (Q553); a changed body keeps the
+            // selection, clamped to the new text while drawing.
+            if self
+                .parsed
+                .as_ref()
+                .is_none_or(|parsed| parsed.note != note.id)
+            {
+                self.selection.clear();
+            }
             self.parsed = Some(ParsedNote {
                 note: note.id,
                 source: note.body.clone(),
@@ -214,13 +261,24 @@ impl NoteView {
                 // Search hits are marked; a new search or a newly opened
                 // note jumps to the first one (M122). Find in the note marks
                 // its own hits instead, the current one filled (M198).
+                let marked = find.map(|find| find.query).or(search);
+                if marked != self.marked_query.as_ref() {
+                    self.selection.clear();
+                    self.marked_query = marked.cloned();
+                }
                 let mut highlight = match find {
                     Some(find) => Some(SearchHighlight::with_current(find.query, find.current)),
                     None => search.map(SearchHighlight::new),
                 };
-                if let Some(action) =
-                    draw_markdown(ui, &parsed.document, theme, chips, highlight.as_mut())
-                {
+                let action = draw_selectable_markdown(
+                    ui,
+                    &parsed.document,
+                    theme,
+                    chips,
+                    highlight.as_mut(),
+                    &mut self.selection,
+                );
+                if let Some(action) = action {
                     output.actions.push(NoteViewAction::Markdown(action));
                 }
                 if find.is_some() {

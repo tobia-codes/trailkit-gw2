@@ -116,10 +116,17 @@ impl MemoWindow {
         if let Some(action) = toolbar_action {
             self.actions.push(WindowAction::Trash(action));
         }
-        // A trashed note cannot change: only links open.
+        // A trashed note cannot change: links open, and copying (a chip, the
+        // menu's Copy) is confirmed like anywhere else (M217).
         for action in view_actions {
-            if let NoteViewAction::Markdown(MarkdownAction::OpenLink(url)) = action {
-                open_link(&url);
+            match action {
+                NoteViewAction::Markdown(MarkdownAction::OpenLink(url)) => open_link(&url),
+                NoteViewAction::Markdown(MarkdownAction::Copied(text)) => {
+                    self.actions
+                        .push(WindowAction::Markdown(MarkdownAction::Copied(text)));
+                }
+                NoteViewAction::Markdown(MarkdownAction::ToggleTask(_))
+                | NoteViewAction::StartEditing => {}
             }
         }
     }

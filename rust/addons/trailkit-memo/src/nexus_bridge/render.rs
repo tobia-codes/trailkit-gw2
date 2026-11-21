@@ -22,13 +22,14 @@ use trailkit_ui::{
 };
 
 use super::{
-    CLOSE_REQUESTED, DELETE_KEY_ARMED, DELETE_KEY_PRESSED, DIALOG_ENTER_ARMED,
-    DIALOG_ENTER_PRESSED, ESCAPE_CAUGHT, ESCAPE_KEY_ARMED, ESCAPE_KEY_PRESSED, FIND_KEY_ARMED,
-    FIND_KEY_PRESSED, FIND_STEP, FIND_STEP_ARMED, FIND_STEP_NEXT, FIND_STEP_NONE,
+    CLOSE_REQUESTED, COPY_KEY_ARMED, COPY_KEY_PRESSED, DELETE_KEY_ARMED, DELETE_KEY_PRESSED,
+    DIALOG_ENTER_ARMED, DIALOG_ENTER_PRESSED, ESCAPE_CAUGHT, ESCAPE_KEY_ARMED, ESCAPE_KEY_PRESSED,
+    FIND_KEY_ARMED, FIND_KEY_PRESSED, FIND_STEP, FIND_STEP_ARMED, FIND_STEP_NEXT, FIND_STEP_NONE,
     FIND_STEP_PREVIOUS, HELP, HELP_OPEN, HISTORY_STEP, HISTORY_STEP_NONE, HISTORY_STEP_REDO,
     HISTORY_STEP_UNDO, LANGUAGE, NEXUS_LINK, NOTES, NotesState, SEARCH_KEY_ARMED,
-    SEARCH_KEY_PRESSED, TEXT_SIZE_RESET_ARMED, TEXT_SIZE_RESET_PRESSED, TITLE_BAR, UNDO_KEYS_ARMED,
-    UNSAVED_CHANGES, VISIBLE, WINDOW_TAKES_ESCAPE, WINDOW_TITLE, disarm_window_keys,
+    SEARCH_KEY_PRESSED, SELECT_ALL_KEY_ARMED, SELECT_ALL_KEY_PRESSED, SelectionKeys,
+    TEXT_SIZE_RESET_ARMED, TEXT_SIZE_RESET_PRESSED, TITLE_BAR, UNDO_KEYS_ARMED, UNSAVED_CHANGES,
+    VISIBLE, WINDOW_TAKES_ESCAPE, WINDOW_TITLE, disarm_window_keys,
     guard::{RunState, draft_kept, run_state, take_help_request, try_lock_after_panic},
     help::MemoHelp,
     is_gameplay, settings,
@@ -194,6 +195,18 @@ fn draw_main_window(
         (None, None) => &[],
     };
     let help_index = usize::from(menu_toggle.is_some());
+    // Ctrl+C and Ctrl+A go to whichever window they belong to (M217).
+    let selection_keys = SelectionKeys {
+        copy: COPY_KEY_PRESSED.swap(false, Ordering::Relaxed),
+        select_all: SELECT_ALL_KEY_PRESSED.swap(false, Ordering::Relaxed),
+    };
+    let help_takes_keys = help.as_ref().map_or((false, false), |help| {
+        (help.takes_copy_key(), help.takes_select_all_key())
+    });
+    let mut help = help;
+    if let Some(help) = help.as_deref_mut() {
+        help.apply_selection_keys(ui, selection_keys);
+    }
     let clicked_toggle = draw_window(
         ui,
         theme,
@@ -215,7 +228,7 @@ fn draw_main_window(
                 Text::NotesInaccessible.get(language),
             ),
             NotesState::Ready(window) => {
-                apply_caught_keys(ui, window, language);
+                apply_caught_keys(ui, window, language, selection_keys);
                 window.draw(ui, language, theme);
             }
         },
@@ -240,6 +253,14 @@ fn draw_main_window(
             (&TEXT_SIZE_RESET_ARMED, window.takes_text_size_reset_key()),
             (&DIALOG_ENTER_ARMED, window.takes_dialog_enter_key()),
             (&ESCAPE_KEY_ARMED, window.takes_escape_key()),
+            (
+                &COPY_KEY_ARMED,
+                window.takes_copy_key() || help_takes_keys.0,
+            ),
+            (
+                &SELECT_ALL_KEY_ARMED,
+                window.takes_select_all_key() || help_takes_keys.1,
+            ),
         ] {
             armed.store(takes_key && visible, Ordering::Relaxed);
         }
@@ -248,7 +269,12 @@ fn draw_main_window(
 
 /// Applies the keys the window message callback caught for `window` since the
 /// last frame (M79, M135, M174, M175, M198, M199), before the window draws.
-fn apply_caught_keys(ui: &nexus::imgui::Ui, window: &mut MemoWindow, language: Language) {
+fn apply_caught_keys(
+    ui: &nexus::imgui::Ui,
+    window: &mut MemoWindow,
+    language: Language,
+    selection_keys: SelectionKeys,
+) {
     if ESCAPE_CAUGHT.swap(false, Ordering::Relaxed) {
         window.handle_escape(ui);
     }
@@ -276,6 +302,12 @@ fn apply_caught_keys(ui: &nexus::imgui::Ui, window: &mut MemoWindow, language: L
     }
     if DIALOG_ENTER_PRESSED.swap(false, Ordering::Relaxed) {
         window.confirm_dialog_by_key(language);
+    }
+    if selection_keys.copy {
+        window.copy_selection_by_key(ui, language);
+    }
+    if selection_keys.select_all {
+        window.select_all_by_key();
     }
 }
 

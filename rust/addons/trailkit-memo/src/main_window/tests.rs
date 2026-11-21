@@ -8,6 +8,7 @@ mod note_list;
 mod save_errors;
 mod search;
 mod states;
+mod text_selection;
 mod title_bar_help;
 mod trash;
 

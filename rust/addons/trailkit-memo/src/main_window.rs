@@ -10,6 +10,7 @@ mod dialogs;
 mod find_in_note;
 mod panes;
 mod search;
+mod selection_keys;
 mod text_scale;
 mod trash;
 mod window_menu;
@@ -307,6 +308,8 @@ impl MemoWindow {
         self.handle_undo_keys(ui);
         self.handle_text_scale_keys(ui);
         self.handle_search_keys(ui);
+        self.handle_selection_keys(ui, language);
+        self.clear_selection_on_click(ui);
         self.update_search();
         self.update_text_scale(ui, language, theme);
         self.collect_unsaved_notes();

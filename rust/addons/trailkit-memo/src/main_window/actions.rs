@@ -456,12 +456,7 @@ impl MemoWindow {
                 }
             }
             WindowAction::Markdown(MarkdownAction::OpenLink(url)) => open_link(url),
-            WindowAction::Markdown(MarkdownAction::Copied(_)) => {
-                self.toast = Some(WindowToast {
-                    toast: Toast::new(chip_text(ChipText::Copied, language).to_owned()),
-                    kind: WindowToastKind::Message,
-                });
-            }
+            WindowAction::Markdown(MarkdownAction::Copied(_)) => self.show_copied_toast(language),
             WindowAction::OpenFolder(folder) => {
                 let path = match folder {
                     AddonFolder::Notes => self.addon_directory.clone(),
@@ -579,5 +574,16 @@ impl MemoWindow {
     pub(super) fn save_notes(&mut self) {
         self.document_revision = self.document_revision.wrapping_add(1);
         self.saver.save_notes(Arc::new(self.document.clone()));
+    }
+}
+
+impl MemoWindow {
+    /// Confirms that text is on the clipboard with the "Copied" toast at the
+    /// bottom (M75, M217).
+    pub(super) fn show_copied_toast(&mut self, language: Language) {
+        self.toast = Some(WindowToast {
+            toast: Toast::new(chip_text(ChipText::Copied, language).to_owned()),
+            kind: WindowToastKind::Message,
+        });
     }
 }

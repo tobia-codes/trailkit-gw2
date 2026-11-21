@@ -11,6 +11,7 @@ mod bare_urls;
 pub mod link_menu;
 #[cfg(windows)]
 pub mod markdown_view;
+pub mod text_selection;
 
 use pulldown_cmark::{Event, HeadingLevel, LinkType, Options, Parser, Tag, TagEnd};
 

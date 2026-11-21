@@ -100,3 +100,14 @@ impl Default for Theme {
         Self::DARK
     }
 }
+
+impl Theme {
+    /// The fill behind selected text: `accent` at 35 % opacity, the same in
+    /// the editor (ImGui's `TextSelectedBg`) and the markdown view (memo
+    /// M217). A derived overlay color (`tokens.md` §1): the text stays
+    /// readable through it in both themes.
+    #[must_use]
+    pub const fn text_selection(&self) -> crate::color::Color {
+        self.accent.base.with_alpha(0.35)
+    }
+}

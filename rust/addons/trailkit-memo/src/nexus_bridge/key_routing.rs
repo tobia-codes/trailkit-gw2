@@ -8,8 +8,8 @@ use std::time::Instant;
 
 use windows::Win32::UI::{
     Input::KeyboardAndMouse::{
-        VIRTUAL_KEY, VK_0, VK_CONTROL, VK_DELETE, VK_ESCAPE, VK_F, VK_F3, VK_NUMPAD0, VK_RETURN,
-        VK_SHIFT, VK_Y, VK_Z,
+        VIRTUAL_KEY, VK_0, VK_A, VK_C, VK_CONTROL, VK_DELETE, VK_ESCAPE, VK_F, VK_F3, VK_NUMPAD0,
+        VK_RETURN, VK_SHIFT, VK_Y, VK_Z,
     },
     WindowsAndMessaging::{WM_KEYDOWN, WM_KEYUP},
 };
@@ -47,6 +47,10 @@ pub(super) struct ArmedKeys {
     /// Escape closes what is open in the main window, else the window, while
     /// the focus is in one of its panes.
     pub(super) escape: bool,
+    /// Ctrl+C copies the selected text of the reading view (M217).
+    pub(super) copy: bool,
+    /// Ctrl+A selects the whole note in the reading view (M217).
+    pub(super) select_all: bool,
 }
 
 /// What a key message asks the window to do.
@@ -72,6 +76,10 @@ pub(super) enum KeySignal {
     ConfirmDialog,
     /// Close what is open in the main window, else the window.
     Escape,
+    /// Copy the selected text.
+    Copy,
+    /// Select the whole note.
+    SelectAll,
 }
 
 impl KeySignal {
@@ -129,6 +137,10 @@ fn route_ctrl_shortcut(key: usize, armed: ArmedKeys, shift: bool) -> Option<KeyS
     let is_key = |virtual_key: VIRTUAL_KEY| key == usize::from(virtual_key.0);
     if is_key(VK_F) && armed.find {
         Some(KeySignal::ToggleFind)
+    } else if is_key(VK_C) && armed.copy {
+        Some(KeySignal::Copy)
+    } else if is_key(VK_A) && armed.select_all {
+        Some(KeySignal::SelectAll)
     } else if is_key(VK_Z) && armed.undo {
         Some(if shift {
             KeySignal::Redo
@@ -160,6 +172,8 @@ mod tests {
         text_size_reset: true,
         dialog_enter: true,
         escape: true,
+        copy: true,
+        select_all: true,
     };
 
     /// A key message without auto repeat.
@@ -180,6 +194,28 @@ mod tests {
             &mut DoubleShift::new(),
             |modifier| held.contains(&modifier),
         )
+    }
+
+    #[test]
+    fn ctrl_c_and_ctrl_a_belong_to_the_reading_view_only_while_armed() {
+        assert_eq!(press(VK_C, ALL_ARMED, &[VK_CONTROL]), Some(KeySignal::Copy));
+        assert_eq!(
+            press(VK_A, ALL_ARMED, &[VK_CONTROL]),
+            Some(KeySignal::SelectAll)
+        );
+        assert_eq!(press(VK_C, ALL_ARMED, &[]), None, "a plain C is typing");
+        let nothing_selected = ArmedKeys {
+            copy: false,
+            select_all: false,
+            ..ALL_ARMED
+        };
+        assert_eq!(
+            press(VK_C, nothing_selected, &[VK_CONTROL]),
+            None,
+            "the game keeps Ctrl+C without a selection"
+        );
+        assert_eq!(press(VK_A, nothing_selected, &[VK_CONTROL]), None);
+        assert!(KeySignal::Copy.consumes_key() && KeySignal::SelectAll.consumes_key());
     }
 
     #[test]
