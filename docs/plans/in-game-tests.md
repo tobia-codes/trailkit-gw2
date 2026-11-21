@@ -64,3 +64,6 @@ is ready when the user is back at the PC.
     8. Open the help (`?`), select text in a topic with the mouse and press
        **Ctrl+C**: the text is on the clipboard and the game ignores Ctrl+C;
        **Ctrl+A** selects the whole topic; right-click › Copy works too.
+    9. Click **Edit**, select text in the body and press **Ctrl+C**: the
+       "Copied" message pops up at the bottom here too (Ctrl+X does not show
+       it; it cuts).

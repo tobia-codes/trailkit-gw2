@@ -25,10 +25,13 @@ use crate::{chat_link::chat_link_chip::ChipContext, text::search_hits::HitMark, 
 const BLINK_HALF_PERIOD: f64 = 0.6;
 
 /// What happened in the editor during one frame.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct EditorResponse {
     /// The text changed.
     pub changed: bool,
+    /// Ctrl+C put this selected text on the clipboard; the addon confirms it
+    /// (memo M217 follow-up, user wish 2026-11-21).
+    pub copied: Option<String>,
 }
 
 /// Whether the mouse is over the editor's child window. The keyboard sink

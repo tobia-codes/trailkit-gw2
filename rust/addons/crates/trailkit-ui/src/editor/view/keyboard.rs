@@ -188,6 +188,9 @@ impl TextEditor {
         }
         if (pressed(Key::C) || pressed(Key::X)) && self.buffer.has_selection() {
             ui.set_clipboard_text(self.buffer.selected_text());
+            if pressed(Key::C) {
+                response.copied = Some(self.buffer.selected_text().to_owned());
+            }
             if pressed(Key::X) {
                 self.buffer.delete(Direction::Backward, Step::Character);
                 self.after_edit();

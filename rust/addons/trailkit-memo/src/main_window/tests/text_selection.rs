@@ -205,3 +205,23 @@ fn ctrl_c_caught_before_the_frame_still_shows_the_toast() {
         Some("of Ectoplasm\n[ ] Mystic Coins\nCheck the wiki first.")
     );
 }
+
+#[test]
+fn copying_in_the_editor_shows_the_toast_too() {
+    let (mut memo, _worker, _directory) = sample();
+    memo.apply(&WindowAction::StartEditing, Language::English);
+    let clipboard = run(
+        &mut memo,
+        &[
+            ctrl_key(0x41, [500.0, 300.0]),
+            ctrl_key(0x43, [500.0, 300.0]),
+        ],
+    );
+    assert!(
+        clipboard
+            .as_deref()
+            .is_some_and(|text| text.contains("Mystic Coins")),
+        "Ctrl+A, Ctrl+C copy the body: {clipboard:?}"
+    );
+    assert!(memo.toast.is_some(), "and the Copied toast pops up");
+}
