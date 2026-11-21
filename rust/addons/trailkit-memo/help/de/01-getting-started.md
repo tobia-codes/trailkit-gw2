@@ -35,6 +35,6 @@ Das Menü führt dich zu den Bereichen von memo:
 
 Das **?** in der Titelleiste öffnet dieses Hilfefenster; ein weiterer Klick schließt es. **Hilfe öffnen** in memos Tab unter *Nexus › Optionen* öffnet es ebenfalls oder holt es nach vorn. **Escape** schließt es.
 
-Das Fenster hat zwei Tabs: **Hilfe** mit diesen Themen und **Problem melden**, das dein Log als Textdatei speichert und das Problemformular auf GitHub öffnet. Bis zum Neustart des Spiels öffnet sich das Fenster wieder auf dem Tab und Thema, das du zuletzt angesehen hast.
+Das Fenster hat zwei Tabs: **Hilfe** mit diesen Themen und **Problem melden**, das dein Log als Textdatei speichert und das Problemformular auf GitHub öffnet. Unter dem gewählten Thema zeigt die Liste seine Abschnitte; ein Klick springt dorthin. Bis zum Neustart des Spiels öffnet sich das Fenster wieder auf dem Tab und Thema, das du zuletzt angesehen hast.
 
 Stößt memo auf einen Fehler, hält es an, statt das Spiel abstürzen zu lassen: Dein ungespeicherter Text bleibt als Entwurf erhalten und dieses Fenster öffnet sich auf **Problem melden**. Bis du memo in der Addon-Liste von Nexus neu lädst oder das Spiel neu startest, öffnen Keybind und Schnellzugriffssymbol dieses Fenster.

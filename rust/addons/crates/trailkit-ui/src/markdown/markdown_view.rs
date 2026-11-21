@@ -176,7 +176,35 @@ pub fn draw_markdown(
     document: &MarkdownDocument,
     theme: &Theme,
     chips: ChipContext<'_>,
+    highlight: Option<&mut SearchHighlight<'_>>,
+) -> Option<MarkdownAction> {
+    draw_document(ui, document, theme, chips, highlight, None)
+}
+
+/// Like [`draw_markdown`] without search hits, and also returns the
+/// window-content y (as for `set_scroll_y`) of the top of every heading of
+/// `level`, in order: the scroll targets of the help's sections (R155 c).
+pub fn draw_markdown_with_heading_tops(
+    ui: &Ui,
+    document: &MarkdownDocument,
+    theme: &Theme,
+    chips: ChipContext<'_>,
+    level: u8,
+) -> (Option<MarkdownAction>, Vec<f32>) {
+    let mut tops = Vec::new();
+    let action = draw_document(ui, document, theme, chips, None, Some((level, &mut tops)));
+    (action, tops)
+}
+
+/// Draws `document` for [`draw_markdown`]; `heading_tops` collects the
+/// window-content y of every heading of its level.
+fn draw_document(
+    ui: &Ui,
+    document: &MarkdownDocument,
+    theme: &Theme,
+    chips: ChipContext<'_>,
     mut highlight: Option<&mut SearchHighlight<'_>>,
+    mut heading_tops: Option<(u8, &mut Vec<f32>)>,
 ) -> Option<MarkdownAction> {
     let _body_font = FontScope::push(ui, FontRole::Body);
     let origin_x = ui.cursor_screen_pos()[0];
@@ -219,6 +247,11 @@ pub fn draw_markdown(
                 theme.spacing.large
             };
             ui.dummy([0.0, gap]);
+        }
+        if let (Block::Heading { level, .. }, Some((wanted, tops))) = (block, heading_tops.as_mut())
+            && *level == *wanted
+        {
+            tops.push(ui.cursor_screen_pos()[1] - ui.window_pos()[1] + ui.scroll_y());
         }
         let clicked = draw_block(ui, block, layout, theme, chips, highlight.as_deref_mut());
         action = action.or(clicked);

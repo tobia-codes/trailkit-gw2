@@ -165,6 +165,8 @@ pub struct HelpWindowContent<'text> {
 struct ParsedTopic {
     /// The `##` heading: the list entry and the topic's Heading1 title.
     title: String,
+    /// The `###` headings, listed below the title while it is selected.
+    sections: Vec<String>,
     /// The opening sentence, drawn Secondary below the title.
     lead: Option<String>,
     /// The rest of the topic.
@@ -189,6 +191,7 @@ impl ParsedHelp {
                 let (lead, rest) = topic.split_lead();
                 ParsedTopic {
                     title: topic.title.clone(),
+                    sections: topic.section_titles(),
                     lead,
                     document: parse(rest),
                 }
@@ -214,6 +217,8 @@ pub struct HelpWindow {
     state_changed: bool,
     /// The parsed help text, once the window was drawn.
     help: Option<ParsedHelp>,
+    /// The marked section and the pending scroll of the Help tab.
+    topic_view: help_tab::TopicView,
 }
 
 impl HelpWindow {
@@ -334,6 +339,7 @@ impl HelpWindow {
             state,
             state_changed,
             help,
+            topic_view,
             ..
         } = self;
         let _ = draw_window(
@@ -358,8 +364,14 @@ impl HelpWindow {
                     stack.add(|| match state.tab {
                         HelpTab::Help => {
                             if let Some(help) = help.as_ref() {
-                                *state_changed |=
-                                    help_tab::draw_help_tab(ui, theme, help, state, content.chips);
+                                *state_changed |= help_tab::draw_help_tab(
+                                    ui,
+                                    theme,
+                                    help,
+                                    state,
+                                    topic_view,
+                                    content.chips,
+                                );
                             }
                         }
                         HelpTab::ReportProblem => {

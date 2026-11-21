@@ -39,6 +39,10 @@ pub enum RowChevron {
     /// No chevron; the title starts where a sibling's chevron does.
     #[default]
     None,
+    /// No chevron, but its room is kept, so the title lines up with the
+    /// titles of siblings that have one (a help topic without sections,
+    /// R155 Q538).
+    Blank,
     /// The children are hidden (`chevron-right`).
     Closed,
     /// The children are shown (`chevron-down`).
@@ -190,7 +194,7 @@ pub fn draw_list_row(ui: &Ui, theme: &Theme, row: &ListRow<'_>) -> ListRowRespon
 /// tree arrow takes clicks (the font size plus twice the frame padding from
 /// `content_left`), or Left/Right on the focused row closing/opening it.
 fn is_chevron_clicked(ui: &Ui, chevron: RowChevron, content_left: f32, is_hovered: bool) -> bool {
-    if chevron == RowChevron::None {
+    if matches!(chevron, RowChevron::None | RowChevron::Blank) {
         return false;
     }
     let padding = ui.clone_style().frame_padding[0];
@@ -201,7 +205,7 @@ fn is_chevron_clicked(ui: &Ui, chevron: RowChevron, content_left: f32, is_hovere
         && (content_left..arrow_end).contains(&mouse_x);
     let key = match chevron {
         RowChevron::Open => Key::LeftArrow,
-        RowChevron::Closed | RowChevron::None => Key::RightArrow,
+        RowChevron::Closed | RowChevron::None | RowChevron::Blank => Key::RightArrow,
     };
     clicked || (ui.is_item_focused() && ui.is_key_pressed(key))
 }
@@ -262,17 +266,19 @@ fn draw_row_texts(
     // The chevron is drawn in the title's font, centered on its capitals.
     let (title_x, title_truncated) = {
         let _font = FontScope::push(ui, row.title_style.font());
-        let title_x = if row.chevron == RowChevron::None {
-            content_left + padding[0]
-        } else {
-            draw_tree_arrow(
-                ui,
-                ink.color(theme.text.disabled),
-                row.chevron == RowChevron::Open,
-                [content_left, min[1]],
-                padding,
-            );
-            content_left + ui.current_font_size() + 2.0 * padding[0]
+        let title_x = match row.chevron {
+            RowChevron::None => content_left + padding[0],
+            RowChevron::Blank => content_left + ui.current_font_size() + 2.0 * padding[0],
+            RowChevron::Open | RowChevron::Closed => {
+                draw_tree_arrow(
+                    ui,
+                    ink.color(theme.text.disabled),
+                    row.chevron == RowChevron::Open,
+                    [content_left, min[1]],
+                    padding,
+                );
+                content_left + ui.current_font_size() + 2.0 * padding[0]
+            }
         };
         let truncated = !row.renaming && draw_title(ui, ink, row, [title_x, top], title_end);
         (title_x, truncated)

@@ -13,7 +13,8 @@ use trailkit_ui::{
     drawing::style_scope::StyleScope,
     feedback::status_line::Status,
     help::help_window::{
-        HelpTab, HelpWindow, HelpWindowContent, HelpWindowTexts, ProblemNotice, ProblemPage,
+        HelpTab, HelpWindow, HelpWindowContent, HelpWindowState, HelpWindowTexts, ProblemNotice,
+        ProblemPage,
     },
     layout::title_bar::TitleBarTexts,
     theme::ThemeKind,
@@ -33,10 +34,10 @@ const HEIGHT: f32 = 520.0;
 const SETTLE_FRAMES: usize = 3;
 
 /// The English help text of the mockup (first topic in full).
-const HELP_EN: &str = "## Getting started\nOpen the window, move it and find the buttons.\n\n### Open the window\nPress the keybind you set in Nexus, or choose the addon in the Nexus menu. Drag the title bar to move the window.\n\n### The title bar\nThe menu button opens the window menu. The arrow collapses the window, the cross closes it.\n\n## Notes and groups\nx\n\n## Editing notes\nx\n\n## Daily and weekly notes\nx\n\n## Searching\nx\n\n## Trash and undo\nx\n\n## Keyboard shortcuts\nx\n\n## Where your notes are stored\nx\n\n## Privacy\nx\n";
+const HELP_EN: &str = "## Getting started\nOpen the window, move it and find the buttons.\n\n### Opening the window\nPress the keybind you set in Nexus, or choose the addon in the Nexus menu. Drag the title bar to move the window.\n\n### The window\nThe menu button opens the window menu. The arrow collapses the window, the cross closes it.\n\n### The menu and views\nThe menu takes you to the different parts of memo. Notes always brings you back to the regular page.\n\n### Help and problems\nThe ? in the title bar opens this help window; click it again to close it. Escape closes it.\n\nThe window has two tabs: Help with these topics, and Report a problem, which saves your log as a text file and opens the problem form on GitHub.\n\nIf memo runs into an error, it stops instead of crashing the game: your unsaved text is kept as a draft and this window opens on Report a problem.\n\n## Notes and groups\nx\n\n### Creating and renaming\nx\n\n### Sorting and moving\nx\n\n### Groups\nx\n\n### Deleting\nx\n\n## Editing notes\nx\n\n### The editor\nx\n\n### Checkboxes and links\nx\n\n### Chat links\nx\n\n### Saving and drafts\nx\n\n## Daily and weekly notes\nx\n\n### Choosing the kind\nx\n\n### When notes reset\nx\n\n## Searching\nx\n\n### Using the search\nx\n\n### What the results show\nx\n\n### Find in the note\nx\n\n## Trash and undo\nx\n\n### Undo\nx\n\n### The trash\nx\n\n## Keyboard shortcuts\nx\n\n### Window\nx\n\n### Note list\nx\n\n### Editor\nx\n\n## Where your notes are stored\nx\n\n### Files\nx\n\n### When saving fails\nx\n\n## Privacy\nx\n\n### Data on your PC\nx\n\n### Update check by Nexus\nx\n\n### Opening the wiki\nx\n\n### Reporting a problem\nx\n\n### Planned: trailkit server\nx\n\n### Your rights\nx\n\n### Responsible person\nx\n\n";
 
 /// The German help text of the mockup.
-const HELP_DE: &str = "## Erste Schritte\nÖffne das Fenster, verschiebe es und finde die Schaltflächen.\n\n### Das Fenster öffnen\nDrücke die Tastenkombination, die du in Nexus festgelegt hast, oder wähle das Addon im Nexus-Menü. Zieh die Titelleiste, um das Fenster zu verschieben.\n\n### Die Titelleiste\nDie Menü-Schaltfläche öffnet das Fenstermenü. Der Pfeil klappt das Fenster ein, das Kreuz schließt es.\n\n## Notizen und Gruppen\nx\n\n## Notizen bearbeiten\nx\n\n## Tägliche und wöchentliche Notizen\nx\n\n## Suchen\nx\n\n## Papierkorb und Rückgängig\nx\n\n## Tastenkürzel\nx\n\n## Wo deine Notizen liegen\nx\n\n## Datenschutz\nx\n";
+const HELP_DE: &str = "## Erste Schritte\nÖffne das Fenster, verschiebe es und finde die Schaltflächen.\n\n### Fenster öffnen\nDrücke die Tastenkombination, die du in Nexus festgelegt hast, oder wähle das Addon im Nexus-Menü. Zieh die Titelleiste, um das Fenster zu verschieben.\n\n### Das Fenster\nDie Menü-Schaltfläche öffnet das Fenstermenü. Der Pfeil klappt das Fenster ein, das Kreuz schließt es.\n\n### Menü und Ansichten\nx\n\n### Hilfe und Probleme\nx\n\n## Notizen und Gruppen\nx\n\n### Anlegen und umbenennen\nx\n\n### Sortieren und verschieben\nx\n\n### Gruppen\nx\n\n### Löschen\nx\n\n## Notizen bearbeiten\nx\n\n### Der Editor\nx\n\n### Checkboxen und Links\nx\n\n### Chat-Links\nx\n\n### Speichern und Entwürfe\nx\n\n## Tägliche und wöchentliche Notizen\nx\n\n### Die Art wählen\nx\n\n### Wann Notizen zurückgesetzt werden\nx\n\n## Suchen\nx\n\n### Die Suche benutzen\nx\n\n### Was die Treffer zeigen\nx\n\n### In der Notiz suchen\nx\n\n## Papierkorb und Rückgängig\nx\n\n### Rückgängig\nx\n\n### Der Papierkorb\nx\n\n## Tastenkürzel\nx\n\n### Fenster\nx\n\n### Notizliste\nx\n\n### Editor\nx\n\n## Wo deine Notizen gespeichert werden\nx\n\n### Dateien\nx\n\n### Wenn das Speichern fehlschlägt\nx\n\n## Datenschutz\nx\n\n### Daten auf deinem PC\nx\n\n### Update-Prüfung durch Nexus\nx\n\n### Wiki öffnen\nx\n\n### Ein Problem melden\nx\n\n### Geplant: trailkit-Server\nx\n\n### Deine Rechte\nx\n\n### Verantwortlich\nx\n\n";
 
 /// The English texts of the mockup.
 const TEXTS_EN: HelpWindowTexts<'static> = HelpWindowTexts {
@@ -86,6 +87,8 @@ struct State {
     german: bool,
     /// The shown tab.
     tab: HelpTab,
+    /// The selected topic.
+    topic: usize,
     /// The export button.
     export_button: ButtonState<'static>,
     /// The status line.
@@ -105,11 +108,43 @@ const SPLITTER: [f32; 2] = [144.0, 300.0];
 /// Every state of both tabs (R100 Q302) in English, the long German texts,
 /// a hovered tab, the hovered splitter of the topic list (R101) and the
 /// warning card after the addon stopped, with the long German draft text (R104).
-const STATES: [State; 12] = [
+const STATES: [State; 15] = [
+    State {
+        name: "help-section-hover",
+        german: false,
+        tab: HelpTab::Help,
+        topic: 0,
+        export_button: ButtonState::Ready,
+        status: None,
+        notice: None,
+        // Over the section "The window" below the selected topic.
+        mouse: [70.0, 153.0],
+    },
+    State {
+        name: "help-privacy",
+        german: false,
+        tab: HelpTab::Help,
+        topic: 8,
+        export_button: ButtonState::Ready,
+        status: None,
+        notice: None,
+        mouse: AWAY,
+    },
+    State {
+        name: "help-de-privacy",
+        german: true,
+        tab: HelpTab::Help,
+        topic: 8,
+        export_button: ButtonState::Ready,
+        status: None,
+        notice: None,
+        mouse: AWAY,
+    },
     State {
         name: "help-splitter-hover",
         german: false,
         tab: HelpTab::Help,
+        topic: 0,
         export_button: ButtonState::Ready,
         status: None,
         notice: None,
@@ -119,6 +154,7 @@ const STATES: [State; 12] = [
         name: "help",
         german: false,
         tab: HelpTab::Help,
+        topic: 0,
         export_button: ButtonState::Ready,
         status: None,
         notice: None,
@@ -128,6 +164,7 @@ const STATES: [State; 12] = [
         name: "help-de",
         german: true,
         tab: HelpTab::Help,
+        topic: 0,
         export_button: ButtonState::Ready,
         status: None,
         notice: None,
@@ -137,6 +174,7 @@ const STATES: [State; 12] = [
         name: "problem",
         german: false,
         tab: HelpTab::ReportProblem,
+        topic: 0,
         export_button: ButtonState::Ready,
         status: None,
         notice: None,
@@ -146,6 +184,7 @@ const STATES: [State; 12] = [
         name: "problem-success",
         german: false,
         tab: HelpTab::ReportProblem,
+        topic: 0,
         export_button: ButtonState::Ready,
         status: Some((
             Status::Success,
@@ -158,6 +197,7 @@ const STATES: [State; 12] = [
         name: "problem-success-trimmed",
         german: false,
         tab: HelpTab::ReportProblem,
+        topic: 0,
         export_button: ButtonState::Ready,
         status: Some((
             Status::Success,
@@ -170,6 +210,7 @@ const STATES: [State; 12] = [
         name: "problem-failure",
         german: false,
         tab: HelpTab::ReportProblem,
+        topic: 0,
         export_button: ButtonState::Ready,
         status: Some((
             Status::Danger,
@@ -182,6 +223,7 @@ const STATES: [State; 12] = [
         name: "problem-no-log",
         german: false,
         tab: HelpTab::ReportProblem,
+        topic: 0,
         export_button: ButtonState::Disabled {
             reason: "There is no log yet.",
         },
@@ -196,6 +238,7 @@ const STATES: [State; 12] = [
         name: "problem-de-failure",
         german: true,
         tab: HelpTab::ReportProblem,
+        topic: 0,
         export_button: ButtonState::Ready,
         status: Some((
             Status::Danger,
@@ -208,6 +251,7 @@ const STATES: [State; 12] = [
         name: "problem-stopped",
         german: false,
         tab: HelpTab::ReportProblem,
+        topic: 0,
         export_button: ButtonState::Ready,
         status: None,
         notice: Some(ProblemNotice {
@@ -220,6 +264,7 @@ const STATES: [State; 12] = [
         name: "problem-de-stopped-draft",
         german: true,
         tab: HelpTab::ReportProblem,
+        topic: 0,
         export_button: ButtonState::Ready,
         status: None,
         notice: Some(ProblemNotice {
@@ -232,6 +277,7 @@ const STATES: [State; 12] = [
         name: "tab-hover",
         german: false,
         tab: HelpTab::Help,
+        topic: 0,
         export_button: ButtonState::Ready,
         status: None,
         notice: None,
@@ -255,7 +301,11 @@ fn help_window_states_match_snapshots_at_the_minimum_width() {
             let theme = kind.theme();
             let mut window = HelpWindow::new();
             window.open();
-            window.show_tab(state.tab);
+            window.restore(HelpWindowState {
+                tab: state.tab,
+                topic: state.topic,
+                ..HelpWindowState::default()
+            });
             let (texts, help_text) = if state.german {
                 (TEXTS_DE, HELP_DE)
             } else {
@@ -341,6 +391,122 @@ fn a_hovered_email_link_shows_its_address() {
         assert_snapshot(
             env!("CARGO_MANIFEST_DIR"),
             &format!("help-window-mail-link-hover-{theme_name}"),
+            &image,
+        );
+    }
+}
+
+/// Over the first topic's row "Getting started" at the minimum width.
+const FIRST_TOPIC: [f32; 2] = [70.0, 97.0];
+
+/// Over its second section "The window".
+const SECOND_SECTION: [f32; 2] = [70.0, 153.0];
+
+/// A click on a section marks it and scrolls the topic to its heading
+/// (R155 c, Q546 A); a click on the topic marks the topic again and shows
+/// its start, as before the first click.
+#[test]
+fn a_clicked_section_is_marked_and_scrolled_to() {
+    for (kind, theme_name) in [(ThemeKind::Dark, "dark"), (ThemeKind::Light, "light")] {
+        let theme = kind.theme();
+        let mut window = HelpWindow::new();
+        window.open();
+        let content = HelpWindowContent {
+            id: "help",
+            help_text: HELP_EN,
+            texts: TEXTS_EN,
+            problem: ProblemPage {
+                export_button: ButtonState::Ready,
+                status: None,
+                notice: None,
+            },
+            chips: ChipContext { text: &chip_text },
+        };
+        let mut harness = UiHarness::new([IMAGE_WIDTH, HEIGHT]);
+        let mut draw = |ui: &Ui| {
+            // The default tooltip offset, not the real cursor (it differs per run).
+            let _style = StyleScope::push_with_cursor_extent(ui, &theme, None);
+            window.draw_in(
+                ui,
+                &theme,
+                Window::new("help")
+                    .position([0.0, 0.0], Condition::Always)
+                    .size([10.0, HEIGHT], Condition::Always),
+                &content,
+            );
+        };
+        let click = |harness: &mut UiHarness, position: [f32; 2], draw: &mut dyn FnMut(&Ui)| {
+            for left_button_down in [false, true, false] {
+                let input = FrameInput {
+                    mouse_position: position,
+                    left_button_down,
+                    ..FrameInput::default()
+                };
+                harness.step(&input, &mut *draw);
+            }
+        };
+        let away = FrameInput {
+            mouse_position: AWAY,
+            ..FrameInput::default()
+        };
+        click(&mut harness, SECOND_SECTION, &mut draw);
+        let image = harness.settle(SETTLE_FRAMES, &away, &mut draw);
+        assert_snapshot(
+            env!("CARGO_MANIFEST_DIR"),
+            &format!("help-window-section-clicked-{theme_name}"),
+            &image,
+        );
+        click(&mut harness, FIRST_TOPIC, &mut draw);
+        let image = harness.settle(SETTLE_FRAMES, &away, &mut draw);
+        assert_snapshot(
+            env!("CARGO_MANIFEST_DIR"),
+            &format!("help-window-help-{theme_name}"),
+            &image,
+        );
+    }
+}
+
+/// Two topics with sections around one without (Q538).
+const HELP_ONE_WITHOUT_SECTIONS: &str = "## Getting started\nOpen the window.\n\n### Opening the window\nx\n\n### The window\nx\n\n## Trash and undo\nx\n\n## Privacy\nx\n\n### Your rights\nx\n";
+
+/// A topic without sections has no chevron, and its title stays in the
+/// column of the other topics' titles (R155 Q538).
+#[test]
+fn a_topic_without_sections_keeps_the_title_column() {
+    for (kind, theme_name) in [(ThemeKind::Dark, "dark"), (ThemeKind::Light, "light")] {
+        let theme = kind.theme();
+        let mut window = HelpWindow::new();
+        window.open();
+        let content = HelpWindowContent {
+            id: "help",
+            help_text: HELP_ONE_WITHOUT_SECTIONS,
+            texts: TEXTS_EN,
+            problem: ProblemPage {
+                export_button: ButtonState::Ready,
+                status: None,
+                notice: None,
+            },
+            chips: ChipContext { text: &chip_text },
+        };
+        let mut harness = UiHarness::new([IMAGE_WIDTH, HEIGHT]);
+        let input = FrameInput {
+            mouse_position: AWAY,
+            ..FrameInput::default()
+        };
+        let image = harness.settle(SETTLE_FRAMES, &input, |ui: &Ui| {
+            let _style = StyleScope::push_with_cursor_extent(ui, &theme, None);
+            window.draw_in(
+                ui,
+                &theme,
+                Window::new("help")
+                    .position([0.0, 0.0], Condition::Always)
+                    .size([10.0, HEIGHT], Condition::Always),
+                &content,
+            );
+        });
+        assert_snapshot(
+            env!("CARGO_MANIFEST_DIR"),
+            &format!("help-window-topic-without-sections-{theme_name}"),
             &image,
         );
     }
