@@ -544,4 +544,30 @@ mod tests {
         let loaded: TrashEntry = serde_json::from_value(older).expect("loads");
         assert!(loaded.child_order.is_empty());
     }
+
+    #[test]
+    fn entries_added_meanwhile_keep_their_place_among_restored_ones() {
+        let Sample {
+            mut document,
+            raids,
+            weekly,
+            daily,
+            archive,
+            ..
+        } = sample();
+        assert!(document.move_to_trash(NodeId::Group(raids), noon()));
+        assert!(document.restore_from_trash(daily));
+        // A note the user adds to the group that came back.
+        let added = Note::new("Added".to_owned(), ResetSchedule::Never, noon());
+        if let Some(group) = document.group_mut(raids) {
+            group.children.push(TreeNode::Note(added));
+        }
+        assert!(document.restore_from_trash(weekly));
+        assert!(document.restore_from_trash(NodeId::Group(archive)));
+        assert_eq!(
+            outline(&document.root),
+            "First, Raids[Weekly, Daily, Archive[Plan], Added], Last",
+            "nothing is overwritten; restored entries slot in by their old order"
+        );
+    }
 }
