@@ -121,6 +121,33 @@ API" is not enforceable; we can only raise the bar and limit damage:
   - Q291: abuse protection: per-IP rate limit and size limits (B3, B18), spam handling.
   - Q292: flag granularity: one global switch or per addon (and per version).
   - Q293: form design and how the user learns about a reply (needs visual approval, R87).
+- **Sync of the note tree and the trash** (Q572, 2026-11-21, raised with memo M218; with B26, B37,
+  B45): B26/B37 cover notes and settings only. Open: how groups, the order of children and the
+  trash are synced (one encrypted tree document, or per group or note with its own version); whether
+  the trash is synced, with its `child_order` snapshots (memo M218), or stays per device; and what
+  happens when two devices change the structure at once (one restores a note from a trashed group
+  while the other deletes that group for good; both reorder the same group). Principle so far: the
+  server never orders or repairs anything (B28, ciphertext only); the client computes the new tree,
+  encrypts it and uploads it, and the web frontend decrypts the same arrays.
+- **Tree logic in the web frontend** (Q572): the frontend needs the same tree and trash rules as memo
+  (restoring with the group's shell, `child_order`, skipping missing entries). Recommendation: compile
+  `note_tree` of `trailkit-memo-shared` to WebAssembly for the browser, one implementation with the
+  same tests, instead of a TypeScript copy. To grill with the frontend (B42).
+- **Notes table under end-to-end encryption** (Q573, proposal from 2026-11-21, with B28, B30, B37, B45):
+  the server stores only what it must know, the content is one encrypted block: `id`, `owner` (B45),
+  `version` (B37), `format_version` (B30), `ciphertext` + `nonce`, `updated_at`; a second table holds the
+  wrapped note keys per authorized account (B30). No content columns, so the server cannot search, sort
+  or filter; extension tables (B45) only for data the server must see (e.g. which guild has access).
+  Metadata it still sees (number of notes, rough size, change times) goes into `PRIVACY.md` (rule 10).
+- **Database** (Q574, part of the tech stack grilling): recommendation Postgres, encrypted notes as
+  `bytea`, flexible data as `JSONB` where needed; a document database gains nothing on ciphertext,
+  and a second database doubles operations, backups and GDPR work. Alternatives: a document database
+  for everything, or both.
+- **Marketplace versus private notes** (with BL27, B26, B30): published notes are a deliberate,
+  separate step: the addon decrypts the note locally and uploads a **plaintext public copy** to its own
+  table (title, text, category, language, author, counts), so search, categories and moderation work;
+  the private note stays encrypted. A download becomes the downloader's own note, encrypted with their
+  key when synced. Sharing with chosen accounts (B30) stays encrypted with wrapped keys.
 
 ## Decisions
 

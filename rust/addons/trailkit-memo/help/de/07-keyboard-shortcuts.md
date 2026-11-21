@@ -4,9 +4,10 @@ Das sind die Tasten, die memo nutzt, sortiert danach, wo sie wirken.
 
 ### Fenster
 
-- **Zweimal Umschalt** – Suche einblenden oder schließen (nicht beim Bearbeiten)
-- **Strg+F** – Suche in der geöffneten Notiz öffnen oder schließen (auch beim Bearbeiten)
-- **Enter** / **F3** – nächster Treffer beim Suchen in der Notiz; mit **Umschalt** der vorherige
+- **Zweimal Umschalt** – Notizsuche einblenden oder schließen (nicht beim Bearbeiten); aus dem Papierkorb oder dem Hilfefenster öffnet es die Notizsuche
+- **Strg+F** – Suche in der geöffneten Notiz öffnen oder schließen (auch beim Bearbeiten, im Papierkorb und in einem Hilfethema)
+- **Enter** – nächster Treffer in jedem Suchfeld; mit **Umschalt** der vorherige
+- **F3** – nächster Treffer beim Suchen in der Notiz; mit **Umschalt** der vorherige
 - **Escape** – zuerst ein offenes Menü oder die Suchleiste schließen, die Suche leeren, während du im Feld tippst; sonst das Fenster schließen (bei ungespeicherten Änderungen fragt memo vorher nach)
 - **Strg+Z** – letztes Löschen oder Verschieben rückgängig machen
 - **Strg+Y** oder **Strg+Umschalt+Z** – wiederherstellen

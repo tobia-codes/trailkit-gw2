@@ -146,6 +146,12 @@ Build once, use everywhere. Planned:
 - Dialog card — **exists**: `feedback::dialog_frame::draw_dialog_frame`, centered
   in the window that dims the addon window (`overlay-dialog-layout`);
   `draw_dialog_close` gives every dialog its close icon at the top right (R141)
+- Search — **exists** (BL30, Q581): `controls::search`, the one search of
+  every list and page: `SearchField` with the `x` at its end (clears; closes
+  only a closable search) and `draw_search_bar` with "x of y" and the arrows
+  below a list's field or beside a find bar's (wrapping when narrow);
+  `text::search_steps` steps through the hits of many pages. memo's note
+  list, trash and find bar and every help window use it
 - Text field — **exists** (R139): `controls::text_field::TextField`, the
   label above the input in `TextStyle::Label`, `.optional(true)` adds the mark
   the addon translated once (`TextFieldTexts`), plus placeholder and focus;

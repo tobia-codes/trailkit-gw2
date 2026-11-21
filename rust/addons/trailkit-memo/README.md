@@ -80,7 +80,7 @@ The packages this project uses directly.
 | [`trailkit-memo-note-list`](slices/note-list/README.md) | own | Note tree rows, rename, menus and drag and drop. | Adds the note list. |
 | [`trailkit-memo-note-view`](slices/note-view/README.md) | own | Reading view of the selected note. | Adds the reading view. |
 | [`trailkit-memo-reset-schedule`](slices/reset-schedule/README.md) | own | Daily and weekly reset rules and their controls. | Adds note resets. |
-| [`trailkit-memo-search`](slices/search/README.md) | own | Note search, search field and find bar. | Adds both searches. |
+| [`trailkit-memo-search`](slices/search/README.md) | own | Note and trash search, results and stepping through hits. | Adds the searches of the note list and the trash. |
 | [`trailkit-memo-shared`](shared/README.md) | own | Note tree, settings, drafts, undo, storage worker and texts shared by memo. | Holds the data and services the app connects. |
 | [`trailkit-memo-trash`](slices/trash/README.md) | own | Trash list, preview and labels. | Adds the trash. |
 | [`trailkit-nexus-bridge`](../crates/trailkit-nexus-bridge/README.md) | own, Windows only | Nexus helpers shared by the addons, such as font registration. | Registers the shared fonts. |

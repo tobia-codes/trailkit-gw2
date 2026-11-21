@@ -215,21 +215,29 @@ pub fn draw_selectable_markdown(
     draw_selectable_document(ui, document, theme, chips, highlight, None, selection)
 }
 
-/// Like [`draw_selectable_markdown`] without search hits, and also returns
-/// the window-content y (as for `set_scroll_y`) of the top of every heading
-/// of `level`, in order: the scroll targets of the help's sections (R155 c).
+/// Like [`draw_selectable_markdown`], and also returns the window-content y
+/// (as for `set_scroll_y`) of the top of every heading of `level`, in order:
+/// the scroll targets of the help's sections (R155 c).
 pub fn draw_markdown_with_heading_tops(
     ui: &Ui,
     document: &MarkdownDocument,
     theme: &Theme,
     chips: ChipContext<'_>,
     level: u8,
+    highlight: Option<&mut SearchHighlight<'_>>,
     selection: &mut TextSelection,
 ) -> (Option<MarkdownAction>, Vec<f32>) {
     let mut tops = Vec::new();
     let heading_tops = Some((level, &mut tops));
-    let action =
-        draw_selectable_document(ui, document, theme, chips, None, heading_tops, selection);
+    let action = draw_selectable_document(
+        ui,
+        document,
+        theme,
+        chips,
+        highlight,
+        heading_tops,
+        selection,
+    );
     (action, tops)
 }
 

@@ -7,8 +7,9 @@ use std::collections::BTreeSet;
 
 use jiff::{SignedDuration, Timestamp};
 use nexus::imgui::Ui;
-use trailkit_ui::feedback::toast::Toast;
+use trailkit_ui::{controls::search::field::SearchField, feedback::toast::Toast};
 
+use trailkit_memo_search::list_search::{ListSearch, SearchScope};
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText},
     list_filter::ListFilter,
@@ -81,7 +82,7 @@ impl Confirmation {
 
 /// The trash view's state (M136): whether the trash tool is on and which
 /// entry the note pane shows. Not saved; the window opens on the notes.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub(super) struct TrashState {
     /// Whether the trash replaces the note list.
     pub(super) visible: bool,
@@ -91,6 +92,31 @@ pub(super) struct TrashState {
     pub(super) scroll: f32,
     /// When the trash is checked for expired entries next (M150).
     pub(super) next_purge: Option<Timestamp>,
+    /// The trashed groups that show what they hold (M218); all closed when
+    /// the trash opens (Q564).
+    pub(super) open_groups: BTreeSet<GroupId>,
+    /// The trash's own search field, always shown (BL31).
+    pub(super) search_field: SearchField,
+    /// The trash search's results and current hit (BL31).
+    pub(super) search: ListSearch,
+    /// Groups closed during the trash search; the others show their matches.
+    pub(super) collapsed_in_search: BTreeSet<GroupId>,
+}
+
+impl Default for TrashState {
+    /// A hidden trash with nothing selected and an empty search.
+    fn default() -> Self {
+        Self {
+            visible: false,
+            selected: None,
+            scroll: 0.0,
+            next_purge: None,
+            open_groups: BTreeSet::new(),
+            search_field: SearchField::default(),
+            search: ListSearch::new(SearchScope::Trash),
+            collapsed_in_search: BTreeSet::new(),
+        }
+    }
 }
 
 impl MemoWindow {
@@ -242,8 +268,7 @@ impl MemoWindow {
             && self.confirmation.is_none()
             && self.ui_state.selected.is_some_and(|node| {
                 self.search
-                    .current
-                    .as_ref()
+                    .current()
                     .is_none_or(|search| search.results.is_visible(node))
             })
     }
@@ -300,6 +325,12 @@ impl MemoWindow {
 
     /// Shows the trash in place of the note list, which must show for that.
     fn show_trash(&mut self) {
+        if !self.trash.visible {
+            // A newly opened trash starts closed and unsearched (Q564).
+            self.trash.open_groups.clear();
+            self.trash.search_field.clear(false);
+            self.trash.collapsed_in_search.clear();
+        }
         self.trash.visible = true;
         if self.ui_state.note_list_hidden {
             self.ui_state.note_list_hidden = false;
@@ -322,7 +353,26 @@ impl MemoWindow {
                 if self.trash.selected != Some(*node) {
                     self.trash.selected = Some(*node);
                     self.trash.scroll = 0.0;
+                    // During the trash search a note opens at its first hit.
+                    self.note_view
+                        .show_other_note(self.trash.search.current().is_some());
+                }
+            }
+            WindowAction::Trash(TrashAction::ToggleGroup(group)) => {
+                let node = NodeId::Group(*group);
+                if self.trash.selected != Some(node) {
+                    self.trash.selected = Some(node);
+                    self.trash.scroll = 0.0;
                     self.note_view.show_other_note(false);
+                }
+                // While searching, a group closes only for this search.
+                let groups = if self.trash.search.current().is_some() {
+                    &mut self.trash.collapsed_in_search
+                } else {
+                    &mut self.trash.open_groups
+                };
+                if !groups.remove(group) {
+                    groups.insert(*group);
                 }
             }
             WindowAction::Trash(TrashAction::Restore(node)) => {
@@ -334,8 +384,8 @@ impl MemoWindow {
                 }
             }
             WindowAction::Trash(TrashAction::DeletePermanently(node)) => {
-                if let Some(entry) = self.document.trash_entry(*node) {
-                    let (title, text) = labels::delete_permanently_question(&entry.node, language);
+                if let Some(found) = self.document.find_in_trash(*node) {
+                    let (title, text) = labels::delete_permanently_question(found, language);
                     self.confirmation = Some(Confirmation {
                         kind: ConfirmationKind::DeletePermanently(*node),
                         title,
@@ -370,8 +420,8 @@ impl MemoWindow {
             ConfirmationKind::DeleteGroup(node) => self.move_to_trash(node, language),
             ConfirmationKind::DeletePermanently(node) => {
                 let next = self.trash_neighbour(node);
-                if let Some(entry) = self.document.delete_from_trash(node) {
-                    self.forget_drafts(&[entry]);
+                if let Some(removed) = self.document.delete_from_trash(node) {
+                    self.forget_drafts([&removed]);
                     self.trash.selected = next;
                     self.save_notes();
                 }
@@ -379,7 +429,7 @@ impl MemoWindow {
             ConfirmationKind::EmptyTrash => {
                 let removed = self.document.empty_trash();
                 if !removed.is_empty() {
-                    self.forget_drafts(&removed);
+                    self.forget_drafts(removed.iter().map(|entry| &entry.node));
                     self.trash.selected = None;
                     self.save_notes();
                 }
@@ -388,11 +438,15 @@ impl MemoWindow {
     }
 
     /// The trash selection once `node` leaves the trash: unchanged unless
-    /// `node` is selected, then the next entry down the list (older), else
-    /// the one above, else nothing.
+    /// `node` is selected, then for an entry inside a trashed group that
+    /// group (M218), else the next entry down the list (older), else the one
+    /// above, else nothing.
     fn trash_neighbour(&self, node: NodeId) -> Option<NodeId> {
         if self.trash.selected != Some(node) {
             return self.trash.selected;
+        }
+        if let Some(parent) = self.document.trashed_parent(node) {
+            return Some(NodeId::Group(parent.id));
         }
         // The list shows the newest entry first.
         let shown: Vec<NodeId> = self
@@ -409,12 +463,12 @@ impl MemoWindow {
             .copied()
     }
 
-    /// Deletes the drafts of the notes in `entries`, deleted for good
+    /// Deletes the drafts of the notes in `nodes`, deleted for good
     /// (M151).
-    fn forget_drafts(&mut self, entries: &[TrashEntry]) {
+    fn forget_drafts<'node>(&mut self, nodes: impl IntoIterator<Item = &'node TreeNode>) {
         let mut changed = false;
-        for entry in entries {
-            entry.node.for_each_note_id(&mut |note| {
+        for node in nodes {
+            node.for_each_note_id(&mut |note| {
                 changed |= self.drafts.take(note).is_some();
             });
         }
@@ -437,11 +491,11 @@ impl MemoWindow {
         if self
             .trash
             .selected
-            .is_some_and(|selected| self.document.trash_entry(selected).is_none())
+            .is_some_and(|selected| self.document.find_in_trash(selected).is_none())
         {
             self.trash.selected = None;
         }
-        self.forget_drafts(&purged);
+        self.forget_drafts(purged.iter().map(|entry| &entry.node));
         if self.ui_state.forget_missing_groups(&self.document) {
             self.saver.save_ui_state(&self.ui_state);
         }

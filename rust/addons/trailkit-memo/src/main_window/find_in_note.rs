@@ -2,14 +2,17 @@
 //! the note toolbar, opening it with Ctrl+F, stepping through the hits with
 //! wrap-around, and how it drives the reading view and the editor.
 
-use nexus::imgui::{Key, Ui};
-use trailkit_ui::{text::text_search::SearchQuery, theme::Theme};
-
-use trailkit_memo_search::{
-    find_bar::{FindBarStatus, FindBarTexts, draw_find_bar},
-    i18n::SearchText,
-    search_field::SearchField,
+use nexus::imgui::Ui;
+use trailkit_ui::{
+    controls::search::{
+        bar::{CountPlacement, SearchBarTexts, SearchStatus, draw_search_bar},
+        field::{SearchField, SearchFieldTexts},
+    },
+    text::text_search::SearchQuery,
+    theme::Theme,
 };
+
+use trailkit_memo_search::i18n::SearchText;
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText},
     note_tree::NoteId,
@@ -35,9 +38,6 @@ pub(super) struct FindInNote {
     pub(super) reveal_pending: bool,
     /// The note the hits belong to; another note starts at its first hit.
     note: Option<NoteId>,
-    /// Whether the field had the keyboard focus in the last frame (Enter in
-    /// the field ends its activation in the same frame).
-    field_was_active: bool,
 }
 
 impl FindInNote {
@@ -49,11 +49,11 @@ impl FindInNote {
     }
 
     /// The bar's status for the count and the arrows.
-    fn status(&self) -> FindBarStatus {
+    fn status(&self) -> SearchStatus {
         match (&self.query, self.hit_count) {
-            (None, _) => FindBarStatus::Empty,
-            (Some(_), 0) => FindBarStatus::NoResults,
-            (Some(_), _) => FindBarStatus::Hits,
+            (None, _) => SearchStatus::Empty,
+            (Some(_), 0) => SearchStatus::NoResults,
+            (Some(_), _) => SearchStatus::Hits,
         }
     }
 }
@@ -74,10 +74,25 @@ impl MemoWindow {
         self.window_focused && self.find_bar_shown()
     }
 
-    /// Whether a note is open that find could search: a selected note or
-    /// the edited one, not the trash.
+    /// Whether a note is open that find could search: a selected note, the
+    /// edited one, or a trashed note in the trash preview (mock v9).
     fn finds_in_shown_note(&self) -> bool {
-        !self.trash.visible && (self.editor.is_some() || self.selected_note().is_some())
+        if self.trash.visible {
+            self.trash_preview_note().is_some()
+        } else {
+            self.editor.is_some() || self.selected_note().is_some()
+        }
+    }
+
+    /// The note find searches: the trash preview's, the edited or the shown one.
+    fn find_target(&self) -> Option<NoteId> {
+        if self.trash.visible {
+            return self.trash_preview_note();
+        }
+        self.editor
+            .as_ref()
+            .map(|editor| editor.session().note)
+            .or(self.ui_state.shown_note)
     }
 
     /// Whether the find bar is open over a note it can search.
@@ -87,7 +102,7 @@ impl MemoWindow {
 
     /// Opens the find bar after Ctrl+F (M198) and focuses its field with the
     /// whole text selected. The field offers the editor's selected text, else
-    /// the list search, else the last find (Q507).
+    /// the search of the list beside it, else the last find (Q507).
     pub fn open_find(&mut self) {
         if !self.finds_in_shown_note() {
             return;
@@ -98,7 +113,12 @@ impl MemoWindow {
             .map(|editor| editor.selected_body_text())
             .filter(|text| !text.trim().is_empty() && !text.contains('\n'))
             .or_else(|| {
-                let search = self.search_field.text.trim();
+                let field = if self.trash.visible {
+                    &self.trash.search_field
+                } else {
+                    &self.search_field
+                };
+                let search = field.text.trim();
                 (!search.is_empty()).then_some(search)
             })
             .map(str::to_owned);
@@ -112,11 +132,7 @@ impl MemoWindow {
             self.find.text_changed();
         }
         // Another note than last time starts at its first hit.
-        let note = self
-            .editor
-            .as_ref()
-            .map(|editor| editor.session().note)
-            .or(self.ui_state.shown_note);
+        let note = self.find_target();
         if note != self.find.note {
             self.find.note = note;
             self.find.current = 0;
@@ -144,7 +160,8 @@ impl MemoWindow {
         }
     }
 
-    /// Closes the find bar (Ctrl+F, its `x` or Escape, M198). In the editor the body
+    /// Closes the find bar (Ctrl+F, the `x` of its empty field or Escape,
+    /// M198, mock v9). In the editor the body
     /// takes the focus back with the current hit still selected.
     pub(super) fn close_find(&mut self) {
         self.find.visible = false;
@@ -184,7 +201,7 @@ impl MemoWindow {
     }
 
     /// Draws the find bar if it is shown and applies what the user did:
-    /// typing, the arrows, close, and Enter / Shift+Enter in the field.
+    /// typing, the arrows, the `x`, and Enter / Shift+Enter in the field.
     pub(super) fn draw_find_bar(&mut self, ui: &Ui, language: Language, theme: &Theme) {
         if !self.find_bar_shown() {
             return;
@@ -195,32 +212,36 @@ impl MemoWindow {
             .get(language)
             .replace("{current}", &current)
             .replace("{total}", &total);
-        let texts = FindBarTexts {
-            hint: SearchText::FindHint.get(language),
+        let texts = SearchBarTexts {
+            field: SearchFieldTexts {
+                hint: SearchText::FindHint.get(language),
+                clear: SearchText::ClearSearch.get(language),
+                close: Some(SearchText::FindClose.get(language)),
+            },
             count: &count,
             no_results: SearchText::FindNoResults.get(language),
             previous: SearchText::FindPrevious.get(language),
             next: SearchText::FindNext.get(language),
-            close: SearchText::FindClose.get(language),
         };
         let status = self.find.status();
-        let response = draw_find_bar(ui, theme, &mut self.find.field, status, texts);
+        let response = draw_search_bar(
+            ui,
+            theme,
+            &mut self.find.field,
+            status,
+            CountPlacement::Beside,
+            texts,
+        );
         if response.text_changed {
             self.find.text_changed();
         }
-        // ImGui ends the field's activation on Enter; it keeps the focus.
-        if self.find.field_was_active && ui.is_key_pressed(Key::Enter) {
-            self.step_find(!ui.io().key_shift);
-            self.find.field.request_focus();
-        }
-        self.find.field_was_active = self.find.field.is_active();
         if response.previous {
             self.step_find(false);
         }
         if response.next {
             self.step_find(true);
         }
-        if response.close {
+        if response.close_clicked {
             self.close_find();
         }
     }

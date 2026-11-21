@@ -355,7 +355,7 @@ fn find_leaves_the_list_search_alone() {
     driven.settle();
     assert_eq!(driven.memo.search_field.text, "coins");
     assert!(
-        driven.memo.search.current.is_some(),
+        driven.memo.search.current().is_some(),
         "the list stays filtered"
     );
     driven.memo.close_find();

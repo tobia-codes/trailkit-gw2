@@ -229,9 +229,24 @@ pub struct TrashEntry {
     pub former_parent: Option<GroupId>,
     /// Its position within the former parent's children.
     pub former_index: usize,
+    /// For a deleted group: the order of the children of it and of every
+    /// group inside it when it was deleted, so entries restored one by one
+    /// end up in that order again (M218). Empty for a note and in files of
+    /// older versions.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub child_order: Vec<ChildOrder>,
     /// Fields a newer version added, kept on save (M202).
     #[serde(flatten)]
     pub unknown_fields: UnknownFields,
+}
+
+/// The order of a group's children when it went to the trash (M218).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ChildOrder {
+    /// The group.
+    pub group: GroupId,
+    /// Its children, in display order.
+    pub children: Vec<NodeId>,
 }
 
 impl ResetSchedule {

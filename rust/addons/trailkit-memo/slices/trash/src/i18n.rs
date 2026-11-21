@@ -17,6 +17,8 @@ pub enum TrashText {
     TrashKeepsEntries,
     /// Hint in the note pane while no trash entry is selected.
     SelectTrashEntry,
+    /// Placeholder of the trash's search field (BL31).
+    SearchTrash,
     /// Puts an entry back (M140, M145).
     Restore,
     /// Tooltip and menu entry that deletes an entry for good (M145, M146).
@@ -27,6 +29,12 @@ pub enum TrashText {
     OneDayLeft,
     /// Info line start of a trashed entry (M145).
     InTrash,
+    /// Info line start of an entry inside a trashed group; `{group}` is
+    /// replaced (M218).
+    InTrashedGroup,
+    /// Where a separately deleted entry came from, before its days left;
+    /// `{group}` is replaced (M218, Q566).
+    FromGroup,
     /// Deleted within the last day.
     DeletedToday,
     /// Deleted one day ago.
@@ -83,11 +91,14 @@ impl LocalizedText for TrashText {
         Self::TrashIsEmpty,
         Self::TrashKeepsEntries,
         Self::SelectTrashEntry,
+        Self::SearchTrash,
         Self::Restore,
         Self::DeletePermanently,
         Self::DaysLeft,
         Self::OneDayLeft,
         Self::InTrash,
+        Self::InTrashedGroup,
+        Self::FromGroup,
         Self::DeletedToday,
         Self::DeletedYesterday,
         Self::DeletedDaysAgo,
@@ -128,11 +139,14 @@ const fn english(text: TrashText) -> &'static str {
         TrashText::TrashIsEmpty => "The trash is empty.",
         TrashText::TrashKeepsEntries => "Deleted entries stay here for 30 days.",
         TrashText::SelectTrashEntry => "Select an entry to view it.",
+        TrashText::SearchTrash => "Search trash …",
         TrashText::Restore => "Restore",
         TrashText::DeletePermanently => "Delete permanently",
         TrashText::DaysLeft => "{count} days left",
         TrashText::OneDayLeft => "1 day left",
         TrashText::InTrash => "In the trash",
+        TrashText::InTrashedGroup => "In the trashed group “{group}”",
+        TrashText::FromGroup => "from “{group}”",
         TrashText::DeletedToday => "deleted today",
         TrashText::DeletedYesterday => "deleted yesterday",
         TrashText::DeletedDaysAgo => "deleted {count} days ago",
@@ -178,11 +192,14 @@ const fn german(text: TrashText) -> &'static str {
         TrashText::TrashIsEmpty => "Der Papierkorb ist leer.",
         TrashText::TrashKeepsEntries => "Gelöschtes bleibt hier 30 Tage.",
         TrashText::SelectTrashEntry => "Wähle einen Eintrag, um ihn anzusehen.",
+        TrashText::SearchTrash => "Papierkorb durchsuchen …",
         TrashText::Restore => "Wiederherstellen",
         TrashText::DeletePermanently => "Endgültig löschen",
         TrashText::DaysLeft => "noch {count} Tage",
         TrashText::OneDayLeft => "noch 1 Tag",
         TrashText::InTrash => "Im Papierkorb",
+        TrashText::InTrashedGroup => "In der gelöschten Gruppe „{group}“",
+        TrashText::FromGroup => "aus „{group}“",
         TrashText::DeletedToday => "gelöscht heute",
         TrashText::DeletedYesterday => "gelöscht gestern",
         TrashText::DeletedDaysAgo => "gelöscht vor {count} Tagen",

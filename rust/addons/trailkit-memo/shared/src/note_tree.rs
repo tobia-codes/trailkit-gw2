@@ -10,6 +10,7 @@ mod ids;
 mod migration;
 mod node;
 mod trash;
+mod trash_tree;
 mod traversal;
 
 use jiff::Timestamp;
@@ -19,9 +20,9 @@ use trailkit_storage::{
 };
 
 pub use ids::{GroupId, NodeId, NoteId};
-pub use node::{Group, Note, ResetPeriod, ResetSchedule, TrashEntry, TreeNode};
+pub use node::{ChildOrder, Group, Note, ResetPeriod, ResetSchedule, TrashEntry, TreeNode};
 pub use trash::TRASH_RETENTION;
-pub use traversal::Place;
+pub use traversal::{Place, ShownRow, visit_shown};
 use traversal::{
     find_group, find_group_mut, find_note, find_note_mut, for_each_note, for_each_note_mut,
     insert_next_to, parent_of, place_in,
@@ -373,6 +374,7 @@ mod tests {
                 deleted_at: noon(),
                 former_parent: None,
                 former_index: 0,
+                child_order: Vec::new(),
                 unknown_fields: Default::default(),
             }],
             unknown_fields: Default::default(),

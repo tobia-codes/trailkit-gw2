@@ -20,6 +20,7 @@ mod link_menu;
 mod minimum_width;
 mod save_errors;
 mod text_selection;
+mod trash_tree;
 
 /// A window with the storage worker and directory that must outlive it.
 type Fixture = (MemoWindow, StorageWorker, tempfile::TempDir);

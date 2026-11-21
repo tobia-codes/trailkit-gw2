@@ -313,7 +313,7 @@ impl NoteList {
             // drawn one after another, so the gap is set for the list here,
             // like a menu sets it for its rows; the drag bands count with it.
             let _rows = ui.push_style_var(StyleVar::ItemSpacing([0.0, theme.spacing.extra_small]));
-            rows::draw_nodes(ui, &document.root, 0, &mut context);
+            rows::draw_nodes(ui, &document.root, &mut context);
         }
         let pressed = context.pressed;
         // A double-click renames: the toggle of its first click is dropped.

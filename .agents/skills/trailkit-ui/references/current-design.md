@@ -63,6 +63,7 @@ Names follow `memo-state-<state>-<dark|light>.png` and
 | Window menu while hovering, in the trash, without notes | `window-menu-hover-row-dark`, `window-menu-in-trash-dark`, `window-menu-no-notes-dark` |
 | Narrowest window, list and note side by side | `minimum-width-dark` |
 | Search field shown, with hits | `search-shown-dark`, `search-hits-dark` |
+| Trashed groups as a tree (M218): collapsed, a child note shown, nested open, narrow German | `trash-tree-dark`, `trash-tree-child-light`, `trash-tree-nested-dark`, `min-de-trash-tree-nested-light` |
 | Trash in place of the list, with its back arrow | `trash-nothing-selected-dark`, `trash-selected-dark` |
 | Note list hidden by the user | `list-hidden-dark` |
 | Editor (the list is hidden while editing) | `editor-dark`, `editor-preview-dark` |

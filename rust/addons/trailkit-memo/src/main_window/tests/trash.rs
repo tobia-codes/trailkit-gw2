@@ -45,6 +45,7 @@ pub(super) fn document_with_trash(days_ago: [i64; 2]) -> NotesDocument {
         deleted_at: now - SignedDuration::from_hours(24 * days),
         former_parent: None,
         former_index: 0,
+        child_order: Vec::new(),
         unknown_fields: Default::default(),
     })
     .collect();
@@ -276,5 +277,92 @@ fn the_toast_opens_the_trash_and_shows_the_hidden_list() {
     assert!(
         !memo.ui_state.note_list_hidden,
         "the trash needs its column"
+    );
+}
+
+/// The ids of the trashed group "Fractals" of [`document_with_trash`] and
+/// of its first note "Daily T4".
+fn fractals_and_first_note(document: &NotesDocument) -> (GroupId, NodeId) {
+    let Some(Node::Group(fractals)) = document.trash.get(1).map(|entry| &entry.node) else {
+        panic!("the second trash entry is a group");
+    };
+    (fractals.id, fractals.children[0].id())
+}
+
+#[test]
+fn a_click_on_a_trashed_group_shows_and_opens_it() {
+    let document = document_with_trash([0, 3]);
+    let (fractals, _) = fractals_and_first_note(&document);
+    let (mut memo, _worker, _directory) = memo_window(document, UiState::default());
+    memo.apply(&WindowAction::OpenTrash, Language::English);
+    // "Fractals" is the first row (newest first).
+    let size = [640.0, 360.0];
+    let mut harness = UiHarness::new(size);
+    let mut draw_frame = |ui: &Ui| draw(ui, &mut memo, size, ThemeKind::Dark);
+    for left_button_down in [false, false, true, false, false] {
+        let input = FrameInput {
+            mouse_position: [120.0, 106.0],
+            left_button_down,
+            ..FrameInput::default()
+        };
+        harness.step(&input, &mut draw_frame);
+    }
+    drop(draw_frame);
+    assert_eq!(
+        memo.trash.selected,
+        Some(NodeId::Group(fractals)),
+        "shown (Q563)"
+    );
+    assert!(
+        memo.trash.open_groups.contains(&fractals),
+        "and opened at once"
+    );
+    memo.apply(
+        &WindowAction::Trash(TrashAction::LeaveTrash),
+        Language::English,
+    );
+    memo.apply(&WindowAction::OpenTrash, Language::English);
+    assert!(
+        memo.trash.open_groups.is_empty(),
+        "closed when the trash opens (Q564)"
+    );
+}
+
+#[test]
+fn a_note_of_a_trashed_group_is_restored_and_deleted_on_its_own() {
+    let document = document_with_trash([0, 3]);
+    let (fractals, daily) = fractals_and_first_note(&document);
+    let (mut memo, _worker, _directory) = memo_window(document, UiState::default());
+    memo.apply(&WindowAction::OpenTrash, Language::English);
+    memo.apply(
+        &WindowAction::Trash(TrashAction::Select(daily)),
+        Language::English,
+    );
+    memo.apply(
+        &WindowAction::Trash(TrashAction::Restore(daily)),
+        Language::English,
+    );
+    assert_eq!(
+        outline(&memo),
+        "Fractals[Daily T4], Shopping list, Dailies, Raids[Weekly clears]",
+        "its group comes back at its former place (index 0) holding only it (Q567 a)"
+    );
+    assert_eq!(
+        memo.trash.selected,
+        Some(NodeId::Group(fractals)),
+        "the rest of its group is shown"
+    );
+    let Some(Node::Group(rest)) = memo.document.find_in_trash(NodeId::Group(fractals)) else {
+        panic!("the rest stays in the trash");
+    };
+    let cms = rest.children[0].id();
+    memo.apply(
+        &WindowAction::Trash(TrashAction::DeletePermanently(cms)),
+        Language::English,
+    );
+    memo.apply(&WindowAction::ConfirmAccepted, Language::English);
+    assert!(
+        memo.document.find_in_trash(cms).is_none(),
+        "deleted for good (Q569)"
     );
 }

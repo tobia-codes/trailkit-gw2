@@ -4,9 +4,10 @@ These are the keys memo uses, sorted by where they work.
 
 ### Window
 
-- **Shift twice** – show or close the search (not while editing)
-- **Ctrl+F** – open or close find in the open note (also while editing)
-- **Enter** / **F3** – next hit while finding; with **Shift** the previous one
+- **Shift twice** – show or close the note search (not while editing); from the trash or the help window it opens the note search
+- **Ctrl+F** – open or close find in the open note (also while editing, in the trash and in a help topic)
+- **Enter** – next hit in any search field; with **Shift** the previous one
+- **F3** – next hit while finding; with **Shift** the previous one
 - **Escape** – close an open menu or the find bar first, clear the search while you type in it; otherwise close the window (with unsaved changes memo asks first)
 - **Ctrl+Z** – undo the last delete or move
 - **Ctrl+Y** or **Ctrl+Shift+Z** – do it again

@@ -7,7 +7,10 @@
 
 use std::collections::{HashMap, HashSet};
 
-use trailkit_ui::{markdown, text::text_search::SearchQuery};
+use trailkit_ui::{
+    markdown,
+    text::{search_steps::HitStop, text_search::SearchQuery},
+};
 
 use trailkit_memo_shared::list_filter::ListFilter;
 use trailkit_memo_shared::note_tree::{
@@ -40,6 +43,17 @@ impl NoteSearchIndex {
     pub fn build(document: &NotesDocument) -> Self {
         let mut index = Self::default();
         index.add_nodes(&document.root);
+        index
+    }
+
+    /// Indexes every trash entry of `document` with what trashed groups
+    /// hold (BL31, M218).
+    #[must_use]
+    pub fn build_trash(document: &NotesDocument) -> Self {
+        let mut index = Self::default();
+        for entry in &document.trash {
+            index.add_nodes(std::slice::from_ref(&entry.node));
+        }
         index
     }
 
@@ -80,6 +94,10 @@ pub struct SearchResults {
     /// Whether any note or group matches; without, the list shows the empty
     /// state (M126).
     has_hits: bool,
+    /// The matching notes in list order with how many hits each holds for
+    /// the arrows of the search (BL30, mock v9): the marked places in its
+    /// text, or one for a note that matches by its title only.
+    stops: Vec<HitStop<NoteId>>,
 }
 
 impl SearchResults {
@@ -94,10 +112,33 @@ impl SearchResults {
         results
     }
 
+    /// Searches the trash of `document` with an index from
+    /// [`NoteSearchIndex::build_trash`], entries newest first as the trash
+    /// lists them (BL31); notes inside trashed groups are searched too.
+    #[must_use]
+    pub fn compute_trash(
+        document: &NotesDocument,
+        index: &NoteSearchIndex,
+        query: &SearchQuery,
+    ) -> Self {
+        let mut results = Self::default();
+        let search = Search { index, query };
+        for entry in document.trash.iter().rev() {
+            search.visit_nodes(std::slice::from_ref(&entry.node), false, &mut results);
+        }
+        results
+    }
+
     /// Whether anything matches.
     #[must_use]
     pub const fn has_hits(&self) -> bool {
         self.has_hits
+    }
+
+    /// The matching notes in list order, for stepping through the hits.
+    #[must_use]
+    pub fn hit_stops(&self) -> &[HitStop<NoteId>] {
+        &self.stops
     }
 }
 
@@ -187,6 +228,13 @@ impl Search<'_> {
         });
         if matches {
             results.has_hits = true;
+            // Counted like the reading view marks them: merged ranges of
+            // every term in the visible text (M120, M122).
+            let text_hits = self.query.hit_ranges(&indexed.content).len();
+            results.stops.push(HitStop {
+                page: note.id,
+                hits: text_hits.max(1),
+            });
             if !self.query.matches_lowered(&indexed.title) {
                 results
                     .content_hits
@@ -319,6 +367,49 @@ mod tests {
         assert!(!search(&document, "example").is_visible(wing));
         assert!(!search(&document, "**").has_hits());
         assert!(search(&document, "guide").is_visible(wing));
+    }
+
+    #[test]
+    fn matching_notes_are_stops_in_list_order() {
+        let (document, [mithril, _, vault, _, wing]) = sample();
+        let (NodeId::Note(mithril), NodeId::Note(vault), NodeId::Note(wing)) =
+            (mithril, vault, wing)
+        else {
+            unreachable!()
+        };
+        let stops = |query: &str| -> Vec<(NoteId, usize)> {
+            search(&document, query)
+                .hit_stops()
+                .iter()
+                .map(|stop| (stop.page, stop.hits))
+                .collect()
+        };
+        // "more" holds "ore" too: three marked places in the vault note.
+        assert_eq!(stops("ore"), vec![(mithril, 1), (vault, 3)]);
+        // A title-only match is one stop; a group-title match adds none.
+        assert_eq!(stops("wing"), vec![(wing, 1)]);
+        assert!(stops("dailies").is_empty());
+        // Two terms: their places merge where they touch.
+        assert_eq!(stops("mithril ore"), vec![(mithril, 1), (vault, 4)]);
+    }
+
+    #[test]
+    fn the_trash_is_searched_newest_first_with_group_contents() {
+        let (mut document, [mithril, dailies, vault, _, _]) = sample();
+        for (node, seconds) in [(mithril, 1), (dailies, 2)] {
+            let now = Timestamp::from_second(seconds).expect("valid time");
+            assert!(document.move_to_trash(node, now));
+        }
+        let query = SearchQuery::parse("ore").expect("query has terms");
+        let index = NoteSearchIndex::build_trash(&document);
+        let results = SearchResults::compute_trash(&document, &index, &query);
+        let (NodeId::Note(mithril_note), NodeId::Note(vault_note)) = (mithril, vault) else {
+            unreachable!()
+        };
+        let order: Vec<_> = results.hit_stops().iter().map(|stop| stop.page).collect();
+        assert_eq!(order, vec![vault_note, mithril_note], "newest entry first");
+        assert!(results.is_visible(dailies) && results.is_visible(vault));
+        assert!(!SearchResults::compute(&document, &index, &query).has_hits());
     }
 
     #[test]

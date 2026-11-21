@@ -14,6 +14,48 @@ pub struct Place {
     pub index: usize,
 }
 
+/// A row of a tree list: a node with its depth and, for a group, whether
+/// it is open (memo M218, Q570).
+#[derive(Debug, Clone, Copy)]
+pub struct ShownRow<'tree> {
+    /// The note or group.
+    pub node: &'tree TreeNode,
+    /// Its depth; 0 is the top level of the visited nodes.
+    pub level: usize,
+    /// For a group, whether its children follow; `false` for a note.
+    pub open: bool,
+}
+
+/// Visits the rows a tree list shows, in display order: every node of
+/// `nodes` that `is_shown` accepts and, below an open group (`is_open`),
+/// its children one level deeper. The note list and the trash share it
+/// (Q570); each draws its rows itself. Allocates nothing.
+pub fn visit_shown<'tree>(
+    nodes: &'tree [TreeNode],
+    is_shown: &impl Fn(&TreeNode) -> bool,
+    is_open: &impl Fn(&Group) -> bool,
+    visit: &mut impl FnMut(ShownRow<'tree>),
+) {
+    visit_level(nodes, 0, is_shown, is_open, visit);
+}
+
+/// [`visit_shown`] for `nodes` at depth `level`.
+fn visit_level<'tree>(
+    nodes: &'tree [TreeNode],
+    level: usize,
+    is_shown: &impl Fn(&TreeNode) -> bool,
+    is_open: &impl Fn(&Group) -> bool,
+    visit: &mut impl FnMut(ShownRow<'tree>),
+) {
+    for node in nodes.iter().filter(|node| is_shown(node)) {
+        let open = matches!(node, TreeNode::Group(group) if is_open(group));
+        visit(ShownRow { node, level, open });
+        if let (TreeNode::Group(group), true) = (node, open) {
+            visit_level(&group.children, level + 1, is_shown, is_open, visit);
+        }
+    }
+}
+
 /// Inserts `node` next to `sibling` (`offset` 0 = before, 1 = after) in
 /// whichever list of `nodes` (or their descendants) holds it; hands `node`
 /// back if `sibling` is missing.

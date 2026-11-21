@@ -47,19 +47,54 @@ pub fn draw_page<R>(
     head: PageHead<'_>,
     content: impl FnOnce() -> R,
 ) -> Option<R> {
+    let mut content = Some(content);
+    draw_page_with_bar(ui, theme, id, head, false, |part| match part {
+        PagePart::Bar => None,
+        PagePart::Content => content.take().map(|content| content()),
+    })
+}
+
+/// A part of a page that [`draw_page_with_bar`] asks its caller to draw.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PagePart {
+    /// The bar fixed below the head's separator.
+    Bar,
+    /// The scrolling content.
+    Content,
+}
+
+/// Like [`draw_page`], with a bar fixed between the head's separator and
+/// the content when `has_bar`, and a separator of its own below it: the find
+/// bar of an open page (Ctrl+F, BL30, mock v9). One `draw` closure draws
+/// both parts, first the bar, so both may use the same state; its value
+/// for [`PagePart::Content`] is returned.
+pub fn draw_page_with_bar<R>(
+    ui: &Ui,
+    theme: &Theme,
+    id: &str,
+    head: PageHead<'_>,
+    has_bar: bool,
+    mut draw: impl FnMut(PagePart) -> Option<R>,
+) -> Option<R> {
     Stack::vertical(theme).build(ui, |stack| {
         stack.add(|| draw_title(ui, theme, head.title, head.trailing));
         if let Some(subtitle) = head.subtitle {
             stack.add(|| draw_text_wrapped(ui, theme, TextStyle::Secondary, subtitle));
         }
         stack.add_separator(theme);
+        if has_bar {
+            stack.add(|| draw(PagePart::Bar));
+            stack.add_separator(theme);
+        }
         // Only the content scrolls, so its scrollbar starts below the separator.
-        stack.add(|| {
-            ChildWindow::new(id)
-                .size([0.0, 0.0])
-                .draw_background(false)
-                .build(ui, content)
-        })
+        stack
+            .add(|| {
+                ChildWindow::new(id)
+                    .size([0.0, 0.0])
+                    .draw_background(false)
+                    .build(ui, || draw(PagePart::Content))
+            })
+            .flatten()
     })
 }
 

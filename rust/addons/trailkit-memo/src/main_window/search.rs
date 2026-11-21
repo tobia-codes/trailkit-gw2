@@ -1,47 +1,29 @@
-//! The search above the note list as the window runs it: cached index and
-//! results (M119), Ctrl+F (M124, M127) and Escape in the field.
+//! The search above the note list as the window runs it: the cached
+//! [`ListSearch`] (M119), Ctrl+F (M124, M127), Escape in the field and
+//! stepping through the hits of every matching note with the arrows (BL30,
+//! mock v9).
 
 use nexus::imgui::Ui;
-use trailkit_ui::text::text_search::SearchQuery;
 
-use trailkit_memo_search::note_search::{NoteSearchIndex, SearchResults};
+use trailkit_memo_search::list_search::SearchUpdate;
+use trailkit_memo_shared::note_tree::{NodeId, NoteId};
+use trailkit_ui::text::search_steps::HitStep;
 
 use super::MemoWindow;
 
 /// Windows virtual-key code of `F` (Ctrl+F focuses the search, M124).
 pub(super) const VIRTUAL_KEY_F: i32 = 0x46;
 
-/// The search index and the results of the current query, each cached until
-/// what it depends on changes (M119: never rebuilt per frame).
-#[derive(Debug, Default)]
-pub(super) struct SearchCache {
-    /// The index and the document revision it was built from.
-    pub(super) index: Option<(u64, NoteSearchIndex)>,
-    /// The results of the current query, if the field holds one.
-    pub(super) current: Option<CurrentSearch>,
-}
-
-/// Results of one query over one document revision.
-#[derive(Debug)]
-pub(super) struct CurrentSearch {
-    /// The field text the results belong to.
-    pub(super) text: String,
-    /// The parsed query.
-    pub(super) query: SearchQuery,
-    /// The document revision the results belong to.
-    pub(super) revision: u64,
-    /// What the note list shows.
-    pub(super) results: SearchResults,
-}
-
 impl MemoWindow {
     /// Whether Escape should clear the search instead of closing the window:
-    /// the focused search field holds text (M124) and no menu lies above it.
+    /// the focused search field of the note list or the trash holds text
+    /// (M124, BL31) and no menu lies above it.
     #[must_use]
     pub(in crate::main_window) fn search_takes_escape(&self) -> bool {
         !self.window_menu_open
-            && self.search_field.is_active()
-            && !self.search_field.text.is_empty()
+            && [&self.search_field, &self.trash.search_field]
+                .into_iter()
+                .any(|field| field.is_active() && !field.text.is_empty())
     }
 
     /// Whether Shift pressed twice belongs to this window (M199): it has the
@@ -66,10 +48,25 @@ impl MemoWindow {
         }
     }
 
+    /// Opens the note search after Shift twice in the help window (Q582):
+    /// the main window comes forward with the search field focused. The
+    /// editor keeps the key, as it hides the note list (M167).
+    pub fn open_search_by_key(&mut self) {
+        if self.editor.is_some() {
+            return;
+        }
+        self.window_menu_open = false;
+        self.show_search_field();
+    }
+
     /// Clears the search after Escape (see [`Self::search_takes_escape`]);
     /// the field keeps the focus, so a second Escape closes the window.
     pub(in crate::main_window) fn clear_search_by_escape(&mut self) {
-        self.search_field.clear(true);
+        if self.trash.search_field.is_active() {
+            self.trash.search_field.clear(true);
+        } else {
+            self.search_field.clear(true);
+        }
     }
 
     /// Ctrl+F as ImGui sees it; in game `nexus_bridge::catch_window_keys` gets
@@ -100,50 +97,49 @@ impl MemoWindow {
         self.saver.save_ui_state(&self.ui_state);
     }
 
-    /// Brings the search index and results up to date with the field text,
-    /// the notes and the open note (M119). Cheap when nothing changed.
+    /// Brings the search up to date with the field text, the notes and the
+    /// open note (M119). Cheap when nothing changed.
     pub(super) fn update_search(&mut self) {
-        let Some(query) = SearchQuery::parse(&self.search_field.text) else {
-            if self.search.current.take().is_some() {
+        let update = self.search.update(
+            &self.search_field.text,
+            &self.document,
+            self.document_revision,
+            self.ui_state.shown_note,
+        );
+        match update {
+            SearchUpdate::Ended => self.collapsed_in_search.clear(),
+            SearchUpdate::NewQuery => {
+                // A new search starts with every matching group expanded and
+                // jumps to the first hit of the open note (M122).
                 self.collapsed_in_search.clear();
+                self.note_view.jump_to_first_hit();
             }
-            return;
-        };
-        let revision = self.document_revision;
-        if let Some(current) = &self.search.current
-            && current.revision == revision
-            && current.text == self.search_field.text
-        {
-            return;
+            SearchUpdate::Unchanged | SearchUpdate::Refreshed => {}
         }
-        if self
-            .search
-            .index
-            .as_ref()
-            .is_none_or(|(built_from, _)| *built_from != revision)
-        {
-            self.search.index = Some((revision, NoteSearchIndex::build(&self.document)));
+    }
+
+    /// Goes to the next hit (`forward`) or the previous one over all
+    /// matching notes, wrapping at either end (BL30, Q505): inside the shown
+    /// note first, then into the next or previous note in list order, which
+    /// is selected, shown and revealed in the list.
+    pub(super) fn step_list_search(&mut self, forward: bool) {
+        match self.search.step(self.ui_state.shown_note, forward) {
+            Some(HitStep::InsidePage) => self.note_view.reveal_current_hit(),
+            Some(HitStep::ToPage { page: note, .. }) => self.show_search_stop(note),
+            None => {}
         }
-        let Some((_, index)) = &self.search.index else {
-            return;
-        };
-        let query_changed = self
-            .search
-            .current
-            .as_ref()
-            .is_none_or(|current| current.query != query);
-        if query_changed {
-            // A new search starts with every matching group expanded and
-            // jumps to the first hit of the open note (M122).
-            self.collapsed_in_search.clear();
-            self.note_view.jump_to_first_hit();
+    }
+
+    /// Selects and shows `note` during a search: the groups collapsed in the
+    /// search around it open, and the list scrolls to its row (M185); the
+    /// saved expand state stays untouched (M124).
+    fn show_search_stop(&mut self, note: NoteId) {
+        let node = NodeId::Note(note);
+        for group in self.document.ancestors(node) {
+            self.collapsed_in_search.remove(&group);
         }
-        let results = SearchResults::compute(&self.document, index, &query);
-        self.search.current = Some(CurrentSearch {
-            text: self.search_field.text.clone(),
-            query,
-            revision,
-            results,
-        });
+        self.change_selected(node);
+        self.note_list.reveal(node);
+        self.note_view.reveal_current_hit();
     }
 }

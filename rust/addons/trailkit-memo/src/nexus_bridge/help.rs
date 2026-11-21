@@ -21,6 +21,7 @@ use windows::Win32::{
 };
 
 use trailkit_log::{ErrorChain, has_logs};
+use trailkit_memo_search::i18n::SearchText;
 use trailkit_memo_shared::i18n::{
     Language, LocalizedText as _, Text, chip_context, local_utc_offset,
 };
@@ -29,8 +30,8 @@ use trailkit_ui::{
     controls::button::ButtonState,
     feedback::status_line::Status,
     help::help_window::{
-        HelpAction, HelpTab, HelpWindow, HelpWindowContent, HelpWindowState, HelpWindowTexts,
-        ProblemNotice, ProblemPage,
+        HelpAction, HelpSearchTexts, HelpTab, HelpWindow, HelpWindowContent, HelpWindowState,
+        HelpWindowTexts, ProblemNotice, ProblemPage,
     },
     layout::title_bar::{TitleBarTexts, TitleBarToggle},
     markdown::markdown_view::open_link,
@@ -159,6 +160,32 @@ impl MemoHelp {
     /// Whether Ctrl+A belongs to the help window.
     pub(super) fn takes_select_all_key(&self) -> bool {
         self.window.takes_select_all_key()
+    }
+
+    /// Whether the help window has the keyboard focus: Shift twice then
+    /// opens the note search in the main window (Q582).
+    pub(super) fn is_focused(&self) -> bool {
+        self.window.is_focused()
+    }
+
+    /// Whether Ctrl+F belongs to the help window (find in the topic, BL30).
+    pub(super) fn takes_find_key(&self) -> bool {
+        self.window.takes_find_key()
+    }
+
+    /// Whether F3 belongs to the help window (find is open in the topic).
+    pub(super) fn takes_find_step_key(&self) -> bool {
+        self.window.takes_find_step_key()
+    }
+
+    /// Ctrl+F caught by the window message callback: find in the topic.
+    pub(super) fn toggle_find_by_key(&mut self) {
+        self.window.toggle_find_by_key();
+    }
+
+    /// F3 or Shift+F3 caught by the window message callback.
+    pub(super) fn step_find_by_key(&mut self, forward: bool) {
+        self.window.step_find_by_key(forward);
     }
 
     /// Applies Ctrl+C and Ctrl+A caught by the window message callback; the
@@ -440,5 +467,15 @@ fn window_texts(language: Language) -> HelpWindowTexts<'static> {
         report_button: HelpText::ReportProblem.get(language),
         report_hint: HelpText::ReportHint.get(language),
         footer: HelpText::Footer.get(language),
+        search: HelpSearchTexts {
+            search_hint: HelpText::SearchHelp.get(language),
+            find_hint: HelpText::FindInTopic.get(language),
+            clear: SearchText::ClearSearch.get(language),
+            close: SearchText::FindClose.get(language),
+            count: SearchText::FindCount.get(language),
+            no_results: SearchText::FindNoResults.get(language),
+            previous: SearchText::FindPrevious.get(language),
+            next: SearchText::FindNext.get(language),
+        },
     }
 }
