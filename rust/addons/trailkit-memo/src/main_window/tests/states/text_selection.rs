@@ -40,6 +40,10 @@ fn selection_states() {
         selected,
         &select_and_open_menu(BEFORE_OF, AFTER_FIRST, [270.0, 219.0]),
     );
+    // "Copy" chosen: the toast confirms it like a chip click.
+    let mut copied = select_and_open_menu(BEFORE_OF, AFTER_FIRST, [270.0, 219.0]);
+    copied.extend(click([440.0, 240.0]));
+    assert_state("selection-copied", WIDE, selected, &copied);
     // The chip of the first item lies inside the selection.
     assert_state(
         "selection-chip-menu",

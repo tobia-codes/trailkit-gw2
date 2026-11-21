@@ -1,9 +1,10 @@
-//! Ctrl+C and Ctrl+A for the selected text of the reading view (M217, Q555,
-//! Q556): copying shows no confirmation.
+//! Ctrl+C and Ctrl+A for the selected text of the reading view (M217, Q555):
+//! copying shows the "Copied" toast like a chip click (user wish 2026-11-21).
 
 use nexus::imgui::Ui;
+use trailkit_ui::markdown::markdown_view::MarkdownAction;
 
-use super::MemoWindow;
+use super::{MemoWindow, WindowAction};
 
 /// Virtual-key code of A (Ctrl+A selects the whole note).
 const VIRTUAL_KEY_A: i32 = 0x41;
@@ -44,12 +45,14 @@ impl MemoWindow {
         }
     }
 
-    /// Puts the selected text on the clipboard after Ctrl+C.
-    pub fn copy_selection_by_key(&self, ui: &Ui) {
+    /// Puts the selected text on the clipboard after Ctrl+C and confirms it.
+    pub fn copy_selection_by_key(&mut self, ui: &Ui) {
         if self.takes_copy_key()
             && let Some(text) = self.note_view.selected_text()
         {
-            ui.set_clipboard_text(text);
+            ui.set_clipboard_text(&text);
+            self.actions
+                .push(WindowAction::Markdown(MarkdownAction::Copied(text)));
         }
     }
 

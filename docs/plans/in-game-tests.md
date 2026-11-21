@@ -43,11 +43,12 @@ is ready when the user is back at the PC.
        hand (check whether GW2 really shows the text cursor at all).
     2. Press **Ctrl+C** and paste into the game chat or a text editor: the
        text as shown, `[ ] ` before an unticked item whose start was
-       selected, link texts only, the chip as its code. The game must not
-       react to Ctrl+C.
+       selected, link texts only, the chip as its code. The "Copied" message
+       pops up at the bottom, as after a chip click. The game must not react
+       to Ctrl+C.
     3. Right-click into the selection: a menu with only **Copy**; on the
        chip inside the selection: Copy, a divider, then Copy chat link /
-       Open in wiki.
+       Open in wiki. Choosing Copy shows "Copied" at the bottom too.
     4. Start a drag on the chip and on the link: they select and do not
        copy or open; a plain click still copies the chip (with "Copied") and
        opens the link; a plain click on the checkbox still ticks it.

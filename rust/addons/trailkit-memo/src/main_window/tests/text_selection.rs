@@ -103,6 +103,7 @@ fn dragging_selects_and_ctrl_c_copies_the_text_as_shown() {
     let expected = "of Ectoplasm\n[ ] Mystic Coins\nCheck the wiki first.";
     assert_eq!(memo.note_view.selected_text().as_deref(), Some(expected));
     assert_eq!(clipboard.as_deref(), Some(expected), "Ctrl+C copies (Q554)");
+    assert!(memo.toast.is_some(), "and confirms it like a chip click");
     assert!(memo.takes_copy_key(), "the game does not get Ctrl+C now");
 }
 

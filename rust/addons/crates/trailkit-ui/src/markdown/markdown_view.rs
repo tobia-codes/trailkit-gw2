@@ -146,8 +146,9 @@ pub enum MarkdownAction {
     ToggleTask(TaskMarker),
     /// A web or e-mail link was clicked; open it with [`open_link`].
     OpenLink(String),
-    /// A chip was clicked, or a copy entry of the right-click menu chosen, and
-    /// this text is on the clipboard (memo plan M75, M210): confirm it.
+    /// A chip was clicked, or a copy entry of the right-click menu chosen (also
+    /// "Copy" of the selection), and this text is on the clipboard (memo plan
+    /// M75, M210, M217): confirm it.
     Copied(String),
 }
 

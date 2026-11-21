@@ -65,9 +65,11 @@ pub(super) fn draw_link_menu(
     draw_popup(ui, theme, MENU_ID, || {
         if let Some(text) = &selection {
             let item = MenuItem::new((chips.text)(ChipText::Copy)).icon(Icon::COPY);
-            // No confirmation after copying a selection (Q556).
+            // Copying is confirmed like a chip click (user wish 2026-11-21,
+            // replaces Q556).
             if draw_menu_item(ui, theme, &item) {
                 ui.set_clipboard_text(text);
+                action = Some(MarkdownAction::Copied(text.clone()));
             }
             if target.is_some() {
                 draw_separator(ui, theme);
