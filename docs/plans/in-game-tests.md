@@ -29,18 +29,3 @@ is ready when the user is back at the PC.
    then load again.
 
 ## Tests
-
-35. **Table of contents in the help (R155 c, branch `feature/help-table-of-contents`).**
-    Deploy the branch instead of `develop` (setup step 1 on
-    `feature/help-table-of-contents`). Open memo, click the `?` in the title
-    bar, then the **Help** tab. Look at the topic list: before, nine plain
-    topics; now the topics are bold with a chevron, and below the selected
-    one its sections are listed one level indented with a thin guide line
-    (mock: snapshots `help-window-help-*`, `help-window-section-clicked-*`).
-    Click the section **The window**: it gets the selection (fill and violet
-    bar), the topic loses it, and the right side scrolls so "The window"
-    stands at the top. Click the topic **Getting started**: the topic is
-    marked again and the text starts at its beginning. Click **Privacy**:
-    "Getting started" folds up, Privacy shows its seven sections from the
-    privacy policy, down to "Responsible person". Hover a shortened title:
-    the tooltip shows it in full. Repeat once in Deutsch.

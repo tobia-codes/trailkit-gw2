@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-21 (session 51, PC; no active work branch; next R155 c). Current state and next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
+Last updated: 2026-11-21 (session 51, PC; no active work branch; next the test gaps on `chore/test-gaps`). Current state and next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
 
@@ -30,11 +30,8 @@ R139–R146 (TextField, no disabled buttons, dialog close icon, wrapped tooltips
 **Session 49 (2026-11-20, PC), all merged:** R155 a one `MenuItem` (submenus 4 px apart, row kept highlighted, M98); R155 b the note list on `draw_list_row` (dragged row fades as a whole M106,
 group double-click without toggle M172); R156 indent guides (`tree_indent`); M215 new entries next to the selection; M216 empty-spot click selects nothing. Lesson: md5 groups miss a hover that
 lands on a wrong row, so measure positions in the PNG after layout changes.
-**Sessions 50–51 (2026-11-20/21, phone + PC), merged:** Q538 (topic without sections: no chevron, R155) and **R157** (Q539–Q545): help split into `help/{en,de}/NN-name.md`, read and joined by `help_assembly.rs` from memo's `build.rs` with the privacy policy, build errors name file, line and fix; output byte-identical; 13 tests; in-game test 34 passed. Test gaps found (own `chore/test-gaps` after R155 c): the nested-row padding fix 7790ea3 (R156) has no automated test, M172 (double-click without toggle) only a snapshot; plus the known `render.rs`/window action/key gaps below.
-**▶ Next step (start here): R155 c, the help table of contents.** `git fetch origin && git switch develop && git pull --ff-only && git switch -c feature/help-table-of-contents`.
-1. Grilling is done: sections are the `###` headings (the privacy topic gets them from `PRIVACY.md`), only the selected topic is expanded, a topic without sections has no chevron (Q538).
-2. R87 rendered proposal (Dark/Light, minimum width, German): sections of the selected topic as `ListRow { level: 1 }` below it, topics with a chevron like memo's groups, indent guides come
-   for free from `draw_list_row`; the help list spaces rows with `Stack`, while the guides reach into ImGui's `ItemSpacing` gap above a row, so align the two. 3. Build, snapshots, deploy, in-game test, merge OK.
+**Sessions 50–51 (2026-11-20/21, phone + PC), merged:** Q538 (topic without sections: no chevron, R155) and **R157** (Q539–Q545): help split into `help/{en,de}/NN-name.md`, read and joined by `help_assembly.rs` from memo's `build.rs` with the privacy policy, build errors name file, line and fix; output byte-identical; 13 tests; in-game test 34 passed. **R155 c** (Q546 A, Q547): the help topic list shows the selected topic's sections, bold topics, `RowChevron::Blank` for a topic without sections, a clicked section is marked and scrolled to; in-game test 35 passed. BL27 marketplace added. Test gaps found (own `chore/test-gaps` after R155 c): the nested-row padding fix 7790ea3 (R156) has no automated test, M172 (double-click without toggle) only a snapshot; plus the known `render.rs`/window action/key gaps below.
+**▶ Next step (start here): the test gaps below on `chore/test-gaps`.** `git fetch origin && git switch develop && git pull --ff-only && git switch -c chore/test-gaps`.
 Also open: length hints for split grilling: `draw_spans` (`inline_text.rs`, 80), `states.rs` tests (863), `editor.rs` (481), `dialogs.rs` (403), `buffer.rs` (413); one unreproduced debug crash `imgui.h:1629` while deleting in a link label (if it recurs: Ignore, note cursor placement, key, preview, tooltip).
 **Next: data pipeline** (`rust/tools/trailkit-datagen`): the failing GemExchange job below (review item 3 done, D42); no more datagen unit tests, the backend tests cover it later (R152). Coverage 2026-11-18 before #146: addons 89 % of lines, memo app 70 %, datagen 52 %.
 **Then test gaps:** extract and test the Escape/close logic of `nexus_bridge/render.rs` like `key_routing.rs`; window actions (new group, format, preview, compact view, open folder, clear search); Ctrl+Y/Ctrl+Shift+Z keys. `xtask` last. Prove new tests with injected faults.
