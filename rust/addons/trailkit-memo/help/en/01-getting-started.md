@@ -35,6 +35,6 @@ The menu takes you to the different parts of memo:
 
 The **?** in the title bar opens this help window; click it again to close it. **Open help** in memo's tab under *Nexus › Options* opens it too, or brings it to the front. **Escape** closes it.
 
-The window has two tabs: **Help** with these topics, and **Report a problem**, which saves your log as a text file and opens the problem form on GitHub. Until the game restarts, the window opens again on the tab and topic you last looked at.
+The window has two tabs: **Help** with these topics, and **Report a problem**, which saves your log as a text file and opens the problem form on GitHub. Below the chosen topic the list shows its sections; click one to jump to it. Until the game restarts, the window opens again on the tab and topic you last looked at.
 
 If memo runs into an error, it stops instead of crashing the game: your unsaved text is kept as a draft and this window opens on **Report a problem**. Until you reload memo in the Nexus addon list or restart the game, the keybind and the quick access icon open this window.

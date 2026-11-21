@@ -53,17 +53,23 @@ fn topic_title(line: &str) -> Option<&str> {
 pub fn subsection_counts(markdown: &str) -> Vec<usize> {
     parse_help_topics(markdown)
         .iter()
-        .map(|topic| {
-            topic
-                .body
-                .lines()
-                .filter(|line| line.starts_with("### "))
-                .count()
-        })
+        .map(|topic| topic.section_titles().len())
         .collect()
 }
 
 impl HelpTopic {
+    /// The titles of the topic's `###` headings in order: its sections in
+    /// the topic list (R155 c).
+    #[must_use]
+    pub fn section_titles(&self) -> Vec<String> {
+        self.body
+            .lines()
+            .filter_map(|line| line.strip_prefix("### "))
+            .map(|title| title.trim().to_owned())
+            .filter(|title| !title.is_empty())
+            .collect()
+    }
+
     /// The topic's opening sentence and the rest of its markdown (R95:
     /// every topic opens with one Secondary sentence). The lead is the first
     /// paragraph if it is plain text, its lines joined by spaces; a topic
