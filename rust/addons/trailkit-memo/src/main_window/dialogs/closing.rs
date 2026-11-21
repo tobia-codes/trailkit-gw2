@@ -99,6 +99,14 @@ impl MemoWindow {
             || self.search_takes_escape()
     }
 
+    /// Whether Escape belongs to the main window: it or one of its panes has
+    /// the focus. Nexus closes the window on Escape only while the window
+    /// itself has it, so the window message callback catches the key then.
+    #[must_use]
+    pub const fn takes_escape_key(&self) -> bool {
+        self.window_focused
+    }
+
     /// Handles Escape the window took (see [`Self::takes_escape`]): closes the
     /// open popup, else the window menu, else the find bar, else clears the
     /// search. Call it

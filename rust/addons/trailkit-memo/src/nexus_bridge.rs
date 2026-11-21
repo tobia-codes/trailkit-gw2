@@ -253,6 +253,17 @@ static DIALOG_ENTER_ARMED: AtomicBool = AtomicBool::new(false);
 /// Set when Enter was caught for the dialog; the render callback answers it.
 static DIALOG_ENTER_PRESSED: AtomicBool = AtomicBool::new(false);
 
+/// Whether Escape belongs to the main window: it or one of its panes has the
+/// focus. Nexus closes a window on Escape only while the window itself has
+/// the focus, not one of its child panes (list, note, window menu), so memo
+/// catches the key there itself. Written by the render callback, false while
+/// it does not draw.
+static ESCAPE_KEY_ARMED: AtomicBool = AtomicBool::new(false);
+
+/// Set when Escape was caught for the main window; the render callback closes
+/// what is open in it, else the window (as its close button does).
+static ESCAPE_KEY_PRESSED: AtomicBool = AtomicBool::new(false);
+
 /// Gives every key memo catches back to the game until the render callback
 /// arms them again (M79, M135, M174, M175, M198, M199).
 fn disarm_window_keys() {
@@ -264,6 +275,7 @@ fn disarm_window_keys() {
         &UNDO_KEYS_ARMED,
         &TEXT_SIZE_RESET_ARMED,
         &DIALOG_ENTER_ARMED,
+        &ESCAPE_KEY_ARMED,
     ] {
         armed.store(false, Ordering::Relaxed);
     }
@@ -523,6 +535,7 @@ fn route_window_message(message: u32, key: WPARAM, details: LPARAM) -> u32 {
         undo: UNDO_KEYS_ARMED.load(Ordering::Relaxed),
         text_size_reset: TEXT_SIZE_RESET_ARMED.load(Ordering::Relaxed),
         dialog_enter: DIALOG_ENTER_ARMED.load(Ordering::Relaxed),
+        escape: ESCAPE_KEY_ARMED.load(Ordering::Relaxed),
     };
     let key_message = KeyMessage {
         message,
@@ -549,6 +562,7 @@ fn route_window_message(message: u32, key: WPARAM, details: LPARAM) -> u32 {
         KeySignal::Redo => HISTORY_STEP.store(HISTORY_STEP_REDO, Ordering::Relaxed),
         KeySignal::ResetTextSize => TEXT_SIZE_RESET_PRESSED.store(true, Ordering::Relaxed),
         KeySignal::ConfirmDialog => DIALOG_ENTER_PRESSED.store(true, Ordering::Relaxed),
+        KeySignal::Escape => ESCAPE_KEY_PRESSED.store(true, Ordering::Relaxed),
     }
     if signal.consumes_key() {
         MESSAGE_CONSUMED

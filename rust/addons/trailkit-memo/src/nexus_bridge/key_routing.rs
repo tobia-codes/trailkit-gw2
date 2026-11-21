@@ -8,8 +8,8 @@ use std::time::Instant;
 
 use windows::Win32::UI::{
     Input::KeyboardAndMouse::{
-        VIRTUAL_KEY, VK_0, VK_CONTROL, VK_DELETE, VK_F, VK_F3, VK_NUMPAD0, VK_RETURN, VK_SHIFT,
-        VK_Y, VK_Z,
+        VIRTUAL_KEY, VK_0, VK_CONTROL, VK_DELETE, VK_ESCAPE, VK_F, VK_F3, VK_NUMPAD0, VK_RETURN,
+        VK_SHIFT, VK_Y, VK_Z,
     },
     WindowsAndMessaging::{WM_KEYDOWN, WM_KEYUP},
 };
@@ -44,6 +44,9 @@ pub(super) struct ArmedKeys {
     pub(super) text_size_reset: bool,
     /// Enter answers the open dialog (M56, M152, M180).
     pub(super) dialog_enter: bool,
+    /// Escape closes what is open in the main window, else the window, while
+    /// the focus is in one of its panes.
+    pub(super) escape: bool,
 }
 
 /// What a key message asks the window to do.
@@ -67,6 +70,8 @@ pub(super) enum KeySignal {
     ResetTextSize,
     /// Answer the open dialog as Enter does.
     ConfirmDialog,
+    /// Close what is open in the main window, else the window.
+    Escape,
 }
 
 impl KeySignal {
@@ -99,7 +104,9 @@ pub(super) fn route_key(
         return (completed && armed.search).then_some(KeySignal::ToggleSearch);
     }
     double_shift.other_key();
-    if is_key(VK_DELETE) && armed.delete {
+    if is_key(VK_ESCAPE) && armed.escape {
+        Some(KeySignal::Escape)
+    } else if is_key(VK_DELETE) && armed.delete {
         Some(KeySignal::Delete)
     } else if is_key(VK_RETURN) && armed.dialog_enter {
         Some(KeySignal::ConfirmDialog)
@@ -152,6 +159,7 @@ mod tests {
         undo: true,
         text_size_reset: true,
         dialog_enter: true,
+        escape: true,
     };
 
     /// A key message without auto repeat.
@@ -191,6 +199,17 @@ mod tests {
             Some(KeySignal::FindPrevious)
         );
         assert_eq!(press(VK_F3, ArmedKeys::default(), &[]), None);
+    }
+
+    #[test]
+    fn escape_belongs_to_the_window_only_while_armed() {
+        let signal = press(VK_ESCAPE, ALL_ARMED, &[]);
+        assert_eq!(signal, Some(KeySignal::Escape));
+        assert!(
+            signal.is_some_and(KeySignal::consumes_key),
+            "neither Nexus nor the game may close a second time"
+        );
+        assert_eq!(press(VK_ESCAPE, ArmedKeys::default(), &[]), None);
     }
 
     #[test]

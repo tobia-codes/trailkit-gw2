@@ -23,12 +23,12 @@ use trailkit_ui::{
 
 use super::{
     CLOSE_REQUESTED, DELETE_KEY_ARMED, DELETE_KEY_PRESSED, DIALOG_ENTER_ARMED,
-    DIALOG_ENTER_PRESSED, ESCAPE_CAUGHT, FIND_KEY_ARMED, FIND_KEY_PRESSED, FIND_STEP,
-    FIND_STEP_ARMED, FIND_STEP_NEXT, FIND_STEP_NONE, FIND_STEP_PREVIOUS, HELP, HELP_OPEN,
-    HISTORY_STEP, HISTORY_STEP_NONE, HISTORY_STEP_REDO, HISTORY_STEP_UNDO, LANGUAGE, NEXUS_LINK,
-    NOTES, NotesState, SEARCH_KEY_ARMED, SEARCH_KEY_PRESSED, TEXT_SIZE_RESET_ARMED,
-    TEXT_SIZE_RESET_PRESSED, TITLE_BAR, UNDO_KEYS_ARMED, UNSAVED_CHANGES, VISIBLE,
-    WINDOW_TAKES_ESCAPE, WINDOW_TITLE, disarm_window_keys,
+    DIALOG_ENTER_PRESSED, ESCAPE_CAUGHT, ESCAPE_KEY_ARMED, ESCAPE_KEY_PRESSED, FIND_KEY_ARMED,
+    FIND_KEY_PRESSED, FIND_STEP, FIND_STEP_ARMED, FIND_STEP_NEXT, FIND_STEP_NONE,
+    FIND_STEP_PREVIOUS, HELP, HELP_OPEN, HISTORY_STEP, HISTORY_STEP_NONE, HISTORY_STEP_REDO,
+    HISTORY_STEP_UNDO, LANGUAGE, NEXUS_LINK, NOTES, NotesState, SEARCH_KEY_ARMED,
+    SEARCH_KEY_PRESSED, TEXT_SIZE_RESET_ARMED, TEXT_SIZE_RESET_PRESSED, TITLE_BAR, UNDO_KEYS_ARMED,
+    UNSAVED_CHANGES, VISIBLE, WINDOW_TAKES_ESCAPE, WINDOW_TITLE, disarm_window_keys,
     guard::{RunState, draft_kept, run_state, take_help_request, try_lock_after_panic},
     help::MemoHelp,
     is_gameplay, settings,
@@ -56,6 +56,7 @@ fn render_main_window(ui: &nexus::imgui::Ui) {
     // Stay false on every path that does not draw the window, so the game keeps
     // these keys while memo is hidden.
     disarm_window_keys();
+    apply_escape_key();
     reopen_hidden_window_if_needed();
     let main_visible = VISIBLE.load(Ordering::Relaxed);
     if !(main_visible || HELP_OPEN.load(Ordering::Relaxed))
@@ -238,6 +239,7 @@ fn draw_main_window(
             (&UNDO_KEYS_ARMED, window.takes_undo_keys()),
             (&TEXT_SIZE_RESET_ARMED, window.takes_text_size_reset_key()),
             (&DIALOG_ENTER_ARMED, window.takes_dialog_enter_key()),
+            (&ESCAPE_KEY_ARMED, window.takes_escape_key()),
         ] {
             armed.store(takes_key && visible, Ordering::Relaxed);
         }
@@ -293,6 +295,22 @@ fn apply_title_bar_click(
                 window.apply_title_bar_toggle(index);
             }
         }
+    }
+}
+
+/// Applies Escape that the window message callback caught while the focus
+/// was in the main window or one of its panes: what is open in the window
+/// takes it as when Nexus hid the window ([`WINDOW_TAKES_ESCAPE`]), else the
+/// window closes as through its close button, asking first about unsaved
+/// changes (M54).
+fn apply_escape_key() {
+    if !ESCAPE_KEY_PRESSED.swap(false, Ordering::Relaxed) {
+        return;
+    }
+    if WINDOW_TAKES_ESCAPE.load(Ordering::Relaxed) {
+        ESCAPE_CAUGHT.store(true, Ordering::Relaxed);
+    } else {
+        CLOSE_REQUESTED.store(true, Ordering::Relaxed);
     }
 }
 
