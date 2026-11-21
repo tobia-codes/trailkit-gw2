@@ -7,9 +7,9 @@ the results through the shared `ListFilter` trait.
 
 | Module | Content |
 |--------|---------|
-| `note_search` | search index over titles and content, the rows a search shows, match counts per group and content hits per note (ImGui-free) |
+| `note_search` | search index over titles and content of the notes or the trash, the rows a search shows, match counts per group, content hits per note and the hit stops for the arrows (ImGui-free) |
+| `list_search` | `ListSearch`: one list's cached index and results and the current hit the arrows step through, owned by the note list and the trash (BL30, BL31; ImGui-free) |
 | `no_search_results` | the empty search result with its clear button, drawn by the app instead of the list (M126, Windows only) |
-| `search_field` | the search field above the note list: magnifier, hint, an `x` that clears and then closes (M176), accent focus frame (Windows only) |
 | `i18n` | the slice's texts (`SearchText`, en/de) |
 
 ## Packages
@@ -27,5 +27,6 @@ The packages this project uses directly.
 
 Built as part of the addon (`cargo xtask deploy trailkit-memo`). The search
 logic and texts are tested on any host with
-`cargo test -p trailkit-memo-search`; the field is covered by the app's
-window snapshot tests (`cargo xtask ui-test`).
+`cargo test -p trailkit-memo-search`; the search field and find bar are the
+shared search of `trailkit-ui`, covered by the app's window snapshot tests
+(`cargo xtask ui-test`).

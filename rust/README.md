@@ -49,7 +49,7 @@ packages that project uses directly.
 | [`trailkit-memo-note-list`](addons/trailkit-memo/slices/note-list/README.md) | Note tree rows, rename, menus and drag and drop. | Separates list behavior from the rest of memo. |
 | [`trailkit-memo-note-view`](addons/trailkit-memo/slices/note-view/README.md) | Reading view of the selected note. | Separates reading from the rest of memo. |
 | [`trailkit-memo-reset-schedule`](addons/trailkit-memo/slices/reset-schedule/README.md) | Daily and weekly reset rules and their controls. | Separates reset rules from the rest of memo. |
-| [`trailkit-memo-search`](addons/trailkit-memo/slices/search/README.md) | Note search, search field and find bar. | Separates search from the rest of memo. |
+| [`trailkit-memo-search`](addons/trailkit-memo/slices/search/README.md) | Note and trash search, results and stepping through hits. | Separates search from the rest of memo. |
 | [`trailkit-memo-shared`](addons/trailkit-memo/shared/README.md) | Note tree, settings, drafts, undo, storage worker and texts shared by memo. | Lets memo slices share data without depending on each other. |
 | [`trailkit-memo-trash`](addons/trailkit-memo/slices/trash/README.md) | Trash list, preview and labels. | Separates deletion and recovery from the rest of memo. |
 | [`trailkit-nexus-bridge`](addons/crates/trailkit-nexus-bridge/README.md) | Nexus helpers shared by the addons, such as font registration. | Keeps shared Nexus code out of each addon. |
