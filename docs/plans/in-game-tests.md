@@ -27,3 +27,15 @@ is ready when the user is back at the PC.
    bottom-right corner as far left as it goes.
 5. Reload memo: Nexus menu › Addons › trailkit-memo › unload,
    then load again.
+
+## Tests
+
+34. **Help split into topic files (R157, branch `chore/split-help-files`).**
+    Deploy the branch instead of `develop` (setup step 1 on
+    `chore/split-help-files`). Open memo, click the `?` in the title bar,
+    then the **Help** tab. Look at the topic list and click through all nine
+    topics, the last one **Privacy** down to its end ("Responsible person").
+    Before and now: the same nine topics in the same order with the same
+    text; nothing may be missing, doubled or reordered (the build output was
+    compared byte by byte with the old help). Repeat once with Nexus in
+    Deutsch ("Datenschutz" last, ending with "Verantwortlich").

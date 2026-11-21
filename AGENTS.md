@@ -70,7 +70,7 @@ Shared rules for Codex and Claude Code. `CLAUDE.md` imports this file;
 5. **English in files.** Code, identifiers, comments, docs, plans and commits
    are English; addon strings are localized en/de, never inline UI literals.
 6. **Help stays current.** User-visible behavior changes update
-   `rust/addons/<name>/help/{en,de}.md` in the same change.
+   `rust/addons/<name>/help/{en,de}/` (one `NN-name.md` per topic) in the same change.
 7. **Share on real reuse.** Search the workspace before adding a helper/type.
    Extract at the second real use, replacing all copies in the same change,
    never speculatively. Shared UI comes from `rust/addons/crates/trailkit-ui`; addon text

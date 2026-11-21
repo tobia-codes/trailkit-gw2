@@ -237,7 +237,8 @@ Project contract (to be finalized in `docs/plans/addons/trailkit-core.md`):
 - **Own settings window** per addon (opened from: the Nexus options button,
   the addon's main window menu, and optionally a keybind).
 - **Help page** per addon (window/tab "Help"), content in both languages,
-  generated from `rust/addons/<name>/help/{en,de}.md`. Any change to user-visible
+  generated from `rust/addons/<name>/help/{en,de}/` (one `NN-name.md` per topic,
+  joined by the build script, R157). Any change to user-visible
   behavior must update the help page in the same change.
   Write one paragraph or list item per source line: single line breaks are
   shown as line breaks (memo M63).

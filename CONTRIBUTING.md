@@ -175,7 +175,10 @@ the player, so these rules are strict. The reference with the details:
   enum per slice, never a string literal in UI code. A test checks that every
   text is translated.
 - **The help page stays current** (rule 6): a change to user-visible behavior
-  updates `rust/addons/<addon>/help/en.md` and `de.md` in the same PR. Use only
+  updates the topic files in `rust/addons/<addon>/help/en/` and `de/` in the same PR:
+  one `NN-name.md` per topic, the number sets the order, the file starts with
+  its only `##` heading; the build stops with a hint when a rule is broken
+  (R157). Use only
   characters the bundled fonts contain (a test checks this).
 - **Nexus identifiers** (keybinds, textures, events …) are typed constants
   named `trailkit.<addon>.<kind>.<name>`, never inline strings.

@@ -1,6 +1,6 @@
 //! The texts of memo's help window (ROADMAP R100, mockup
 //! https://claude.ai/artifact/82dwWQcEtFeTfxpQ2ex1cy) in English and German.
-//! The help topics themselves are `help/{en,de}.md`.
+//! The help topics themselves are `help/{en,de}/`.
 
 use trailkit_memo_shared::i18n::{Language, LocalizedText};
 

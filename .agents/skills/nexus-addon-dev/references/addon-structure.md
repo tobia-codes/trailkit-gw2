@@ -12,7 +12,8 @@ addons/trailkit-<addon>/
 ├── Cargo.toml            app crate: builds the DLL (crate-type cdylib + rlib)
 ├── README.md             what the addon is, how to build and use it, layout table
 ├── package.json          version placeholder for Changesets (R16)
-├── help/{en,de}.md       in-game help page (AGENTS.md rule 6)
+├── build.rs              joins the help topic files (R157)
+├── help/{en,de}/         in-game help page, one NN-name.md per topic (rule 6)
 ├── assets/icons/         quick-access icon source (.svg; .png generated)
 ├── src/
 │   ├── lib.rs            crate root; `all_texts()` = app + every slice's texts
@@ -108,7 +109,7 @@ functions with ≥ 80; the agent then proposes a split by concern as in §1
 
 1. Create the app crate, `shared` and the first slice from the layout
    above; add the crates to the root `Cargo.toml`.
-2. README in every crate, help page `help/{en,de}.md`, `package.json`.
+2. README in every crate, help page `help/{en,de}/`, `package.json`.
 3. Nexus identifiers as typed constants `trailkit.<addon>.<kind>.<name>`.
 4. `all_texts()` collects every text enum; fonts are registered from it.
 5. `cargo fmt --all`, `cargo clippy --all-targets -- -D warnings`,
