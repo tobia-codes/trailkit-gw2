@@ -23,7 +23,7 @@ use trailkit_ui::{
     drawing::style_scope::StyleScope,
     feedback::status_line::{Status, draw_status_line},
     layout::empty_state::{EmptyState, EmptyStateButtons, draw_empty_state},
-    layout::pane::draw_pane,
+    layout::pane::{WindowDrag, draw_pane},
     layout::separator::draw_separator,
     layout::splitter::draw_vertical_splitter,
     layout::title_bar::{
@@ -389,12 +389,26 @@ fn splitter_states_match_snapshots() {
         let mut harness = UiHarness::new(size);
         let mut draw = |ui: &Ui| {
             in_window(ui, &theme, size, || {
-                draw_pane(ui, &theme, "left", [100.0, 0.0], || {});
+                draw_pane(
+                    ui,
+                    &theme,
+                    "left",
+                    [100.0, 0.0],
+                    WindowDrag::MovesWindow,
+                    || {},
+                );
                 ui.same_line_with_spacing(0.0, 0.0);
                 let height = ui.content_region_avail()[1];
                 draw_vertical_splitter(ui, &theme, "split", 100.0, (50.0, 150.0), height);
                 ui.same_line_with_spacing(0.0, 0.0);
-                draw_pane(ui, &theme, "right", [0.0, 0.0], || {});
+                draw_pane(
+                    ui,
+                    &theme,
+                    "right",
+                    [0.0, 0.0],
+                    WindowDrag::MovesWindow,
+                    || {},
+                );
             });
         };
         let names = |state| ("splitter", state, theme_name);

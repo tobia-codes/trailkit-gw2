@@ -7,7 +7,7 @@ use nexus::imgui::{StyleVar, Ui};
 use super::{MenuItem, draw_menu_row_label};
 use crate::{
     drawing::draw_list::window_draw_list,
-    layout::pane::draw_pane,
+    layout::pane::{WindowDrag, draw_pane},
     layout::separator::draw_separator,
     lists::selection_bar::draw_row_state,
     text::font_registry::FontScope,
@@ -42,7 +42,7 @@ pub fn draw_menu_panel(
 ) -> Option<usize> {
     let width = panel_width(ui, theme, entries, minimum_width).min(maximum_width);
     let mut chosen = None;
-    draw_pane(ui, theme, id, [width, 0.0], || {
+    draw_pane(ui, theme, id, [width, 0.0], WindowDrag::MovesWindow, || {
         let _spacing = ui.push_style_var(StyleVar::ItemSpacing([0.0, theme.spacing.extra_small]));
         for (index, entry) in entries.iter().enumerate() {
             match entry {

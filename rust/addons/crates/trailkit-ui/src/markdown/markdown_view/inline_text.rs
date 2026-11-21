@@ -1,24 +1,30 @@
 //! Inline text of a markdown block: words with wrapping, links, chat-link
-//! chips and search hits (memo plan M19, M37, M75, M122).
+//! chips, search hits and the text selection (memo plan M19, M37, M75, M122,
+//! M217).
 
 use crate::controls::hover::is_item_hovered;
 use std::ops::Range;
 
 use nexus::imgui::{ImColor32, MouseButton, MouseCursor, StyleColor, Ui};
 
-use super::{LineBounds, MarkdownAction, SearchHighlight, link_menu::request_link_menu};
+use super::{
+    LineBounds, MarkdownAction, Marks, SearchHighlight, is_drag_release,
+    link_menu::request_link_menu,
+    selection::{LineBox, SelectionPass},
+};
 use crate::{
     chat_link::ChatLinkChip,
     chat_link::chat_link_chip::{ChipContext, chip_tooltip, chip_width, draw_chip},
     controls::dropdown::{draw_icon_into_at, icon_width_at},
     controls::tooltip::draw_tooltip,
     drawing::draw_list::window_draw_list,
+    markdown::text_selection::TextPosition,
     markdown::{LinkKind, Span, link_menu::LinkMenuTarget},
     text::TextStyle,
     text::font_registry::{FontScope, IconSize},
     text::fonts::FontRole,
     text::glyph_metrics::capital_middle,
-    text::search_hits::mark_search_hits,
+    text::search_hits::{HitMark, mark_search_hits},
     theme::Theme,
 };
 
@@ -31,6 +37,8 @@ struct LineCursor {
     y: f32,
     /// Distance between two lines (`typography.line_height`).
     line_height: f32,
+    /// Empty room above the text of a line (`typography.leading`).
+    leading: f32,
     /// Whether the next element stays on this line, as a link's first word
     /// does after its icon; a word too long for it breaks in place.
     keeps_line: bool,
@@ -41,6 +49,15 @@ struct LineCursor {
 }
 
 impl LineCursor {
+    /// The current line from its top, leading included, to the next line.
+    fn line(&self) -> LineBox {
+        let top = self.y - self.leading;
+        LineBox {
+            top,
+            bottom: top + self.line_height,
+        }
+    }
+
     /// Moves to the start of the next line.
     fn new_line(&mut self, bounds: LineBounds) {
         self.x = bounds.left;
@@ -63,8 +80,8 @@ impl LineCursor {
 /// line, and leaves the cursor below the last line. The block's text style
 /// is `heading` or [`TextStyle::Body`] (Q276): it sets the color, and a
 /// heading also the font of every span; other spans pick their body face
-/// (bold, italic) themselves; chat codes are drawn as chips; `highlight` marks
-/// search hits. Returns a link or chip click.
+/// (bold, italic) themselves; chat codes are drawn as chips; `marks` holds the
+/// search hits and the selection. Returns a link or chip click.
 pub(super) fn draw_spans(
     ui: &Ui,
     spans: &[Span],
@@ -72,7 +89,7 @@ pub(super) fn draw_spans(
     bounds: LineBounds,
     theme: &Theme,
     chips: ChipContext<'_>,
-    mut highlight: Option<&mut SearchHighlight<'_>>,
+    marks: &mut Marks<'_, '_>,
 ) -> Option<MarkdownAction> {
     // Lines are `typography.line_height` apart; `y` is the text top, below
     // the leading of the line.
@@ -88,6 +105,7 @@ pub(super) fn draw_spans(
         x: bounds.left,
         y: ui.cursor_screen_pos()[1] + leading,
         line_height,
+        leading,
         keeps_line: false,
         link_underline_end: None,
     };
@@ -100,7 +118,13 @@ pub(super) fn draw_spans(
     );
 
     for (index, span) in spans.iter().enumerate() {
+        if let Some(pass) = marks.selection.as_deref_mut() {
+            pass.span = index;
+        }
         if span.is_line_break() {
+            if let Some(pass) = marks.selection.as_deref_mut() {
+                end_line(ui, pass, &cursor, bounds, pass.at(0));
+            }
             cursor.new_line(bounds);
             continue;
         }
@@ -112,15 +136,7 @@ pub(super) fn draw_spans(
         let clicked = if let Some(chip) = &span.chip {
             cursor.link_underline_end = None;
             let _id = ui.push_id(i32::try_from(index).unwrap_or(i32::MAX));
-            draw_chat_link(
-                ui,
-                chip,
-                bounds,
-                theme,
-                chips,
-                highlight.as_deref_mut(),
-                &mut cursor,
-            )
+            draw_chat_link(ui, chip, bounds, theme, chips, marks, &mut cursor)
         } else {
             // Parts of one link in different styles share one icon.
             let starts_link = span.style.link.is_some()
@@ -130,25 +146,42 @@ pub(super) fn draw_spans(
             }
             let icon_click = if starts_link {
                 let _id = ui.push_id(i32::try_from(index).unwrap_or(i32::MAX));
-                draw_link_icon(ui, span, bounds, theme, &mut cursor)
+                draw_link_icon(ui, span, bounds, theme, marks, &mut cursor)
             } else {
                 None
             };
-            let text_click = draw_wrapped_text(
-                ui,
-                span,
-                bounds,
-                theme,
-                highlight.as_deref_mut(),
-                &mut hits,
-                &mut cursor,
-            );
+            let text_click =
+                draw_wrapped_text(ui, span, bounds, theme, marks, &mut hits, &mut cursor);
             icon_click.or(text_click)
         };
         action = action.or(clicked);
     }
+    if let Some(pass) = marks.selection.as_deref_mut() {
+        let end = spans.last().map_or_else(
+            || TextPosition::block_start(pass.block),
+            |last| TextPosition::new(pass.block, spans.len() - 1, last.text.len()),
+        );
+        end_line(ui, pass, &cursor, bounds, end);
+    }
     ui.set_cursor_screen_pos([bounds.left, cursor.y - leading + line_height]);
     action
+}
+
+/// Ends the cursor's line at the text place `end` for the selection: a narrow
+/// fill one space wide when the selection goes on past it (P2), and the room
+/// up to the right edge as the line's end for the mouse.
+fn end_line(
+    ui: &Ui,
+    pass: &mut SelectionPass,
+    cursor: &LineCursor,
+    bounds: LineBounds,
+    end: TextPosition,
+) {
+    let line = cursor.line();
+    if pass.crosses(end) {
+        pass.fill(ui, cursor.x, cursor.x + ui.calc_text_size(" ")[0], line);
+    }
+    pass.probe_line_end(cursor.x, bounds.right, line, end);
 }
 
 /// Draws a chat link as a clickable chip at the `cursor`, wrapping first if
@@ -160,18 +193,28 @@ fn draw_chat_link(
     bounds: LineBounds,
     theme: &Theme,
     chips: ChipContext<'_>,
-    highlight: Option<&mut SearchHighlight<'_>>,
+    marks: &mut Marks<'_, '_>,
     cursor: &mut LineCursor,
 ) -> Option<MarkdownAction> {
     let width = chip_width(ui, chip, theme, chips);
     cursor.wrap_before(width, bounds);
     let [x, y] = [cursor.x, cursor.y];
     ui.set_cursor_screen_pos([x, y]);
-    ui.invisible_button("##chip", [width, ui.text_line_height()]);
+    // A click acts on the release, unless it was a drag that selected (Q551).
+    let clicked =
+        ui.invisible_button("##chip", [width, ui.text_line_height()]) && !is_drag_release(ui);
     let hovered = is_item_hovered(ui);
-    let clicked = ui.is_item_clicked();
     draw_chip(ui, window_draw_list(ui), chip, [x, y], theme, chips);
-    if let Some(highlight) = highlight
+    if let Some(pass) = marks.selection.as_deref_mut() {
+        // The chip keeps its look under the selection's fill (P2).
+        let line = cursor.line();
+        let ends = [pass.at(0), pass.at(chip.code.len())];
+        if pass.selected_in(0..chip.code.len()).is_some() {
+            pass.fill(ui, x, x + width, line);
+        }
+        pass.probe_atom(x, x + width, line, ends, true);
+    }
+    if let Some(highlight) = marks.highlight.as_deref_mut()
         && !highlight.query.hit_ranges(&chip.code).is_empty()
     {
         highlight.record_hit(ui, y);
@@ -211,6 +254,7 @@ fn draw_link_icon(
     span: &Span,
     bounds: LineBounds,
     theme: &Theme,
+    marks: &mut Marks<'_, '_>,
     cursor: &mut LineCursor,
 ) -> Option<MarkdownAction> {
     let url = span.style.link.as_ref()?;
@@ -220,6 +264,20 @@ fn draw_link_icon(
     let first_word = span.text.split(' ').next().unwrap_or_default();
     cursor.wrap_before(icon_size + gap + ui.calc_text_size(first_word)[0], bounds);
     let height = ui.text_line_height();
+    if let Some(pass) = marks.selection.as_deref_mut() {
+        // The icon belongs to the link's start.
+        let (start, line) = (pass.at(0), cursor.line());
+        if pass.crosses(start) {
+            pass.fill(ui, cursor.x, cursor.x + icon_size + gap, line);
+        }
+        pass.probe_atom(
+            cursor.x,
+            cursor.x + icon_size + gap,
+            line,
+            [start, start],
+            true,
+        );
+    }
     ui.set_cursor_screen_pos([cursor.x, cursor.y]);
     ui.invisible_button("##link_icon", [icon_size + gap, height]);
     // SAFETY: on the render thread inside a frame, where ImGui has a current
@@ -242,7 +300,8 @@ fn draw_link_icon(
 }
 
 /// Gives the last drawn item the behavior of the link to `url`: the hand
-/// cursor, the tooltip and the click.
+/// cursor, the tooltip and the click, on the release of a press that started
+/// on it and did not drag (Q551).
 fn finish_link_item(ui: &Ui, span: &Span, theme: &Theme, url: &str) -> Option<MarkdownAction> {
     if is_item_hovered(ui) {
         ui.set_mouse_cursor(Some(MouseCursor::Hand));
@@ -253,22 +312,38 @@ fn finish_link_item(ui: &Ui, span: &Span, theme: &Theme, url: &str) -> Option<Ma
             request_link_menu(LinkMenuTarget::Link(url.to_owned()));
         }
     }
-    ui.is_item_clicked()
-        .then(|| MarkdownAction::OpenLink(url.to_owned()))
+    is_released_click(ui).then(|| MarkdownAction::OpenLink(url.to_owned()))
+}
+
+/// Whether the left button was released over the last item after a press on
+/// it that did not drag.
+fn is_released_click(ui: &Ui) -> bool {
+    if !ui.is_mouse_released(MouseButton::Left) || !is_item_hovered(ui) || is_drag_release(ui) {
+        return false;
+    }
+    let [x, y] = ui.io().mouse_pos;
+    let [moved_x, moved_y] = ui.mouse_drag_delta_with_threshold(MouseButton::Left, 0.0);
+    let [pressed_x, pressed_y] = [x - moved_x, y - moved_y];
+    let ([left, top], [right, bottom]) = (ui.item_rect_min(), ui.item_rect_max());
+    (left..=right).contains(&pressed_x) && (top..=bottom).contains(&pressed_y)
 }
 
 /// Draws the text of `span` word by word at the `cursor`, wrapping at
-/// `bounds`, and marks its search hits; `hits` is a reused buffer for their
-/// ranges. Returns a link click.
+/// `bounds`, and marks its search hits and the selection; `hits` is a reused
+/// buffer for the hit ranges. Returns a link click.
 fn draw_wrapped_text(
     ui: &Ui,
     span: &Span,
     bounds: LineBounds,
     theme: &Theme,
-    mut highlight: Option<&mut SearchHighlight<'_>>,
+    marks: &mut Marks<'_, '_>,
     hits: &mut Vec<Range<usize>>,
     cursor: &mut LineCursor,
 ) -> Option<MarkdownAction> {
+    let Marks {
+        highlight,
+        selection,
+    } = marks;
     match highlight.as_deref() {
         Some(highlight) => highlight.query.collect_hit_ranges(&span.text, hits),
         None => hits.clear(),
@@ -291,10 +366,11 @@ fn draw_wrapped_text(
             }
         }
         if !word.is_empty() {
-            let word_hits = WordHits {
+            let word_hits = WordMarks {
                 ranges: hits,
                 offset: word_offset,
                 highlight: highlight.as_deref(),
+                selection: selection.as_deref_mut(),
             };
             let clicked = draw_word(ui, word, span, bounds, theme, cursor, word_hits);
             if let Some(first_hit) = clicked.first_hit_y
@@ -310,7 +386,24 @@ fn draw_wrapped_text(
         }
         let trailing_spaces = &token[word.len()..];
         if cursor.x > bounds.left {
-            cursor.x += ui.calc_text_size(trailing_spaces)[0];
+            let width = ui.calc_text_size(trailing_spaces)[0];
+            if let Some(pass) = selection.as_deref_mut()
+                && !trailing_spaces.is_empty()
+            {
+                let line = cursor.line();
+                let start = word_offset + word.len();
+                let spaces = (trailing_spaces, start);
+                pass.fill_text(ui, spaces, 0..trailing_spaces.len(), cursor.x, line);
+                let ends = [pass.at(start), pass.at(start + trailing_spaces.len())];
+                pass.probe_atom(
+                    cursor.x,
+                    cursor.x + width,
+                    line,
+                    ends,
+                    span.style.link.is_some(),
+                );
+            }
+            cursor.x += width;
         }
     }
     if let Some(highlight) = highlight {
@@ -319,15 +412,17 @@ fn draw_wrapped_text(
     action
 }
 
-/// Search hits of a span, seen from one word of it.
-#[derive(Debug, Clone, Copy)]
-struct WordHits<'ranges> {
+/// Search hits and the selection of a span, seen from one word of it.
+#[derive(Debug)]
+struct WordMarks<'marks> {
     /// Hit byte ranges in the span text, sorted.
-    ranges: &'ranges [Range<usize>],
+    ranges: &'marks [Range<usize>],
     /// Byte offset of the word in the span text.
     offset: usize,
     /// The search, whose count still stands before the span's first hit.
-    highlight: Option<&'ranges SearchHighlight<'ranges>>,
+    highlight: Option<&'marks SearchHighlight<'marks>>,
+    /// The selection to fill and the mouse to place.
+    selection: Option<&'marks mut SelectionPass>,
 }
 
 /// What drawing one word produced.
@@ -342,8 +437,9 @@ struct WordOutcome {
 }
 
 /// Draws one word at the `cursor`, breaking it between characters if it is
-/// wider than a whole line, marks its search hits and advances the cursor.
-/// Returns a link click and where a hit was marked.
+/// wider than a whole line, marks its search hits and the selection (the
+/// selection's fill behind the text, and over a filled hit again, P6) and
+/// advances the cursor. Returns a link click and where a hit was marked.
 fn draw_word(
     ui: &Ui,
     word: &str,
@@ -351,7 +447,7 @@ fn draw_word(
     bounds: LineBounds,
     theme: &Theme,
     cursor: &mut LineCursor,
-    hits: WordHits<'_>,
+    mut hits: WordMarks<'_>,
 ) -> WordOutcome {
     let mut outcome = WordOutcome::default();
     let mut rest = word;
@@ -361,9 +457,17 @@ fn draw_word(
         let piece = fitting_prefix(ui, rest, available, cursor.x <= bounds.left);
         let piece_width = ui.calc_text_size(piece)[0];
         let position = [cursor.x, cursor.y];
+        let line = cursor.line();
+        if let Some(pass) = hits.selection.as_deref() {
+            pass.fill_text(ui, (piece, piece_offset), 0..piece.len(), cursor.x, line);
+        }
         ui.set_cursor_screen_pos(position);
         let clicked = draw_piece(ui, piece, span, theme);
         outcome.action = outcome.action.or(clicked);
+        if let Some(pass) = hits.selection.as_deref_mut() {
+            let is_link = span.style.link.is_some();
+            pass.probe_text(ui, piece, piece_offset, cursor.x, line, is_link);
+        }
         if let Some(highlight) = hits.highlight {
             let mut piece_hits = Vec::new();
             for (index, range) in hits.ranges.iter().enumerate() {
@@ -377,7 +481,17 @@ fn draw_word(
                 piece_hits.push((local, mark));
             }
             if !piece_hits.is_empty() {
+                let filled: Vec<Range<usize>> = piece_hits
+                    .iter()
+                    .filter(|(_, mark)| *mark == HitMark::Filled)
+                    .map(|(range, _)| range.clone())
+                    .collect();
                 mark_search_hits(ui, theme, piece, piece_hits, position);
+                if let Some(pass) = hits.selection.as_deref() {
+                    for range in filled {
+                        pass.fill_text(ui, (piece, piece_offset), range, cursor.x, line);
+                    }
+                }
                 outcome.first_hit_y = outcome.first_hit_y.or(Some(cursor.y));
             }
         }

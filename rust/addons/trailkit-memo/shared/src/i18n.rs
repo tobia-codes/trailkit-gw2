@@ -177,6 +177,8 @@ pub const fn chip_text(text: ChipText, language: Language) -> &'static str {
         ChipText::ClickToCopy => "Click to copy",
         ChipText::Copied if german => "Kopiert",
         ChipText::Copied => "Copied",
+        ChipText::Copy if german => "Kopieren",
+        ChipText::Copy => "Copy",
         ChipText::OpenLink if german => "Link öffnen",
         ChipText::OpenLink => "Open link",
         ChipText::CopyLinkAddress if german => "Link-Adresse kopieren",

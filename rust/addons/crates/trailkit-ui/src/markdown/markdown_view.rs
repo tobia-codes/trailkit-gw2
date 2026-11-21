@@ -9,20 +9,25 @@
 //! ranges of each span (memo plan M122).
 //!
 //! The view never changes anything itself: clicks are returned as a
-//! [`MarkdownAction`] for the caller to apply.
+//! [`MarkdownAction`] for the caller to apply. Links, chips and checkboxes act
+//! on the release of a click, so a drag that starts on them selects text
+//! instead (memo plan M217, Q551). [`draw_selectable_markdown`] also lets the
+//! mouse select text.
 
 mod inline_text;
 mod link_menu;
+mod selection;
 
 use crate::controls::hover::is_item_hovered;
-use nexus::imgui::{ImColor32, MouseCursor, Ui};
+use nexus::imgui::{ImColor32, MouseButton, MouseCursor, Ui};
 
-use self::{inline_text::draw_spans, link_menu::draw_link_menu};
+use self::{inline_text::draw_spans, link_menu::draw_link_menu, selection::SelectionPass};
 use crate::{
     chat_link::chat_link_chip::ChipContext,
     controls::dropdown::draw_icon_into,
     drawing::draw_list::window_draw_list,
     layout::separator::draw_separator,
+    markdown::text_selection::{SelectionGesture, TextSelection},
     markdown::{Block, ListMarker, MarkdownDocument, TaskMarker},
     text::TextStyle,
     text::font_registry::FontScope,
@@ -146,6 +151,15 @@ pub enum MarkdownAction {
     Copied(String),
 }
 
+/// What is marked while drawing: search hits and the text selection.
+#[derive(Debug, Default)]
+struct Marks<'marks, 'query> {
+    /// Search hits to mark.
+    highlight: Option<&'marks mut SearchHighlight<'query>>,
+    /// The selection to fill and the mouse to place.
+    selection: Option<&'marks mut SelectionPass>,
+}
+
 /// Horizontal layout of one block: where text starts and where it must wrap.
 #[derive(Debug, Clone, Copy)]
 struct LineBounds {
@@ -178,7 +192,48 @@ pub fn draw_markdown(
     chips: ChipContext<'_>,
     highlight: Option<&mut SearchHighlight<'_>>,
 ) -> Option<MarkdownAction> {
-    draw_document(ui, document, theme, chips, highlight, None)
+    let marks = Marks {
+        highlight,
+        selection: None,
+    };
+    draw_document(ui, document, theme, chips, marks, None)
+}
+
+/// Like [`draw_markdown`], and the left mouse button selects text in it
+/// (memo plan M217): a press places the cursor, a drag selects, Shift+click
+/// extends; a right click on the selection offers "Copy". `selection`
+/// outlives the frame; the caller clears it when the document is replaced.
+pub fn draw_selectable_markdown(
+    ui: &Ui,
+    document: &MarkdownDocument,
+    theme: &Theme,
+    chips: ChipContext<'_>,
+    highlight: Option<&mut SearchHighlight<'_>>,
+    selection: &mut TextSelection,
+) -> Option<MarkdownAction> {
+    selection.clamp(document);
+    // A press or right click counts only on the text area, not on the
+    // scrollbar or on something drawn over the view.
+    let [mouse_x, _] = ui.io().mouse_pos;
+    let text_area_right = ui.window_pos()[0] + ui.window_content_region_max()[0];
+    let is_hovered = ui.is_window_hovered() && mouse_x <= text_area_right;
+    let pressed_here = is_hovered && ui.is_mouse_clicked(MouseButton::Left);
+    let right_clicked_here = is_hovered && ui.is_mouse_clicked(MouseButton::Right);
+    let tracks_mouse = is_hovered || selection.gesture != SelectionGesture::Idle;
+    let mut pass = SelectionPass::new(ui, theme, selection, tracks_mouse);
+    let marks = Marks {
+        highlight,
+        selection: Some(&mut pass),
+    };
+    let action = draw_document(ui, document, theme, chips, marks, None);
+    pass.finish(ui, document, selection, (pressed_here, right_clicked_here));
+    action.or_else(|| draw_link_menu(ui, theme, chips))
+}
+
+/// Whether the left button was released after a drag past ImGui's threshold:
+/// such a release selected text and is no click (Q551).
+fn is_drag_release(ui: &Ui) -> bool {
+    ui.mouse_drag_delta_with_threshold(MouseButton::Left, -1.0) != [0.0, 0.0]
 }
 
 /// Like [`draw_markdown`] without search hits, and also returns the
@@ -192,18 +247,27 @@ pub fn draw_markdown_with_heading_tops(
     level: u8,
 ) -> (Option<MarkdownAction>, Vec<f32>) {
     let mut tops = Vec::new();
-    let action = draw_document(ui, document, theme, chips, None, Some((level, &mut tops)));
+    let action = draw_document(
+        ui,
+        document,
+        theme,
+        chips,
+        Marks::default(),
+        Some((level, &mut tops)),
+    );
     (action, tops)
 }
 
-/// Draws `document` for [`draw_markdown`]; `heading_tops` collects the
-/// window-content y of every heading of its level.
+/// Draws `document` for [`draw_markdown`] with its `marks`; `heading_tops`
+/// collects the window-content y of every heading of its level. The menu of
+/// links and the selection is drawn by the caller, after the selection saw
+/// the mouse, unless no selection is drawn.
 fn draw_document(
     ui: &Ui,
     document: &MarkdownDocument,
     theme: &Theme,
     chips: ChipContext<'_>,
-    mut highlight: Option<&mut SearchHighlight<'_>>,
+    mut marks: Marks<'_, '_>,
     mut heading_tops: Option<(u8, &mut Vec<f32>)>,
 ) -> Option<MarkdownAction> {
     let _body_font = FontScope::push(ui, FontRole::Body);
@@ -232,6 +296,9 @@ fn draw_document(
     let mut action = None;
     for (index, block) in document.blocks.iter().enumerate() {
         let _id = ui.push_id(i32::try_from(index).unwrap_or(i32::MAX));
+        if let Some(pass) = marks.selection.as_deref_mut() {
+            pass.block = index;
+        }
         // Items of one list stand close together; every other block boundary
         // gets the paragraph gap `space.lg`, a heading `space.xl` above it
         // (memo plan M66, Q530).
@@ -253,11 +320,15 @@ fn draw_document(
         {
             tops.push(ui.cursor_screen_pos()[1] - ui.window_pos()[1] + ui.scroll_y());
         }
-        let clicked = draw_block(ui, block, layout, theme, chips, highlight.as_deref_mut());
+        let clicked = draw_block(ui, block, layout, theme, chips, &mut marks);
         action = action.or(clicked);
     }
     ui.dummy([0.0, 0.0]);
-    action.or(draw_link_menu(ui, theme, chips))
+    if marks.selection.is_some() {
+        action
+    } else {
+        action.or(draw_link_menu(ui, theme, chips))
+    }
 }
 
 /// Draws one `block` on the current line with the document's `layout`.
@@ -268,7 +339,7 @@ fn draw_block(
     layout: BlockLayout,
     theme: &Theme,
     chips: ChipContext<'_>,
-    highlight: Option<&mut SearchHighlight<'_>>,
+    marks: &mut Marks<'_, '_>,
 ) -> Option<MarkdownAction> {
     match block {
         Block::Heading { level, spans } => {
@@ -277,14 +348,14 @@ fn draw_block(
                 right: layout.right,
             };
             let style = Some(TextStyle::heading(*level));
-            draw_spans(ui, spans, style, bounds, theme, chips, highlight)
+            draw_spans(ui, spans, style, bounds, theme, chips, marks)
         }
         Block::Paragraph { depth, spans } => {
             let bounds = LineBounds {
                 left: layout.left + f32::from(*depth) * layout.indent,
                 right: layout.right,
             };
-            draw_spans(ui, spans, None, bounds, theme, chips, highlight)
+            draw_spans(ui, spans, None, bounds, theme, chips, marks)
         }
         Block::ListItem {
             depth,
@@ -297,7 +368,7 @@ fn draw_block(
                 left: left + layout.marker_column,
                 right: layout.right,
             };
-            let text_click = draw_spans(ui, spans, None, bounds, theme, chips, highlight);
+            let text_click = draw_spans(ui, spans, None, bounds, theme, chips, marks);
             marker_click.or(text_click)
         }
         Block::Rule => {
@@ -369,7 +440,7 @@ fn draw_list_marker(
                 height.max(1.0) + 2.0 * margin,
             ];
             ui.set_cursor_screen_pos(target_min);
-            let clicked = ui.invisible_button("task", target_size);
+            let clicked = ui.invisible_button("task", target_size) && !is_drag_release(ui);
             let fill = if ui.is_item_active() {
                 Some(theme.surface.active)
             } else if is_item_hovered(ui) {

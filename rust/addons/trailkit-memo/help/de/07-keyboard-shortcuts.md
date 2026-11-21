@@ -14,6 +14,12 @@ Das sind die Tasten, die memo nutzt, sortiert danach, wo sie wirken.
 - **Strg+0** – Standard-Textgröße
 - **Escape** im Hilfefenster – das Hilfefenster schließen
 
+### Notiz lesen
+
+- **Ziehen** – Text markieren; **Umschalt+Klick** erweitert die Markierung
+- **Strg+A** – die ganze Notiz markieren
+- **Strg+C** – den markierten Text kopieren
+
 ### Notizliste
 
 - **Entf** – ausgewählten Eintrag in den Papierkorb verschieben

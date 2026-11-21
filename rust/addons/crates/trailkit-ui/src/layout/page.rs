@@ -7,6 +7,7 @@
 use nexus::imgui::{ChildWindow, Ui};
 
 use crate::{
+    layout::pane::WindowDrag,
     layout::stack::Stack,
     text::glyph_metrics::capital_middle,
     text::{TextStyle, draw_text, draw_text_wrapped},
@@ -39,12 +40,14 @@ pub struct PageHead<'a> {
 /// Draws `head`, the separator and then `content` in the borderless scroll
 /// region `id` that fills the rest of the pane, as one stack (R148); returns
 /// what `content` returned, or `None` if the region is clipped and `content`
-/// did not run.
+/// did not run. `drag` decides whether dragging in the region moves the
+/// window.
 pub fn draw_page<R>(
     ui: &Ui,
     theme: &Theme,
     id: &str,
     head: PageHead<'_>,
+    drag: WindowDrag,
     content: impl FnOnce() -> R,
 ) -> Option<R> {
     Stack::vertical(theme).build(ui, |stack| {
@@ -58,6 +61,7 @@ pub fn draw_page<R>(
             ChildWindow::new(id)
                 .size([0.0, 0.0])
                 .draw_background(false)
+                .movable(drag == WindowDrag::MovesWindow)
                 .build(ui, content)
         })
     })

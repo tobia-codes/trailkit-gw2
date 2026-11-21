@@ -22,13 +22,14 @@ use trailkit_ui::{
 };
 
 use super::{
-    CLOSE_REQUESTED, DELETE_KEY_ARMED, DELETE_KEY_PRESSED, DIALOG_ENTER_ARMED,
-    DIALOG_ENTER_PRESSED, ESCAPE_CAUGHT, ESCAPE_KEY_ARMED, ESCAPE_KEY_PRESSED, FIND_KEY_ARMED,
-    FIND_KEY_PRESSED, FIND_STEP, FIND_STEP_ARMED, FIND_STEP_NEXT, FIND_STEP_NONE,
+    CLOSE_REQUESTED, COPY_KEY_ARMED, COPY_KEY_PRESSED, DELETE_KEY_ARMED, DELETE_KEY_PRESSED,
+    DIALOG_ENTER_ARMED, DIALOG_ENTER_PRESSED, ESCAPE_CAUGHT, ESCAPE_KEY_ARMED, ESCAPE_KEY_PRESSED,
+    FIND_KEY_ARMED, FIND_KEY_PRESSED, FIND_STEP, FIND_STEP_ARMED, FIND_STEP_NEXT, FIND_STEP_NONE,
     FIND_STEP_PREVIOUS, HELP, HELP_OPEN, HISTORY_STEP, HISTORY_STEP_NONE, HISTORY_STEP_REDO,
     HISTORY_STEP_UNDO, LANGUAGE, NEXUS_LINK, NOTES, NotesState, SEARCH_KEY_ARMED,
-    SEARCH_KEY_PRESSED, TEXT_SIZE_RESET_ARMED, TEXT_SIZE_RESET_PRESSED, TITLE_BAR, UNDO_KEYS_ARMED,
-    UNSAVED_CHANGES, VISIBLE, WINDOW_TAKES_ESCAPE, WINDOW_TITLE, disarm_window_keys,
+    SEARCH_KEY_PRESSED, SELECT_ALL_KEY_ARMED, SELECT_ALL_KEY_PRESSED, TEXT_SIZE_RESET_ARMED,
+    TEXT_SIZE_RESET_PRESSED, TITLE_BAR, UNDO_KEYS_ARMED, UNSAVED_CHANGES, VISIBLE,
+    WINDOW_TAKES_ESCAPE, WINDOW_TITLE, disarm_window_keys,
     guard::{RunState, draft_kept, run_state, take_help_request, try_lock_after_panic},
     help::MemoHelp,
     is_gameplay, settings,
@@ -240,6 +241,8 @@ fn draw_main_window(
             (&TEXT_SIZE_RESET_ARMED, window.takes_text_size_reset_key()),
             (&DIALOG_ENTER_ARMED, window.takes_dialog_enter_key()),
             (&ESCAPE_KEY_ARMED, window.takes_escape_key()),
+            (&COPY_KEY_ARMED, window.takes_copy_key()),
+            (&SELECT_ALL_KEY_ARMED, window.takes_select_all_key()),
         ] {
             armed.store(takes_key && visible, Ordering::Relaxed);
         }
@@ -276,6 +279,12 @@ fn apply_caught_keys(ui: &nexus::imgui::Ui, window: &mut MemoWindow, language: L
     }
     if DIALOG_ENTER_PRESSED.swap(false, Ordering::Relaxed) {
         window.confirm_dialog_by_key(language);
+    }
+    if COPY_KEY_PRESSED.swap(false, Ordering::Relaxed) {
+        window.copy_selection_by_key(ui);
+    }
+    if SELECT_ALL_KEY_PRESSED.swap(false, Ordering::Relaxed) {
+        window.select_all_by_key();
     }
 }
 

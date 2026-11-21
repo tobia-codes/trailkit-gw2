@@ -10,6 +10,7 @@ mod dialogs;
 mod find_in_note;
 mod panes;
 mod search;
+mod selection_keys;
 mod text_scale;
 mod trash;
 mod window_menu;
@@ -25,7 +26,7 @@ use trailkit_ui::{
     feedback::dialog::DialogHeight,
     feedback::toast::Toast,
     help::help_window::{HelpTab, HelpWindowState},
-    layout::pane::draw_pane,
+    layout::pane::{WindowDrag, draw_pane},
     layout::stack::Stack,
     layout::title_bar::{TitleBarTexts, TitleBarToggle, TogglePlacement},
     text::font_registry::FontScope,
@@ -307,6 +308,7 @@ impl MemoWindow {
         self.handle_undo_keys(ui);
         self.handle_text_scale_keys(ui);
         self.handle_search_keys(ui);
+        self.handle_selection_keys(ui);
         self.update_search();
         self.update_text_scale(ui, language, theme);
         self.collect_unsaved_notes();
@@ -358,9 +360,16 @@ impl MemoWindow {
             if self.note_list_shown() {
                 self.draw_two_panes(ui, language, theme);
             } else {
-                draw_pane(ui, theme, "note", [0.0, 0.0], || {
-                    self.draw_note_pane(ui, language, theme);
-                });
+                draw_pane(
+                    ui,
+                    theme,
+                    "note",
+                    [0.0, 0.0],
+                    WindowDrag::KeepsWindow,
+                    || {
+                        self.draw_note_pane(ui, language, theme);
+                    },
+                );
             }
         }
     }

@@ -12,7 +12,7 @@ use nexus::imgui::Ui;
 use trailkit_memo_shared::i18n::{Language, LocalizedText as _, Text};
 use trailkit_ui::{
     controls::button::Button,
-    layout::pane::draw_pane,
+    layout::pane::{WindowDrag, draw_pane},
     layout::stack::Stack,
     text::font_registry::FontScope,
     text::fonts::FontRole,
@@ -36,25 +36,32 @@ pub const VERSION_LINE: &str = concat!("trailkit-memo ", env!("CARGO_PKG_VERSION
 pub fn draw_options_tab(ui: &Ui, theme: &Theme, language: Language, version_line: &str) -> bool {
     let _body = FontScope::push(ui, FontRole::Body);
     let height = pane_height(ui, theme);
-    draw_pane(ui, theme, PANE_ID, [0.0, height], || {
-        // Title, version and button `space.sm` apart (R148).
-        Stack::vertical(theme).build(ui, |stack| {
-            stack.add(|| {
-                draw_text(
-                    ui,
-                    theme,
-                    TextStyle::Heading2,
-                    Text::MainWindowTitle.get(language),
-                );
-            });
-            stack.add(|| draw_text(ui, theme, TextStyle::Secondary, version_line));
-            stack.add(|| {
-                Button::new(HelpText::OpenHelp.get(language))
-                    .icon(Icon::CIRCLE_HELP)
-                    .draw(ui, theme)
+    draw_pane(
+        ui,
+        theme,
+        PANE_ID,
+        [0.0, height],
+        WindowDrag::MovesWindow,
+        || {
+            // Title, version and button `space.sm` apart (R148).
+            Stack::vertical(theme).build(ui, |stack| {
+                stack.add(|| {
+                    draw_text(
+                        ui,
+                        theme,
+                        TextStyle::Heading2,
+                        Text::MainWindowTitle.get(language),
+                    );
+                });
+                stack.add(|| draw_text(ui, theme, TextStyle::Secondary, version_line));
+                stack.add(|| {
+                    Button::new(HelpText::OpenHelp.get(language))
+                        .icon(Icon::CIRCLE_HELP)
+                        .draw(ui, theme)
+                })
             })
-        })
-    })
+        },
+    )
     .unwrap_or(false)
 }
 

@@ -237,6 +237,8 @@ impl MemoWindow {
         language: Language,
         theme: &Theme,
     ) {
+        // Editing ends the selection of the reading view (M217, Q553).
+        self.note_view.clear_selection();
         let Some(editor) = self.editor.as_mut() else {
             return;
         };

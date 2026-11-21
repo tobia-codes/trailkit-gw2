@@ -10,6 +10,7 @@ use super::{HelpWindowState, ParsedHelp, ParsedTopic};
 use crate::{
     chat_link::chat_link_chip::ChipContext,
     layout::page::{PageHead, draw_page},
+    layout::pane::WindowDrag,
     layout::pane_columns::{FillColumn, FixedColumn, PaneColumns, draw_resizable_pane_columns},
     lists::list_row::{ListRow, RowChevron, draw_list_row},
     markdown::markdown_view::{MarkdownAction, draw_markdown_with_heading_tops, open_link},
@@ -180,23 +181,30 @@ fn draw_topic(
         trailing: None,
         subtitle: topic.lead.as_deref(),
     };
-    let action = draw_page(ui, theme, "topic_body", head, || {
-        let (action, heading_tops) = draw_markdown_with_heading_tops(
-            ui,
-            &topic.document,
-            theme,
-            chips,
-            SECTION_HEADING_LEVEL,
-        );
-        match view.scroll.take() {
-            Some(ScrollTarget::Start) => ui.set_scroll_y(0.0),
-            Some(ScrollTarget::Section(index)) => {
-                ui.set_scroll_y(heading_tops.get(index).copied().unwrap_or_default());
+    let action = draw_page(
+        ui,
+        theme,
+        "topic_body",
+        head,
+        WindowDrag::MovesWindow,
+        || {
+            let (action, heading_tops) = draw_markdown_with_heading_tops(
+                ui,
+                &topic.document,
+                theme,
+                chips,
+                SECTION_HEADING_LEVEL,
+            );
+            match view.scroll.take() {
+                Some(ScrollTarget::Start) => ui.set_scroll_y(0.0),
+                Some(ScrollTarget::Section(index)) => {
+                    ui.set_scroll_y(heading_tops.get(index).copied().unwrap_or_default());
+                }
+                None => {}
             }
-            None => {}
-        }
-        action
-    });
+            action
+        },
+    );
     if let Some(Some(MarkdownAction::OpenLink(url))) = action {
         open_link(&url);
     }

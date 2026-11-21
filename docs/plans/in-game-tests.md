@@ -29,3 +29,31 @@ is ready when the user is back at the PC.
    then load again.
 
 ## Tests
+
+37. **Select and copy text in the reading view (M217, branch
+    `feature/read-view-text-selection`, mock
+    https://claude.ai/artifact/1FeMLueyes6L11SiUyFbgi).** Deploy the branch
+    (setup step 1 on it). Open a note with a checkbox list, a link and a chip
+    (e.g. paste `[&AvoJTQAA]` into a note). Before: dragging in the note
+    moved the whole window and nothing could be selected.
+    1. Drag with the left mouse button from the middle of a line over two
+       more lines: a violet fill marks the text (as in the editor), line by
+       line, with a narrow rest at each line end; the window stays put.
+       Over text the mouse shows the text cursor, over links and chips the
+       hand (check whether GW2 really shows the text cursor at all).
+    2. Press **Ctrl+C** and paste into the game chat or a text editor: the
+       text as shown, `[ ] ` before an unticked item whose start was
+       selected, link texts only, the chip as its code. The game must not
+       react to Ctrl+C.
+    3. Right-click into the selection: a menu with only **Copy**; on the
+       chip inside the selection: Copy, a divider, then Copy chat link /
+       Open in wiki.
+    4. Start a drag on the chip and on the link: they select and do not
+       copy or open; a plain click still copies the chip (with "Copied") and
+       opens the link; a plain click on the checkbox still ticks it.
+    5. **Shift+click** further down extends the selection, **Ctrl+A**
+       selects the whole note; a click into the note, another note, **Edit**
+       or a new search removes it. A double-click still opens the editor.
+    6. Dragging on the note's toolbar or empty space in the note pane does
+       not move the window; the title bar still does.
+    7. Repeat 1 and 3 with Nexus in Deutsch: the entry says **Kopieren**.

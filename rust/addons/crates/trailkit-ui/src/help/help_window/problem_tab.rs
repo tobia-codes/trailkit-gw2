@@ -16,7 +16,7 @@ use crate::{
     feedback::status_card::{CardDetail, CardStatus, StatusCard, draw_status_card},
     feedback::status_line::draw_status_line,
     layout::page::{PageHead, draw_page},
-    layout::pane::draw_pane,
+    layout::pane::{WindowDrag, draw_pane},
     layout::stack::{Stack, StackLayout},
     markdown::LinkKind,
     text::icons::Icon,
@@ -39,67 +39,99 @@ pub(super) fn draw_problem_tab(
         trailing: None,
         subtitle: Some(texts.problem_intro),
     };
-    draw_pane(ui, theme, "problem", [0.0, 0.0], || {
-        draw_page(ui, theme, "problem_body", head, || {
-            // Card, steps and footer are sections, `space.xl` apart like
-            // the headings in the help text (Q530).
-            Stack::vertical(theme)
-                .gap(theme.spacing.extra_large)
-                .build(ui, |page| {
-                    if let Some(notice) = content.problem.notice {
-                        page.add(|| {
-                            draw_status_card(
-                                ui,
-                                theme,
-                                &StatusCard {
-                                    status: CardStatus::Warning,
-                                    text: notice.text,
-                                    detail: Some(CardDetail {
-                                        text: notice.detail,
-                                        style: TextStyle::Secondary,
-                                    }),
-                                    buttons: &[],
-                                    close_tooltip: None,
-                                },
-                            )
-                        });
-                    }
-                    page.add(|| {
-                        draw_step(ui, theme, 1, texts.save_log_step, |step| {
-                            let export = Button::new(texts.export_log)
-                                .icon(Icon::DOWNLOAD)
-                                .state(content.problem.export_button);
-                            if step.add(|| export.draw(ui, theme)) {
-                                action = Some(HelpAction::ExportLog);
-                            }
-                            step.add(|| {
-                                draw_text_wrapped(ui, theme, TextStyle::Small, texts.export_hint);
-                            });
-                            if let Some((status, text)) = content.problem.status {
-                                step.add(|| {
-                                    draw_status_line(ui, theme, status, text, TextStyle::Small);
+    draw_pane(
+        ui,
+        theme,
+        "problem",
+        [0.0, 0.0],
+        WindowDrag::MovesWindow,
+        || {
+            draw_page(
+                ui,
+                theme,
+                "problem_body",
+                head,
+                WindowDrag::MovesWindow,
+                || {
+                    // Card, steps and footer are sections, `space.xl` apart like
+                    // the headings in the help text (Q530).
+                    Stack::vertical(theme)
+                        .gap(theme.spacing.extra_large)
+                        .build(ui, |page| {
+                            if let Some(notice) = content.problem.notice {
+                                page.add(|| {
+                                    draw_status_card(
+                                        ui,
+                                        theme,
+                                        &StatusCard {
+                                            status: CardStatus::Warning,
+                                            text: notice.text,
+                                            detail: Some(CardDetail {
+                                                text: notice.detail,
+                                                style: TextStyle::Secondary,
+                                            }),
+                                            buttons: &[],
+                                            close_tooltip: None,
+                                        },
+                                    )
                                 });
                             }
-                        });
-                    });
-                    page.add(|| {
-                        draw_step(ui, theme, 2, texts.report_step, |step| {
-                            let report = Button::new(texts.report_button)
-                                .kind(ButtonKind::Primary)
-                                .opens_link(LinkKind::Web);
-                            if step.add(|| report.draw(ui, theme)) {
-                                action = Some(HelpAction::ReportProblem);
-                            }
-                            step.add(|| {
-                                draw_text_wrapped(ui, theme, TextStyle::Small, texts.report_hint);
+                            page.add(|| {
+                                draw_step(ui, theme, 1, texts.save_log_step, |step| {
+                                    let export = Button::new(texts.export_log)
+                                        .icon(Icon::DOWNLOAD)
+                                        .state(content.problem.export_button);
+                                    if step.add(|| export.draw(ui, theme)) {
+                                        action = Some(HelpAction::ExportLog);
+                                    }
+                                    step.add(|| {
+                                        draw_text_wrapped(
+                                            ui,
+                                            theme,
+                                            TextStyle::Small,
+                                            texts.export_hint,
+                                        );
+                                    });
+                                    if let Some((status, text)) = content.problem.status {
+                                        step.add(|| {
+                                            draw_status_line(
+                                                ui,
+                                                theme,
+                                                status,
+                                                text,
+                                                TextStyle::Small,
+                                            );
+                                        });
+                                    }
+                                });
+                            });
+                            page.add(|| {
+                                draw_step(ui, theme, 2, texts.report_step, |step| {
+                                    let report = Button::new(texts.report_button)
+                                        .kind(ButtonKind::Primary)
+                                        .opens_link(LinkKind::Web);
+                                    if step.add(|| report.draw(ui, theme)) {
+                                        action = Some(HelpAction::ReportProblem);
+                                    }
+                                    step.add(|| {
+                                        draw_text_wrapped(
+                                            ui,
+                                            theme,
+                                            TextStyle::Small,
+                                            texts.report_hint,
+                                        );
+                                    });
+                                });
+                            });
+                            page.add_separator(theme);
+                            page.add(|| {
+                                draw_text_wrapped(ui, theme, TextStyle::Small, texts.footer)
                             });
                         });
-                    });
-                    page.add_separator(theme);
-                    page.add(|| draw_text_wrapped(ui, theme, TextStyle::Small, texts.footer));
-                });
-        });
-    });
+                },
+            );
+        },
+    );
     action
 }
 

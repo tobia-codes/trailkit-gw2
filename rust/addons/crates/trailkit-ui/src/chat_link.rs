@@ -221,6 +221,8 @@ pub enum ChipText {
     ClickToCopy,
     /// Tooltip after a click: the code was copied.
     Copied,
+    /// Menu entry that copies the selected text (memo M217).
+    Copy,
     /// Menu entry that opens a web link (memo M210).
     OpenLink,
     /// Menu entry that copies a web address.
@@ -251,6 +253,7 @@ impl ChipText {
                 Self::DamagedCode,
                 Self::ClickToCopy,
                 Self::Copied,
+                Self::Copy,
                 Self::OpenLink,
                 Self::CopyLinkAddress,
                 Self::WriteEmail,

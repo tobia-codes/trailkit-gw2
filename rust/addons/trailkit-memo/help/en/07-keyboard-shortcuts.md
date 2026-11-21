@@ -14,6 +14,12 @@ These are the keys memo uses, sorted by where they work.
 - **Ctrl+0** – default text size
 - **Escape** in the help window – close the help window
 
+### Reading a note
+
+- **Drag** – select text; **Shift+click** extends the selection
+- **Ctrl+A** – select the whole note
+- **Ctrl+C** – copy the selected text
+
 ### Note list
 
 - **Delete** – move the selected entry to the trash

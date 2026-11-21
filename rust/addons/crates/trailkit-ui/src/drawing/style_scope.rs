@@ -67,9 +67,7 @@ const COLOR_SLOTS: [(StyleColor, ColorToken); 44] = [
     (StyleColor::TableHeaderBg, |theme| theme.surface.panel),
     (StyleColor::TableBorderStrong, |theme| theme.border.color),
     (StyleColor::TableBorderLight, |theme| theme.border.color),
-    (StyleColor::TextSelectedBg, |theme| {
-        theme.accent.base.with_alpha(0.35)
-    }),
+    (StyleColor::TextSelectedBg, Theme::text_selection),
     (StyleColor::NavHighlight, |theme| theme.border.focus),
     (StyleColor::ModalWindowDimBg, |theme| {
         theme.surface.modal_overlay
