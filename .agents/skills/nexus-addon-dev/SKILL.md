@@ -102,6 +102,12 @@ for new addons: [`references/addon-structure.md`](references/addon-structure.md)
   check never fires), so always register. A window that must ask before
   closing (unsaved changes) notices the cleared flag in its render callback,
   shows itself again and asks (memo M54). Deregister in `unload`.
+  **Child panes (seen in game 2026-11-21):** memo's main window, whose content
+  sits in child windows (list, note, window menu), stopped closing on Escape
+  while the help window still closed; likely Nexus only matches the focused
+  window's own name, not a child's (unconfirmed in the Nexus source). memo
+  therefore catches Escape in its `WndProc` while it or a pane has the focus
+  (`ROOT_AND_CHILD_WINDOWS`) and consumes it.
 - **Keyboard routing (verified 2026-11-01):** Nexus passes key presses
   (arrows, Backspace, Enter, …) to ImGui instead of the game only while a
   real ImGui text input is active (`io.WantTextInput`); typed characters
