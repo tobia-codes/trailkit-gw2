@@ -4,6 +4,8 @@
 //! selection ends with the note.
 
 use super::*;
+use trailkit_memo_shared::note_tree::TrashEntry;
+use trailkit_memo_trash::trash_view::TrashAction;
 
 /// The usual window size.
 const SIZE: [f32; 2] = [640.0, 360.0];
@@ -224,4 +226,24 @@ fn copying_in_the_editor_shows_the_toast_too() {
         "Ctrl+A, Ctrl+C copy the body: {clipboard:?}"
     );
     assert!(memo.toast.is_some(), "and the Copied toast pops up");
+}
+
+#[test]
+fn text_of_a_trashed_note_can_be_selected_and_copied() {
+    let document = super::trash::document_with_trash([0, 25]);
+    let selected = document.trash.first().map(TrashEntry::id);
+    let (mut memo, _worker, _directory) = memo_window(document, UiState::default());
+    memo.apply(&WindowAction::OpenTrash, Language::English);
+    if let Some(selected) = selected {
+        memo.apply(
+            &WindowAction::Trash(TrashAction::Select(selected)),
+            Language::English,
+        );
+    }
+    let mut steps = drag_select([243.0, 170.0], [290.0, 194.0]);
+    steps.push(ctrl_key(0x43, [290.0, 194.0]));
+    let clipboard = run(&mut memo, &steps);
+    assert!(memo.note_view.has_selection(), "the drag selects");
+    assert_eq!(clipboard.as_deref(), Some("[ ] Mithril ore\n[x] Ectos"));
+    assert!(memo.toast.is_some(), "with the Copied toast");
 }
