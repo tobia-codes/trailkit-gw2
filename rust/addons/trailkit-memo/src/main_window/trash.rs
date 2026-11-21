@@ -7,8 +7,9 @@ use std::collections::BTreeSet;
 
 use jiff::{SignedDuration, Timestamp};
 use nexus::imgui::Ui;
-use trailkit_ui::feedback::toast::Toast;
+use trailkit_ui::{controls::search::field::SearchField, feedback::toast::Toast};
 
+use trailkit_memo_search::list_search::{ListSearch, SearchScope};
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText},
     list_filter::ListFilter,
@@ -81,7 +82,7 @@ impl Confirmation {
 
 /// The trash view's state (M136): whether the trash tool is on and which
 /// entry the note pane shows. Not saved; the window opens on the notes.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub(super) struct TrashState {
     /// Whether the trash replaces the note list.
     pub(super) visible: bool,
@@ -94,6 +95,28 @@ pub(super) struct TrashState {
     /// The trashed groups that show what they hold (M218); all closed when
     /// the trash opens (Q564).
     pub(super) open_groups: BTreeSet<GroupId>,
+    /// The trash's own search field, always shown (BL31).
+    pub(super) search_field: SearchField,
+    /// The trash search's results and current hit (BL31).
+    pub(super) search: ListSearch,
+    /// Groups closed during the trash search; the others show their matches.
+    pub(super) collapsed_in_search: BTreeSet<GroupId>,
+}
+
+impl Default for TrashState {
+    /// A hidden trash with nothing selected and an empty search.
+    fn default() -> Self {
+        Self {
+            visible: false,
+            selected: None,
+            scroll: 0.0,
+            next_purge: None,
+            open_groups: BTreeSet::new(),
+            search_field: SearchField::default(),
+            search: ListSearch::new(SearchScope::Trash),
+            collapsed_in_search: BTreeSet::new(),
+        }
+    }
 }
 
 impl MemoWindow {
@@ -245,8 +268,7 @@ impl MemoWindow {
             && self.confirmation.is_none()
             && self.ui_state.selected.is_some_and(|node| {
                 self.search
-                    .current
-                    .as_ref()
+                    .current()
                     .is_none_or(|search| search.results.is_visible(node))
             })
     }
@@ -304,7 +326,10 @@ impl MemoWindow {
     /// Shows the trash in place of the note list, which must show for that.
     fn show_trash(&mut self) {
         if !self.trash.visible {
+            // A newly opened trash starts closed and unsearched (Q564).
             self.trash.open_groups.clear();
+            self.trash.search_field.clear(false);
+            self.trash.collapsed_in_search.clear();
         }
         self.trash.visible = true;
         if self.ui_state.note_list_hidden {
@@ -328,7 +353,9 @@ impl MemoWindow {
                 if self.trash.selected != Some(*node) {
                     self.trash.selected = Some(*node);
                     self.trash.scroll = 0.0;
-                    self.note_view.show_other_note(false);
+                    // During the trash search a note opens at its first hit.
+                    self.note_view
+                        .show_other_note(self.trash.search.current().is_some());
                 }
             }
             WindowAction::Trash(TrashAction::ToggleGroup(group)) => {
@@ -338,8 +365,14 @@ impl MemoWindow {
                     self.trash.scroll = 0.0;
                     self.note_view.show_other_note(false);
                 }
-                if !self.trash.open_groups.remove(group) {
-                    self.trash.open_groups.insert(*group);
+                // While searching, a group closes only for this search.
+                let groups = if self.trash.search.current().is_some() {
+                    &mut self.trash.collapsed_in_search
+                } else {
+                    &mut self.trash.open_groups
+                };
+                if !groups.remove(group) {
+                    groups.insert(*group);
                 }
             }
             WindowAction::Trash(TrashAction::Restore(node)) => {

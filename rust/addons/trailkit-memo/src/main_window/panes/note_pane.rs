@@ -77,7 +77,7 @@ impl MemoWindow {
 
     /// Adds the find bar to `stack` while it is shown, with the divider below
     /// it (M198, R148).
-    fn add_find_bar(
+    pub(in crate::main_window) fn add_find_bar(
         &mut self,
         stack: &mut StackLayout<'_>,
         ui: &Ui,
@@ -266,7 +266,7 @@ impl MemoWindow {
             // While the unsaved changes dialog is shown, typing must not
             // change what the dialog asks about.
             is_dialog_open: self.leave_prompt.is_some(),
-            search: self.search.current.as_ref().map(|current| &current.query),
+            search: self.search.current().map(|current| &current.query),
             chips: chip_context(language),
         };
         let output = editor.draw(ui, language, theme, input);
@@ -348,10 +348,10 @@ impl MemoWindow {
             .as_ref()
             .filter(|_| finding)
             .map(|query| MarkedHits { query, current });
-        let search_current = self.search.cursor.current;
+        let search_current = self.search.current_hit();
         let input = NoteViewInput {
             note,
-            search: self.search.current.as_ref().map(|current| MarkedHits {
+            search: self.search.current().map(|current| MarkedHits {
                 query: &current.query,
                 current: search_current,
             }),
@@ -386,8 +386,9 @@ impl MemoWindow {
         let shown = note.map(|note| note.id);
         if finding {
             self.record_find_hits(shown, output.hit_count.unwrap_or(0));
-        } else if self.search.current.is_some() {
-            self.record_search_hits(shown, output.hit_count.unwrap_or(0));
+        } else if self.search.current().is_some() {
+            self.search
+                .record_drawn_hits(shown, output.hit_count.unwrap_or(0));
         }
     }
 }

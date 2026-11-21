@@ -8,6 +8,7 @@
 //! ImGui-free logic is tested on any host; the drawing compiles for Windows.
 
 pub mod i18n;
+pub mod list_search;
 pub mod note_search;
 
 #[cfg(windows)]

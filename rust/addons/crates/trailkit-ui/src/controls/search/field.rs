@@ -173,9 +173,8 @@ impl SearchField {
         // The `x` empties a field with text and closes an empty closable
         // one (M176). It reads the text from before this frame's typing, so
         // the first typed letter does not move it under the mouse.
-        let clicked = end_tooltip.is_some_and(|tooltip| {
-            self.draw_end_button(ui, theme, clear_position, clear, tooltip)
-        });
+        let clicked = end_tooltip
+            .is_some_and(|tooltip| self.draw_end_button(ui, theme, clear_position, clear, tooltip));
         if clicked && has_text {
             self.clear(true);
         }

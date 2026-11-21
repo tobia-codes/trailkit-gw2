@@ -97,7 +97,7 @@ impl MemoWindow {
     /// notes match, "2 of 4" with the arrows below it (mock v9). Typing, the
     /// `x`, the arrows and Enter take effect in this frame.
     fn draw_list_search(&mut self, ui: &Ui, language: Language, theme: &Theme) {
-        let position = self.hit_position();
+        let position = self.search.position(self.ui_state.shown_note);
         let count = position.map_or_else(String::new, |position| {
             let current = position
                 .current
@@ -150,7 +150,7 @@ impl MemoWindow {
     /// Draws the scrolling part of the note list: the empty search result
     /// (M126) or the list with the search and the reset badge and menu.
     fn draw_note_list(&mut self, ui: &Ui, language: Language, theme: &Theme) {
-        if let Some(current) = &self.search.current
+        if let Some(current) = self.search.current()
             && !current.results.has_hits()
         {
             if draw_no_search_results(ui, language, theme, &current.text) {
@@ -158,7 +158,7 @@ impl MemoWindow {
             }
             return;
         }
-        let search = self.search.current.as_ref().map(|current| ListSearch {
+        let search = self.search.current().map(|current| ListSearch {
             query: &current.query,
             filter: &current.results,
             collapsed: &self.collapsed_in_search,

@@ -17,6 +17,8 @@ pub enum TrashText {
     TrashKeepsEntries,
     /// Hint in the note pane while no trash entry is selected.
     SelectTrashEntry,
+    /// Placeholder of the trash's search field (BL31).
+    SearchTrash,
     /// Puts an entry back (M140, M145).
     Restore,
     /// Tooltip and menu entry that deletes an entry for good (M145, M146).
@@ -89,6 +91,7 @@ impl LocalizedText for TrashText {
         Self::TrashIsEmpty,
         Self::TrashKeepsEntries,
         Self::SelectTrashEntry,
+        Self::SearchTrash,
         Self::Restore,
         Self::DeletePermanently,
         Self::DaysLeft,
@@ -136,6 +139,7 @@ const fn english(text: TrashText) -> &'static str {
         TrashText::TrashIsEmpty => "The trash is empty.",
         TrashText::TrashKeepsEntries => "Deleted entries stay here for 30 days.",
         TrashText::SelectTrashEntry => "Select an entry to view it.",
+        TrashText::SearchTrash => "Search trash …",
         TrashText::Restore => "Restore",
         TrashText::DeletePermanently => "Delete permanently",
         TrashText::DaysLeft => "{count} days left",
@@ -188,6 +192,7 @@ const fn german(text: TrashText) -> &'static str {
         TrashText::TrashIsEmpty => "Der Papierkorb ist leer.",
         TrashText::TrashKeepsEntries => "Gelöschtes bleibt hier 30 Tage.",
         TrashText::SelectTrashEntry => "Wähle einen Eintrag, um ihn anzusehen.",
+        TrashText::SearchTrash => "Papierkorb durchsuchen …",
         TrashText::Restore => "Wiederherstellen",
         TrashText::DeletePermanently => "Endgültig löschen",
         TrashText::DaysLeft => "noch {count} Tage",

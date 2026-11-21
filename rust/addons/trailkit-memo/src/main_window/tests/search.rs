@@ -307,7 +307,7 @@ fn the_open_note_leaves_the_list_but_stays_shown_during_a_search() {
     let (mut memo, _worker, _directory) = memo_window(document, ui_state);
     memo.search_field.text = "Shopping".to_owned();
     memo.update_search();
-    let Some(search) = &memo.search.current else {
+    let Some(search) = memo.search.current() else {
         panic!("the search runs");
     };
     assert!(

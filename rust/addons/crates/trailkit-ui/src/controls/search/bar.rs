@@ -106,9 +106,8 @@ pub fn draw_search_bar(
         let _font = TextStyle::Secondary.push(ui, theme);
         ui.calc_text_size(label)[0]
     };
-    let arrows_width = icon_button_width(ui, Icon::ARROW_UP)
-        + icon_button_width(ui, Icon::ARROW_DOWN)
-        + gap / 2.0;
+    let arrows_width =
+        icon_button_width(ui, Icon::ARROW_UP) + icon_button_width(ui, Icon::ARROW_DOWN) + gap / 2.0;
     let beside_width = arrows_width
         + if label.is_empty() {
             gap

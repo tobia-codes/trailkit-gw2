@@ -43,7 +43,7 @@ use trailkit_memo_note_view::note_view::NoteView;
 use trailkit_memo_reset_schedule::{
     due_resets::apply_due_resets, schedule::next_reset_of_any_period,
 };
-use trailkit_ui::controls::search::field::SearchField;
+use trailkit_memo_search::list_search::{ListSearch, SearchScope};
 use trailkit_memo_shared::i18n::LocalizedText;
 use trailkit_memo_shared::{
     drafts::DraftsDocument,
@@ -54,6 +54,7 @@ use trailkit_memo_shared::{
     ui_state::{HelpWindowTab, UiState},
     undo::UndoHistory,
 };
+use trailkit_ui::controls::search::field::SearchField;
 
 use crate::help_text::HelpText;
 
@@ -62,7 +63,6 @@ use self::{
     dialogs::save_status::{EditorCommit, SaveFailedPrompt, SaveStatus},
     find_in_note::FindInNote,
     panes::layout::draw_empty_state,
-    search::SearchCache,
     trash::{Confirmation, TrashState},
 };
 
@@ -177,7 +177,7 @@ pub struct MemoWindow {
     /// Find in the open note (M198).
     find: FindInNote,
     /// Search index and results, rebuilt only when needed (M119).
-    search: SearchCache,
+    search: ListSearch,
     /// Groups collapsed during the current search; the saved expand state
     /// stays untouched and returns when the search is cleared (M124).
     collapsed_in_search: HashSet<GroupId>,
@@ -272,7 +272,7 @@ impl MemoWindow {
             next_reset_check: None,
             search_field: SearchField::default(),
             find: FindInNote::default(),
-            search: SearchCache::default(),
+            search: ListSearch::new(SearchScope::Notes),
             collapsed_in_search: HashSet::new(),
             document_revision: 0,
             undo: UndoHistory::default(),

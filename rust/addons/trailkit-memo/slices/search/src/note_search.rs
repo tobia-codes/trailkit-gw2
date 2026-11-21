@@ -43,6 +43,17 @@ impl NoteSearchIndex {
         index
     }
 
+    /// Indexes every trash entry of `document` with what trashed groups
+    /// hold (BL31, M218).
+    #[must_use]
+    pub fn build_trash(document: &NotesDocument) -> Self {
+        let mut index = Self::default();
+        for entry in &document.trash {
+            index.add_nodes(std::slice::from_ref(&entry.node));
+        }
+        index
+    }
+
     /// Adds `nodes` and their descendants.
     fn add_nodes(&mut self, nodes: &[TreeNode]) {
         for node in nodes {
@@ -104,6 +115,23 @@ impl SearchResults {
         let mut results = Self::default();
         let search = Search { index, query };
         search.visit_nodes(&document.root, false, &mut results);
+        results
+    }
+
+    /// Searches the trash of `document` with an index from
+    /// [`NoteSearchIndex::build_trash`], entries newest first as the trash
+    /// lists them (BL31); notes inside trashed groups are searched too.
+    #[must_use]
+    pub fn compute_trash(
+        document: &NotesDocument,
+        index: &NoteSearchIndex,
+        query: &SearchQuery,
+    ) -> Self {
+        let mut results = Self::default();
+        let search = Search { index, query };
+        for entry in document.trash.iter().rev() {
+            search.visit_nodes(std::slice::from_ref(&entry.node), false, &mut results);
+        }
         results
     }
 
@@ -369,6 +397,25 @@ mod tests {
         assert!(stops("dailies").is_empty());
         // Two terms: their places merge where they touch.
         assert_eq!(stops("mithril ore"), vec![(mithril, 1), (vault, 4)]);
+    }
+
+    #[test]
+    fn the_trash_is_searched_newest_first_with_group_contents() {
+        let (mut document, [mithril, dailies, vault, _, _]) = sample();
+        for (node, seconds) in [(mithril, 1), (dailies, 2)] {
+            let now = Timestamp::from_second(seconds).expect("valid time");
+            assert!(document.move_to_trash(node, now));
+        }
+        let query = SearchQuery::parse("ore").expect("query has terms");
+        let index = NoteSearchIndex::build_trash(&document);
+        let results = SearchResults::compute_trash(&document, &index, &query);
+        let (NodeId::Note(mithril_note), NodeId::Note(vault_note)) = (mithril, vault) else {
+            unreachable!()
+        };
+        let order: Vec<_> = results.hit_stops().iter().map(|stop| stop.note).collect();
+        assert_eq!(order, vec![vault_note, mithril_note], "newest entry first");
+        assert!(results.is_visible(dailies) && results.is_visible(vault));
+        assert!(!SearchResults::compute(&document, &index, &query).has_hits());
     }
 
     #[test]

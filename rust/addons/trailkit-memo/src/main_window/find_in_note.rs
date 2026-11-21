@@ -74,10 +74,25 @@ impl MemoWindow {
         self.window_focused && self.find_bar_shown()
     }
 
-    /// Whether a note is open that find could search: a selected note or
-    /// the edited one, not the trash.
+    /// Whether a note is open that find could search: a selected note, the
+    /// edited one, or a trashed note in the trash preview (mock v9).
     fn finds_in_shown_note(&self) -> bool {
-        !self.trash.visible && (self.editor.is_some() || self.selected_note().is_some())
+        if self.trash.visible {
+            self.trash_preview_note().is_some()
+        } else {
+            self.editor.is_some() || self.selected_note().is_some()
+        }
+    }
+
+    /// The note find searches: the trash preview's, the edited or the shown one.
+    fn find_target(&self) -> Option<NoteId> {
+        if self.trash.visible {
+            return self.trash_preview_note();
+        }
+        self.editor
+            .as_ref()
+            .map(|editor| editor.session().note)
+            .or(self.ui_state.shown_note)
     }
 
     /// Whether the find bar is open over a note it can search.
@@ -87,7 +102,7 @@ impl MemoWindow {
 
     /// Opens the find bar after Ctrl+F (M198) and focuses its field with the
     /// whole text selected. The field offers the editor's selected text, else
-    /// the list search, else the last find (Q507).
+    /// the search of the list beside it, else the last find (Q507).
     pub fn open_find(&mut self) {
         if !self.finds_in_shown_note() {
             return;
@@ -98,7 +113,12 @@ impl MemoWindow {
             .map(|editor| editor.selected_body_text())
             .filter(|text| !text.trim().is_empty() && !text.contains('\n'))
             .or_else(|| {
-                let search = self.search_field.text.trim();
+                let field = if self.trash.visible {
+                    &self.trash.search_field
+                } else {
+                    &self.search_field
+                };
+                let search = field.text.trim();
                 (!search.is_empty()).then_some(search)
             })
             .map(str::to_owned);
@@ -112,11 +132,7 @@ impl MemoWindow {
             self.find.text_changed();
         }
         // Another note than last time starts at its first hit.
-        let note = self
-            .editor
-            .as_ref()
-            .map(|editor| editor.session().note)
-            .or(self.ui_state.shown_note);
+        let note = self.find_target();
         if note != self.find.note {
             self.find.note = note;
             self.find.current = 0;

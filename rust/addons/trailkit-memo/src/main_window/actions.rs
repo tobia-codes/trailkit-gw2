@@ -473,7 +473,7 @@ impl MemoWindow {
 
     /// Expands or collapses `group`, during a search only for that search (M124).
     fn toggle_group(&mut self, group: GroupId) {
-        if self.search.current.is_some() {
+        if self.search.current().is_some() {
             if !self.collapsed_in_search.remove(&group) {
                 self.collapsed_in_search.insert(group);
             }
@@ -519,7 +519,7 @@ impl MemoWindow {
             self.ui_state.shown_note = Some(note);
             self.ui_state.note_scroll = 0.0;
             self.note_view
-                .show_other_note(self.search.current.is_some());
+                .show_other_note(self.search.current().is_some());
         }
         self.saver.save_ui_state(&self.ui_state);
     }
@@ -531,8 +531,7 @@ impl MemoWindow {
         let node = NodeId::Note(note);
         if self
             .search
-            .current
-            .as_ref()
+            .current()
             .is_some_and(|current| !current.results.is_visible(node))
         {
             self.search_field.clear(false);
