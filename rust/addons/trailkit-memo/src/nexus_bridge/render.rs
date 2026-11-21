@@ -22,11 +22,13 @@ use trailkit_ui::{
 };
 
 use super::{
-    CLOSE_REQUESTED, COPY_KEY_ARMED, COPY_KEY_PRESSED, DELETE_KEY_ARMED, DELETE_KEY_PRESSED,
-    DIALOG_ENTER_ARMED, DIALOG_ENTER_PRESSED, ESCAPE_CAUGHT, ESCAPE_KEY_ARMED, ESCAPE_KEY_PRESSED,
-    FIND_KEY_ARMED, FIND_KEY_PRESSED, FIND_STEP, FIND_STEP_ARMED, FIND_STEP_NEXT, FIND_STEP_NONE,
+    CLOSE_REQUESTED, COPY_KEY_ARMED, COPY_KEY_PRESSED, CURSOR_ARROW, CURSOR_HAND, CURSOR_NONE,
+    CURSOR_NOT_ALLOWED, CURSOR_RESIZE_ALL, CURSOR_RESIZE_EW, CURSOR_RESIZE_NESW, CURSOR_RESIZE_NS,
+    CURSOR_RESIZE_NWSE, CURSOR_TEXT, DELETE_KEY_ARMED, DELETE_KEY_PRESSED, DIALOG_ENTER_ARMED,
+    DIALOG_ENTER_PRESSED, ESCAPE_CAUGHT, ESCAPE_KEY_ARMED, ESCAPE_KEY_PRESSED, FIND_KEY_ARMED,
+    FIND_KEY_PRESSED, FIND_STEP, FIND_STEP_ARMED, FIND_STEP_NEXT, FIND_STEP_NONE,
     FIND_STEP_PREVIOUS, HELP, HELP_OPEN, HISTORY_STEP, HISTORY_STEP_NONE, HISTORY_STEP_REDO,
-    HISTORY_STEP_UNDO, LANGUAGE, NEXUS_LINK, NOTES, NotesState, SEARCH_KEY_ARMED,
+    HISTORY_STEP_UNDO, LANGUAGE, NEXUS_LINK, NOTES, NotesState, REQUESTED_CURSOR, SEARCH_KEY_ARMED,
     SEARCH_KEY_PRESSED, SELECT_ALL_KEY_ARMED, SELECT_ALL_KEY_PRESSED, SelectionKeys,
     TEXT_SIZE_RESET_ARMED, TEXT_SIZE_RESET_PRESSED, TITLE_BAR, UNDO_KEYS_ARMED, UNSAVED_CHANGES,
     VISIBLE, WINDOW_TAKES_ESCAPE, WINDOW_TITLE, disarm_window_keys,
@@ -48,6 +50,31 @@ pub(super) fn render(ui: &nexus::imgui::Ui) {
         RunState::HelpOnly => render_help_only(ui),
         RunState::Stopped => {}
     }
+    request_windows_cursor(ui);
+}
+
+/// PROTOTYPE (R159, Q557): asks the window message callback for the Windows
+/// cursor ImGui wants while the mouse is over any ImGui window, so the game's
+/// cursor and its hover gear stay away. Not for merging as is: it covers
+/// every ImGui window, not only trailkit's (Q558).
+fn request_windows_cursor(ui: &nexus::imgui::Ui) {
+    use nexus::imgui::MouseCursor;
+    let kind = if ui.io().want_capture_mouse {
+        match ui.mouse_cursor() {
+            Some(MouseCursor::TextInput) => CURSOR_TEXT,
+            Some(MouseCursor::Hand) => CURSOR_HAND,
+            Some(MouseCursor::ResizeNS) => CURSOR_RESIZE_NS,
+            Some(MouseCursor::ResizeEW) => CURSOR_RESIZE_EW,
+            Some(MouseCursor::ResizeNESW) => CURSOR_RESIZE_NESW,
+            Some(MouseCursor::ResizeNWSE) => CURSOR_RESIZE_NWSE,
+            Some(MouseCursor::ResizeAll) => CURSOR_RESIZE_ALL,
+            Some(MouseCursor::NotAllowed) => CURSOR_NOT_ALLOWED,
+            Some(MouseCursor::Arrow) | None => CURSOR_ARROW,
+        }
+    } else {
+        CURSOR_NONE
+    };
+    REQUESTED_CURSOR.store(kind, Ordering::Relaxed);
 }
 
 /// Draws the main window and the help window. Returns immediately while

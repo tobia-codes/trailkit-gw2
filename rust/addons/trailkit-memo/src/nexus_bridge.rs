@@ -307,6 +307,57 @@ fn disarm_window_keys() {
     }
 }
 
+/// PROTOTYPE (R159): the Windows cursor the window message callback sets on
+/// `WM_SETCURSOR`; `CURSOR_NONE` leaves the cursor to the game.
+static REQUESTED_CURSOR: AtomicU8 = AtomicU8::new(CURSOR_NONE);
+/// No cursor request: the game sets its own.
+const CURSOR_NONE: u8 = 0;
+/// The arrow.
+const CURSOR_ARROW: u8 = 1;
+/// The text cursor (I-beam).
+const CURSOR_TEXT: u8 = 2;
+/// The hand over links.
+const CURSOR_HAND: u8 = 3;
+/// Resizing up and down.
+const CURSOR_RESIZE_NS: u8 = 4;
+/// Resizing left and right.
+const CURSOR_RESIZE_EW: u8 = 5;
+/// Resizing along the bottom-left corner.
+const CURSOR_RESIZE_NESW: u8 = 6;
+/// Resizing along the bottom-right corner.
+const CURSOR_RESIZE_NWSE: u8 = 7;
+/// Moving in every direction.
+const CURSOR_RESIZE_ALL: u8 = 8;
+/// Not allowed.
+const CURSOR_NOT_ALLOWED: u8 = 9;
+
+/// PROTOTYPE (R159): sets the requested Windows cursor; returns whether one
+/// was requested, so the game must not set its own.
+fn set_requested_cursor() -> bool {
+    use windows::Win32::UI::WindowsAndMessaging::{
+        IDC_ARROW, IDC_HAND, IDC_IBEAM, IDC_NO, IDC_SIZEALL, IDC_SIZENESW, IDC_SIZENS,
+        IDC_SIZENWSE, IDC_SIZEWE, LoadCursorW, SetCursor,
+    };
+    let id = match REQUESTED_CURSOR.load(Ordering::Relaxed) {
+        CURSOR_NONE => return false,
+        CURSOR_TEXT => IDC_IBEAM,
+        CURSOR_HAND => IDC_HAND,
+        CURSOR_RESIZE_NS => IDC_SIZENS,
+        CURSOR_RESIZE_EW => IDC_SIZEWE,
+        CURSOR_RESIZE_NESW => IDC_SIZENESW,
+        CURSOR_RESIZE_NWSE => IDC_SIZENWSE,
+        CURSOR_RESIZE_ALL => IDC_SIZEALL,
+        CURSOR_NOT_ALLOWED => IDC_NO,
+        _ => IDC_ARROW,
+    };
+    // SAFETY: loading a shared system cursor and setting it are plain calls
+    // on the thread that processes the window's messages.
+    if let Ok(cursor) = unsafe { LoadCursorW(None, id) } {
+        unsafe { SetCursor(Some(cursor)) };
+    }
+    true
+}
+
 /// What a `WndProc` callback returns for a message it consumed.
 const MESSAGE_CONSUMED: u32 = 0;
 /// What a `WndProc` callback returns for a message others should see.
@@ -547,6 +598,9 @@ extern "C-unwind" fn catch_window_keys(
 /// The body of [`catch_window_keys`] while memo runs. `details` carries the
 /// key's previous state (bit 30), which marks auto repeat.
 fn route_window_message(message: u32, key: WPARAM, details: LPARAM) -> u32 {
+    if message == windows::Win32::UI::WindowsAndMessaging::WM_SETCURSOR && set_requested_cursor() {
+        return MESSAGE_CONSUMED;
+    }
     if message == WM_RBUTTONDOWN || message == WM_MBUTTONDOWN {
         // Clicks into the game never reach ImGui; the window frame uses this
         // to drop the focus (M186). The game still gets the click.
