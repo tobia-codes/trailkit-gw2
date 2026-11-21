@@ -283,11 +283,13 @@ fn draw_row_texts(
         let truncated = !row.renaming && draw_title(ui, ink, row, [title_x, top], title_end);
         (title_x, truncated)
     };
+    // The detail line starts under the title, also after a chevron (user
+    // request 2026-11-21, memo M218).
     if let Some(detail) = row.detail {
         draw_list.add_text(
-            [content_left + padding[0], top + ui.text_line_height()],
+            [title_x, top + ui.text_line_height()],
             ink.color(detail.color),
-            truncate_to_width(ui, detail.text, right - content_left - padding[0]),
+            truncate_to_width(ui, detail.text, right - title_x),
         );
     }
     RowTexts {
