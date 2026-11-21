@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-20 (session 49, PC; R147/R148, R155 a+b, R156 merged; M215/M216 merged; next R155 c on `feature/help-table-of-contents`). Current state and next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
+Last updated: 2026-11-21 (session 50, phone; **active work branch `chore/split-help-files`**: R157 help split, waits for Q545, in-game test 34 and merge OK; then R155 c). Current state and next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
 
@@ -29,9 +29,10 @@ R139–R146 (TextField, no disabled buttons, dialog close icon, wrapped tooltips
 **Merged 2026-11-20 (user OK, PRs of `feature/ui-layout-rules` and `bugfix/memo-reveal-new-row`):** M214, R150, dropdown gap; **R148** one spacing scale, `layout::stack::Stack`, one divider (Q528), ImGui `ItemSpacing` 0 (Q529), markdown block gaps (Q530); **R147** one interface icon size (Q536, Q537), icons on the capital middle, square icon buttons (Q523, Q524); note list header buttons on the shared `Button` (mock https://claude.ai/artifact/DuZrXXZKQP7fNZBLEfEtuL); twelve snapshot states that missed their element after the layout change fixed; a new note or group scrolls into view (M185 reveal). All tested in game. Side note: the text field error wraps inside "example.com".
 **Session 49 (2026-11-20, PC), all merged:** R155 a one `MenuItem` (submenus 4 px apart, row kept highlighted, M98); R155 b the note list on `draw_list_row` (dragged row fades as a whole M106,
 group double-click without toggle M172); R156 indent guides (`tree_indent`); M215 new entries next to the selection; M216 empty-spot click selects nothing. Lesson: md5 groups miss a hover that
-lands on a wrong row, so measure positions in the PNG after layout changes. **No active work branch.**
-**▶ Next step (start here): R155 c, the help table of contents.** `git fetch origin && git switch develop && git pull --ff-only && git switch -c feature/help-table-of-contents`.
-1. Grilling only for what R155 leaves open (e.g. which heading levels count as sections, what a click on a section of another topic does), one question at a time on the phone.
+lands on a wrong row, so measure positions in the PNG after layout changes.
+**Session 50 (2026-11-20/21, phone):** Q538 (topic without sections: no chevron, R155) and **R157** (Q539–Q544): help split into `help/{en,de}/NN-name.md`, joined by memo's `build.rs` with the privacy policy, build errors name file, line and fix; output byte-identical; 7 tests in `help_assembly.rs`. **Active work branch `chore/split-help-files`** (pushed, no PR yet): `git fetch origin && git switch --track origin/chore/split-help-files`. Open there, in order: 1. ask **Q545** (recommended yes): add the missing edge-case tests by moving the folder reading from `build.rs` into `help_assembly.rs` and testing it with a temp folder (stray file or subfolder, unreadable file, missing language folder), plus an empty file, an empty `## `, uppercase/umlaut names and CRLF line ends; 2. deploy, in-game test 34, merge OK (R74). Test gaps found (own `chore/test-gaps` after R155 c): the nested-row padding fix 7790ea3 (R156) has no automated test, M172 (double-click without toggle) only a snapshot; plus the known `render.rs`/window action/key gaps below.
+**▶ Next step (start here): finish `chore/split-help-files` (above), then R155 c, the help table of contents.** After its merge: `git fetch origin && git switch develop && git pull --ff-only && git switch -c feature/help-table-of-contents`.
+1. Grilling is done: sections are the `###` headings (the privacy topic gets them from `PRIVACY.md`), only the selected topic is expanded, a topic without sections has no chevron (Q538).
 2. R87 rendered proposal (Dark/Light, minimum width, German): sections of the selected topic as `ListRow { level: 1 }` below it, topics with a chevron like memo's groups, indent guides come
    for free from `draw_list_row`; the help list spaces rows with `Stack`, while the guides reach into ImGui's `ItemSpacing` gap above a row, so align the two. 3. Build, snapshots, deploy, in-game test, merge OK.
 Also open: length hints for split grilling: `draw_spans` (`inline_text.rs`, 80), `states.rs` tests (863), `editor.rs` (481), `dialogs.rs` (403), `buffer.rs` (413); one unreproduced debug crash `imgui.h:1629` while deleting in a link label (if it recurs: Ignore, note cursor placement, key, preview, tooltip).
@@ -52,14 +53,14 @@ Also open: length hints for split grilling: `draw_spans` (`inline_text.rs`, 80),
 **Open (grill):** an unknown tree node `type` (e.g. a future `guild_note`) still stops older builds from loading `notes.json`; `settings.json`/`ui_state.json` do not keep unknown fields (M202 covers notes only). **Decided, not scheduled:** Q340 backups with restore after settings and export/import (M28); Q329 `cargo bloat` at release prep. **Lessons:** measure before fixing; remove probes by editing; mockups first (R87); snapshot checks need a (draft) PR.
 
 **Deferred by the user (2026-11-12): one theme character for addons and the coming React website.** No code yet. Mockups:
-https://claude.ai/artifact/SFFrXawiqYD6HouhdihGdv (latest: Papier A–D). Wanted: GW2-reminiscent, own character, dark, very subtle
+https://claude.ai/artifact/SFFrXawiqYD6HouhdihGdv (latest: Papier A–D). Wanted: GW2-reminiscent, own character, dark, very subtle Session 50 exploration, no decision: an ImGui-only paint layer (vertex-color fans with noisy rims and a faded fringe, gradients, Bézier strokes, points clamped into the rounded window; ~6300 triangles, rebuilt only on resize; no blur, grain or overlay) https://claude.ai/artifact/48jmBfK1ZQfsL6wFE27oeB, after the user's canvas https://claude.ai/artifact/4m5MTgaXdWPJXga4RzAC5a; its brass corners break "Brass never decorates". Alternative: PNG from an `xtask` (resvg), 9-slice.
 (background about `#060709`–`#0d0e17`), crisp edges. Rejected: mountains, waypoint markers, header band/spine, web-template look. Closest:
 Papercraft Q–T and Flecken U–X; recommended Papier B Rissrand. ImGui draws flat fills, polygons, one-direction gradients, offset shapes
 as shadow, no blur or noise: mottling needs a PNG from a `cargo xtask`. Brass never decorates. Before code: grilling plus R87. ArenaNet's
 Content Terms for fan content are not read yet; never copy game or Blish HUD art, never look official.
 
 **Queue after that:** B23/B24/B25: tech-stack grilling, Q288–Q293, `trailkit-i18n` for shared lock texts, icon `wrench`; server stays local (Q223).
-Next ids: **M217+, R157+, B46+, BL27+, questions from 538**. Deferred: GW2 build/Nexus version in `session_start` (C12).
+Next ids: **M217+, R158+, B46+, BL27+, questions from 546** (Q545 open). Deferred: GW2 build/Nexus version in `session_start` (C12).
 ## Review improvements — one at a time, agreed order, solutions still proposals
 
 4. **Search cache:** `rust/addons/trailkit-memo/src/main_window/search.rs::update_search` calls `SearchQuery::parse` before checking the
