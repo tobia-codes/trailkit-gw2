@@ -13,8 +13,8 @@ use trailkit_ui::{
     drawing::style_scope::StyleScope,
     feedback::status_line::Status,
     help::help_window::{
-        HelpTab, HelpWindow, HelpWindowContent, HelpWindowState, HelpWindowTexts, ProblemNotice,
-        ProblemPage,
+        HelpSearchTexts, HelpTab, HelpWindow, HelpWindowContent, HelpWindowState, HelpWindowTexts,
+        ProblemNotice, ProblemPage,
     },
     layout::title_bar::TitleBarTexts,
     theme::ThemeKind,
@@ -57,6 +57,16 @@ const TEXTS_EN: HelpWindowTexts<'static> = HelpWindowTexts {
     report_button: "Report a problem",
     report_hint: "Opens a form in your browser. Reports are public and need a GitHub account.",
     footer: "Logs are in addons/trailkit/logs. Nexus keeps its own Nexus.log in addons/Nexus.",
+    search: HelpSearchTexts {
+        search_hint: "Search help …",
+        find_hint: "Find in topic …",
+        clear: "Clear search",
+        close: "Close (Escape)",
+        count: "{current} of {total}",
+        no_results: "No results",
+        previous: "Previous match (Shift+Enter)",
+        next: "Next match (Enter)",
+    },
 };
 
 /// The German texts of the mockup.
@@ -77,6 +87,16 @@ const TEXTS_DE: HelpWindowTexts<'static> = HelpWindowTexts {
     report_button: "Problem melden",
     report_hint: "Öffnet ein Formular im Browser. Berichte sind öffentlich und brauchen ein GitHub-Konto.",
     footer: "Logs liegen in addons/trailkit/logs. Nexus führt eine eigene Nexus.log in addons/Nexus.",
+    search: HelpSearchTexts {
+        search_hint: "Hilfe durchsuchen …",
+        find_hint: "Im Thema suchen …",
+        clear: "Suche leeren",
+        close: "Schließen (Escape)",
+        count: "{current} von {total}",
+        no_results: "Keine Treffer",
+        previous: "Vorheriger Treffer (Umschalt+Enter)",
+        next: "Nächster Treffer (Enter)",
+    },
 };
 
 /// One snapshot: language, tab and the problem page.
@@ -97,6 +117,10 @@ struct State {
     notice: Option<ProblemNotice<'static>>,
     /// Where the mouse is.
     mouse: [f32; 2],
+    /// Typed into the search above the topic list (BL30).
+    search: Option<&'static str>,
+    /// Typed into find in the topic (Ctrl+F).
+    find: Option<&'static str>,
 }
 
 /// Somewhere outside every control.
@@ -106,9 +130,10 @@ const AWAY: [f32; 2] = [2.0, HEIGHT - 2.0];
 const SPLITTER: [f32; 2] = [144.0, 300.0];
 
 /// Every state of both tabs (R100 Q302) in English, the long German texts,
-/// a hovered tab, the hovered splitter of the topic list (R101) and the
-/// warning card after the addon stopped, with the long German draft text (R104).
-const STATES: [State; 15] = [
+/// a hovered tab, the hovered splitter of the topic list (R101), the
+/// warning card after the addon stopped, with the long German draft text
+/// (R104), and the search and find of the Help tab (BL30, mock v9).
+const STATES: [State; 20] = [
     State {
         name: "help-section-hover",
         german: false,
@@ -117,8 +142,11 @@ const STATES: [State; 15] = [
         export_button: ButtonState::Ready,
         status: None,
         notice: None,
-        // Over the section "The window" below the selected topic.
-        mouse: [70.0, 153.0],
+        // Over the section "The window" below the selected topic, below
+        // the search (BL30).
+        mouse: [70.0, 202.0],
+        search: None,
+        find: None,
     },
     State {
         name: "help-privacy",
@@ -129,6 +157,8 @@ const STATES: [State; 15] = [
         status: None,
         notice: None,
         mouse: AWAY,
+        search: None,
+        find: None,
     },
     State {
         name: "help-de-privacy",
@@ -139,6 +169,8 @@ const STATES: [State; 15] = [
         status: None,
         notice: None,
         mouse: AWAY,
+        search: None,
+        find: None,
     },
     State {
         name: "help-splitter-hover",
@@ -149,6 +181,8 @@ const STATES: [State; 15] = [
         status: None,
         notice: None,
         mouse: SPLITTER,
+        search: None,
+        find: None,
     },
     State {
         name: "help",
@@ -159,6 +193,8 @@ const STATES: [State; 15] = [
         status: None,
         notice: None,
         mouse: AWAY,
+        search: None,
+        find: None,
     },
     State {
         name: "help-de",
@@ -169,6 +205,8 @@ const STATES: [State; 15] = [
         status: None,
         notice: None,
         mouse: AWAY,
+        search: None,
+        find: None,
     },
     State {
         name: "problem",
@@ -179,6 +217,8 @@ const STATES: [State; 15] = [
         status: None,
         notice: None,
         mouse: AWAY,
+        search: None,
+        find: None,
     },
     State {
         name: "problem-success",
@@ -192,6 +232,8 @@ const STATES: [State; 15] = [
         )),
         notice: None,
         mouse: AWAY,
+        search: None,
+        find: None,
     },
     State {
         name: "problem-success-trimmed",
@@ -205,6 +247,8 @@ const STATES: [State; 15] = [
         )),
         notice: None,
         mouse: AWAY,
+        search: None,
+        find: None,
     },
     State {
         name: "problem-failure",
@@ -218,6 +262,8 @@ const STATES: [State; 15] = [
         )),
         notice: None,
         mouse: AWAY,
+        search: None,
+        find: None,
     },
     State {
         name: "problem-no-log",
@@ -233,6 +279,8 @@ const STATES: [State; 15] = [
         )),
         notice: None,
         mouse: AWAY,
+        search: None,
+        find: None,
     },
     State {
         name: "problem-de-failure",
@@ -246,6 +294,8 @@ const STATES: [State; 15] = [
         )),
         notice: None,
         mouse: AWAY,
+        search: None,
+        find: None,
     },
     State {
         name: "problem-stopped",
@@ -259,6 +309,8 @@ const STATES: [State; 15] = [
             detail: "Report the problem here, then reload memo in the Nexus addon list or restart the game.",
         }),
         mouse: AWAY,
+        search: None,
+        find: None,
     },
     State {
         name: "problem-de-stopped-draft",
@@ -272,6 +324,8 @@ const STATES: [State; 15] = [
             detail: "Dein ungespeicherter Text ist als Entwurf gesichert. Melde das Problem hier und lade memo danach in der Addon-Liste von Nexus neu oder starte das Spiel neu.",
         }),
         mouse: AWAY,
+        search: None,
+        find: None,
     },
     State {
         name: "tab-hover",
@@ -283,6 +337,68 @@ const STATES: [State; 15] = [
         notice: None,
         // Over "Report a problem" in the tab row.
         mouse: [110.0, 62.0],
+        search: None,
+        find: None,
+    },
+    State {
+        name: "help-search",
+        german: false,
+        tab: HelpTab::Help,
+        topic: 0,
+        export_button: ButtonState::Ready,
+        status: None,
+        notice: None,
+        mouse: AWAY,
+        search: Some("window"),
+        find: None,
+    },
+    State {
+        name: "help-de-search",
+        german: true,
+        tab: HelpTab::Help,
+        topic: 0,
+        export_button: ButtonState::Ready,
+        status: None,
+        notice: None,
+        mouse: AWAY,
+        search: Some("fenster"),
+        find: None,
+    },
+    State {
+        name: "help-search-no-results",
+        german: false,
+        tab: HelpTab::Help,
+        topic: 0,
+        export_button: ButtonState::Ready,
+        status: None,
+        notice: None,
+        mouse: AWAY,
+        search: Some("zzz"),
+        find: None,
+    },
+    State {
+        name: "help-find",
+        german: false,
+        tab: HelpTab::Help,
+        topic: 0,
+        export_button: ButtonState::Ready,
+        status: None,
+        notice: None,
+        mouse: AWAY,
+        search: None,
+        find: Some("the"),
+    },
+    State {
+        name: "help-de-find-no-results",
+        german: true,
+        tab: HelpTab::Help,
+        topic: 0,
+        export_button: ButtonState::Ready,
+        status: None,
+        notice: None,
+        mouse: AWAY,
+        search: None,
+        find: Some("zzz"),
     },
 ];
 
@@ -306,6 +422,12 @@ fn help_window_states_match_snapshots_at_the_minimum_width() {
                 topic: state.topic,
                 ..HelpWindowState::default()
             });
+            if let Some(text) = state.search {
+                window.search_for(text);
+            }
+            if let Some(text) = state.find {
+                window.find_in_topic(text);
+            }
             let (texts, help_text) = if state.german {
                 (TEXTS_DE, HELP_DE)
             } else {
@@ -396,11 +518,12 @@ fn a_hovered_email_link_shows_its_address() {
     }
 }
 
-/// Over the first topic's row "Getting started" at the minimum width.
-const FIRST_TOPIC: [f32; 2] = [70.0, 97.0];
+/// Over the first topic's row "Getting started" at the minimum width, below
+/// the search (BL30).
+const FIRST_TOPIC: [f32; 2] = [70.0, 146.0];
 
 /// Over its second section "The window".
-const SECOND_SECTION: [f32; 2] = [70.0, 153.0];
+const SECOND_SECTION: [f32; 2] = [70.0, 202.0];
 
 /// A click on a section marks it and scrolls the topic to its heading
 /// (R155 c, Q546 A); a click on the topic marks the topic again and shows

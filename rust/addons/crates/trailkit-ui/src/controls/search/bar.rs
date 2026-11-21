@@ -155,18 +155,46 @@ pub fn draw_search_bar(
             (middle, start[0], start[0] + available - arrows_width)
         }
     };
-    if !label.is_empty() {
-        let _font = TextStyle::Secondary.push(ui, theme);
-        let color = if status == SearchStatus::NoResults {
-            theme.status.danger
-        } else {
-            theme.text.secondary
-        };
-        let top = middle - ui.text_line_height() / 2.0;
-        window_draw_list(ui).add_text([label_x, top], color.to_array(), label);
-    }
+    draw_count(ui, theme, label, status, [label_x, middle]);
+    let (previous, next) = draw_arrows(ui, theme, status, &texts, [arrows_x, middle]);
+    response.previous |= previous;
+    response.next |= next;
+    // Leave the cursor below the lower of field and row, as one item would.
+    let bottom = match row {
+        Row::Beside => field_end,
+        Row::Below => middle + button_height / 2.0,
+    };
+    ui.set_cursor_screen_pos([start[0], bottom]);
+    ui.dummy([0.0, 0.0]);
+    response
+}
 
-    // Disabled arrows say why (trailkit-ui principle 4).
+/// Draws `label` (the count, or "No results" in `danger`) in Secondary
+/// with its left end at `x`, centered on `middle`.
+fn draw_count(ui: &Ui, theme: &Theme, label: &str, status: SearchStatus, [x, middle]: [f32; 2]) {
+    if label.is_empty() {
+        return;
+    }
+    let _font = TextStyle::Secondary.push(ui, theme);
+    let color = if status == SearchStatus::NoResults {
+        theme.status.danger
+    } else {
+        theme.text.secondary
+    };
+    let top = middle - ui.text_line_height() / 2.0;
+    window_draw_list(ui).add_text([x, top], color.to_array(), label);
+}
+
+/// Draws previous and next from `x`, centered on `middle`; without hits
+/// they are disabled and say why (trailkit-ui principle 4). Returns which
+/// was clicked.
+fn draw_arrows(
+    ui: &Ui,
+    theme: &Theme,
+    status: SearchStatus,
+    texts: &SearchBarTexts<'_>,
+    [x, middle]: [f32; 2],
+) -> (bool, bool) {
     let arrows = match status {
         SearchStatus::Hits => ButtonState::Ready,
         SearchStatus::NoResults => ButtonState::Disabled {
@@ -176,19 +204,11 @@ pub fn draw_search_bar(
             reason: texts.field.hint,
         },
     };
-    ui.set_cursor_screen_pos([arrows_x, middle - button_height / 2.0]);
-    response.previous |=
-        draw_icon_button_with_state(ui, theme, Icon::ARROW_UP, texts.previous, arrows);
-    ui.same_line_with_spacing(0.0, gap / 2.0);
-    response.next |= draw_icon_button_with_state(ui, theme, Icon::ARROW_DOWN, texts.next, arrows);
-    // Leave the cursor below the lower of field and row, as one item would.
-    let bottom = match row {
-        Row::Beside => field_end,
-        Row::Below => middle + button_height / 2.0,
-    };
-    ui.set_cursor_screen_pos([start[0], bottom]);
-    ui.dummy([0.0, 0.0]);
-    response
+    ui.set_cursor_screen_pos([x, middle - ui.frame_height() / 2.0]);
+    let previous = draw_icon_button_with_state(ui, theme, Icon::ARROW_UP, texts.previous, arrows);
+    ui.same_line_with_spacing(0.0, theme.spacing.small / 2.0);
+    let next = draw_icon_button_with_state(ui, theme, Icon::ARROW_DOWN, texts.next, arrows);
+    (previous, next)
 }
 
 /// Where the count row ended up in this frame.

@@ -179,34 +179,30 @@ impl SearchField {
             self.clear(true);
         }
 
-        let frame = if self.is_active {
-            theme.border.focus
-        } else {
-            theme.border.color
-        };
-        window_draw_list(ui)
-            .add_rect(start, end, frame.to_array())
-            .rounding(theme.radius.medium)
-            .thickness(theme.border.width)
-            .build();
+        draw_frame(ui, theme, [start, end], self.is_active);
         // Leave the cursor below the field, as a regular item would.
         ui.set_cursor_screen_pos([start[0], end[1]]);
         ui.dummy([0.0, 0.0]);
-        // ImGui ends the input's activation on Enter; the field takes the
-        // focus back so the user can keep stepping (M198).
-        let submitted = (was_active && ui.is_key_pressed(Key::Enter)).then(|| {
+        let submitted = self.take_submit(ui, was_active);
+        SearchFieldResponse {
+            text_changed: changed || (clicked && has_text),
+            close_clicked: clicked && !has_text,
+            submitted,
+        }
+    }
+
+    /// Enter or Shift+Enter in the field that was active (`was_active`):
+    /// ImGui ends the input's activation on Enter, so the field takes the
+    /// focus back and the user can keep stepping (M198).
+    fn take_submit(&mut self, ui: &Ui, was_active: bool) -> Option<Submit> {
+        (was_active && ui.is_key_pressed(Key::Enter)).then(|| {
             self.focus_requested = true;
             if ui.io().key_shift {
                 Submit::Backward
             } else {
                 Submit::Forward
             }
-        });
-        SearchFieldResponse {
-            text_changed: changed || (clicked && has_text),
-            close_clicked: clicked && !has_text,
-            submitted,
-        }
+        })
     }
 
     /// Draws the frameless text input at `position` with `width`; returns
@@ -281,6 +277,21 @@ impl SearchField {
         window_draw_list(ui).add_text(position, color.to_array(), Icon::X.as_str(&mut buffer));
         clicked
     }
+}
+
+/// Draws the field's frame over `[start, end]`: the accent focus frame while
+/// `is_active`, else the regular border.
+fn draw_frame(ui: &Ui, theme: &Theme, [start, end]: [[f32; 2]; 2], is_active: bool) {
+    let frame = if is_active {
+        theme.border.focus
+    } else {
+        theme.border.color
+    };
+    window_draw_list(ui)
+        .add_rect(start, end, frame.to_array())
+        .rounding(theme.radius.medium)
+        .thickness(theme.border.width)
+        .build();
 }
 
 /// The height of the field: a little taller than a button (M128); the input

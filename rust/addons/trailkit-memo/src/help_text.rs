@@ -27,6 +27,10 @@ pub enum HelpText {
     ReportHint,
     /// Where the logs and `Nexus.log` are (Q259).
     Footer,
+    /// Placeholder of the search above the topic list (BL30).
+    SearchHelp,
+    /// Placeholder of find in a topic (Ctrl+F, BL30).
+    FindInTopic,
     /// Status after an export; `{file}` is the bare file name.
     ExportSaved,
     /// Status after an export that left older days out; `{file}` is the
@@ -72,6 +76,8 @@ impl LocalizedText for HelpText {
         Self::ReportStep,
         Self::ReportHint,
         Self::Footer,
+        Self::SearchHelp,
+        Self::FindInTopic,
         Self::ExportSaved,
         Self::ExportSavedTrimmed,
         Self::ExportFailed,
@@ -127,6 +133,10 @@ impl LocalizedText for HelpText {
                 "Logs liegen in addons/trailkit/logs. Nexus führt eine eigene Nexus.log in \
                  addons/Nexus."
             }
+            (Self::SearchHelp, Language::English) => "Search help …",
+            (Self::SearchHelp, Language::German) => "Hilfe durchsuchen …",
+            (Self::FindInTopic, Language::English) => "Find in topic …",
+            (Self::FindInTopic, Language::German) => "Im Thema suchen …",
             (Self::ExportSaved, Language::English) => "Saved {file} in Downloads.",
             (Self::ExportSaved, Language::German) => "{file} im Download-Ordner gespeichert.",
             (Self::ExportSavedTrimmed, Language::English) => {

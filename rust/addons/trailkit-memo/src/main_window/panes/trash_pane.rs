@@ -14,15 +14,14 @@ use trailkit_ui::{
     feedback::toast::{ToastAction, draw_toast},
     layout::stack::Stack,
     markdown::markdown_view::{MarkdownAction, open_link},
+    text::search_steps::HitStep,
     text::{TextStyle, draw_text_wrapped},
     theme::Theme,
 };
 
 use trailkit_memo_note_view::note_view::{MarkedHits, NoteViewAction, NoteViewInput, ReadOnly};
 use trailkit_memo_search::{
-    i18n::SearchText,
-    list_search::{HitStep, SearchUpdate},
-    no_search_results::draw_no_search_results,
+    i18n::SearchText, list_search::SearchUpdate, no_search_results::draw_no_search_results,
 };
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText, chip_context},
@@ -178,8 +177,8 @@ impl MemoWindow {
     fn step_trash_search(&mut self, forward: bool) {
         let shown = self.trash_preview_note();
         match self.trash.search.step(shown, forward) {
-            Some(HitStep::InsideNote) => self.note_view.reveal_current_hit(),
-            Some(HitStep::ToNote { note, .. }) => {
+            Some(HitStep::InsidePage) => self.note_view.reveal_current_hit(),
+            Some(HitStep::ToPage { page: note, .. }) => {
                 let node = NodeId::Note(note);
                 let mut parent = self.document.trashed_parent(node).map(|group| group.id);
                 while let Some(group) = parent {

@@ -16,6 +16,7 @@
 
 mod help_tab;
 mod problem_tab;
+mod topic_search;
 
 use crate::controls::hover::is_item_hovered;
 use crate::drawing::draw_list::window_draw_list;
@@ -25,6 +26,7 @@ use crate::{
     chat_link::chat_link_chip::ChipContext,
     controls::button::ButtonState,
     feedback::status_line::Status,
+    help::help_search::IndexedTopic,
     help::help_topics::{HelpTopic, parse_help_topics},
     layout::stack::Stack,
     layout::title_bar::{TitleBarState, TitleBarTexts, draw_window},
@@ -117,6 +119,30 @@ pub struct HelpWindowTexts<'text> {
     pub report_hint: &'text str,
     /// Where the logs and `Nexus.log` are (Q259).
     pub footer: &'text str,
+    /// The search of the Help tab and find in a topic (BL30).
+    pub search: HelpSearchTexts<'text>,
+}
+
+/// The texts of the help's search and of find in a topic (BL30, mock v9).
+#[derive(Debug, Clone, Copy)]
+pub struct HelpSearchTexts<'text> {
+    /// Placeholder of the search above the topic list, "Search help …".
+    pub search_hint: &'text str,
+    /// Placeholder of find in a topic, "Find in topic …".
+    pub find_hint: &'text str,
+    /// Tooltip of the `x` of a field with text, "Clear search".
+    pub clear: &'text str,
+    /// Tooltip of the `x` of the empty find field, "Close (Escape)".
+    pub close: &'text str,
+    /// The position among the hits with `{current}` and `{total}`, e.g.
+    /// "{current} of {total}".
+    pub count: &'text str,
+    /// Shown when nothing matches, "No results".
+    pub no_results: &'text str,
+    /// Tooltip of the previous button.
+    pub previous: &'text str,
+    /// Tooltip of the next button.
+    pub next: &'text str,
 }
 
 /// The state of the problem page that the addon owns.
@@ -179,6 +205,8 @@ struct ParsedHelp {
     source: &'static str,
     /// The topics in order.
     topics: Vec<ParsedTopic>,
+    /// The searchable text of each topic, in the same order (BL30).
+    index: Vec<IndexedTopic>,
 }
 
 impl ParsedHelp {
@@ -196,8 +224,16 @@ impl ParsedHelp {
                     document: parse(rest),
                 }
             })
+            .collect::<Vec<_>>();
+        let index = topics
+            .iter()
+            .map(|topic| IndexedTopic::new(&topic.title, topic.lead.as_deref(), &topic.document))
             .collect();
-        Self { source, topics }
+        Self {
+            source,
+            topics,
+            index,
+        }
     }
 }
 
@@ -223,6 +259,9 @@ pub struct HelpWindow {
     /// Whether the window had the keyboard focus and no text field took the
     /// keys in the last frame: Ctrl+C and Ctrl+A belong to it then.
     takes_keys: bool,
+    /// Whether the window had the keyboard focus in the last frame: Ctrl+F,
+    /// F3 and Shift twice belong to it then (BL30, Q582).
+    focused: bool,
 }
 
 impl HelpWindow {
@@ -256,6 +295,41 @@ impl HelpWindow {
     #[must_use]
     pub fn takes_copy_key(&self) -> bool {
         self.takes_select_all_key() && !self.topic_view.selection.is_empty()
+    }
+
+    /// Whether the window had the keyboard focus in the last frame, e.g. so
+    /// the addon sends Shift twice to its own note search (Q582).
+    #[must_use]
+    pub const fn is_focused(&self) -> bool {
+        self.open && self.focused
+    }
+
+    /// Whether Ctrl+F belongs to the window: it is focused on the Help tab
+    /// (BL30). An addon's window message callback catches it only then.
+    #[must_use]
+    pub fn takes_find_key(&self) -> bool {
+        self.is_focused() && self.state.tab == HelpTab::Help
+    }
+
+    /// Whether F3 belongs to the window: as [`Self::takes_find_key`] while
+    /// find in the topic is open.
+    #[must_use]
+    pub fn takes_find_step_key(&self) -> bool {
+        self.takes_find_key() && self.topic_view.search.find_open()
+    }
+
+    /// Ctrl+F: opens find in the shown topic, or closes it while open.
+    pub fn toggle_find_by_key(&mut self) {
+        if self.takes_find_key() {
+            self.topic_view.search.toggle_find();
+        }
+    }
+
+    /// F3 / Shift+F3: the next or previous hit of find in the topic.
+    pub fn step_find_by_key(&mut self, forward: bool) {
+        if self.takes_find_step_key() {
+            self.topic_view.search.step_find(forward);
+        }
     }
 
     /// Puts the selected text of the topic on the clipboard after Ctrl+C.
@@ -326,6 +400,17 @@ impl HelpWindow {
         self.state.tab = tab;
     }
 
+    /// Types `text` into the search above the topic list, e.g. for a
+    /// snapshot.
+    pub fn search_for(&mut self, text: &str) {
+        self.topic_view.search.set_search_text(text);
+    }
+
+    /// Opens find in the shown topic with `text`, e.g. for a snapshot.
+    pub fn find_in_topic(&mut self, text: &str) {
+        self.topic_view.search.open_find_with(text);
+    }
+
     /// Draws the window if it is open and returns what the user asked for.
     /// It starts 62 characters wide, centered in the game window, and is
     /// at least 60 characters wide (Q297).
@@ -391,6 +476,8 @@ impl HelpWindow {
                 self.copy_selection_by_key(ui);
             } else if ui.is_key_index_pressed(VIRTUAL_KEY_A) {
                 self.select_all_by_key();
+            } else if ui.is_key_index_pressed(VIRTUAL_KEY_F) {
+                self.toggle_find_by_key();
             }
         }
         let Self {
@@ -400,6 +487,7 @@ impl HelpWindow {
             help,
             topic_view,
             takes_keys,
+            focused,
             ..
         } = self;
         let _ = draw_window(
@@ -412,9 +500,9 @@ impl HelpWindow {
             &mut open,
             || {
                 let _body = FontScope::push(ui, FontRole::Body);
-                *takes_keys = ui
-                    .is_window_focused_with_flags(WindowFocusedFlags::ROOT_AND_CHILD_WINDOWS)
-                    && !ui.io().want_text_input;
+                *focused =
+                    ui.is_window_focused_with_flags(WindowFocusedFlags::ROOT_AND_CHILD_WINDOWS);
+                *takes_keys = *focused && !ui.io().want_text_input;
                 // Any left click in the window ends the selection; Shift+click
                 // extends it (memo M217, user wish 2026-11-21).
                 if ui.is_mouse_clicked(MouseButton::Left)
@@ -441,7 +529,7 @@ impl HelpWindow {
                                     help,
                                     state,
                                     topic_view,
-                                    content.chips,
+                                    (content.chips, content.texts.search),
                                 );
                             }
                         }
@@ -461,6 +549,8 @@ impl HelpWindow {
 const VIRTUAL_KEY_A: i32 = 0x41;
 /// Virtual-key code of C (Ctrl+C copies the selection).
 const VIRTUAL_KEY_C: i32 = 0x43;
+/// Virtual-key code of F (Ctrl+F finds in the topic, BL30).
+const VIRTUAL_KEY_F: i32 = 0x46;
 
 /// Draws the two neutral tabs (R95: `bg.active` behind the shown one, no
 /// accent) and returns the clicked one.

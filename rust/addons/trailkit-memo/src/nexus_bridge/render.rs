@@ -203,14 +203,26 @@ fn draw_main_window(
     let help_takes_keys = help.as_ref().map_or((false, false), |help| {
         (help.takes_copy_key(), help.takes_select_all_key())
     });
+    let help_find_keys = help
+        .as_ref()
+        .map_or(HelpFindKeys::default(), |help| HelpFindKeys {
+            focused: help.is_focused(),
+            find: help.takes_find_key(),
+            find_step: help.takes_find_step_key(),
+        });
     let mut help = help;
     if let Some(help) = help.as_deref_mut() {
         help.apply_selection_keys(ui, selection_keys);
     }
+    let open_note_search = help
+        .as_deref_mut()
+        .filter(|_| help_find_keys.focused)
+        .is_some_and(apply_help_keys);
     let clicked_toggle = draw_window(
         ui,
         theme,
         Window::new(title)
+            .focused(open_note_search)
             .size([640.0, 420.0], Condition::FirstUseEver)
             .size_constraints([minimum_window_width(ui), 0.0], [f32::MAX, f32::MAX]),
         title_bar_texts(language),
@@ -228,6 +240,9 @@ fn draw_main_window(
                 Text::NotesInaccessible.get(language),
             ),
             NotesState::Ready(window) => {
+                if open_note_search {
+                    window.open_search_by_key();
+                }
                 apply_caught_keys(ui, window, language, selection_keys);
                 window.draw(ui, language, theme);
             }
@@ -245,9 +260,18 @@ fn draw_main_window(
     if let NotesState::Ready(window) = &*notes {
         let visible = VISIBLE.load(Ordering::Relaxed);
         for (armed, takes_key) in [
-            (&SEARCH_KEY_ARMED, window.takes_search_key()),
-            (&FIND_KEY_ARMED, window.takes_find_key()),
-            (&FIND_STEP_ARMED, window.takes_find_step_key()),
+            (
+                &SEARCH_KEY_ARMED,
+                window.takes_search_key() || help_find_keys.focused,
+            ),
+            (
+                &FIND_KEY_ARMED,
+                window.takes_find_key() || help_find_keys.find,
+            ),
+            (
+                &FIND_STEP_ARMED,
+                window.takes_find_step_key() || help_find_keys.find_step,
+            ),
             (&DELETE_KEY_ARMED, window.takes_delete_key()),
             (&UNDO_KEYS_ARMED, window.takes_undo_keys()),
             (&TEXT_SIZE_RESET_ARMED, window.takes_text_size_reset_key()),
@@ -265,6 +289,32 @@ fn draw_main_window(
             armed.store(takes_key && visible, Ordering::Relaxed);
         }
     }
+}
+
+/// Applies the keys caught while the help window had the focus (BL30):
+/// Ctrl+F and F3 find in its topic. Returns whether Shift twice was pressed
+/// there, which opens the note search in the main window (Q582).
+fn apply_help_keys(help: &mut MemoHelp) -> bool {
+    if FIND_KEY_PRESSED.swap(false, Ordering::Relaxed) {
+        help.toggle_find_by_key();
+    }
+    match FIND_STEP.swap(FIND_STEP_NONE, Ordering::Relaxed) {
+        FIND_STEP_NEXT => help.step_find_by_key(true),
+        FIND_STEP_PREVIOUS => help.step_find_by_key(false),
+        _ => {}
+    }
+    SEARCH_KEY_PRESSED.swap(false, Ordering::Relaxed)
+}
+
+/// Which find keys the help window takes in this frame (BL30, Q582).
+#[derive(Debug, Clone, Copy, Default)]
+struct HelpFindKeys {
+    /// It has the focus: Shift twice opens the note search.
+    focused: bool,
+    /// Ctrl+F finds in its topic.
+    find: bool,
+    /// F3 steps through its find hits.
+    find_step: bool,
 }
 
 /// Applies the keys the window message callback caught for `window` since the

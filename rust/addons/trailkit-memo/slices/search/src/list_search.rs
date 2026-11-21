@@ -7,9 +7,12 @@
 //! frame, only when the field text or the notes change.
 
 use trailkit_memo_shared::note_tree::{NoteId, NotesDocument};
-use trailkit_ui::text::text_search::SearchQuery;
+use trailkit_ui::text::{
+    search_steps::{HitPosition, HitStep, SearchSteps},
+    text_search::SearchQuery,
+};
 
-use crate::note_search::{HitStop, NoteSearchIndex, SearchResults};
+use crate::note_search::{NoteSearchIndex, SearchResults};
 
 /// Which part of the notes a search looks through.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -31,7 +34,7 @@ pub struct ListSearch {
     /// The results of the current query, if the field holds one.
     current: Option<CurrentSearch>,
     /// Which hit of the shown note the arrows are at.
-    cursor: HitCursor,
+    steps: SearchSteps<NoteId>,
 }
 
 /// Results of one query over one document revision.
@@ -45,28 +48,6 @@ pub struct CurrentSearch {
     revision: u64,
     /// What the list shows.
     pub results: SearchResults,
-}
-
-/// The current hit inside the shown note.
-#[derive(Debug, Default)]
-struct HitCursor {
-    /// The note the position belongs to; another shown note starts at its
-    /// first hit.
-    note: Option<NoteId>,
-    /// The current hit in the note, 0-based in reading order.
-    current: usize,
-    /// How many hits the reading view drew in the note in the last frame;
-    /// it replaces the index's count, which cannot see chips.
-    drawn: Option<usize>,
-}
-
-impl HitCursor {
-    /// Starts over at the hit `current` of `note`.
-    fn start_at(&mut self, note: Option<NoteId>, current: usize) {
-        self.note = note;
-        self.current = current;
-        self.drawn = None;
-    }
 }
 
 /// What changed when the search was brought up to date.
@@ -83,30 +64,6 @@ pub enum SearchUpdate {
     Refreshed,
 }
 
-/// Where the shown note's current hit lies among all hits.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct HitPosition {
-    /// The 1-based place of the current hit, `None` while the shown note is
-    /// no stop (e.g. a note shown because its group's title matches).
-    pub current: Option<usize>,
-    /// All hits of all matching notes.
-    pub total: usize,
-}
-
-/// Where a step with the arrows leads.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum HitStep {
-    /// Another hit of the shown note: scroll it into view.
-    InsideNote,
-    /// The hit `current` of another `note`: select and show it.
-    ToNote {
-        /// The note to show.
-        note: NoteId,
-        /// Its current hit.
-        current: usize,
-    },
-}
-
 impl ListSearch {
     /// An empty search over `scope`.
     #[must_use]
@@ -115,7 +72,7 @@ impl ListSearch {
             scope,
             index: None,
             current: None,
-            cursor: HitCursor::default(),
+            steps: SearchSteps::default(),
         }
     }
 
@@ -128,7 +85,7 @@ impl ListSearch {
     /// The current hit inside the shown note, 0-based.
     #[must_use]
     pub const fn current_hit(&self) -> usize {
-        self.cursor.current
+        self.steps.current()
     }
 
     /// Brings index and results up to date with the field `text` and the
@@ -174,7 +131,7 @@ impl ListSearch {
             .as_ref()
             .is_none_or(|current| current.query != query);
         if is_new_query {
-            self.cursor.start_at(shown, 0);
+            self.steps.start_at(shown, 0);
         }
         self.current = Some(CurrentSearch {
             text: text.to_owned(),
@@ -189,82 +146,26 @@ impl ListSearch {
         }
     }
 
-    /// The hits of `stop`: the drawn count once the reading view knows it,
-    /// else the index's.
-    fn stop_hits(&self, stop: &HitStop) -> usize {
-        match self.cursor.drawn {
-            Some(drawn) if self.cursor.note == Some(stop.note) => drawn.max(1),
-            _ => stop.hits,
-        }
-    }
-
     /// Where the current hit of `shown` lies among all hits, `None` without
     /// a query or without a matching note.
     #[must_use]
     pub fn position(&self, shown: Option<NoteId>) -> Option<HitPosition> {
         let stops = self.current.as_ref()?.results.hit_stops();
-        let mut total = 0;
-        let mut current = None;
-        for stop in stops {
-            let hits = self.stop_hits(stop);
-            if Some(stop.note) == shown {
-                current = Some(total + self.cursor.current.min(hits - 1) + 1);
-            }
-            total += hits;
-        }
-        (total > 0).then_some(HitPosition { current, total })
+        self.steps.position(stops, shown)
     }
 
     /// Steps to the next hit (`forward`) or the previous one from `shown`,
     /// wrapping at either end (Q505): inside the note first, then into the
     /// next or previous matching note in list order. `None` without hits.
-    pub fn step(&mut self, shown: Option<NoteId>, forward: bool) -> Option<HitStep> {
+    pub fn step(&mut self, shown: Option<NoteId>, forward: bool) -> Option<HitStep<NoteId>> {
         let stops = self.current.as_ref()?.results.hit_stops();
-        if stops.is_empty() {
-            return None;
-        }
-        let place = stops.iter().position(|stop| Some(stop.note) == shown);
-        if let Some(place) = place {
-            let hits = self.stop_hits(&stops[place]);
-            let inside = self.cursor.current.min(hits - 1);
-            let next_inside = if forward {
-                (inside + 1 < hits).then_some(inside + 1)
-            } else {
-                inside.checked_sub(1)
-            };
-            if let Some(next_inside) = next_inside {
-                self.cursor.note = shown;
-                self.cursor.current = next_inside;
-                return Some(HitStep::InsideNote);
-            }
-        }
-        let count = stops.len();
-        let target = match (place, forward) {
-            (Some(place), true) => (place + 1) % count,
-            (Some(place), false) => (place + count - 1) % count,
-            (None, true) => 0,
-            (None, false) => count - 1,
-        };
-        let stop = stops[target];
-        let current = if forward { 0 } else { stop.hits - 1 };
-        self.cursor.start_at(Some(stop.note), current);
-        Some(HitStep::ToNote {
-            note: stop.note,
-            current,
-        })
+        self.steps.step(stops, shown, forward)
     }
 
     /// Takes the hits the reading view drew in `shown`: another note starts
     /// at its first hit, and the current hit stays in range.
     pub fn record_drawn_hits(&mut self, shown: Option<NoteId>, drawn: usize) {
-        let cursor = &mut self.cursor;
-        if shown != cursor.note {
-            cursor.start_at(shown, 0);
-        }
-        cursor.drawn = Some(drawn);
-        if drawn > 0 && cursor.current >= drawn {
-            cursor.current = drawn - 1;
-        }
+        self.steps.record_drawn(shown, drawn);
     }
 }
 
@@ -315,13 +216,13 @@ mod tests {
                 total: 3
             })
         );
-        assert_eq!(search.step(Some(ids[0]), true), Some(HitStep::InsideNote));
+        assert_eq!(search.step(Some(ids[0]), true), Some(HitStep::InsidePage));
         assert_eq!(position(&search, ids[0]).and_then(|p| p.current), Some(2));
         // Past the last hit of the note: on to the next matching note.
         assert_eq!(
             search.step(Some(ids[0]), true),
-            Some(HitStep::ToNote {
-                note: ids[2],
+            Some(HitStep::ToPage {
+                page: ids[2],
                 current: 0
             })
         );
@@ -329,8 +230,8 @@ mod tests {
         // Past the last hit of all: back to the first (Q505).
         assert_eq!(
             search.step(Some(ids[2]), true),
-            Some(HitStep::ToNote {
-                note: ids[0],
+            Some(HitStep::ToPage {
+                page: ids[0],
                 current: 0
             })
         );
@@ -338,8 +239,8 @@ mod tests {
         search.record_drawn_hits(Some(ids[0]), 2);
         assert_eq!(
             search.step(Some(ids[0]), false),
-            Some(HitStep::ToNote {
-                note: ids[2],
+            Some(HitStep::ToPage {
+                page: ids[2],
                 current: 0
             })
         );
@@ -352,8 +253,8 @@ mod tests {
         search.update("ore", &document, 1, Some(ids[1]));
         assert_eq!(
             search.step(Some(ids[1]), false),
-            Some(HitStep::ToNote {
-                note: ids[0],
+            Some(HitStep::ToPage {
+                page: ids[0],
                 current: 2
             })
         );
@@ -381,8 +282,8 @@ mod tests {
         // From outside the stops, forward starts at the first hit.
         assert_eq!(
             search.step(Some(ids[1]), true),
-            Some(HitStep::ToNote {
-                note: ids[0],
+            Some(HitStep::ToPage {
+                page: ids[0],
                 current: 0
             })
         );

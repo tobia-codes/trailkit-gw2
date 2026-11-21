@@ -5,8 +5,9 @@
 
 use nexus::imgui::Ui;
 
-use trailkit_memo_search::list_search::{HitStep, SearchUpdate};
+use trailkit_memo_search::list_search::SearchUpdate;
 use trailkit_memo_shared::note_tree::{NodeId, NoteId};
+use trailkit_ui::text::search_steps::HitStep;
 
 use super::MemoWindow;
 
@@ -45,6 +46,17 @@ impl MemoWindow {
         } else {
             self.show_search_field();
         }
+    }
+
+    /// Opens the note search after Shift twice in the help window (Q582):
+    /// the main window comes forward with the search field focused. The
+    /// editor keeps the key, as it hides the note list (M167).
+    pub fn open_search_by_key(&mut self) {
+        if self.editor.is_some() {
+            return;
+        }
+        self.window_menu_open = false;
+        self.show_search_field();
     }
 
     /// Clears the search after Escape (see [`Self::search_takes_escape`]);
@@ -112,8 +124,8 @@ impl MemoWindow {
     /// is selected, shown and revealed in the list.
     pub(super) fn step_list_search(&mut self, forward: bool) {
         match self.search.step(self.ui_state.shown_note, forward) {
-            Some(HitStep::InsideNote) => self.note_view.reveal_current_hit(),
-            Some(HitStep::ToNote { note, .. }) => self.show_search_stop(note),
+            Some(HitStep::InsidePage) => self.note_view.reveal_current_hit(),
+            Some(HitStep::ToPage { page: note, .. }) => self.show_search_stop(note),
             None => {}
         }
     }

@@ -7,7 +7,10 @@
 
 use std::collections::{HashMap, HashSet};
 
-use trailkit_ui::{markdown, text::text_search::SearchQuery};
+use trailkit_ui::{
+    markdown,
+    text::{search_steps::HitStop, text_search::SearchQuery},
+};
 
 use trailkit_memo_shared::list_filter::ListFilter;
 use trailkit_memo_shared::note_tree::{
@@ -92,18 +95,9 @@ pub struct SearchResults {
     /// state (M126).
     has_hits: bool,
     /// The matching notes in list order with how many hits each holds for
-    /// the arrows of the search (BL30, mock v9).
-    stops: Vec<HitStop>,
-}
-
-/// One matching note the search arrows step through.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct HitStop {
-    /// The note.
-    pub note: NoteId,
-    /// Its hits: the marked places in its text, or one for a note that
-    /// matches by its title only, so every matching note is a stop.
-    pub hits: usize,
+    /// the arrows of the search (BL30, mock v9): the marked places in its
+    /// text, or one for a note that matches by its title only.
+    stops: Vec<HitStop<NoteId>>,
 }
 
 impl SearchResults {
@@ -143,7 +137,7 @@ impl SearchResults {
 
     /// The matching notes in list order, for stepping through the hits.
     #[must_use]
-    pub fn hit_stops(&self) -> &[HitStop] {
+    pub fn hit_stops(&self) -> &[HitStop<NoteId>] {
         &self.stops
     }
 }
@@ -238,7 +232,7 @@ impl Search<'_> {
             // every term in the visible text (M120, M122).
             let text_hits = self.query.hit_ranges(&indexed.content).len();
             results.stops.push(HitStop {
-                note: note.id,
+                page: note.id,
                 hits: text_hits.max(1),
             });
             if !self.query.matches_lowered(&indexed.title) {
@@ -387,7 +381,7 @@ mod tests {
             search(&document, query)
                 .hit_stops()
                 .iter()
-                .map(|stop| (stop.note, stop.hits))
+                .map(|stop| (stop.page, stop.hits))
                 .collect()
         };
         // "more" holds "ore" too: three marked places in the vault note.
@@ -412,7 +406,7 @@ mod tests {
         let (NodeId::Note(mithril_note), NodeId::Note(vault_note)) = (mithril, vault) else {
             unreachable!()
         };
-        let order: Vec<_> = results.hit_stops().iter().map(|stop| stop.note).collect();
+        let order: Vec<_> = results.hit_stops().iter().map(|stop| stop.page).collect();
         assert_eq!(order, vec![vault_note, mithril_note], "newest entry first");
         assert!(results.is_visible(dailies) && results.is_visible(vault));
         assert!(!SearchResults::compute(&document, &index, &query).has_hits());
