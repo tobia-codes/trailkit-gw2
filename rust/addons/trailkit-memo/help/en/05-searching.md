@@ -1,6 +1,8 @@
 ## Searching
 
-memo has two searches: the **search** above the note list finds notes by the words in their title or text; **find in the note** finds a text in the open note. The trash and the help window have the same search (see *Trash and undo* and *Getting started*).
+memo has two searches: the **search** above the note list finds notes by the words in their title or text; **find in the note** finds a text in the open note.
+
+The trash and the help window have the same search (see *Trash and undo* and *Getting started*).
 
 ### Using the search
 

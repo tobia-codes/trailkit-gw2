@@ -1,6 +1,8 @@
 ## Suchen
 
-memo hat zwei Suchen: die **Suche** über der Notizliste findet Notizen über die Wörter in ihrem Titel oder Text; **In Notiz suchen** findet einen Text in der geöffneten Notiz. Der Papierkorb und das Hilfefenster haben dieselbe Suche (siehe *Papierkorb und Rückgängig* und *Erste Schritte*).
+memo hat zwei Suchen: die **Suche** über der Notizliste findet Notizen über die Wörter in ihrem Titel oder Text; **In Notiz suchen** findet einen Text in der geöffneten Notiz.
+
+Der Papierkorb und das Hilfefenster haben dieselbe Suche (siehe *Papierkorb und Rückgängig* und *Erste Schritte*).
 
 ### Die Suche benutzen
 
