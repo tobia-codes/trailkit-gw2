@@ -30,9 +30,8 @@ is ready when the user is back at the PC.
 
 ## Tests
 
-38. **Trashed groups as a tree (M218, branch `feature/trash-group-tree`,
-    mock https://claude.ai/artifact/3F7P7A1uxLhVhMGjwZ6b54).** Deploy the
-    branch. Make a group with three notes, delete one note on its own, then
+38. **Trashed groups as a tree (M218, on `develop`,
+    mock https://claude.ai/artifact/3F7P7A1uxLhVhMGjwZ6b54).** Make a group with three notes, delete one note on its own, then
     the group. Open the trash. Before: a group looked like a note (bold
     title and count only) and could only come back whole.
     1. The group has an arrow; the separately deleted note says
@@ -51,11 +50,9 @@ is ready when the user is back at the PC.
     6. The note list looks and behaves as before (open, close, drag a group:
        it and its notes fade, search).
     7. Repeat 1–3 with Nexus in Deutsch at the narrowest window.
-39. **One search everywhere and "Search notes" (BL30, BL31, M219, branch
-    `feature/shared-search`, built on `feature/trash-group-tree`: test 38
-    first; mocks https://claude.ai/artifact/DQRhxQtb4zyUxKB1hBtEVy v9 and
-    https://claude.ai/artifact/6ijSByZw8m9PS2hkPXcm5i).** Deploy the
-    branch. Test data: two notes that hold "ore" twice and once, one note
+39. **One search everywhere and "Search notes" (BL30, BL31, M219, on
+    `develop`; test 38 first; mocks https://claude.ai/artifact/DQRhxQtb4zyUxKB1hBtEVy v9 and
+    https://claude.ai/artifact/6ijSByZw8m9PS2hkPXcm5i).** Test data: two notes that hold "ore" twice and once, one note
     without it, one note in a group with "ore", and a deleted group with a
     note holding "mithril". Before: the list search had no count or arrows,
     the find bar had its own close `x`, the trash and the help had no search,
