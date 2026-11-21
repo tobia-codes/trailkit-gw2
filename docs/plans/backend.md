@@ -121,6 +121,18 @@ API" is not enforceable; we can only raise the bar and limit damage:
   - Q291: abuse protection: per-IP rate limit and size limits (B3, B18), spam handling.
   - Q292: flag granularity: one global switch or per addon (and per version).
   - Q293: form design and how the user learns about a reply (needs visual approval, R87).
+- **Sync of the note tree and the trash** (Q572, 2026-11-21, raised with memo M218; with B26, B37,
+  B45): B26/B37 cover notes and settings only. Open: how groups, the order of children and the
+  trash are synced (one encrypted tree document, or per group or note with its own version); whether
+  the trash is synced, with its `child_order` snapshots (memo M218), or stays per device; and what
+  happens when two devices change the structure at once (one restores a note from a trashed group
+  while the other deletes that group for good; both reorder the same group). Principle so far: the
+  server never orders or repairs anything (B28, ciphertext only); the client computes the new tree,
+  encrypts it and uploads it, and the web frontend decrypts the same arrays.
+- **Tree logic in the web frontend** (Q572): the frontend needs the same tree and trash rules as memo
+  (restoring with the group's shell, `child_order`, skipping missing entries). Recommendation: compile
+  `note_tree` of `trailkit-memo-shared` to WebAssembly for the browser, one implementation with the
+  same tests, instead of a TypeScript copy. To grill with the frontend (B42).
 
 ## Decisions
 
