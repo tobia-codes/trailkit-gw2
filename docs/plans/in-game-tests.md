@@ -29,14 +29,3 @@ is ready when the user is back at the PC.
    then load again.
 
 ## Tests
-
-36. **Escape closes memo again (branch `bugfix/memo-escape-inner-focus`).**
-    Deploy the branch instead of `develop` (setup step 1 on
-    `bugfix/memo-escape-inner-focus`). Before: Escape did not close the main
-    window, not even its window menu. Now, one check each: click into the
-    note text, Escape → the window closes. Reopen, click a note in the list,
-    Escape → closes. Open the window menu (☰), Escape → only the menu
-    closes, a second Escape closes the window. Type in the list search,
-    Escape → the text is cleared first. Edit a note, change a letter,
-    Escape → the unsaved changes dialog asks. The help window still closes
-    with Escape.
