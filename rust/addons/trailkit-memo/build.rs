@@ -7,13 +7,9 @@
 #[path = "src/help_assembly.rs"]
 mod help_assembly;
 
-use std::{
-    env, fs,
-    path::{Path, PathBuf},
-    process,
-};
+use std::{env, fs, path::PathBuf, process};
 
-use help_assembly::{HelpError, TopicFile, assemble_help, check_same_topics};
+use help_assembly::{HelpError, assemble_help, check_same_topics, read_topic_files};
 
 /// The help languages: the folder below `help/`, the policy file in the
 /// repository root and the output file name.
@@ -44,8 +40,8 @@ fn main() {
         println!("cargo:rerun-if-changed={}", policy_path.display());
         let files = match read_topic_files(&crate_folder.join(&folder_label), &folder_label) {
             Ok(files) => files,
-            Err(error) => {
-                errors.push(error);
+            Err(folder_errors) => {
+                errors.extend(folder_errors);
                 continue;
             }
         };
@@ -96,35 +92,4 @@ fn main() {
         }
         process::exit(1);
     }
-}
-
-/// Reads every file of `folder`; `label` names it in messages.
-///
-/// # Errors
-///
-/// Returns a [`HelpError`] if the folder or a file cannot be read, or the
-/// folder holds something other than `.md` files.
-fn read_topic_files(folder: &Path, label: &str) -> Result<Vec<TopicFile>, HelpError> {
-    let read_error = |location: String, error: std::io::Error| HelpError {
-        location,
-        problem: format!("cannot read it: {error}"),
-        fix: "keep one readable UTF-8 `NN-name.md` file per topic in the folder".to_owned(),
-    };
-    let entries = fs::read_dir(folder).map_err(|error| read_error(label.to_owned(), error))?;
-    let mut files = Vec::new();
-    for entry in entries {
-        let entry = entry.map_err(|error| read_error(label.to_owned(), error))?;
-        let name = entry.file_name().to_string_lossy().into_owned();
-        let location = format!("{label}/{name}");
-        if !name.ends_with(".md") || !entry.path().is_file() {
-            return Err(HelpError {
-                location,
-                problem: "not a topic file".to_owned(),
-                fix: "only `NN-name.md` topic files belong in the folder".to_owned(),
-            });
-        }
-        let text = fs::read_to_string(entry.path()).map_err(|error| read_error(location, error))?;
-        files.push(TopicFile { name, text });
-    }
-    Ok(files)
 }

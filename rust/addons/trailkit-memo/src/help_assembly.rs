@@ -6,7 +6,7 @@
 //! rules. Every broken rule becomes a [`HelpError`] that names the file, the
 //! line and how to fix it.
 
-use std::fmt;
+use std::{fmt, fs, path::Path};
 
 /// The topic file that receives the privacy policy, without its number.
 const PRIVACY_TOPIC: &str = "privacy";
@@ -42,9 +42,61 @@ impl fmt::Display for HelpError {
     }
 }
 
+/// Reads every topic file of `folder` in name order; `label` names the
+/// folder in messages, e.g. `help/de`.
+///
+/// # Errors
+///
+/// Returns every problem found: the folder cannot be read, it holds
+/// something other than `.md` files (a stray file or a subfolder), or a file
+/// cannot be read as UTF-8 text.
+pub fn read_topic_files(folder: &Path, label: &str) -> Result<Vec<TopicFile>, Vec<HelpError>> {
+    let read_error = |location: String, error: std::io::Error| HelpError {
+        location,
+        problem: format!("cannot read it: {error}"),
+        fix: "keep one readable UTF-8 `NN-name.md` file per topic in the folder".to_owned(),
+    };
+    let entries = fs::read_dir(folder)
+        .and_then(|entries| entries.collect::<Result<Vec<_>, _>>())
+        .map_err(|error| vec![read_error(label.to_owned(), error)])?;
+    let mut entries: Vec<_> = entries
+        .into_iter()
+        .map(|entry| {
+            (
+                entry.file_name().to_string_lossy().into_owned(),
+                entry.path(),
+            )
+        })
+        .collect();
+    entries.sort();
+    let mut files = Vec::new();
+    let mut errors = Vec::new();
+    for (name, path) in entries {
+        let location = format!("{label}/{name}");
+        if !name.ends_with(".md") || !path.is_file() {
+            errors.push(HelpError {
+                location,
+                problem: "not a topic file".to_owned(),
+                fix: "only `NN-name.md` topic files belong in the folder".to_owned(),
+            });
+            continue;
+        }
+        match fs::read_to_string(&path) {
+            Ok(text) => files.push(TopicFile { name, text }),
+            Err(error) => errors.push(read_error(location, error)),
+        }
+    }
+    if errors.is_empty() {
+        Ok(files)
+    } else {
+        Err(errors)
+    }
+}
+
 /// Builds one language's help text from its topic `files` (in any order)
 /// and its privacy `policy`; `folder` is the folder for messages, e.g.
-/// `help/de`.
+/// `help/de`. Windows line ends (`\r\n`) become `\n`, as they do in the
+/// policy.
 ///
 /// # Errors
 ///
@@ -87,7 +139,10 @@ pub fn assemble_help(
             return Err(errors);
         }
     };
-    let topics: Vec<&str> = files.iter().map(|file| file.text.trim_end()).collect();
+    let topics: Vec<String> = files
+        .iter()
+        .map(|file| file.text.replace("\r\n", "\n").trim_end().to_owned())
+        .collect();
     let mut document = topics.join("\n\n");
     document.push_str("\n\n");
     document.push_str(&policy_body);
@@ -339,6 +394,86 @@ mod tests {
         let files = [topic("01-privacy.md", "## Privacy\n")];
         let problems = problems(assemble_help("help/en", &files, "## Data\n"));
         assert!(problems[0].contains("the policy has no `# ` title line"));
+    }
+
+    #[test]
+    fn rejects_an_empty_file_and_an_empty_topic_heading() {
+        let files = [
+            topic("01-start.md", ""),
+            topic("02-more.md", "## \n\nText.\n"),
+            topic("03-privacy.md", "## Privacy\n"),
+        ];
+        let problems = problems(assemble_help("help/en", &files, POLICY));
+        assert_eq!(problems.len(), 2, "{problems:#?}");
+        assert!(problems[0].starts_with("help/en/01-start.md:1: the file does not start"));
+        assert!(problems[1].starts_with("help/en/02-more.md:1: the file does not start"));
+    }
+
+    #[test]
+    fn rejects_uppercase_and_umlaut_names() {
+        let files = [
+            topic("01-Start.md", "## Start\n"),
+            topic("02-übersicht.md", "## Übersicht\n"),
+            topic("03-privacy.md", "## Privacy\n"),
+        ];
+        let problems = problems(assemble_help("help/de", &files, POLICY));
+        assert_eq!(problems.len(), 2, "{problems:#?}");
+        assert!(problems[0].starts_with("help/de/01-Start.md: the file name is not"));
+        assert!(problems[1].starts_with("help/de/02-übersicht.md: the file name is not"));
+    }
+
+    #[test]
+    fn turns_windows_line_ends_into_unix_ones() {
+        let files = [
+            topic("01-start.md", "## Start\r\n\r\nText.\r\n"),
+            topic("02-privacy.md", "## Privacy\r\n"),
+        ];
+        let document = assemble_help("help/en", &files, &POLICY.replace('\n', "\r\n"));
+        assert_eq!(
+            document.as_deref(),
+            Ok(
+                "## Start\n\nText.\n\n## Privacy\n\n\nLast updated: 2026-11-11\n\n### Data\n\nText.\n"
+            )
+        );
+    }
+
+    #[test]
+    fn reads_topic_files_in_name_order() {
+        let folder = tempfile::tempdir().expect("temp folder");
+        fs::write(folder.path().join("02-privacy.md"), "## Privacy\n").expect("write");
+        fs::write(folder.path().join("01-start.md"), "## Start\n").expect("write");
+        let files = read_topic_files(folder.path(), "help/en").expect("readable folder");
+        assert_eq!(
+            files,
+            [
+                topic("01-start.md", "## Start\n"),
+                topic("02-privacy.md", "## Privacy\n"),
+            ]
+        );
+    }
+
+    #[test]
+    fn rejects_a_stray_file_a_subfolder_and_an_unreadable_file() {
+        let folder = tempfile::tempdir().expect("temp folder");
+        fs::write(folder.path().join("01-start.md"), "## Start\n").expect("write");
+        fs::write(folder.path().join("02-broken.md"), [0xff, 0xfe]).expect("write");
+        fs::write(folder.path().join("notes.txt"), "draft").expect("write");
+        fs::create_dir(folder.path().join("old.md")).expect("subfolder");
+        let errors = read_topic_files(folder.path(), "help/de").expect_err("broken folder");
+        let messages: Vec<String> = errors.iter().map(ToString::to_string).collect();
+        assert_eq!(messages.len(), 3, "{messages:#?}");
+        assert!(messages[0].starts_with("help/de/02-broken.md: cannot read it"));
+        assert!(messages[1].starts_with("help/de/notes.txt: not a topic file"));
+        assert!(messages[2].starts_with("help/de/old.md: not a topic file"));
+    }
+
+    #[test]
+    fn rejects_a_missing_language_folder() {
+        let folder = tempfile::tempdir().expect("temp folder");
+        let errors =
+            read_topic_files(&folder.path().join("fr"), "help/fr").expect_err("missing folder");
+        assert_eq!(errors.len(), 1);
+        assert!(errors[0].to_string().starts_with("help/fr: cannot read it"));
     }
 
     #[test]
