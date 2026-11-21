@@ -23,7 +23,7 @@ use trailkit_ui::{
 use trailkit_memo_drafts::draft_hint::DraftHintAction;
 use trailkit_memo_editor::editor::{EditorAction, EditorInput, ToolbarAction};
 use trailkit_memo_note_list::note_list::{EntryMenu, LeadingItem, draw_note_menu};
-use trailkit_memo_note_view::note_view::{FindInNote, NoteViewAction, NoteViewInput};
+use trailkit_memo_note_view::note_view::{MarkedHits, NoteViewAction, NoteViewInput};
 use trailkit_memo_reset_schedule::note_kind::{draw_kind_dropdown, kind_dropdown_size};
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText, Text, chip_context},
@@ -347,10 +347,14 @@ impl MemoWindow {
             .query
             .as_ref()
             .filter(|_| finding)
-            .map(|query| FindInNote { query, current });
+            .map(|query| MarkedHits { query, current });
+        let search_current = self.search.cursor.current;
         let input = NoteViewInput {
             note,
-            search: self.search.current.as_ref().map(|current| &current.query),
+            search: self.search.current.as_ref().map(|current| MarkedHits {
+                query: &current.query,
+                current: search_current,
+            }),
             find,
             chips: chip_context(language),
             read_only: None,
@@ -379,9 +383,11 @@ impl MemoWindow {
         if output.scroll_changed {
             self.saver.save_ui_state(&self.ui_state);
         }
+        let shown = note.map(|note| note.id);
         if finding {
-            let shown = note.map(|note| note.id);
-            self.record_find_hits(shown, output.find_hit_count.unwrap_or(0));
+            self.record_find_hits(shown, output.hit_count.unwrap_or(0));
+        } else if self.search.current.is_some() {
+            self.record_search_hits(shown, output.hit_count.unwrap_or(0));
         }
     }
 }

@@ -1,18 +1,14 @@
 //! Search slice of trailkit-memo (ROADMAP R76, memo plan M118–M129): the
-//! search index and results over the note tree, the search field above the
-//! note list, the find bar of the open note (M198), the empty search result
-//! and the texts they show; the note list
-//! reads the results through the shared `ListFilter` trait.
+//! search index and results over the note tree, the empty search result and
+//! the texts the searches show; the note list reads the results through the
+//! shared `ListFilter` trait. The search field and the find bar themselves
+//! are the shared search of `trailkit-ui` (BL30, Q581).
 //!
 //! Depends only on `trailkit-memo-shared`, never on another slice. The
-//! ImGui-free logic is tested on any host; the field compiles for Windows.
+//! ImGui-free logic is tested on any host; the drawing compiles for Windows.
 
 pub mod i18n;
 pub mod note_search;
 
 #[cfg(windows)]
-pub mod find_bar;
-#[cfg(windows)]
 pub mod no_search_results;
-#[cfg(windows)]
-pub mod search_field;

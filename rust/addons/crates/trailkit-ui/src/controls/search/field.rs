@@ -1,16 +1,15 @@
-//! The search field above the note list (memo plan M118, M123, M128) and in
-//! the find bar (M198): a `bg.input` field a little taller than a button with
-//! a Lucide magnifier, a hint, an optional `x` that clears it and an accent
-//! frame while focused.
-//!
-//! Lives in memo until a second addon needs a search field (AGENTS.md
-//! rule 7); the settings window will be the likely second user.
+//! The search field (memo plan M118, M123, M128; shared search Q581): a
+//! `bg.input` field a little taller than a button with a Lucide magnifier, a
+//! hint, an accent frame while focused and an `x` at its end. The `x` clears
+//! a field with text; on an empty field only a closable search shows it, and
+//! it closes the search then (M176, mock v9).
 
-use nexus::imgui::{StyleColor, StyleVar, Ui, WindowHoveredFlags};
-use trailkit_ui::controls::hover::is_item_hovered;
-use trailkit_ui::controls::tooltip::draw_tooltip;
-use trailkit_ui::drawing::draw_list::window_draw_list;
-use trailkit_ui::{
+use nexus::imgui::{Key, StyleColor, StyleVar, Ui, WindowHoveredFlags};
+
+use crate::controls::hover::is_item_hovered;
+use crate::controls::tooltip::draw_tooltip;
+use crate::drawing::draw_list::window_draw_list;
+use crate::{
     drawing::style_scope::StyleScope,
     text::font_registry::FontScope,
     text::fonts::FontRole,
@@ -41,8 +40,9 @@ pub struct SearchFieldTexts<'text> {
     pub hint: &'text str,
     /// Tooltip of the `x` while the field holds text.
     pub clear: &'text str,
-    /// Tooltip of the `x` while the field is empty.
-    pub close: &'text str,
+    /// Tooltip of the `x` while the field is empty; `None` for a search that
+    /// cannot be closed (the trash, the help), whose empty field has no `x`.
+    pub close: Option<&'text str>,
 }
 
 /// What the user did with the field in this frame.
@@ -52,6 +52,18 @@ pub struct SearchFieldResponse {
     pub text_changed: bool,
     /// The `x` of the empty field was clicked: the app closes it (M176).
     pub close_clicked: bool,
+    /// Enter was pressed in the field (Shift+Enter: `backward`): the app
+    /// goes to the next or previous hit. The field keeps the focus.
+    pub submitted: Option<Submit>,
+}
+
+/// Which way Enter in the field steps through the hits.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Submit {
+    /// Enter: the next hit.
+    Forward,
+    /// Shift+Enter: the previous hit.
+    Backward,
 }
 
 impl SearchField {
@@ -89,30 +101,18 @@ impl SearchField {
         texts: SearchFieldTexts<'_>,
     ) -> SearchFieldResponse {
         let width = ui.content_region_avail()[0];
-        self.draw_sized(ui, theme, Some(texts), texts.hint, width)
+        self.draw_sized(ui, theme, texts, width)
     }
 
-    /// Draws the field `width` wide without the `x` (the find bar has its
-    /// own close button, M198) and reports what the user did.
-    pub fn draw_without_end_button(
+    /// Draws the field `width` wide and reports what the user did.
+    pub fn draw_sized(
         &mut self,
         ui: &Ui,
         theme: &Theme,
-        hint: &str,
+        texts: SearchFieldTexts<'_>,
         width: f32,
     ) -> SearchFieldResponse {
-        self.draw_sized(ui, theme, None, hint, width)
-    }
-
-    /// Draws the field `width` wide; `texts` adds the `x` at its end.
-    fn draw_sized(
-        &mut self,
-        ui: &Ui,
-        theme: &Theme,
-        texts: Option<SearchFieldTexts<'_>>,
-        hint: &str,
-        width: f32,
-    ) -> SearchFieldResponse {
+        let was_active = self.is_active;
         let start = ui.cursor_screen_pos();
         let height = field_height(ui, theme);
         let end = [start[0] + width, start[1] + height];
@@ -150,7 +150,13 @@ impl SearchField {
         ];
         draw_magnifier(ui, theme, [start[0] + padding[0], middle], magnifier);
         let input_x = start[0] + padding[0] + (magnifier[2] - magnifier[0]) + theme.spacing.small;
-        let clear_width = if texts.is_some() {
+        let has_text = !self.text.is_empty();
+        let end_tooltip = if has_text {
+            Some(texts.clear)
+        } else {
+            texts.close
+        };
+        let clear_width = if end_tooltip.is_some() {
             padding[0] + (clear[2] - clear[0]) + theme.spacing.small
         } else {
             padding[0]
@@ -159,15 +165,15 @@ impl SearchField {
         let changed = self.draw_input(
             ui,
             theme,
-            hint,
+            texts.hint,
             [input_x, input_y],
             (end[0] - clear_width - input_x).max(1.0),
         );
 
-        // The `x` empties a field with text and closes an empty one (M176).
-        let has_text = !self.text.is_empty();
-        let clicked = texts.is_some_and(|texts| {
-            let tooltip = if has_text { texts.clear } else { texts.close };
+        // The `x` empties a field with text and closes an empty closable
+        // one (M176). It reads the text from before this frame's typing, so
+        // the first typed letter does not move it under the mouse.
+        let clicked = end_tooltip.is_some_and(|tooltip| {
             self.draw_end_button(ui, theme, clear_position, clear, tooltip)
         });
         if clicked && has_text {
@@ -187,9 +193,20 @@ impl SearchField {
         // Leave the cursor below the field, as a regular item would.
         ui.set_cursor_screen_pos([start[0], end[1]]);
         ui.dummy([0.0, 0.0]);
+        // ImGui ends the input's activation on Enter; the field takes the
+        // focus back so the user can keep stepping (M198).
+        let submitted = (was_active && ui.is_key_pressed(Key::Enter)).then(|| {
+            self.focus_requested = true;
+            if ui.io().key_shift {
+                Submit::Backward
+            } else {
+                Submit::Forward
+            }
+        });
         SearchFieldResponse {
             text_changed: changed || (clicked && has_text),
             close_clicked: clicked && !has_text,
+            submitted,
         }
     }
 

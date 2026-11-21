@@ -2,14 +2,17 @@
 //! the note toolbar, opening it with Ctrl+F, stepping through the hits with
 //! wrap-around, and how it drives the reading view and the editor.
 
-use nexus::imgui::{Key, Ui};
-use trailkit_ui::{text::text_search::SearchQuery, theme::Theme};
-
-use trailkit_memo_search::{
-    find_bar::{FindBarStatus, FindBarTexts, draw_find_bar},
-    i18n::SearchText,
-    search_field::SearchField,
+use nexus::imgui::Ui;
+use trailkit_ui::{
+    controls::search::{
+        bar::{CountPlacement, SearchBarTexts, SearchStatus, draw_search_bar},
+        field::{SearchField, SearchFieldTexts},
+    },
+    text::text_search::SearchQuery,
+    theme::Theme,
 };
+
+use trailkit_memo_search::i18n::SearchText;
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText},
     note_tree::NoteId,
@@ -35,9 +38,6 @@ pub(super) struct FindInNote {
     pub(super) reveal_pending: bool,
     /// The note the hits belong to; another note starts at its first hit.
     note: Option<NoteId>,
-    /// Whether the field had the keyboard focus in the last frame (Enter in
-    /// the field ends its activation in the same frame).
-    field_was_active: bool,
 }
 
 impl FindInNote {
@@ -49,11 +49,11 @@ impl FindInNote {
     }
 
     /// The bar's status for the count and the arrows.
-    fn status(&self) -> FindBarStatus {
+    fn status(&self) -> SearchStatus {
         match (&self.query, self.hit_count) {
-            (None, _) => FindBarStatus::Empty,
-            (Some(_), 0) => FindBarStatus::NoResults,
-            (Some(_), _) => FindBarStatus::Hits,
+            (None, _) => SearchStatus::Empty,
+            (Some(_), 0) => SearchStatus::NoResults,
+            (Some(_), _) => SearchStatus::Hits,
         }
     }
 }
@@ -144,7 +144,8 @@ impl MemoWindow {
         }
     }
 
-    /// Closes the find bar (Ctrl+F, its `x` or Escape, M198). In the editor the body
+    /// Closes the find bar (Ctrl+F, the `x` of its empty field or Escape,
+    /// M198, mock v9). In the editor the body
     /// takes the focus back with the current hit still selected.
     pub(super) fn close_find(&mut self) {
         self.find.visible = false;
@@ -184,7 +185,7 @@ impl MemoWindow {
     }
 
     /// Draws the find bar if it is shown and applies what the user did:
-    /// typing, the arrows, close, and Enter / Shift+Enter in the field.
+    /// typing, the arrows, the `x`, and Enter / Shift+Enter in the field.
     pub(super) fn draw_find_bar(&mut self, ui: &Ui, language: Language, theme: &Theme) {
         if !self.find_bar_shown() {
             return;
@@ -195,32 +196,36 @@ impl MemoWindow {
             .get(language)
             .replace("{current}", &current)
             .replace("{total}", &total);
-        let texts = FindBarTexts {
-            hint: SearchText::FindHint.get(language),
+        let texts = SearchBarTexts {
+            field: SearchFieldTexts {
+                hint: SearchText::FindHint.get(language),
+                clear: SearchText::ClearSearch.get(language),
+                close: Some(SearchText::FindClose.get(language)),
+            },
             count: &count,
             no_results: SearchText::FindNoResults.get(language),
             previous: SearchText::FindPrevious.get(language),
             next: SearchText::FindNext.get(language),
-            close: SearchText::FindClose.get(language),
         };
         let status = self.find.status();
-        let response = draw_find_bar(ui, theme, &mut self.find.field, status, texts);
+        let response = draw_search_bar(
+            ui,
+            theme,
+            &mut self.find.field,
+            status,
+            CountPlacement::Beside,
+            texts,
+        );
         if response.text_changed {
             self.find.text_changed();
         }
-        // ImGui ends the field's activation on Enter; it keeps the focus.
-        if self.find.field_was_active && ui.is_key_pressed(Key::Enter) {
-            self.step_find(!ui.io().key_shift);
-            self.find.field.request_focus();
-        }
-        self.find.field_was_active = self.find.field.is_active();
         if response.previous {
             self.step_find(false);
         }
         if response.next {
             self.step_find(true);
         }
-        if response.close {
+        if response.close_clicked {
             self.close_find();
         }
     }

@@ -80,6 +80,19 @@ pub struct SearchResults {
     /// Whether any note or group matches; without, the list shows the empty
     /// state (M126).
     has_hits: bool,
+    /// The matching notes in list order with how many hits each holds for
+    /// the arrows of the search (BL30, mock v9).
+    stops: Vec<HitStop>,
+}
+
+/// One matching note the search arrows step through.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct HitStop {
+    /// The note.
+    pub note: NoteId,
+    /// Its hits: the marked places in its text, or one for a note that
+    /// matches by its title only, so every matching note is a stop.
+    pub hits: usize,
 }
 
 impl SearchResults {
@@ -98,6 +111,12 @@ impl SearchResults {
     #[must_use]
     pub const fn has_hits(&self) -> bool {
         self.has_hits
+    }
+
+    /// The matching notes in list order, for stepping through the hits.
+    #[must_use]
+    pub fn hit_stops(&self) -> &[HitStop] {
+        &self.stops
     }
 }
 
@@ -187,6 +206,13 @@ impl Search<'_> {
         });
         if matches {
             results.has_hits = true;
+            // Counted like the reading view marks them: merged ranges of
+            // every term in the visible text (M120, M122).
+            let text_hits = self.query.hit_ranges(&indexed.content).len();
+            results.stops.push(HitStop {
+                note: note.id,
+                hits: text_hits.max(1),
+            });
             if !self.query.matches_lowered(&indexed.title) {
                 results
                     .content_hits
@@ -319,6 +345,30 @@ mod tests {
         assert!(!search(&document, "example").is_visible(wing));
         assert!(!search(&document, "**").has_hits());
         assert!(search(&document, "guide").is_visible(wing));
+    }
+
+    #[test]
+    fn matching_notes_are_stops_in_list_order() {
+        let (document, [mithril, _, vault, _, wing]) = sample();
+        let (NodeId::Note(mithril), NodeId::Note(vault), NodeId::Note(wing)) =
+            (mithril, vault, wing)
+        else {
+            unreachable!()
+        };
+        let stops = |query: &str| -> Vec<(NoteId, usize)> {
+            search(&document, query)
+                .hit_stops()
+                .iter()
+                .map(|stop| (stop.note, stop.hits))
+                .collect()
+        };
+        // "more" holds "ore" too: three marked places in the vault note.
+        assert_eq!(stops("ore"), vec![(mithril, 1), (vault, 3)]);
+        // A title-only match is one stop; a group-title match adds none.
+        assert_eq!(stops("wing"), vec![(wing, 1)]);
+        assert!(stops("dailies").is_empty());
+        // Two terms: their places merge where they touch.
+        assert_eq!(stops("mithril ore"), vec![(mithril, 1), (vault, 4)]);
     }
 
     #[test]

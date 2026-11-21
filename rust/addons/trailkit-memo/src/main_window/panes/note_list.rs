@@ -8,6 +8,10 @@ use nexus::imgui::{ChildWindow, Ui};
 use trailkit_ui::controls::tooltip::draw_tooltip_with;
 use trailkit_ui::{
     controls::menu::{MenuItem, begin_submenu, draw_menu_item},
+    controls::search::{
+        bar::{CountPlacement, SearchBarTexts, SearchStatus, draw_search_bar},
+        field::SearchFieldTexts,
+    },
     layout::stack::Stack,
     text::icons::Icon,
     text::{TextStyle, draw_text},
@@ -23,9 +27,7 @@ use trailkit_memo_reset_schedule::{
     i18n::ResetText,
     note_kind::{KIND_OPTIONS, reset_badge, reset_tooltip_lines},
 };
-use trailkit_memo_search::{
-    i18n::SearchText, no_search_results::draw_no_search_results, search_field::SearchFieldTexts,
-};
+use trailkit_memo_search::{i18n::SearchText, no_search_results::draw_no_search_results};
 use trailkit_memo_shared::{
     i18n::{Language, LocalizedText},
     note_tree::Note,
@@ -54,8 +56,9 @@ impl From<NoteListAction> for WindowAction {
 }
 
 impl MemoWindow {
-    /// Draws the fixed header (search field while shown, M138; toolbar), the
-    /// divider and below it the scrolling tree (M129), as one stack (R148).
+    /// Draws the fixed header and below it the scrolling tree (M129), as one
+    /// stack (R148). While the search is shown (M138) the divider sits under
+    /// it, above the toolbar (mock v9); otherwise under the toolbar.
     pub(in crate::main_window) fn draw_tree_pane(
         &mut self,
         ui: &Ui,
@@ -68,27 +71,17 @@ impl MemoWindow {
             return;
         }
         Stack::vertical(theme).build(ui, |stack| {
-            if self.ui_state.search_visible {
-                stack.add(|| {
-                    let search_texts = SearchFieldTexts {
-                        hint: SearchText::SearchHint.get(language),
-                        clear: SearchText::ClearSearch.get(language),
-                        close: SearchText::CloseSearch.get(language),
-                    };
-                    let response = self.search_field.draw(ui, theme, search_texts);
-                    if response.text_changed {
-                        // Apply the new text in this frame already.
-                        self.update_search();
-                    }
-                    if response.close_clicked {
-                        self.actions.push(WindowAction::HideSearch);
-                    }
-                });
+            let search_visible = self.ui_state.search_visible;
+            if search_visible {
+                stack.add(|| self.draw_list_search(ui, language, theme));
+                stack.add_separator(theme);
             }
             if let Some(action) = stack.add(|| NoteList::draw_header(ui, language, theme)) {
                 self.actions.push(action.into());
             }
-            stack.add_separator(theme);
+            if !search_visible {
+                stack.add_separator(theme);
+            }
             // Search field and buttons stay put; only the tree below the
             // divider scrolls, with its own scrollbar (M129).
             stack.add(|| {
@@ -98,6 +91,60 @@ impl MemoWindow {
                     .build(ui, || self.draw_note_list(ui, language, theme));
             });
         });
+    }
+
+    /// Draws the search above the list: the closable field and, while
+    /// notes match, "2 of 4" with the arrows below it (mock v9). Typing, the
+    /// `x`, the arrows and Enter take effect in this frame.
+    fn draw_list_search(&mut self, ui: &Ui, language: Language, theme: &Theme) {
+        let position = self.hit_position();
+        let count = position.map_or_else(String::new, |position| {
+            let current = position
+                .current
+                .map_or_else(|| "–".to_owned(), |current| current.to_string());
+            SearchText::FindCount
+                .get(language)
+                .replace("{current}", &current)
+                .replace("{total}", &position.total.to_string())
+        });
+        // Without hits the list itself says so (M126), so no row shows.
+        let status = if position.is_some() {
+            SearchStatus::Hits
+        } else {
+            SearchStatus::Empty
+        };
+        let texts = SearchBarTexts {
+            field: SearchFieldTexts {
+                hint: SearchText::SearchHint.get(language),
+                clear: SearchText::ClearSearch.get(language),
+                close: Some(SearchText::CloseSearch.get(language)),
+            },
+            count: &count,
+            no_results: SearchText::FindNoResults.get(language),
+            previous: SearchText::FindPrevious.get(language),
+            next: SearchText::FindNext.get(language),
+        };
+        let response = draw_search_bar(
+            ui,
+            theme,
+            &mut self.search_field,
+            status,
+            CountPlacement::Below,
+            texts,
+        );
+        if response.text_changed {
+            // Apply the new text in this frame already.
+            self.update_search();
+        }
+        if response.close_clicked {
+            self.actions.push(WindowAction::HideSearch);
+        }
+        if response.previous {
+            self.step_list_search(false);
+        }
+        if response.next {
+            self.step_list_search(true);
+        }
     }
 
     /// Draws the scrolling part of the note list: the empty search result

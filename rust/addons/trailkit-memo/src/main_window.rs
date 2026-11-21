@@ -43,7 +43,7 @@ use trailkit_memo_note_view::note_view::NoteView;
 use trailkit_memo_reset_schedule::{
     due_resets::apply_due_resets, schedule::next_reset_of_any_period,
 };
-use trailkit_memo_search::search_field::SearchField;
+use trailkit_ui::controls::search::field::SearchField;
 use trailkit_memo_shared::i18n::LocalizedText;
 use trailkit_memo_shared::{
     drafts::DraftsDocument,

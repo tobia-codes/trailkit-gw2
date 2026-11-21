@@ -239,7 +239,7 @@ pub enum Text {
     WindowMenu,
     /// Window menu: back to the regular notes page (M166).
     MenuNotes,
-    /// Window menu: show the search field (M166).
+    /// Window menu: show the note search, also from the trash (M166, M219).
     MenuSearch,
     /// The search shortcut shown in the window menu (M166; Shift twice, M199).
     SearchShortcut,
@@ -393,8 +393,8 @@ impl LocalizedText for Text {
             (Self::WindowMenu, Language::German) => "Menü",
             (Self::MenuNotes, Language::English) => "Notes",
             (Self::MenuNotes, Language::German) => "Notizen",
-            (Self::MenuSearch, Language::English) => "Search",
-            (Self::MenuSearch, Language::German) => "Suchen",
+            (Self::MenuSearch, Language::English) => "Search notes",
+            (Self::MenuSearch, Language::German) => "Notizen durchsuchen",
             (Self::SearchShortcut, Language::English) => "2× Shift",
             (Self::SearchShortcut, Language::German) => "2× Umschalt",
             (Self::FindInNote, Language::English) => "Find in note",
