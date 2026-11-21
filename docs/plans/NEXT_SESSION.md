@@ -1,6 +1,6 @@
 # Next session — handoff
 
-Last updated: 2026-11-21 (session 50, phone; **active work branch `chore/split-help-files`**: R157 help split, waits for in-game test 34 and merge OK; then R155 c). Current state and next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
+Last updated: 2026-11-21 (session 51, PC; no active work branch; next R155 c). Current state and next steps only; decisions belong in plans, lasting facts in skills. Keep under 100 lines.
 
 ## Where we are
 
@@ -30,8 +30,8 @@ R139–R146 (TextField, no disabled buttons, dialog close icon, wrapped tooltips
 **Session 49 (2026-11-20, PC), all merged:** R155 a one `MenuItem` (submenus 4 px apart, row kept highlighted, M98); R155 b the note list on `draw_list_row` (dragged row fades as a whole M106,
 group double-click without toggle M172); R156 indent guides (`tree_indent`); M215 new entries next to the selection; M216 empty-spot click selects nothing. Lesson: md5 groups miss a hover that
 lands on a wrong row, so measure positions in the PNG after layout changes.
-**Session 50 (2026-11-20/21, phone):** Q538 (topic without sections: no chevron, R155) and **R157** (Q539–Q544): help split into `help/{en,de}/NN-name.md`, joined by memo's `build.rs` with the privacy policy, build errors name file, line and fix; output byte-identical; 7 tests in `help_assembly.rs`. **Active work branch `chore/split-help-files`** (pushed, no PR yet): `git fetch origin && git switch --track origin/chore/split-help-files`. Open there: Q545 done (2026-11-21, PC: folder reading moved into `help_assembly.rs`, 13 tests); deploy, in-game test 34, merge OK (R74). Test gaps found (own `chore/test-gaps` after R155 c): the nested-row padding fix 7790ea3 (R156) has no automated test, M172 (double-click without toggle) only a snapshot; plus the known `render.rs`/window action/key gaps below.
-**▶ Next step (start here): finish `chore/split-help-files` (above), then R155 c, the help table of contents.** After its merge: `git fetch origin && git switch develop && git pull --ff-only && git switch -c feature/help-table-of-contents`.
+**Sessions 50–51 (2026-11-20/21, phone + PC), merged:** Q538 (topic without sections: no chevron, R155) and **R157** (Q539–Q545): help split into `help/{en,de}/NN-name.md`, read and joined by `help_assembly.rs` from memo's `build.rs` with the privacy policy, build errors name file, line and fix; output byte-identical; 13 tests; in-game test 34 passed. Test gaps found (own `chore/test-gaps` after R155 c): the nested-row padding fix 7790ea3 (R156) has no automated test, M172 (double-click without toggle) only a snapshot; plus the known `render.rs`/window action/key gaps below.
+**▶ Next step (start here): R155 c, the help table of contents.** `git fetch origin && git switch develop && git pull --ff-only && git switch -c feature/help-table-of-contents`.
 1. Grilling is done: sections are the `###` headings (the privacy topic gets them from `PRIVACY.md`), only the selected topic is expanded, a topic without sections has no chevron (Q538).
 2. R87 rendered proposal (Dark/Light, minimum width, German): sections of the selected topic as `ListRow { level: 1 }` below it, topics with a chevron like memo's groups, indent guides come
    for free from `draw_list_row`; the help list spaces rows with `Stack`, while the guides reach into ImGui's `ItemSpacing` gap above a row, so align the two. 3. Build, snapshots, deploy, in-game test, merge OK.
